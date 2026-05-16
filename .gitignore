@@ -1,5 +1,23 @@
+# Maven
 target/
+
+# IDEA
 .idea/
 *.iml
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
 node_modules/
+
+# Env
+.env
+
+# Local config
 application-local.yml
