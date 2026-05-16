@@ -1,0 +1,32 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - heading "ImageSpace" [level=2] [ref=e6] [cursor=pointer]
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - link "我的图片" [ref=e9] [cursor=pointer]:
+          - /url: /home
+        - link "图片广场" [ref=e10] [cursor=pointer]:
+          - /url: /square
+      - button "退出" [ref=e12] [cursor=pointer]:
+        - generic [ref=e13]: 退出
+  - generic [ref=e14]:
+    - button "编辑背景" [ref=e17] [cursor=pointer]:
+      - generic [ref=e18]:
+        - img [ref=e20]
+        - text: 编辑背景
+    - generic [ref=e23]:
+      - generic [ref=e24]:
+        - img [ref=e27]
+        - button [ref=e30] [cursor=pointer]:
+          - img [ref=e33]
+      - generic [ref=e35]:
+        - heading [level=2]
+        - generic [ref=e36]: "@"
+        - button "编辑资料" [ref=e37] [cursor=pointer]:
+          - generic [ref=e38]:
+            - img [ref=e40]
+            - text: 编辑资料
+    - generic [ref=e43]:
+      - heading "作品" [level=3] [ref=e44]
+      - paragraph [ref=e46]: 暂无作品
+    - img [ref=e49]

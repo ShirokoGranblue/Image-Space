@@ -1,0 +1,18 @@
+- generic [ref=e4]:
+  - heading "ImageSpace" [level=2] [ref=e5]
+  - paragraph [ref=e6]: 用户登录
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - generic [ref=e9]: "*用户名"
+      - textbox "*用户名" [ref=e13]:
+        - /placeholder: 请输入用户名
+    - generic [ref=e14]:
+      - generic [ref=e15]: "*密码"
+      - textbox "*密码" [ref=e19]:
+        - /placeholder: 请输入密码
+    - button "登录" [ref=e22] [cursor=pointer]:
+      - generic [ref=e23]: 登录
+  - generic [ref=e24]:
+    - text: 还没有账号？
+    - link "立即注册" [ref=e25] [cursor=pointer]:
+      - /url: /register

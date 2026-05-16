@@ -1,0 +1,58 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e33]:
+    - banner [ref=e34]:
+      - generic [ref=e35]:
+        - heading "ImageSpace" [level=2] [ref=e37] [cursor=pointer]
+        - generic [ref=e38]:
+          - navigation [ref=e39]:
+            - link "Collection 我的图片" [ref=e40] [cursor=pointer]:
+              - /url: /home
+              - generic [ref=e41]: Collection
+              - generic [ref=e42]: 我的图片
+            - link "Gallery 图片广场" [ref=e43] [cursor=pointer]:
+              - /url: /square
+              - generic [ref=e44]: Gallery
+              - generic [ref=e45]: 图片广场
+          - generic [ref=e46]:
+            - generic [ref=e47] [cursor=pointer]: aaa
+            - button "Exit" [ref=e48] [cursor=pointer]
+    - generic [ref=e49]:
+      - banner [ref=e50]:
+        - generic [ref=e51]:
+          - heading "Collection" [level=1] [ref=e52]
+          - paragraph [ref=e53]: 你的私人影像收藏
+        - generic [ref=e54]:
+          - generic [ref=e55]:
+            - button "上传图片" [ref=e56] [cursor=pointer]:
+              - generic [ref=e57]:
+                - img [ref=e59]
+                - text: 上传图片
+            - generic [ref=e62] [cursor=pointer]:
+              - generic:
+                - combobox [ref=e64]
+                - generic [ref=e65]: 按分类筛选
+              - img [ref=e68]
+          - generic [ref=e70]:
+            - generic [ref=e72]:
+              - img [ref=e75]
+              - textbox "搜索图片名称" [ref=e77]
+            - generic [ref=e80] [cursor=pointer]:
+              - generic:
+                - combobox [ref=e82]
+                - generic [ref=e83]: 按时间
+              - img [ref=e86]
+      - article [ref=e89] [cursor=pointer]:
+        - img "屏幕截图 2026-05-15 195453.png" [ref=e91]
+      - generic [ref=e93]:
+        - generic [ref=e94]: 共 1 条
+        - button "上一页" [disabled] [ref=e95]:
+          - generic:
+            - img
+        - list [ref=e96]:
+          - listitem "第 1 页" [ref=e97]: "1"
+        - button "下一页" [disabled] [ref=e98]:
+          - generic:
+            - img
+  - alert [ref=e99]:
+    - img [ref=e101]
+    - paragraph [ref=e103]: 欢迎回来

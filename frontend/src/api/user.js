@@ -1,0 +1,37 @@
+import api from './index'
+
+export function login(data) {
+  return api.post('/user/login', data)
+}
+
+export function register(data) {
+  return api.post('/user/register', data)
+}
+
+export function logout() {
+  return api.post('/user/logout')
+}
+
+export function getUserInfo() {
+  return api.get('/user/info')
+}
+
+export function getUserProfile(id) {
+  return api.get(`/user/profile/${id}`)
+}
+
+export function updateProfile(data) {
+  return api.put('/user/profile', data)
+}
+
+export function uploadAvatar(formData) {
+  return api.post('/user/avatar', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}
+
+export function uploadBackground(formData) {
+  return api.post('/user/background', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}

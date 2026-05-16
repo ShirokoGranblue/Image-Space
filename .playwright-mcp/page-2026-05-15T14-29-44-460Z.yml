@@ -1,0 +1,49 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e36]:
+    - banner [ref=e37]:
+      - heading "ImageSpace" [level=2] [ref=e39] [cursor=pointer]
+      - generic [ref=e40]:
+        - generic [ref=e41]:
+          - link "我的图片" [ref=e42] [cursor=pointer]:
+            - /url: /home
+          - link "图片广场" [ref=e43] [cursor=pointer]:
+            - /url: /square
+        - generic [ref=e44]:
+          - generic [ref=e45] [cursor=pointer]: aaa
+          - button "退出" [ref=e46] [cursor=pointer]:
+            - generic [ref=e47]: 退出
+    - generic [ref=e48]:
+      - generic [ref=e49]:
+        - generic [ref=e50]:
+          - button "上传图片" [ref=e51] [cursor=pointer]:
+            - generic [ref=e52]:
+              - img [ref=e54]
+              - text: 上传图片
+          - generic [ref=e57] [cursor=pointer]:
+            - generic:
+              - combobox [ref=e59]
+              - generic [ref=e60]: 按分类筛选
+            - img [ref=e63]
+        - generic [ref=e65]:
+          - generic [ref=e67]:
+            - img [ref=e70]
+            - textbox "搜索图片名称" [ref=e72]
+          - generic [ref=e75] [cursor=pointer]:
+            - generic:
+              - combobox [ref=e77]
+              - generic [ref=e78]: 按时间
+            - img [ref=e81]
+      - img "屏幕截图 2026-05-15 195453.png" [ref=e86] [cursor=pointer]
+      - generic [ref=e88]:
+        - generic [ref=e89]: 共 1 条
+        - button "上一页" [disabled] [ref=e90]:
+          - generic:
+            - img
+        - list [ref=e91]:
+          - listitem "第 1 页" [ref=e92]: "1"
+        - button "下一页" [disabled] [ref=e93]:
+          - generic:
+            - img
+  - alert [ref=e94]:
+    - img [ref=e96]
+    - paragraph [ref=e98]: 登录成功

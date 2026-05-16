@@ -1,0 +1,25 @@
+package com.picmgmt.vo;
+
+import lombok.Data;
+
+import java.time.LocalDateTime;
+
+@Data
+public class ImageVO {
+
+    private Long id;
+    private Long userId;
+    private String username;
+    private String displayName;
+    private Long categoryId;
+    private String categoryName;
+    private String imageName;
+    private String imagePath;
+    private Long fileSize;
+    private String imageType;
+    private String description;
+    private String tags;
+    private String visibility;
+    private String visibleUsernames;
+    private LocalDateTime uploadTime;
+}

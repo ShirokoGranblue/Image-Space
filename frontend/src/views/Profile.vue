@@ -1,0 +1,1373 @@
+<template>
+  <div class="profile-page">
+    <NavBar />
+    <div class="page-container" v-loading="loading">
+      <div class="profile-banner" :style="bannerStyle">
+        <div class="banner-edit" v-if="isOwner">
+          <el-button size="small" @click="openBackgroundEditor">
+            <el-icon><Edit /></el-icon> 编辑背景
+          </el-button>
+        </div>
+      </div>
+
+      <div class="profile-header">
+        <div class="avatar-wrap">
+          <el-avatar :size="120" :src="user.avatar" class="avatar">
+            <el-icon :size="48"><UserFilled /></el-icon>
+          </el-avatar>
+          <div v-if="isOwner" class="avatar-upload" @click="openAvatarEditor">
+            <el-button size="small" circle><el-icon><Camera /></el-icon></el-button>
+          </div>
+        </div>
+
+        <div class="profile-name-row" v-if="!editing">
+          <h2>{{ user.displayName || user.username }}</h2>
+          <span class="username-tag">@{{ user.username }}</span>
+          <el-button v-if="isOwner" text @click="startEdit"><el-icon><Edit /></el-icon> 编辑资料</el-button>
+        </div>
+
+        <div class="profile-edit" v-else>
+          <el-form label-width="80px">
+            <el-form-item label="展示名称">
+              <el-input v-model="form.displayName" maxlength="50" />
+            </el-form-item>
+            <el-form-item label="邮箱">
+              <el-input v-model="form.email" />
+            </el-form-item>
+            <el-form-item label="手机号">
+              <el-input v-model="form.phone" maxlength="20" />
+            </el-form-item>
+            <el-form-item label="个人介绍">
+              <el-input v-model="form.bio" type="textarea" :rows="3" maxlength="200" show-word-limit />
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" @click="saveProfile" :loading="saving">保存</el-button>
+              <el-button @click="cancelEdit">取消</el-button>
+            </el-form-item>
+          </el-form>
+        </div>
+
+        <div class="profile-meta" v-if="!editing && (user.email || user.phone || user.bio)">
+          <p v-if="user.bio" class="bio">{{ user.bio }}</p>
+          <div class="contact">
+            <span v-if="user.email"><el-icon><Message /></el-icon> {{ user.email }}</span>
+            <span v-if="user.phone"><el-icon><Phone /></el-icon> {{ user.phone }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="user-works">
+        <h3>作品</h3>
+        <div v-if="works.length === 0" class="empty-state"><p>暂无作品</p></div>
+        <div v-else class="card-grid">
+          <ImageCard v-for="img in works" :key="img.id" :image="img" :show-actions="false" />
+        </div>
+        <div class="pagination-wrap" v-if="workTotal > workLimit">
+          <el-pagination v-model:current-page="workPage" :page-size="workLimit" :total="workTotal" layout="prev, pager, next" @current-change="fetchWorks" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Background editor dialog -->
+    <el-dialog v-model="bgDialogVisible" title="编辑个人背景" width="860px" class="profile-dialog bg-dialog">
+      <div class="background-editor">
+        <div class="background-editor-layout">
+          <div class="bg-crop-side">
+            <div
+              class="bg-crop-container"
+              ref="bgCropContainer"
+              @mousedown="startDragBgCrop"
+              @mousemove="onDragBgCrop"
+              @mouseup="stopDragBgCrop"
+              @mouseleave="stopDragBgCrop"
+            >
+              <img v-if="bgPreviewUrl" :src="bgPreviewUrl" class="bg-crop-img" :style="bgCropImgStyle" draggable="false" />
+              <el-icon v-else :size="72" class="bg-placeholder"><PictureFilled /></el-icon>
+              <div class="bg-crop-frame" v-if="bgPreviewUrl" :style="bgCropFrameStyle"></div>
+              <div class="bg-crop-grid" v-if="bgPreviewUrl" :style="bgCropGridStyle"></div>
+              <template v-if="bgPreviewUrl">
+                <div class="bg-handle bg-handle-ns" :style="bgHPos('top')" @mousedown.stop="startBgResize($event, 'top')"></div>
+                <div class="bg-handle bg-handle-ns" :style="bgHPos('bottom')" @mousedown.stop="startBgResize($event, 'bottom')"></div>
+                <div class="bg-handle bg-handle-ew" :style="bgHPos('left')" @mousedown.stop="startBgResize($event, 'left')"></div>
+                <div class="bg-handle bg-handle-ew" :style="bgHPos('right')" @mousedown.stop="startBgResize($event, 'right')"></div>
+                <div class="bg-handle bg-handle-corner bg-handle-nwse" :style="bgHPos('tl')" @mousedown.stop="startBgResize($event, 'tl')"></div>
+                <div class="bg-handle bg-handle-corner bg-handle-nesw" :style="bgHPos('tr')" @mousedown.stop="startBgResize($event, 'tr')"></div>
+                <div class="bg-handle bg-handle-corner bg-handle-nesw" :style="bgHPos('bl')" @mousedown.stop="startBgResize($event, 'bl')"></div>
+                <div class="bg-handle bg-handle-corner bg-handle-nwse" :style="bgHPos('br')" @mousedown.stop="startBgResize($event, 'br')"></div>
+              </template>
+            </div>
+            <div class="bg-controls">
+              <span class="slider-label">裁剪尺寸</span>
+              <el-slider v-model="bgCropRatio" :min="0.45" :max="1" :step="0.01" style="flex:1;margin:0 10px" @input="onBgSliderChange" />
+              <span class="slider-val">{{ Math.round(bgCropRatio * 100) }}%</span>
+            </div>
+            <el-upload :auto-upload="false" :show-file-list="false" :on-change="onBgFileChange" accept="image/*" class="bg-upload">
+              <el-button type="primary">选择图片</el-button>
+            </el-upload>
+            <p class="upload-hint" v-if="bgFileName">{{ bgFileName }}</p>
+          </div>
+          <div class="bg-preview-side">
+            <p class="preview-label">个人资料预览</p>
+            <div class="profile-mini-card">
+              <div class="profile-mini-banner" :style="miniBannerStyle">
+                <img v-if="bgPreviewUrl" :src="bgPreviewUrl" class="profile-mini-bg" :style="miniBgImgStyle" draggable="false" />
+              </div>
+              <div class="profile-mini-header">
+                <div class="profile-mini-avatar">
+                  <el-avatar :size="22" :src="user.avatar">
+                    <el-icon :size="10"><UserFilled /></el-icon>
+                  </el-avatar>
+                </div>
+                <div class="profile-mini-name">{{ user.displayName || user.username }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="bgDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="saveBackground" :loading="bgSaving" :disabled="!bgPreviewUrl">应用</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- Avatar editor dialog -->
+    <el-dialog v-model="avatarDialogVisible" title="编辑头像" width="760px" class="profile-dialog avatar-dialog">
+      <div class="avatar-editor">
+        <div class="avatar-editor-layout">
+          <div class="avatar-crop-side">
+            <div
+              class="crop-container"
+              ref="cropContainer"
+              @mousedown="startDragCrop"
+              @mousemove="onDragCrop"
+              @mouseup="stopDragCrop"
+              @mouseleave="stopDragCrop"
+            >
+              <img v-if="avatarPreviewUrl" :src="avatarPreviewUrl" class="crop-img" :style="cropImgStyle" draggable="false" />
+              <el-icon v-else :size="80" style="position:absolute;inset:0;margin:auto;color:#ccc"><UserFilled /></el-icon>
+              <div class="crop-frame" v-if="avatarPreviewUrl" :style="cropFrameStyle"></div>
+              <div class="crop-grid" v-if="avatarPreviewUrl" :style="cropGridStyle"></div>
+              <template v-if="avatarPreviewUrl">
+                <div class="crop-handle crop-handle-ns" :style="hPos('top')" @mousedown.stop="startResize($event, 'top')"></div>
+                <div class="crop-handle crop-handle-ns" :style="hPos('bottom')" @mousedown.stop="startResize($event, 'bottom')"></div>
+                <div class="crop-handle crop-handle-ew" :style="hPos('left')" @mousedown.stop="startResize($event, 'left')"></div>
+                <div class="crop-handle crop-handle-ew" :style="hPos('right')" @mousedown.stop="startResize($event, 'right')"></div>
+                <div class="crop-handle crop-handle-corner crop-handle-nwse" :style="hPos('tl')" @mousedown.stop="startResize($event, 'tl')"></div>
+                <div class="crop-handle crop-handle-corner crop-handle-nesw" :style="hPos('tr')" @mousedown.stop="startResize($event, 'tr')"></div>
+                <div class="crop-handle crop-handle-corner crop-handle-nesw" :style="hPos('bl')" @mousedown.stop="startResize($event, 'bl')"></div>
+                <div class="crop-handle crop-handle-corner crop-handle-nwse" :style="hPos('br')" @mousedown.stop="startResize($event, 'br')"></div>
+              </template>
+            </div>
+            <div class="crop-controls">
+              <span class="slider-label">裁剪尺寸</span>
+              <el-slider v-model="cropRatio" :min="0.25" :max="1" :step="0.01" style="flex:1;margin:0 10px" @input="onSliderChange" />
+              <span class="slider-val">{{ Math.round(cropRatio * 100) }}%</span>
+            </div>
+          </div>
+          <div class="avatar-preview-side">
+            <p class="preview-label">头像预览</p>
+            <div class="preview-circle-lg">
+              <img v-if="avatarPreviewUrl" :src="avatarPreviewUrl" class="preview-img" :style="previewLgImgStyle" />
+              <el-icon v-else :size="48" style="color:#ccc"><UserFilled /></el-icon>
+            </div>
+            <div class="preview-circle-sm">
+              <img v-if="avatarPreviewUrl" :src="avatarPreviewUrl" class="preview-img" :style="previewSmImgStyle" />
+              <el-icon v-else :size="24" style="color:#ccc"><UserFilled /></el-icon>
+            </div>
+          </div>
+        </div>
+        <el-upload :auto-upload="false" :show-file-list="false" :on-change="onAvatarFileChange" accept="image/*" class="avatar-replace-upload">
+          <el-button>更换图片</el-button>
+        </el-upload>
+      </div>
+      <template #footer>
+        <el-button @click="avatarDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="confirmAvatar" :loading="avatarSaving" :disabled="!avatarPreviewUrl">确认</el-button>
+      </template>
+    </el-dialog>
+  </div>
+</template>
+
+<script setup>
+import { ref, reactive, computed, onMounted, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import NavBar from '../components/NavBar.vue'
+import ImageCard from '../components/ImageCard.vue'
+import { useUserStore } from '../store/user'
+import { getUserProfile, updateProfile, uploadAvatar, uploadBackground } from '../api/user'
+import { getImageList } from '../api/image'
+
+const route = useRoute()
+const userStore = useUserStore()
+const user = ref({})
+const works = ref([])
+const workPage = ref(1)
+const workLimit = 12
+const workTotal = ref(0)
+const loading = ref(false)
+const editing = ref(false)
+const saving = ref(false)
+const isOwner = computed(() => userStore.userInfo?.id === user.value.id)
+
+const form = reactive({ displayName: '', email: '', phone: '', bio: '' })
+
+const bannerStyle = computed(() => {
+  const bg = user.value.background
+  if (!bg) return { background: 'linear-gradient(135deg, #111827 0%, #2563eb 58%, #38bdf8 100%)' }
+  if (bg.startsWith('#') || bg.startsWith('rgb')) return { backgroundColor: bg }
+  return { backgroundImage: `url(${bg})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+})
+
+// Background editor
+const bgDialogVisible = ref(false)
+const bgPreviewUrl = ref('')
+const bgFileName = ref('')
+const bgSaving = ref(false)
+const bgCropContainer = ref(null)
+const bgCrop = reactive({ x: 0, y: 0, w: 320, h: 180 })
+const bgCropRatio = ref(1)
+const bgStageW = ref(640)
+const bgStageH = ref(360)
+const bgImgNatural = ref({ w: 1, h: 1 })
+const bgSourceKind = ref('current')
+const BG_ASPECT = 16 / 9
+let bgDragging = false, bgResizing = false
+let bgDragStart = { x: 0, y: 0, cx: 0, cy: 0, cw: 0, ch: 0 }
+let bgResizeDir = ''
+
+function onBgFileChange(file) {
+  if (!file?.raw) return
+  bgFileName.value = file.name
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    bgSourceKind.value = 'new'
+    loadBackgroundSource(e.target.result)
+  }
+  reader.readAsDataURL(file.raw)
+}
+
+function openBackgroundEditor() {
+  bgDialogVisible.value = true
+  bgFileName.value = ''
+  nextTick(() => {
+    const originalSource = readCachedBgOriginal()
+    const bg = user.value.background
+    if (originalSource) {
+      loadBackgroundSource(originalSource)
+      bgSourceKind.value = 'original'
+      return
+    }
+    bgSourceKind.value = 'current'
+    if (bg && !bg.startsWith('#') && !bg.startsWith('rgb')) loadBackgroundSource(bg)
+    else {
+      bgPreviewUrl.value = ''
+      bgImgNatural.value = { w: 1, h: 1 }
+      updateBgCropBounds()
+      initBgCrop()
+    }
+  })
+}
+
+function updateBgCropBounds() {
+  if (!bgCropContainer.value) return
+  bgStageW.value = bgCropContainer.value.clientWidth
+  bgStageH.value = bgCropContainer.value.clientHeight
+}
+
+function initBgCrop() {
+  bgCrop.x = bgStageW.value / 2
+  bgCrop.y = bgStageH.value / 2
+  bgCropRatio.value = 1
+  syncBgCropSizeFromRatio()
+}
+
+function maxBgCropWidth() {
+  return Math.min(bgStageW.value, bgStageH.value * BG_ASPECT)
+}
+
+function syncBgCropSizeFromRatio() {
+  const maxW = maxBgCropWidth()
+  bgCrop.w = Math.round(bgCropRatio.value * maxW)
+  bgCrop.h = Math.round(bgCrop.w / BG_ASPECT)
+  clampBgCrop()
+}
+
+function clampBgCrop() {
+  const halfW = bgCrop.w / 2
+  const halfH = bgCrop.h / 2
+  bgCrop.x = Math.max(halfW, Math.min(bgStageW.value - halfW, bgCrop.x))
+  bgCrop.y = Math.max(halfH, Math.min(bgStageH.value - halfH, bgCrop.y))
+}
+
+function onBgSliderChange() {
+  syncBgCropSizeFromRatio()
+}
+
+const bgImageDisplay = computed(() => {
+  const nw = bgImgNatural.value.w || 1
+  const nh = bgImgNatural.value.h || 1
+  const cw = bgStageW.value || 1
+  const ch = bgStageH.value || 1
+  const scale = Math.max(cw / nw, ch / nh)
+  const width = nw * scale
+  const height = nh * scale
+  return {
+    width,
+    height,
+    left: (cw - width) / 2,
+    top: (ch - height) / 2
+  }
+})
+
+const bgCropBox = computed(() => ({
+  left: bgCrop.x - bgCrop.w / 2,
+  top: bgCrop.y - bgCrop.h / 2,
+  width: bgCrop.w,
+  height: bgCrop.h
+}))
+
+const bgCropImgStyle = computed(() => {
+  const display = bgImageDisplay.value
+  return {
+    width: `${display.width}px`,
+    height: `${display.height}px`,
+    left: `${display.left}px`,
+    top: `${display.top}px`
+  }
+})
+
+const bgCropFrameStyle = computed(() => ({
+  left: `${bgCropBox.value.left}px`,
+  top: `${bgCropBox.value.top}px`,
+  width: `${bgCropBox.value.width}px`,
+  height: `${bgCropBox.value.height}px`
+}))
+
+const bgCropGridStyle = computed(() => ({
+  ...bgCropFrameStyle.value,
+  backgroundImage: [
+    'linear-gradient(to right, transparent 33.333%, rgba(255,255,255,0.55) 33.333%, rgba(255,255,255,0.55) calc(33.333% + 1px), transparent calc(33.333% + 1px))',
+    'linear-gradient(to right, transparent 66.666%, rgba(255,255,255,0.55) 66.666%, rgba(255,255,255,0.55) calc(66.666% + 1px), transparent calc(66.666% + 1px))',
+    'linear-gradient(to bottom, transparent 33.333%, rgba(255,255,255,0.55) 33.333%, rgba(255,255,255,0.55) calc(33.333% + 1px), transparent calc(33.333% + 1px))',
+    'linear-gradient(to bottom, transparent 66.666%, rgba(255,255,255,0.55) 66.666%, rgba(255,255,255,0.55) calc(66.666% + 1px), transparent calc(66.666% + 1px))'
+  ].join(', ')
+}))
+
+const bgPreviewImgStyle = computed(() => {
+  if (!bgPreviewUrl.value) return { display: 'none' }
+  const previewW = 240
+  const scale = previewW / bgCrop.w
+  const display = bgImageDisplay.value
+  return {
+    width: `${display.width * scale}px`,
+    height: `${display.height * scale}px`,
+    left: `${(display.left - bgCropBox.value.left) * scale}px`,
+    top: `${(display.top - bgCropBox.value.top) * scale}px`
+  }
+})
+
+function loadBackgroundSource(source) {
+  bgPreviewUrl.value = source || ''
+  if (!source) return
+  const img = new Image()
+  img.onload = async () => {
+    bgImgNatural.value = { w: img.naturalWidth, h: img.naturalHeight }
+    await nextTick()
+    updateBgCropBounds()
+    initBgCrop()
+  }
+  img.onerror = () => {
+    bgPreviewUrl.value = ''
+    ElMessage.error('背景图片加载失败')
+  }
+  img.src = source
+}
+
+function startDragBgCrop(e) {
+  if (!bgPreviewUrl.value || bgResizing) return
+  if (e.target.classList.contains('bg-handle')) return
+  bgDragging = true
+  document.body.style.cursor = 'move'
+  document.body.style.userSelect = 'none'
+  bgDragStart = { x: e.clientX, y: e.clientY, cx: bgCrop.x, cy: bgCrop.y, cw: bgCrop.w, ch: bgCrop.h }
+}
+
+function onDragBgCrop(e) {
+  if (!bgDragging) return
+  bgCrop.x = bgDragStart.cx + e.clientX - bgDragStart.x
+  bgCrop.y = bgDragStart.cy + e.clientY - bgDragStart.y
+  clampBgCrop()
+}
+
+function stopDragBgCrop() {
+  bgDragging = false
+  document.body.style.cursor = ''
+  document.body.style.userSelect = ''
+}
+
+function bgHPos(dir) {
+  const hw = bgCrop.w / 2
+  const hh = bgCrop.h / 2
+  const map = {
+    top:    { left: bgCrop.x + 'px', top: (bgCrop.y - hh) + 'px' },
+    bottom: { left: bgCrop.x + 'px', top: (bgCrop.y + hh) + 'px' },
+    left:   { left: (bgCrop.x - hw) + 'px', top: bgCrop.y + 'px' },
+    right:  { left: (bgCrop.x + hw) + 'px', top: bgCrop.y + 'px' },
+    tl:     { left: (bgCrop.x - hw) + 'px', top: (bgCrop.y - hh) + 'px' },
+    tr:     { left: (bgCrop.x + hw) + 'px', top: (bgCrop.y - hh) + 'px' },
+    bl:     { left: (bgCrop.x - hw) + 'px', top: (bgCrop.y + hh) + 'px' },
+    br:     { left: (bgCrop.x + hw) + 'px', top: (bgCrop.y + hh) + 'px' },
+  }
+  return map[dir]
+}
+
+const bgCursorMap = { top: 'ns-resize', bottom: 'ns-resize', left: 'ew-resize', right: 'ew-resize', tl: 'nwse-resize', br: 'nwse-resize', tr: 'nesw-resize', bl: 'nesw-resize' }
+
+function startBgResize(e, dir) {
+  bgResizing = true
+  bgResizeDir = dir
+  bgDragStart = { x: e.clientX, y: e.clientY, cx: bgCrop.x, cy: bgCrop.y, cw: bgCrop.w, ch: bgCrop.h }
+  document.body.style.cursor = bgCursorMap[dir]
+  document.body.style.userSelect = 'none'
+  window.addEventListener('mousemove', onBgResize)
+  window.addEventListener('mouseup', stopBgResize)
+}
+
+function onBgResize(e) {
+  const dx = e.clientX - bgDragStart.x
+  const dy = e.clientY - bgDragStart.y
+  let newW = bgDragStart.cw
+  let newX = bgDragStart.cx
+  let newY = bgDragStart.cy
+
+  const fromLeft = ['left', 'tl', 'bl'].includes(bgResizeDir)
+  const fromRight = ['right', 'tr', 'br'].includes(bgResizeDir)
+  const fromTop = ['top', 'tl', 'tr'].includes(bgResizeDir)
+  const fromBottom = ['bottom', 'bl', 'br'].includes(bgResizeDir)
+
+  if (fromRight) newW = bgDragStart.cw + dx * 2
+  if (fromLeft) newW = bgDragStart.cw - dx * 2
+  // Also check vertical resize for corner handles
+  if (fromBottom) newW = Math.max(newW, bgDragStart.cw + dy * 2 * BG_ASPECT)
+  if (fromTop) newW = Math.max(newW, bgDragStart.cw - dy * 2 * BG_ASPECT)
+
+  const maxW = maxBgCropWidth()
+  newW = Math.max(120, Math.min(maxW, newW))
+  const newH = Math.round(newW / BG_ASPECT)
+
+  bgCrop.w = newW
+  bgCrop.h = newH
+  bgCropRatio.value = Math.round(newW / maxBgCropWidth() * 100) / 100
+
+  if (fromLeft) newX = bgDragStart.cx + (bgDragStart.cw - newW) / 2
+  if (fromRight) newX = bgDragStart.cx - (bgDragStart.cw - newW) / 2
+  if (fromTop) newY = bgDragStart.cy + (bgDragStart.ch - newH) / 2
+  if (fromBottom) newY = bgDragStart.cy - (bgDragStart.ch - newH) / 2
+
+  bgCrop.x = Math.max(newW / 2, Math.min(bgStageW.value - newW / 2, newX))
+  bgCrop.y = Math.max(newH / 2, Math.min(bgStageH.value - newH / 2, newY))
+}
+
+function stopBgResize() {
+  bgResizing = false
+  document.body.style.cursor = ''
+  document.body.style.userSelect = ''
+  window.removeEventListener('mousemove', onBgResize)
+  window.removeEventListener('mouseup', stopBgResize)
+}
+
+// Mini profile card preview
+const miniBannerStyle = computed(() => ({
+  background: !bgPreviewUrl.value ? 'linear-gradient(135deg, #111827 0%, #2563eb 58%, #38bdf8 100%)' : undefined
+}))
+
+const miniBgImgStyle = computed(() => {
+  if (!bgPreviewUrl.value) return { display: 'none' }
+  const display = bgImageDisplay.value
+  const previewW = 200
+  const previewH = Math.round(previewW / BG_ASPECT)
+  const scale = previewW / bgCrop.w
+  return {
+    width: `${display.width * scale}px`,
+    height: `${display.height * scale}px`,
+    left: `${(display.left - bgCropBox.value.left) * scale}px`,
+    top: `${(display.top - bgCropBox.value.top) * scale}px`
+  }
+})
+
+function bgCacheKey() {
+  const id = user.value.id || userStore.userInfo?.id
+  return id ? `bg-original:${id}` : ''
+}
+
+function readCachedBgOriginal() {
+  // 1) Module-level cache
+  const key = bgCacheKey()
+  if (key) {
+    const entry = _originalStore.get(key)
+    if (entry && entry.background === user.value.background && entry.source) {
+      return entry.source
+    }
+  }
+  // 2) sessionStorage fallback
+  if (key) {
+    try {
+      const raw = sessionStorage.getItem(key)
+      if (raw) {
+        const cached = JSON.parse(raw)
+        if (cached.background === user.value.background && cached.source) {
+          _originalStore.set(key, cached)
+          return cached.source
+        }
+      }
+    } catch {}
+  }
+  return ''
+}
+
+function writeCachedBgOriginal(bgPath, source) {
+  if (!bgPath || !source) return
+  const entry = { background: bgPath, source }
+  const key = bgCacheKey()
+  if (key) {
+    _originalStore.set(key, entry)
+    try {
+      sessionStorage.setItem(key, JSON.stringify(entry))
+    } catch {}
+  }
+}
+
+async function saveBackground() {
+  if (!bgPreviewUrl.value) return
+  bgSaving.value = true
+  try {
+    const backgroundBlob = await cropBackgroundImage()
+    const fd = new FormData()
+    fd.append('file', backgroundBlob, 'background.jpg')
+    const res = await uploadBackground(fd)
+    const bgPath = typeof res.data === 'string' ? res.data : res.data?.background
+    if (!bgPath) throw new Error('背景上传失败')
+    user.value.background = bgPath
+    if (userStore.userInfo) userStore.userInfo.background = bgPath
+    if (bgSourceKind.value !== 'current') {
+      writeCachedBgOriginal(bgPath, bgPreviewUrl.value)
+    }
+    ElMessage.success('背景已更新'); bgDialogVisible.value = false
+  } catch {} finally { bgSaving.value = false }
+}
+
+function cropBackgroundImage() {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => {
+      const nw = bgImgNatural.value.w || img.naturalWidth
+      const nh = bgImgNatural.value.h || img.naturalHeight
+      const display = bgImageDisplay.value
+      const sx = (bgCropBox.value.left - display.left) / display.width * nw
+      const sy = (bgCropBox.value.top - display.top) / display.height * nh
+      const sw = bgCrop.w / display.width * nw
+      const sh = bgCrop.h / display.height * nh
+      const canvas = document.createElement('canvas')
+      canvas.width = 3840
+      canvas.height = 2160
+      const ctx = canvas.getContext('2d')
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height)
+      canvas.toBlob(blob => {
+        if (blob) resolve(blob)
+        else reject(new Error('Canvas toBlob failed'))
+      }, 'image/jpeg', 0.92)
+    }
+    img.onerror = reject
+    img.src = bgPreviewUrl.value
+  })
+}
+
+// Avatar cropper
+const avatarDialogVisible = ref(false)
+const avatarPreviewUrl = ref('')
+const avatarFile = ref(null)
+const avatarSaving = ref(false)
+const cropContainer = ref(null)
+const avatarSourceKind = ref('current')
+
+// Module-level cache — survives component remount during SPA navigation.
+// sessionStorage is too small for Data URLs (images often >5 MB).
+const _originalStore = new Map() // userId -> { avatarPath, source }
+
+// Crop state
+const crop = reactive({ x: 0, y: 0, size: 200 }) // square crop center and size
+const cropRatio = ref(0.8) // crop size as fraction of container (0.25–1.0)
+const imgW = ref(400); const imgH = ref(400) // container size
+const imgNatural = ref({ w: 1, h: 1 }) // original image dimensions
+
+let dragging = false, resizing = false
+let dragStart = { x: 0, y: 0, cx: 0, cy: 0, cSize: 0 }
+let resizeDir = ''
+
+function syncSizeFromRatio() {
+  const max = Math.min(imgW.value, imgH.value)
+  crop.size = Math.round(cropRatio.value * max)
+  clampCrop()
+}
+
+function syncRatioFromSize() {
+  const max = Math.min(imgW.value, imgH.value)
+  cropRatio.value = Math.round(crop.size / max * 100) / 100
+}
+
+function clampCrop() {
+  const r = crop.size / 2
+  crop.x = Math.max(r, Math.min(imgW.value - r, crop.x))
+  crop.y = Math.max(r, Math.min(imgH.value - r, crop.y))
+}
+
+const imageDisplay = computed(() => {
+  const nw = imgNatural.value.w || 1
+  const nh = imgNatural.value.h || 1
+  const cw = imgW.value || 1
+  const ch = imgH.value || 1
+  const scale = Math.max(cw / nw, ch / nh)
+  const width = nw * scale
+  const height = nh * scale
+  return {
+    width,
+    height,
+    left: (cw - width) / 2,
+    top: (ch - height) / 2
+  }
+})
+
+const cropBox = computed(() => {
+  const r = crop.size / 2
+  return {
+    left: crop.x - r,
+    top: crop.y - r,
+    size: crop.size
+  }
+})
+
+const cropImgStyle = computed(() => {
+  const display = imageDisplay.value
+  return {
+    width: `${display.width}px`,
+    height: `${display.height}px`,
+    left: `${display.left}px`,
+    top: `${display.top}px`
+  }
+})
+
+const cropFrameStyle = computed(() => ({
+  left: `${cropBox.value.left}px`,
+  top: `${cropBox.value.top}px`,
+  width: `${cropBox.value.size}px`,
+  height: `${cropBox.value.size}px`
+}))
+
+const cropGridStyle = computed(() => ({
+  ...cropFrameStyle.value,
+  backgroundImage: [
+    'linear-gradient(to right, transparent 33.333%, rgba(255,255,255,0.55) 33.333%, rgba(255,255,255,0.55) calc(33.333% + 1px), transparent calc(33.333% + 1px))',
+    'linear-gradient(to right, transparent 66.666%, rgba(255,255,255,0.55) 66.666%, rgba(255,255,255,0.55) calc(66.666% + 1px), transparent calc(66.666% + 1px))',
+    'linear-gradient(to bottom, transparent 33.333%, rgba(255,255,255,0.55) 33.333%, rgba(255,255,255,0.55) calc(33.333% + 1px), transparent calc(33.333% + 1px))',
+    'linear-gradient(to bottom, transparent 66.666%, rgba(255,255,255,0.55) 66.666%, rgba(255,255,255,0.55) calc(66.666% + 1px), transparent calc(66.666% + 1px))'
+  ].join(', ')
+}))
+
+function previewImgStyle(previewSize) {
+  if (!avatarPreviewUrl.value) return { display: 'none' }
+  const display = imageDisplay.value
+  const scale = previewSize / crop.size
+  return {
+    width: `${display.width * scale}px`,
+    height: `${display.height * scale}px`,
+    left: `${(display.left - cropBox.value.left) * scale}px`,
+    top: `${(display.top - cropBox.value.top) * scale}px`
+  }
+}
+
+const previewLgImgStyle = computed(() => previewImgStyle(120))
+const previewSmImgStyle = computed(() => previewImgStyle(56))
+
+function hPos(dir) {
+  const r = crop.size / 2
+  const map = {
+    top:    { left: crop.x + 'px', top: (crop.y - r) + 'px' },
+    bottom: { left: crop.x + 'px', top: (crop.y + r) + 'px' },
+    left:   { left: (crop.x - r) + 'px', top: crop.y + 'px' },
+    right:  { left: (crop.x + r) + 'px', top: crop.y + 'px' },
+    tl:     { left: (crop.x - r) + 'px', top: (crop.y - r) + 'px' },
+    tr:     { left: (crop.x + r) + 'px', top: (crop.y - r) + 'px' },
+    bl:     { left: (crop.x - r) + 'px', top: (crop.y + r) + 'px' },
+    br:     { left: (crop.x + r) + 'px', top: (crop.y + r) + 'px' },
+  }
+  return map[dir]
+}
+
+function initCrop() {
+  crop.x = imgW.value / 2
+  crop.y = imgH.value / 2
+  cropRatio.value = 0.8
+  syncSizeFromRatio()
+}
+
+function onSliderChange() {
+  syncSizeFromRatio()
+}
+
+function onResize(e) {
+  const dx = e.clientX - dragStart.x
+  const dy = e.clientY - dragStart.y
+  let newSize = dragStart.cSize
+  let newX = dragStart.cx
+  let newY = dragStart.cy
+  const fromLeft = ['left', 'tl', 'bl'].includes(resizeDir)
+  const fromRight = ['right', 'tr', 'br'].includes(resizeDir)
+  const fromTop = ['top', 'tl', 'tr'].includes(resizeDir)
+  const fromBottom = ['bottom', 'bl', 'br'].includes(resizeDir)
+
+  if (fromRight) newSize = dragStart.cSize + dx * 2
+  if (fromLeft) newSize = dragStart.cSize - dx * 2
+  if (fromBottom) newSize = Math.max(newSize, dragStart.cSize + dy * 2)
+  if (fromTop) newSize = Math.max(newSize, dragStart.cSize - dy * 2)
+
+  newSize = Math.max(80, Math.min(Math.min(imgW.value, imgH.value), newSize))
+  const r = newSize / 2
+  crop.size = newSize
+  syncRatioFromSize()
+  if (fromLeft) newX = dragStart.cx + (dragStart.cSize - newSize) / 2
+  if (fromRight) newX = dragStart.cx - (dragStart.cSize - newSize) / 2
+  if (fromTop) newY = dragStart.cy + (dragStart.cSize - newSize) / 2
+  if (fromBottom) newY = dragStart.cy - (dragStart.cSize - newSize) / 2
+  crop.x = Math.max(r, Math.min(imgW.value - r, newX))
+  crop.y = Math.max(r, Math.min(imgH.value - r, newY))
+}
+
+function startDragCrop(e) {
+  if (resizing) return
+  if (e.target.classList.contains('crop-handle')) return
+  dragging = true
+  document.body.style.cursor = 'move'
+  document.body.style.userSelect = 'none'
+  dragStart = { x: e.clientX, y: e.clientY, cx: crop.x, cy: crop.y, cSize: crop.size }
+}
+
+function onDragCrop(e) {
+  if (!dragging) return
+  const dx = e.clientX - dragStart.x
+  const dy = e.clientY - dragStart.y
+  const r = crop.size / 2
+  crop.x = Math.max(r, Math.min(imgW.value - r, dragStart.cx + dx))
+  crop.y = Math.max(r, Math.min(imgH.value - r, dragStart.cy + dy))
+}
+
+function stopDragCrop() {
+  dragging = false
+  document.body.style.cursor = ''
+  document.body.style.userSelect = ''
+}
+
+const cursorMap = { top: 'ns-resize', bottom: 'ns-resize', left: 'ew-resize', right: 'ew-resize', tl: 'nwse-resize', br: 'nwse-resize', tr: 'nesw-resize', bl: 'nesw-resize' }
+
+function startResize(e, dir) {
+  resizing = true
+  resizeDir = dir
+  dragStart = { x: e.clientX, y: e.clientY, cx: crop.x, cy: crop.y, cSize: crop.size }
+  document.body.style.cursor = cursorMap[dir]
+  document.body.style.userSelect = 'none'
+  window.addEventListener('mousemove', onResize)
+  window.addEventListener('mouseup', stopResize)
+}
+
+function stopResize() {
+  resizing = false
+  document.body.style.cursor = ''
+  document.body.style.userSelect = ''
+  window.removeEventListener('mousemove', onResize)
+  window.removeEventListener('mouseup', stopResize)
+}
+
+function avatarCacheKey() {
+  const id = user.value.id || userStore.userInfo?.id
+  return id ? `avatar-original:${id}` : ''
+}
+
+function readCachedAvatarOriginal() {
+  // 1) Module-level cache (survives SPA navigation)
+  const key = avatarCacheKey()
+  if (key) {
+    const entry = _originalStore.get(key)
+    if (entry && entry.avatar === user.value.avatar && entry.source) {
+      return entry.source
+    }
+  }
+  // 2) sessionStorage fallback (best-effort, may fail for large images)
+  if (key) {
+    try {
+      const raw = sessionStorage.getItem(key)
+      if (raw) {
+        const cached = JSON.parse(raw)
+        if (cached.avatar === user.value.avatar && cached.source) {
+          _originalStore.set(key, cached) // promote to module cache
+          return cached.source
+        }
+      }
+    } catch {}
+  }
+  return ''
+}
+
+function writeCachedAvatarOriginal(avatarPath, source) {
+  if (!avatarPath || !source) return
+  const entry = { avatar: avatarPath, source }
+  // Always update the module-level cache first
+  const key = avatarCacheKey()
+  if (key) {
+    _originalStore.set(key, entry)
+    // Best-effort persist to sessionStorage (silently skip if data too large)
+    try {
+      sessionStorage.setItem(key, JSON.stringify(entry))
+    } catch {}
+  }
+}
+
+function updateCropBounds() {
+  if (!cropContainer.value) return
+  imgW.value = cropContainer.value.clientWidth
+  imgH.value = cropContainer.value.clientHeight
+}
+
+function loadAvatarSource(source, kind = 'current') {
+  avatarPreviewUrl.value = source || ''
+  avatarSourceKind.value = kind
+  if (!source) {
+    imgNatural.value = { w: 1, h: 1 }
+    nextTick(() => {
+      updateCropBounds()
+      initCrop()
+    })
+    return
+  }
+
+  const img = new Image()
+  img.onload = async () => {
+    imgNatural.value = { w: img.naturalWidth, h: img.naturalHeight }
+    await nextTick()
+    updateCropBounds()
+    initCrop()
+  }
+  img.onerror = () => {
+    avatarPreviewUrl.value = ''
+    ElMessage.error('图片加载失败')
+  }
+  img.src = source
+}
+
+function openAvatarEditor() {
+  avatarFile.value = null
+  avatarDialogVisible.value = true
+  nextTick(() => {
+    const originalSource = readCachedAvatarOriginal()
+    loadAvatarSource(originalSource || user.value.avatar || '', originalSource ? 'original' : 'current')
+  })
+}
+
+function onAvatarFileChange(file) {
+  if (!file?.raw) return
+  avatarFile.value = file.raw
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    loadAvatarSource(e.target.result, 'new')
+  }
+  reader.readAsDataURL(file.raw)
+}
+
+async function confirmAvatar() {
+  if (!avatarPreviewUrl.value) return
+  avatarSaving.value = true
+  try {
+    const croppedBlob = await cropImage()
+    const fd = new FormData()
+    fd.append('file', croppedBlob, 'avatar.png')
+    const res = await uploadAvatar(fd)
+    const avatarPath = typeof res.data === 'string' ? res.data : res.data?.avatar
+    if (!avatarPath) throw new Error('头像上传失败')
+    user.value.avatar = avatarPath
+    if (userStore.userInfo) userStore.userInfo.avatar = avatarPath
+    if (avatarSourceKind.value !== 'current') {
+      writeCachedAvatarOriginal(avatarPath, avatarPreviewUrl.value)
+    }
+    ElMessage.success('头像已更新'); avatarDialogVisible.value = false
+  } catch (error) {
+    if (error?.message === '头像上传失败') ElMessage.error(error.message)
+  } finally { avatarSaving.value = false }
+}
+
+function cropImage() {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => {
+      const nw = imgNatural.value.w || img.naturalWidth
+      const nh = imgNatural.value.h || img.naturalHeight
+      const display = imageDisplay.value
+      const sx = (cropBox.value.left - display.left) / display.width * nw
+      const sy = (cropBox.value.top - display.top) / display.height * nh
+      const sw = crop.size / display.width * nw
+      const sh = crop.size / display.height * nh
+      const size = 400
+      const canvas = document.createElement('canvas')
+      canvas.width = size
+      canvas.height = size
+      const ctx = canvas.getContext('2d')
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, size, size)
+      canvas.toBlob(blob => {
+        if (blob) resolve(blob)
+        else reject(new Error('Canvas toBlob failed'))
+      }, 'image/png')
+    }
+    img.onerror = reject
+    img.src = avatarPreviewUrl.value
+  })
+}
+
+onMounted(async () => {
+  loading.value = true
+  const profileId = route.params.id || userStore.userInfo?.id
+  try {
+    if (userStore.token && !userStore.userInfo) {
+      await userStore.fetchUserInfo()
+    }
+    const res = await getUserProfile(profileId)
+    user.value = res.data; fetchWorks()
+  } catch {} finally { loading.value = false }
+})
+
+async function fetchWorks() {
+  try {
+    const res = await getImageList({ page: workPage.value, limit: workLimit, sortField: 'upload_time', sortOrder: 'desc' })
+    works.value = res.data.records || []; workTotal.value = res.data.total || 0
+  } catch {}
+}
+
+function startEdit() {
+  form.displayName = user.value.displayName || ''
+  form.email = user.value.email || ''; form.phone = user.value.phone || ''; form.bio = user.value.bio || ''
+  editing.value = true
+}
+function cancelEdit() { editing.value = false }
+
+async function saveProfile() {
+  saving.value = true
+  try {
+    const res = await updateProfile({ displayName: form.displayName, email: form.email, phone: form.phone, bio: form.bio })
+    user.value = res.data
+    if (isOwner.value) userStore.userInfo = res.data
+    editing.value = false; ElMessage.success('资料已更新')
+  } catch {} finally { saving.value = false }
+}
+</script>
+
+<style scoped>
+.profile-page {
+  min-height: 100vh;
+  --bg-base: #f8fafd;
+  --bg-surface: #ffffff;
+  --bg-elevated: #f9fafb;
+  --bg-hover: #eff4ff;
+  --border-subtle: #e8ecf0;
+  --border-visible: #d5dbe3;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #6b7a8d;
+  --accent: #2563eb;
+  --accent-glow: #1d4ed8;
+  --accent-dim: #1e40af;
+  --font-display: 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+  --font-body: 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+  --space-xs: 4px; --space-sm: 8px; --space-md: 16px; --space-lg: 24px; --space-xl: 32px; --space-2xl: 48px;
+  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px;
+  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-elevated: 0 10px 32px rgba(15, 23, 42, 0.08);
+  --shadow-dialog: 0 18px 48px rgba(15, 23, 42, 0.12);
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.page-container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px var(--space-lg) 48px;
+}
+
+.profile-banner {
+  height: 220px;
+  border-radius: var(--radius-lg);
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+  transition: box-shadow 0.3s ease;
+}
+.profile-banner::after {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, transparent 55%, rgba(15, 23, 42, 0.12) 100%);
+  pointer-events: none;
+}
+.banner-edit { position: absolute; bottom: var(--space-md); right: var(--space-md); display: flex; gap: var(--space-sm); z-index: 2; }
+.banner-edit {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.3s ease 0.6s, transform 0.3s ease 0.6s;
+}
+.profile-banner:hover .banner-edit {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.18s ease 0s, transform 0.18s ease 0s;
+}
+.profile-banner::after {
+  content: '';
+  position: absolute; inset: 0; z-index: 1;
+  border-radius: inherit;
+  background: linear-gradient(180deg, transparent 55%, rgba(15, 23, 42, 0.12) 100%);
+  pointer-events: none;
+}
+.banner-edit :deep(.el-button) {
+  background: rgba(15, 23, 42, 0.68);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  transition: background 0.2s;
+}
+.banner-edit :deep(.el-button:hover) {
+  background: rgba(15, 23, 42, 0.82);
+}
+
+.profile-header {
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  padding: 28px 32px 28px;
+  margin-top: -48px;
+  position: relative;
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-elevated);
+}
+.avatar-wrap { position: relative; display: inline-block; margin-top: -82px; }
+.avatar {
+  border: 4px solid var(--bg-surface);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+  border-radius: 50%;
+  transition: box-shadow 0.25s ease;
+}
+.avatar-wrap:hover .avatar { box-shadow: 0 8px 28px rgba(37, 99, 235, 0.18); }
+.avatar-upload {
+  position: absolute; bottom: 2px; right: -2px;
+}
+.avatar-upload :deep(.el-button) {
+  background: var(--accent);
+  border: 2px solid var(--bg-surface);
+  color: #fff;
+  width: 34px; height: 34px;
+  transition: transform 0.2s, background 0.2s;
+}
+.avatar-upload :deep(.el-button:hover) {
+  background: var(--accent-glow);
+  transform: scale(1.08);
+}
+
+.profile-name-row { display: flex; align-items: center; gap: var(--space-md); margin-top: var(--space-md); flex-wrap: wrap; }
+.profile-name-row h2 {
+  font-family: var(--font-display); font-size: 26px; font-weight: 700;
+  margin: 0; color: var(--text-primary); letter-spacing: -0.3px;
+}
+.username-tag {
+  color: var(--text-muted); font-size: 13px; font-family: var(--font-body);
+  padding: 3px 10px; border-radius: 999px; background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle); font-weight: 500;
+}
+.bio { color: var(--text-secondary); margin-bottom: var(--space-sm); line-height: 1.7; font-size: 14px; }
+.contact { display: flex; gap: var(--space-lg); color: var(--text-muted); font-size: 13px; }
+.contact .el-icon { margin-right: 4px; vertical-align: middle; }
+.profile-edit { margin-top: var(--space-md); }
+
+.user-works { margin-top: 36px; }
+.user-works h3 {
+  font-family: var(--font-display); font-size: 20px; font-weight: 700;
+  color: var(--text-primary); margin-bottom: var(--space-lg); letter-spacing: -0.2px;
+}
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+}
+.empty-state { text-align: center; color: var(--text-muted); padding: var(--space-2xl) 0; }
+.pagination-wrap { display: flex; justify-content: center; padding: var(--space-xl) 0 var(--space-sm); }
+.upload-hint { font-size: 12px; color: var(--text-muted); margin-top: var(--space-xs); }
+
+/* Dialog global overrides */
+:deep(.profile-dialog) {
+  --bg-surface: #ffffff;
+  --bg-elevated: #f9fafb;
+  --bg-hover: #eff4ff;
+  --border-subtle: #e8ecf0;
+  --border-visible: #d5dbe3;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #6b7a8d;
+  --accent: #2563eb;
+  --accent-glow: #1d4ed8;
+  --accent-dim: #1e40af;
+  --el-dialog-bg-color: #ffffff;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-dialog);
+}
+
+.background-editor { text-align: center; }
+.background-editor-layout {
+  display: grid;
+  grid-template-columns: minmax(380px, 1fr) 260px;
+  gap: 24px;
+  align-items: flex-start;
+}
+.bg-crop-side { min-width: 0; }
+.bg-crop-container {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  position: relative;
+  overflow: hidden;
+  background: #1e293b;
+  border: 1px solid var(--border-visible);
+  border-radius: var(--radius-md);
+  cursor: move;
+  user-select: none;
+}
+.bg-placeholder {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  color: rgba(255,255,255,0.35);
+}
+.bg-crop-img {
+  position: absolute;
+  z-index: 0;
+  max-width: none;
+  user-select: none;
+}
+.bg-crop-frame {
+  position: absolute;
+  z-index: 1;
+  outline: 2px solid rgba(37, 99, 235, 0.8);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  border-radius: 4px;
+  box-shadow:
+    0 0 0 999px rgba(15, 23, 42, 0.52),
+    0 0 10px rgba(37, 99, 235, 0.2);
+  pointer-events: none;
+}
+.bg-crop-grid {
+  position: absolute;
+  z-index: 2;
+  border-radius: 4px;
+  pointer-events: none;
+}
+.bg-controls {
+  display: flex;
+  align-items: center;
+  max-width: 560px;
+  margin: 14px auto 0;
+}
+.bg-upload { margin-top: 16px; text-align: center; }
+.bg-preview-side {
+  text-align: center;
+  padding: 16px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+}
+
+/* Mini profile card */
+.profile-mini-card {
+  width: 200px;
+  margin: 0 auto;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.1);
+  border: 1px solid var(--border-subtle);
+}
+.profile-mini-banner {
+  height: 56px;
+  position: relative;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+}
+.profile-mini-bg {
+  position: absolute;
+  max-width: none;
+  user-select: none;
+  pointer-events: none;
+}
+.profile-mini-header {
+  background: #fff;
+  padding: 4px 10px 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+.profile-mini-avatar {
+  margin-top: -14px;
+  flex-shrink: 0;
+}
+.profile-mini-avatar :deep(.el-avatar) {
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.14);
+}
+.profile-mini-name {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+/* BG handles */
+.bg-handle {
+  position: absolute; z-index: 3; width: 10px; height: 10px;
+  background: #fff; border: 2px solid var(--accent); border-radius: 3px;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 1px 6px rgba(15, 23, 42, 0.18);
+  transition: transform 0.12s ease;
+}
+.bg-handle:hover { transform: translate(-50%, -50%) scale(1.25); }
+.bg-handle-corner { width: 12px; height: 12px; border-radius: 3px; }
+.bg-handle-ns { cursor: ns-resize; }
+.bg-handle-ew { cursor: ew-resize; }
+.bg-handle-nwse { cursor: nwse-resize; }
+.bg-handle-nesw { cursor: nesw-resize; }
+
+.avatar-editor { text-align: center; }
+
+.avatar-editor-layout {
+  display: grid;
+  grid-template-columns: minmax(300px, 1fr) 160px;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.avatar-crop-side { min-width: 0; }
+.avatar-preview-side {
+  text-align: center;
+  padding: 20px 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+}
+
+.preview-label {
+  font-family: var(--font-display); font-size: 13px; font-weight: 600;
+  color: var(--text-secondary); margin-bottom: var(--space-md);
+}
+
+.preview-circle-lg {
+  width: 120px; height: 120px; border-radius: 50%; overflow: hidden;
+  margin: 0 auto var(--space-md); background: #e2e8f0; position: relative;
+  outline: 2px solid var(--border-subtle);
+}
+.preview-circle-sm {
+  width: 56px; height: 56px; border-radius: 50%; overflow: hidden;
+  margin: 0 auto; background: #e2e8f0; position: relative;
+  outline: 2px solid var(--border-subtle);
+}
+.preview-img {
+  position: absolute;
+  max-width: none;
+  user-select: none;
+  pointer-events: none;
+}
+
+.crop-container {
+  width: min(100%, 340px);
+  aspect-ratio: 1;
+  margin: 0 auto var(--space-md);
+  position: relative;
+  overflow: hidden;
+  background: #1e293b;
+  user-select: none;
+  cursor: move;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-visible);
+}
+.crop-img {
+  position: absolute; z-index: 0;
+  max-width: none;
+  user-select: none;
+}
+.crop-frame {
+  position: absolute;
+  z-index: 1;
+  outline: 2px solid rgba(37, 99, 235, 0.85);
+  outline-offset: 0px;
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  border-radius: 4px;
+  box-shadow:
+    0 0 0 999px rgba(15, 23, 42, 0.5),
+    0 0 12px rgba(37, 99, 235, 0.25);
+  pointer-events: none;
+}
+.crop-grid {
+  position: absolute;
+  z-index: 2;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.crop-handle {
+  position: absolute; z-index: 3; width: 10px; height: 10px;
+  background: #fff; border: 2px solid var(--accent); border-radius: 3px;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 1px 6px rgba(15, 23, 42, 0.18);
+  transition: transform 0.12s ease;
+}
+.crop-handle:hover { transform: translate(-50%, -50%) scale(1.25); }
+.crop-handle-corner { width: 12px; height: 12px; border-radius: 3px; }
+.crop-handle-ns { cursor: ns-resize; }
+.crop-handle-ew { cursor: ew-resize; }
+.crop-handle-nwse { cursor: nwse-resize; }
+.crop-handle-nesw { cursor: nesw-resize; }
+
+.crop-controls {
+  display: flex; align-items: center; max-width: 340px; margin: 0 auto;
+}
+.slider-label {
+  font-family: var(--font-display); font-size: 13px; color: var(--text-secondary);
+  flex-shrink: 0; font-weight: 600;
+}
+.slider-val { font-size: 12px; color: var(--text-secondary); min-width: 42px; text-align: right; font-weight: 500; }
+.avatar-replace-upload { margin-top: 16px; text-align: center; }
+
+@media (max-width: 720px) {
+  .page-container { padding: 16px var(--space-md) 32px; }
+  .profile-banner { height: 160px; border-radius: var(--radius-md); }
+  .profile-header { padding: 20px; margin-top: -36px; }
+  .avatar-wrap { margin-top: -62px; }
+  .avatar-editor-layout { grid-template-columns: 1fr; }
+  .avatar-preview-side { display: flex; align-items: center; justify-content: center; gap: 18px; }
+  .background-editor-layout { grid-template-columns: 1fr; }
+  .profile-mini-card { margin: 0 auto; }
+  .preview-label { margin: 0; }
+}
+</style>

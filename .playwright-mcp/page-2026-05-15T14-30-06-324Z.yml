@@ -1,0 +1,65 @@
+- generic [ref=e99]:
+  - banner [ref=e100]:
+    - heading "ImageSpace" [level=2] [ref=e102] [cursor=pointer]
+    - generic [ref=e103]:
+      - generic [ref=e104]:
+        - link "我的图片" [ref=e105] [cursor=pointer]:
+          - /url: /home
+        - link "图片广场" [ref=e106] [cursor=pointer]:
+          - /url: /square
+      - generic [ref=e107]:
+        - generic [ref=e108] [cursor=pointer]: aaa
+        - button "退出" [ref=e109] [cursor=pointer]:
+          - generic [ref=e110]: 退出
+  - generic [ref=e111]:
+    - button "编辑背景" [ref=e114] [cursor=pointer]:
+      - generic [ref=e115]:
+        - img [ref=e117]
+        - text: 编辑背景
+    - generic [ref=e120]:
+      - generic [ref=e121]:
+        - img [ref=e123]
+        - button [ref=e125] [cursor=pointer]:
+          - img [ref=e128]
+      - generic [ref=e130]:
+        - heading "aaa" [level=2] [ref=e131]
+        - generic [ref=e132]: "@admin"
+        - button "编辑资料" [ref=e133] [cursor=pointer]:
+          - generic [ref=e134]:
+            - img [ref=e136]
+            - text: 编辑资料
+      - generic [ref=e139]:
+        - paragraph [ref=e140]: "123"
+        - generic [ref=e141]:
+          - generic [ref=e142]:
+            - img [ref=e144]
+            - text: lz2653740949@gmail.com
+          - generic [ref=e147]:
+            - img [ref=e149]
+            - text: "13677749786"
+    - generic [ref=e151]:
+      - heading "作品" [level=3] [ref=e152]
+      - img "屏幕截图 2026-05-15 195453.png" [ref=e156] [cursor=pointer]
+  - dialog "编辑头像" [ref=e158]:
+    - generic [active] [ref=e159]:
+      - banner [ref=e160]:
+        - heading "编辑头像" [level=2] [ref=e161]
+        - button "关闭此对话框" [ref=e162] [cursor=pointer]:
+          - img [ref=e164]
+      - generic [ref=e167]:
+        - generic [ref=e168]:
+          - generic [ref=e169]:
+            - img [ref=e171]
+            - generic [ref=e180]:
+              - generic [ref=e181]: 缩放
+              - slider "滑块介于 0.5 至 2" [ref=e185] [cursor=pointer]
+              - generic [ref=e187]: 100%
+          - paragraph [ref=e189]: 头像预览
+        - button "更换图片" [ref=e193] [cursor=pointer]:
+          - button "更换图片" [ref=e194]:
+            - generic [ref=e195]: 更换图片
+      - contentinfo [ref=e196]:
+        - button "取消" [ref=e197] [cursor=pointer]:
+          - generic [ref=e198]: 取消
+        - button "确认" [disabled] [ref=e199]:
+          - generic [ref=e200]: 确认
