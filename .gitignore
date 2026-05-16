@@ -14,6 +14,7 @@ hs_err_pid*
 replay_pid*
 target/
 backend/upload/
+logs/
 
 # Node / Vue
 node_modules/
@@ -26,6 +27,12 @@ upload/
 .vscode/
 .idea/
 *.iml
+
+# Env
+.env
+
+# Local config
+application-local.yml
 
 # Claude
 .claude/settings.local.json
