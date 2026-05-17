@@ -101,7 +101,7 @@
               <span class="comment-time">{{ formatTime(c.createTime) }}</span>
             </div>
             <p class="comment-content">{{ c.content }}</p>
-            <img v-if="c.imagePath" :src="c.imagePath" class="comment-img" @click="viewCmtImg(c.imagePath)" />
+            <img v-if="c.imageUrl || c.imagePath" :src="c.imageUrl || c.imagePath" class="comment-img" @click="viewCmtImg(c.imageUrl || c.imagePath)" />
             <el-button v-if="c.userId === currentUserId" text size="small" type="danger" @click="handleDeleteComment(c.id)">删除</el-button>
           </div>
         </div>

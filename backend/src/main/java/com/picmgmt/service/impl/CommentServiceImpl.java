@@ -32,7 +32,19 @@ public class CommentServiceImpl implements CommentService {
         comment.setImageId(imageId);
         comment.setUserId(StpUtil.getLoginIdAsLong());
         comment.setContent(content);
-        comment.setImagePath(imagePath);
+        // 如果是完整 URL，提取 storage key；否则直接存储 key
+        if (imagePath != null && imagePath.startsWith("http")) {
+            int bucketEnd = imagePath.indexOf("/", imagePath.indexOf("://") + 3);
+            int queryStart = imagePath.indexOf("?", bucketEnd + 1);
+            if (bucketEnd > 0) {
+                String key = queryStart > 0
+                        ? imagePath.substring(bucketEnd + 1, queryStart)
+                        : imagePath.substring(bucketEnd + 1);
+                comment.setImagePath(key);
+            }
+        } else {
+            comment.setImagePath(imagePath);
+        }
         commentRepository.insert(comment);
         return comment;
     }

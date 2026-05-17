@@ -46,7 +46,7 @@ public class CommentController {
     @PostMapping
     public Result<Comment> add(@RequestBody Map<String, String> body) {
         return Result.ok(commentService.add(
-                Long.valueOf(body.get("imageId")), body.get("content"), body.get("imageKey")));
+                Long.valueOf(body.get("imageId")), body.get("content"), body.get("imagePath")));
     }
 
     @Operation(summary = "删除评论")
