@@ -40,6 +40,9 @@ application-local.yml
 # Playwright MCP
 .playwright-mcp/
 
+# Backup
+_backup_*/
+
 # OS
 .DS_Store
 Thumbs.db
