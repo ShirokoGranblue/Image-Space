@@ -1,4 +1,4 @@
-package com.picmgmt.category;
+package com.picmgmt.repository;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.picmgmt.cache.CacheService;

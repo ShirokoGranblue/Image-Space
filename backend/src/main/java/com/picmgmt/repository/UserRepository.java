@@ -1,4 +1,4 @@
-package com.picmgmt.user;
+package com.picmgmt.repository;
 
 import com.picmgmt.cache.CacheService;
 import com.picmgmt.entity.User;

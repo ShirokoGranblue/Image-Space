@@ -1,4 +1,4 @@
-package com.picmgmt.comment;
+package com.picmgmt.repository;
 
 import com.picmgmt.cache.CacheService;
 import com.picmgmt.entity.Comment;

@@ -1,4 +1,4 @@
-package com.picmgmt.image;
+package com.picmgmt.repository;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.picmgmt.cache.CacheService;
