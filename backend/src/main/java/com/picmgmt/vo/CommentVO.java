@@ -14,5 +14,6 @@ public class CommentVO {
     private String displayName;
     private String content;
     private String imagePath;
+    private String imageUrl;
     private LocalDateTime createTime;
 }

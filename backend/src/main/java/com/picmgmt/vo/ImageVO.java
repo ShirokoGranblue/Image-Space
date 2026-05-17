@@ -15,6 +15,8 @@ public class ImageVO {
     private String categoryName;
     private String imageName;
     private String imagePath;
+    private String imageUrl;
+    private String storageKey;
     private Long fileSize;
     private String imageType;
     private String description;
