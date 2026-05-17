@@ -11,6 +11,21 @@ spring:
     multipart:
       max-file-size: 20MB
       max-request-size: 100MB
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+  cache:
+    type: redis
+    redis:
+      time-to-live: 30m
+      cache-null-values: false
 
 mybatis-plus:
   configuration:
@@ -46,19 +61,3 @@ storage:
   local:
     base-path: ./storage
 
-spring:
-  data:
-    redis:
-      host: localhost
-      port: 6379
-      timeout: 3000ms
-      lettuce:
-        pool:
-          max-active: 8
-          max-idle: 8
-          min-idle: 0
-  cache:
-    type: redis
-    redis:
-      time-to-live: 30m
-      cache-null-values: false
