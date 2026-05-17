@@ -10,7 +10,7 @@
 
       <div class="detail-layout" v-if="image.id">
         <div class="detail-image" @click="viewerRef.open()" @mouseenter="imgHover = true" @mouseleave="imgHover = false">
-          <img :src="image.imagePath" :alt="image.imageName" :class="{ zoomed: imgHover }" />
+          <img :src="image.imageUrl || image.imagePath" :alt="image.imageName" :class="{ zoomed: imgHover }" />
           <transition name="fade">
             <div class="img-hover-overlay" v-if="imgHover">
               <el-icon :size="36"><ZoomIn /></el-icon>
@@ -160,7 +160,7 @@ onMounted(async () => {
     ])
     image.value = imgRes.data
     comments.value = cmtRes.data || []
-    viewerSrc.value = imgRes.data.imagePath
+    viewerSrc.value = imgRes.data.imageUrl || imgRes.data.imagePath
   } catch {} finally {
     loading.value = false
   }

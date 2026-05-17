@@ -584,6 +584,7 @@ async function saveBackground() {
 function cropBackgroundImage() {
   return new Promise((resolve, reject) => {
     const img = new Image()
+    img.crossOrigin = 'anonymous'
     img.onload = () => {
       const nw = bgImgNatural.value.w || img.naturalWidth
       const nh = bgImgNatural.value.h || img.naturalHeight
@@ -925,6 +926,7 @@ async function confirmAvatar() {
 function cropImage() {
   return new Promise((resolve, reject) => {
     const img = new Image()
+    img.crossOrigin = 'anonymous'
     img.onload = () => {
       const nw = imgNatural.value.w || img.naturalWidth
       const nh = imgNatural.value.h || img.naturalHeight
