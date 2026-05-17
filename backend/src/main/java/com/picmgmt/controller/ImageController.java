@@ -1,13 +1,16 @@
 package com.picmgmt.controller;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.picmgmt.common.Result;
 import com.picmgmt.dto.ImageQueryDTO;
-import com.picmgmt.service.ImageCacheService;
-import com.picmgmt.service.ImageService;
+import com.picmgmt.image.ImageReadService;
+import com.picmgmt.image.ImageUpdateDTO;
+import com.picmgmt.image.ImageWriteService;
 import com.picmgmt.vo.ImageVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -24,76 +27,65 @@ import java.nio.charset.StandardCharsets;
 @RequiredArgsConstructor
 public class ImageController {
 
-    private final ImageService imageService;
-    private final ImageCacheService imageCacheService;
+    private final ImageWriteService imageWriteService;
+    private final ImageReadService imageReadService;
 
     @Operation(summary = "上传图片")
     @PostMapping("/upload")
+    @SaCheckPermission("image:upload")
     public Result<ImageVO> upload(@RequestParam("file") MultipartFile file,
                                    @RequestParam(required = false) Long categoryId,
                                    @RequestParam(required = false) String description,
                                    @RequestParam(required = false) String tags,
                                    @RequestParam(required = false) String visibility,
                                    @RequestParam(required = false) String visibleUsernames) {
-        return Result.ok(imageService.upload(file, categoryId, description, tags, visibility, visibleUsernames));
+        return Result.ok(imageWriteService.upload(file, categoryId, description, tags, visibility, visibleUsernames));
     }
 
     @Operation(summary = "删除图片")
     @DeleteMapping("/{id}")
+    @SaCheckPermission("image:delete")
     public Result<Void> delete(@PathVariable Long id) {
-        imageService.delete(id);
+        imageWriteService.delete(id);
         return Result.ok();
     }
 
     @Operation(summary = "更新图片信息")
     @PutMapping("/{id}")
-    public Result<ImageVO> update(@PathVariable Long id,
-                                   @RequestParam(required = false) String imageName,
-                                   @RequestParam(required = false) Long categoryId,
-                                   @RequestParam(required = false) String description,
-                                   @RequestParam(required = false) String tags,
-                                   @RequestParam(required = false) String visibility,
-                                   @RequestParam(required = false) String visibleUsernames) {
-        return Result.ok(imageService.update(id, imageName, categoryId, description, tags, visibility, visibleUsernames));
+    @SaCheckPermission("image:edit")
+    public Result<ImageVO> update(@PathVariable Long id, @RequestBody @Valid ImageUpdateDTO dto) {
+        return Result.ok(imageWriteService.update(id, dto));
     }
 
     @Operation(summary = "查询当前用户图片列表")
     @GetMapping("/list")
-    public Result<Page<ImageVO>> list(@ModelAttribute ImageQueryDTO dto) {
-        return Result.ok(imageService.page(dto));
+    public Result<Page<ImageVO>> list(@Valid ImageQueryDTO dto) {
+        return Result.ok(imageReadService.page(dto));
     }
 
     @Operation(summary = "下载图片")
     @GetMapping("/download/{id}")
     public ResponseEntity<byte[]> download(@PathVariable Long id) {
-        ImageVO vo = imageService.getById(id);
-        String dataUrl = vo.getImagePath();
-        if (dataUrl == null || !ImageCacheService.isDataUrl(dataUrl)) {
-            return ResponseEntity.notFound().build();
-        }
-
-        // 优先从缓存获取解码后的字节，未命中则解码并写入缓冲区
-        byte[] bytes = imageCacheService.decodeFromDataUrl("image:" + id, dataUrl);
-        String mediaType = ImageCacheService.extractMediaType(dataUrl);
-
+        var vo = imageReadService.getById(id);
+        byte[] bytes = imageReadService.download(id);
         String encodedName = URLEncoder.encode(vo.getImageName(), StandardCharsets.UTF_8)
                 .replace("+", "%20");
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedName)
-                .contentType(MediaType.parseMediaType(mediaType))
+                .contentType(MediaType.IMAGE_JPEG)
                 .body(bytes);
     }
 
     @Operation(summary = "获取图片详情")
     @GetMapping("/{id}")
     public Result<ImageVO> getById(@PathVariable Long id) {
-        return Result.ok(imageService.getById(id));
+        return Result.ok(imageReadService.getById(id));
     }
 
     @Operation(summary = "图片广场")
     @GetMapping("/square")
     public Result<Page<ImageVO>> square(@RequestParam(defaultValue = "1") Integer page,
-                                         @RequestParam(defaultValue = "12") Integer limit) {
-        return Result.ok(imageService.getSquare(page, limit));
+                                        @RequestParam(defaultValue = "12") Integer limit) {
+        return Result.ok(imageReadService.getSquare(page, limit));
     }
 }
