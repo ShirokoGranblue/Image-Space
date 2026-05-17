@@ -5,10 +5,13 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.crypto.digest.BCrypt;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.picmgmt.common.BusinessException;
+import com.picmgmt.common.ErrorCode;
 import com.picmgmt.dto.LoginDTO;
 import com.picmgmt.dto.RegisterDTO;
 import com.picmgmt.entity.User;
 import com.picmgmt.mapper.UserMapper;
+import com.picmgmt.repository.UserRepository;
 import com.picmgmt.service.UserService;
 import com.picmgmt.vo.UserVO;
 import lombok.RequiredArgsConstructor;
@@ -21,60 +24,25 @@ import java.util.List;
 public class UserServiceImpl implements UserService {
 
     private final UserMapper userMapper;
+    private final UserRepository userRepository;
 
     @Override
     public UserVO register(RegisterDTO dto) {
         if (!dto.getPassword().equals(dto.getConfirmPassword())) {
-            throw new IllegalArgumentException("两次密码不一致");
+            throw new BusinessException(ErrorCode.PASSWORD_MISMATCH);
         }
-
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(User::getUsername, dto.getUsername());
         if (userMapper.selectCount(wrapper) > 0) {
-            throw new IllegalArgumentException("用户名已存在");
+            throw new BusinessException(ErrorCode.USERNAME_EXISTS);
         }
-
         User user = new User();
         user.setUsername(dto.getUsername());
         user.setDisplayName(dto.getUsername());
         user.setPassword(BCrypt.hashpw(dto.getPassword(), BCrypt.gensalt()));
         user.setRole("user");
         userMapper.insert(user);
-
         return BeanUtil.copyProperties(user, UserVO.class);
-    }
-
-    @Override
-    public UserVO getUserVOById(Long id) {
-        return BeanUtil.copyProperties(userMapper.selectById(id), UserVO.class);
-    }
-
-    @Override
-    public UserVO updateProfile(Long userId, String displayName, String email, String phone, String bio) {
-        User user = userMapper.selectById(userId);
-        if (user == null) throw new IllegalArgumentException("用户不存在");
-        if (displayName != null) user.setDisplayName(displayName);
-        if (email != null) user.setEmail(email);
-        if (phone != null) user.setPhone(phone);
-        if (bio != null) user.setBio(bio);
-        userMapper.updateById(user);
-        return BeanUtil.copyProperties(user, UserVO.class);
-    }
-
-    @Override
-    public void updateAvatar(Long userId, String avatarPath) {
-        User user = userMapper.selectById(userId);
-        if (user == null) throw new IllegalArgumentException("用户不存在");
-        user.setAvatar(avatarPath);
-        userMapper.updateById(user);
-    }
-
-    @Override
-    public void updateBackground(Long userId, String backgroundPath) {
-        User user = userMapper.selectById(userId);
-        if (user == null) throw new IllegalArgumentException("用户不存在");
-        user.setBackground(backgroundPath);
-        userMapper.updateById(user);
     }
 
     @Override
@@ -82,11 +50,9 @@ public class UserServiceImpl implements UserService {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(User::getUsername, dto.getUsername());
         User user = userMapper.selectOne(wrapper);
-
         if (user == null || !BCrypt.checkpw(dto.getPassword(), user.getPassword())) {
-            throw new IllegalArgumentException("用户名或密码错误");
+            throw new BusinessException(ErrorCode.LOGIN_FAILED);
         }
-
         StpUtil.login(user.getId());
         return StpUtil.getTokenValue();
     }
@@ -98,7 +64,42 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User getById(Long id) {
-        return userMapper.selectById(id);
+        return userRepository.findById(id).orElse(null);
+    }
+
+    @Override
+    public UserVO getUserVOById(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        return userRepository.toVO(user);
+    }
+
+    @Override
+    public UserVO updateProfile(Long userId, String displayName, String email, String phone, String bio) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        if (displayName != null) user.setDisplayName(displayName);
+        if (email != null) user.setEmail(email);
+        if (phone != null) user.setPhone(phone);
+        if (bio != null) user.setBio(bio);
+        userRepository.updateById(user);
+        return userRepository.toVO(user);
+    }
+
+    @Override
+    public void updateAvatar(Long userId, String avatarKey) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        user.setAvatarKey(avatarKey);
+        userRepository.updateById(user);
+    }
+
+    @Override
+    public void updateBackground(Long userId, String backgroundKey) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        user.setBackgroundKey(backgroundKey);
+        userRepository.updateById(user);
     }
 
     @Override
@@ -106,11 +107,9 @@ public class UserServiceImpl implements UserService {
         Page<User> pageParam = new Page<>(page, limit);
         Page<User> userPage = userMapper.selectPage(pageParam,
                 new LambdaQueryWrapper<User>().orderByDesc(User::getCreateTime));
-
         List<UserVO> voList = userPage.getRecords().stream()
-                .map(u -> BeanUtil.copyProperties(u, UserVO.class))
+                .map(userRepository::toVO)
                 .toList();
-
         Page<UserVO> voPage = new Page<>(page, limit, userPage.getTotal());
         voPage.setRecords(voList);
         return voPage;
