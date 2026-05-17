@@ -5,7 +5,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-@MapperScan("com.picmgmt.mapper")
+@MapperScan({"com.picmgmt.mapper", "com.picmgmt.auth"})
 public class PictureManagementApplication {
 
     public static void main(String[] args) {
