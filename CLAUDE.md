@@ -1,72 +1,73 @@
 # CLAUDE.md
 
-为后续在此仓库工作的 Claude Code (claude.ai/code) 提供开发指引。
+Development guide for Claude Code (claude.ai/code) working in this repository.
 
-## 常用命令
+## Common Commands
 
 ```bash
-# 后端
+# Backend
 cd backend
-mvn spring-boot:run                          # 启动后端，监听 :8080
-mvn test                                      # 运行全部测试
+mvn spring-boot:run                          # Start backend, listens on :8080
+mvn test                                      # Run all tests
 
-# 前端
+# Frontend
 cd frontend
-npm install                                   # 安装依赖
-npm run dev                                   # 启动开发服务器，监听 :3000
-npm run build                                 # 生产构建
+npm install                                   # Install dependencies
+npm run dev                                   # Start dev server, listens on :3000
+npm run build                                 # Production build
+npm test                                      # Run all tests
 
-# 数据库 — 首次启动前，手动执行 schema.sql 初始化 MySQL
-# 数据库名: picture_management，默认账号密码 root/root，见 application.yml
+# Database — Before first startup, manually run schema.sql to initialize MySQL
+# Database name: picture_management, default credentials root/root, see application.yml
 ```
 
-API 文档自动生成，访问 `http://localhost:8080/doc.html`（SpringDoc + Knife4j UI）。
+API docs are auto-generated at `http://localhost:8080/doc.html` (SpringDoc + Knife4j UI).
 
-## 架构
+## Architecture
 
-**后端** (`com.picmgmt`) — 分层架构，Spring Boot 3.2 + JDK 21：
+**Backend** (`com.picmgmt`) — Layered architecture, Spring Boot 3.2 + JDK 21:
 
 ```
 controller → service/impl → mapper (MyBatis-Plus BaseMapper)
      ↓            ↓
-   dto/vo      entity (@TableName 映射至 snake_case 表名)
+   dto/vo      entity (@TableName maps to snake_case table names)
 ```
 
-- **认证**: Sa-Token（非 Spring Security）。Token 存储在 `localStorage['satoken']`，以 `satoken` 请求头传递。`SaTokenConfig` 拦截所有路由，仅放行 `/user/login`、`/user/register`、`/doc.html/**`、`/v3/api-docs/**`、`/swagger-ui/**`、`/image/square`。
-- **密码加密**: 通过 Hutool 实现 BCrypt (`BCrypt.hashpw` / `BCrypt.checkpw`)，不使用 Spring Security 的编码器。
-- **图片存储**: 所有图片（普通图片、头像、背景、评论图片）均以 Base64 Data URL 格式存储在 MySQL 的 `LONGTEXT` 字段中。上传时 `MultipartFile → byte[] → Base64 Data URL` 写入数据库。前端通过 `<img :src="dataUrl">` 直接渲染。`ImageCacheService` 提供 LRU 内存缓存，Base64 ↔ byte[] 互转时优先命中缓存，未命中则直接转换并写入缓冲区。
-- **数据迁移**: `DataMigrationRunner` 在首次启动时自动检测旧的文件路径数据（`/upload/...`），读取本地文件转换为 Base64 存入数据库，迁移完成后删除 `upload` 目录。
-- **跨域**: `WebMvcConfig` 中配置允许所有来源。前端开发环境使用 Vite 代理 (`/api` → `:8080`)，因此跨域配置仅在前后端合并部署时生效。
+- **Auth**: Sa-Token (not Spring Security). Token stored in `localStorage['satoken']`, passed via `satoken` request header. `SaTokenConfig` intercepts all routes, only allows `/user/login`, `/user/register`, `/doc.html/**`, `/v3/api-docs/**`, `/swagger-ui/**`, `/image/square`.
+- **Password encryption**: BCrypt via Hutool (`BCrypt.hashpw` / `BCrypt.checkpw`), not Spring Security's encoder.
+- **Image storage**: All images (pictures, avatars, backgrounds, comment images) stored as Base64 Data URLs in MySQL `LONGTEXT` columns. Upload: `MultipartFile → byte[] → Base64 Data URL` inserted into database. Frontend renders directly via `<img :src="dataUrl">`. `ImageCacheService` provides LRU in-memory cache — Base64 ↔ byte[] conversion checks cache first, falls back to direct conversion and writes to buffer on miss.
+- **Data migration**: `DataMigrationRunner` automatically detects legacy file-path data (`/upload/...`) on first startup, reads local files, converts to Base64, stores in database, then removes the `upload` directory.
+- **CORS**: `WebMvcConfig` allows all origins. Frontend dev uses Vite proxy (`/api` → `:8080`), so CORS config only applies when frontend and backend are deployed together.
 
-**前端** — Vue 3 + Element Plus + Pinia + Vue Router：
+**Frontend** — Vue 3 + Element Plus + Pinia + Vue Router:
 
-| 路由 | 页面 | 需登录 |
+| Route | Page | Auth Required |
 |-------|------|:---:|
-| `/login` | 登录 | 否 |
-| `/register` | 注册 | 否 |
-| `/home` | 我的图片（增删改查） | 是 |
-| `/square` | 图片广场 | 否 |
-| `/categories` | 分类管理 | 是 |
+| `/login` | Login | No |
+| `/register` | Register | No |
+| `/home` | My Images (CRUD) | Yes |
+| `/square` | Image Square | No |
+| `/categories` | Category Management | Yes |
 
-路由守卫位于 `router/index.js`，通过 `localStorage['satoken']` 判断 `meta.requiresAuth` 路由。
+Route guard in `router/index.js`, checks `localStorage['satoken']` for `meta.requiresAuth` routes.
 
-## 关键设计决策
+## Key Design Decisions
 
-### 图片分页为内存分页
-`ImageServiceImpl.page()` 通过 `ImageMapper.selectImageVOList()` 查询全部匹配行，再在 Java 中切分。查询使用动态 `<if>` 标签和 `ORDER BY ${sortField}`。排序字段在拼接前经过**白名单校验**（`upload_time`、`image_name`、`file_size`），防止 SQL 注入。考虑到本地使用场景（10 人以内并发），此方案完全可行。
+### In-memory pagination for images
+`ImageServiceImpl.page()` uses `ImageMapper.selectImageVOList()` to query all matching rows, then slices in Java. The query uses dynamic `<if>` tags and `ORDER BY ${sortField}`. Sort fields are **whitelist-validated** (`upload_time`, `image_name`, `file_size`) before interpolation to prevent SQL injection. This approach is viable given the local-use scenario (≤10 concurrent users).
 
-### 服务层做归属校验
-`ImageServiceImpl.delete()` 和 `update()` 在变更前均校验 `image.userId == loginId || hasRole("admin")`。`CategoryServiceImpl` 遵循相同模式。
+### Service-layer ownership checks
+`ImageServiceImpl.delete()` and `update()` both verify `image.userId == loginId || hasRole("admin")` before mutating. `CategoryServiceImpl` follows the same pattern.
 
-### 删除分类后图片归入"未分类"
-分类被删除时，`CategoryServiceImpl.delete()` 将下属所有图片的 `category_id` 置为 `NULL`，而非删除图片本身。
+### Deleting a category reassigns images to "uncategorized"
+When a category is deleted, `CategoryServiceImpl.delete()` sets all child images' `category_id` to `NULL` rather than deleting the images themselves.
 
-### 自定义 SQL 仅存在于 ImageMapper
-`UserMapper` 和 `CategoryMapper` 直接使用 MyBatis-Plus `BaseMapper` 提供的方法。`ImageMapper.selectImageVOList` 是唯一的自定义查询——通过 LEFT JOIN users 和 categories 表，一次查询构建出 `ImageVO`。
+### Custom SQL exists only in ImageMapper
+`UserMapper` and `CategoryMapper` use MyBatis-Plus `BaseMapper` methods directly. `ImageMapper.selectImageVOList` is the only custom query — it LEFT JOINs users and categories tables to build `ImageVO` in a single query.
 
-### API 响应格式
-所有接口统一返回 `Result<T>`，结构为 `{ code: 200, message: "success", data: ... }`。`api/index.js` 中的 axios 拦截器负责解包——Vue 组件收到的 `res.data` 即为 `Result` 对象。非 200 的 code 会触发 `ElMessage.error`。
+### API response format
+All endpoints return `Result<T>` with structure `{ code: 200, message: "success", data: ... }`. The axios interceptor in `api/index.js` unwraps the response — Vue components receive `Result` objects as `res.data`. Non-200 codes trigger `ElMessage.error`.
 
-#注意事项
-每句话后面加上一句“喵~”。
-‘类似于“你好喵~，我喜欢你喵~”’
+## Notes
+Every response sentence must end with "喵~" . For emphasis or strong emotion, use "喵!" .
+Example: "Hello 喵~, I like you 喵~"
