@@ -1,7 +1,11 @@
 <template>
-  <article class="image-card" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave" @click="goDetail">
+  <article class="image-card" tabindex="0" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave"
+    @focus="onFocus" @blur="onBlur" @click="goDetail"
+    @keydown.enter.prevent="goDetail" @keydown.space.prevent="goDetail"
+    role="button" :aria-label="`查看图片: ${image.imageName}`">
     <div class="card-frame">
       <img
+        v-if="!imgFailed"
         :src="imageSrc"
         :alt="image.imageName"
         class="card-img"
@@ -9,6 +13,9 @@
         loading="lazy"
         @error="handleImgError"
       />
+      <div v-else class="img-fallback">
+        <el-icon :size="40"><PictureFilled /></el-icon>
+      </div>
       <div class="card-border"></div>
     </div>
     <transition name="reveal">
@@ -50,6 +57,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { formatSize, formatTime } from '../utils/format'
 
 const props = defineProps({
   image: { type: Object, required: true },
@@ -64,8 +72,8 @@ const hoverLocked = ref(false)
 const imgFailed = ref(false)
 
 const imageSrc = computed(() => {
-  if (imgFailed.value || !props.image.imagePath) return ''
-  return props.image.imagePath
+  if (imgFailed.value) return ''
+  return props.image.imageUrl || props.image.imagePath || ''
 })
 
 const visibilityLabel = computed(() => {
@@ -81,6 +89,12 @@ function onMouseEnter() { hover.value = true }
 function onMouseLeave() {
   if (!hoverLocked.value) hover.value = false
 }
+function onFocus() {
+  if (!hoverLocked.value) hover.value = true
+}
+function onBlur() {
+  if (!hoverLocked.value) hover.value = false
+}
 function onPopShow() { hoverLocked.value = true }
 function onPopHide() {
   hoverLocked.value = false
@@ -92,17 +106,6 @@ function goDetail() {
   router.push(`/image/${props.image.id}`)
 }
 
-function formatSize(bytes) {
-  if (!bytes) return '0 B'
-  if (bytes < 1024) return bytes + ' B'
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-  return (bytes / (1024 * 1024)).toFixed(2) + ' MB'
-}
-
-function formatTime(time) {
-  if (!time) return ''
-  return time.replace('T', ' ').substring(0, 10)
-}
 </script>
 
 <style scoped>
@@ -110,17 +113,22 @@ function formatTime(time) {
   position: relative;
   cursor: pointer;
   aspect-ratio: 1;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   overflow: hidden;
   background: var(--bg-elevated);
   border: 1px solid var(--border-subtle);
-  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
-  transition: transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out);
 }
 
 .image-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.1);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.image-card:active {
+  transform: translateY(-1px) scale(0.985);
+  transition: transform 0.1s var(--ease-out);
 }
 
 .card-frame {
@@ -134,25 +142,35 @@ function formatTime(time) {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1), filter 0.5s ease;
+  transition: transform 0.45s var(--ease-out), filter 0.4s ease;
 }
 
 .card-img.zoomed {
   transform: scale(1.06);
-  filter: brightness(0.65);
+  filter: brightness(0.6);
+}
+
+/* Fallback when image fails */
+.img-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
 }
 
 .card-border {
   position: absolute;
   inset: 0;
-  border: 1px solid rgba(255,255,255,0.28);
-  border-radius: var(--radius-md);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: var(--radius-lg);
   pointer-events: none;
-  transition: border-color 0.35s ease;
+  transition: border-color 0.3s ease;
 }
-
 .image-card:hover .card-border {
-  border-color: rgba(37, 99, 235, 0.35);
+  border-color: rgba(37, 99, 235, 0.3);
 }
 
 .card-overlay {
@@ -164,17 +182,17 @@ function formatTime(time) {
   padding: var(--space-md);
   background: linear-gradient(
     180deg,
-    transparent 40%,
-    rgba(15,23,42,0.42) 70%,
-    rgba(15,23,42,0.82) 100%
+    transparent 35%,
+    rgba(15,23,42,0.4) 68%,
+    rgba(15,23,42,0.85) 100%
   );
 }
 
 .badge-stack {
   position: absolute;
-  top: var(--space-md);
-  left: var(--space-md);
-  right: var(--space-md);
+  top: var(--space-sm);
+  left: var(--space-sm);
+  right: var(--space-sm);
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
@@ -182,100 +200,86 @@ function formatTime(time) {
 
 .category-badge,
 .visibility-badge {
-  background: rgba(255, 255, 255, 0.88);
-  color: var(--text-primary);
   font-size: 11px;
   padding: 3px 10px;
   border-radius: 999px;
   font-weight: 600;
-  letter-spacing: 0;
-  text-transform: none;
   font-family: var(--font-body);
   backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
-
+.category-badge {
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--text-primary);
+}
 .visibility-badge {
-  background: rgba(37, 99, 235, 0.9);
+  background: rgba(37, 99, 235, 0.88);
   color: #fff;
 }
 
-.card-info {
-  width: 100%;
-}
+.card-info { width: 100%; }
 
 .img-name {
   font-family: var(--font-display);
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 650;
   color: #fff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   margin-bottom: 2px;
-  letter-spacing: 0;
 }
 
 .img-meta {
   font-size: 12px;
-  color: rgba(255,255,255,0.6);
+  color: rgba(255,255,255,0.55);
   display: flex;
   gap: var(--space-xs);
   font-family: var(--font-body);
 }
-
-.meta-divider {
-  opacity: 0.4;
-}
+.meta-divider { opacity: 0.35; }
 
 .card-actions {
   position: absolute;
-  top: var(--space-md);
-  right: var(--space-md);
+  top: var(--space-sm);
+  right: var(--space-sm);
   display: flex;
-  gap: var(--space-xs);
+  gap: 6px;
 }
 
 .action-btn {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  border: 1px solid rgba(255,255,255,0.2);
-  background: rgba(15,23,42,0.48);
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(15,23,42,0.5);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 14px;
-  backdrop-filter: blur(4px);
+  font-size: 15px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   transition: all 0.2s ease;
 }
-
 .action-btn:hover {
-  background: rgba(37, 99, 235, 0.92);
+  background: rgba(37, 99, 235, 0.9);
   border-color: var(--accent);
-  color: #fff;
+  transform: scale(1.08);
 }
-
 .action-btn.danger:hover {
-  background: rgba(196,92,74,0.7);
+  background: rgba(220, 38, 38, 0.85);
   border-color: var(--danger);
-  color: #fff;
+}
+.action-btn:active {
+  transform: scale(0.95);
+  transition: transform 0.08s ease;
 }
 
-.reveal-enter-active {
-  transition: opacity 0.3s ease;
-}
-
-.reveal-enter-from {
-  opacity: 0;
-}
-
-.reveal-leave-active {
-  transition: opacity 0.15s ease;
-}
-
-.reveal-leave-to {
-  opacity: 0;
-}
+/* Reveal transitions */
+.reveal-enter-active { transition: opacity 0.25s var(--ease-out); }
+.reveal-enter-from { opacity: 0; }
+.reveal-leave-active { transition: opacity 0.12s ease; }
+.reveal-leave-to { opacity: 0; }
 </style>

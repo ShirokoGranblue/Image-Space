@@ -12,7 +12,7 @@
 
       <div class="profile-header">
         <div class="avatar-wrap">
-          <el-avatar :size="120" :src="user.avatar" class="avatar">
+          <el-avatar :size="120" :src="user.avatarUrl || user.avatar" class="avatar">
             <el-icon :size="48"><UserFilled /></el-icon>
           </el-avatar>
           <div v-if="isOwner" class="avatar-upload" @click="openAvatarEditor">
@@ -241,7 +241,7 @@ const isOwner = computed(() => userStore.userInfo?.id === user.value.id)
 const form = reactive({ displayName: '', email: '', phone: '', bio: '' })
 
 const bannerStyle = computed(() => {
-  const bg = user.value.background
+  const bg = user.value.backgroundUrl || user.value.background
   if (!bg) return { background: 'linear-gradient(135deg, #111827 0%, #2563eb 58%, #38bdf8 100%)' }
   if (bg.startsWith('#') || bg.startsWith('rgb')) return { backgroundColor: bg }
   return { backgroundImage: `url(${bg})`, backgroundSize: 'cover', backgroundPosition: 'center' }
@@ -507,7 +507,9 @@ function stopBgResize() {
 
 // Mini profile card preview
 const miniBannerStyle = computed(() => ({
-  background: !bgPreviewUrl.value ? 'linear-gradient(135deg, #111827 0%, #2563eb 58%, #38bdf8 100%)' : undefined
+  background: !bgPreviewUrl.value && !user.value.backgroundUrl
+    ? 'linear-gradient(135deg, #111827 0%, #2563eb 58%, #38bdf8 100%)'
+    : undefined
 }))
 
 const miniBgImgStyle = computed(() => {
