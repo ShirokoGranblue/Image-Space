@@ -17,6 +17,7 @@ public class Image {
     private Long categoryId;
     private String imageName;
     private String imagePath;
+    private String storageKey;
     private Long fileSize;
     private String imageType;
     private String description;

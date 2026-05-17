@@ -18,9 +18,11 @@ public class User {
     private String password;
     private String role;
     private String avatar;
+    private String avatarKey;
     private String email;
     private String phone;
     private String bio;
     private String background;
+    private String backgroundKey;
     private LocalDateTime createTime;
 }

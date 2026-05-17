@@ -17,5 +17,6 @@ public class Comment {
     private Long userId;
     private String content;
     private String imagePath;
+    private String imageKey;
     private LocalDateTime createTime;
 }
