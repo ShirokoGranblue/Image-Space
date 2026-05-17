@@ -63,7 +63,7 @@ public class StorageMigrationRunner implements CommandLineRunner {
                 String base64Data = image.getImagePath().substring(image.getImagePath().indexOf(',') + 1);
                 byte[] bytes = Base64.getDecoder().decode(base64Data);
                 String ext = image.getImageType().toLowerCase();
-                String storageKey = "images/" + image.getUserId() + "/" + image.getId() + "." + ext;
+                String storageKey = image.getUserId() + "/" + image.getId() + "." + ext;
                 storageService.upload("images", storageKey, bytes,
                         "image/" + (ext.equals("jpg") ? "jpeg" : ext));
                 image.setStorageKey(storageKey);
@@ -85,7 +85,7 @@ public class StorageMigrationRunner implements CommandLineRunner {
             try {
                 String base64Data = user.getAvatar().substring(user.getAvatar().indexOf(',') + 1);
                 byte[] bytes = Base64.getDecoder().decode(base64Data);
-                String storageKey = "avatars/" + user.getId() + "/avatar";
+                String storageKey = user.getId() + "/avatar";
                 storageService.upload("avatars", storageKey, bytes, "image/png");
                 user.setAvatarKey(storageKey);
                 userMapper.updateById(user);
@@ -106,7 +106,7 @@ public class StorageMigrationRunner implements CommandLineRunner {
             try {
                 String base64Data = user.getBackground().substring(user.getBackground().indexOf(',') + 1);
                 byte[] bytes = Base64.getDecoder().decode(base64Data);
-                String storageKey = "backgrounds/" + user.getId() + "/background";
+                String storageKey = user.getId() + "/background";
                 storageService.upload("backgrounds", storageKey, bytes, "image/jpeg");
                 user.setBackgroundKey(storageKey);
                 userMapper.updateById(user);
@@ -127,7 +127,7 @@ public class StorageMigrationRunner implements CommandLineRunner {
             try {
                 String base64Data = comment.getImagePath().substring(comment.getImagePath().indexOf(',') + 1);
                 byte[] bytes = Base64.getDecoder().decode(base64Data);
-                String storageKey = "comments/" + comment.getId();
+                String storageKey = String.valueOf(comment.getId());
                 storageService.upload("comments", storageKey, bytes, "image/png");
                 comment.setImageKey(storageKey);
                 commentMapper.updateById(comment);

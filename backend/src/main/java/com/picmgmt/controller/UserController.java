@@ -79,7 +79,7 @@ public class UserController {
         long userId = StpUtil.getLoginIdAsLong();
         String ext = FileUtil.extName(file.getOriginalFilename()).toLowerCase();
         if (!ALLOWED_EXT.contains(ext)) throw new IllegalArgumentException("仅支持图片格式");
-        String objectKey = "avatars/" + userId + "/" + UUID.randomUUID() + "." + ext;
+        String objectKey = userId + "/" + UUID.randomUUID() + "." + ext;
         String mimeType = "image/" + (ext.equals("jpg") ? "jpeg" : ext);
         storageService.upload("avatars", objectKey, file.getBytes(), mimeType);
         userService.updateAvatar(userId, objectKey);
@@ -92,7 +92,7 @@ public class UserController {
         long userId = StpUtil.getLoginIdAsLong();
         String ext = FileUtil.extName(file.getOriginalFilename()).toLowerCase();
         if (!ALLOWED_EXT.contains(ext)) throw new IllegalArgumentException("仅支持图片格式");
-        String objectKey = "backgrounds/" + userId + "/" + UUID.randomUUID() + "." + ext;
+        String objectKey = userId + "/" + UUID.randomUUID() + "." + ext;
         String mimeType = "image/" + (ext.equals("jpg") ? "jpeg" : ext);
         storageService.upload("backgrounds", objectKey, file.getBytes(), mimeType);
         userService.updateBackground(userId, objectKey);

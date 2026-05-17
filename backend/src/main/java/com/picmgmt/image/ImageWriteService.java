@@ -70,7 +70,7 @@ public class ImageWriteService {
             throw new BusinessException(ErrorCode.IMAGE_FORMAT_INVALID);
         }
 
-        String objectKey = "images/" + userId + "/" + UUID.randomUUID() + "." + ext;
+        String objectKey = userId + "/" + UUID.randomUUID() + "." + ext;
         String mimeType = switch (ext) {
             case "jpg", "jpeg" -> "image/jpeg";
             case "png" -> "image/png";
