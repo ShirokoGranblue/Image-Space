@@ -4,7 +4,7 @@ import cn.hutool.core.io.FileUtil;
 import com.picmgmt.common.Result;
 import com.picmgmt.entity.Comment;
 import com.picmgmt.service.CommentService;
-import com.picmgmt.service.ImageCacheService;
+import com.picmgmt.storage.StorageService;
 import com.picmgmt.vo.CommentVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -13,10 +13,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 @Tag(name = "评论模块")
 @RestController
@@ -25,6 +25,7 @@ import java.util.Set;
 public class CommentController {
 
     private final CommentService commentService;
+    private final StorageService storageService;
 
     private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "webp");
 
@@ -32,26 +33,20 @@ public class CommentController {
     @PostMapping("/upload-image")
     public Result<String> uploadImage(@RequestParam("file") MultipartFile file) throws IOException {
         if (file.isEmpty()) throw new IllegalArgumentException("文件不能为空");
+        String ext = FileUtil.extName(file.getOriginalFilename()).toLowerCase();
+        if (!ALLOWED_EXT.contains(ext)) throw new IllegalArgumentException("仅支持 JPG/PNG/WEBP 格式");
 
-        String originalFilename = file.getOriginalFilename();
-        if (originalFilename == null || originalFilename.isBlank()) throw new IllegalArgumentException("文件名无效");
-
-        String ext = FileUtil.extName(originalFilename).toLowerCase();
-        if (!ALLOWED_EXT.contains(ext)) throw new IllegalArgumentException("仅支持 JPG、PNG、WEBP 格式");
-
-        // 将文件转为 Base64 Data URL
-        byte[] bytes = file.getBytes();
-        String mimeType = ImageCacheService.getMimeType(ext);
-        String dataUrl = "data:" + mimeType + ";base64," + Base64.getEncoder().encodeToString(bytes);
-
-        return Result.ok(dataUrl);
+        String objectKey = "comments/" + UUID.randomUUID() + "." + ext;
+        String mimeType = "image/" + (ext.equals("jpg") ? "jpeg" : ext);
+        storageService.upload("comments", objectKey, file.getBytes(), mimeType);
+        return Result.ok(storageService.getAccessUrl("comments", objectKey));
     }
 
     @Operation(summary = "添加评论")
     @PostMapping
     public Result<Comment> add(@RequestBody Map<String, String> body) {
         return Result.ok(commentService.add(
-                Long.valueOf(body.get("imageId")), body.get("content"), body.get("imagePath")));
+                Long.valueOf(body.get("imageId")), body.get("content"), body.get("imageKey")));
     }
 
     @Operation(summary = "删除评论")
