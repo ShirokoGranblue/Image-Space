@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C \"c:/Users/l2653/Desktop/picture management\" add backend/src/main/java/com/picmgmt/PictureManagementApplication.java)",
+      "Bash(git -C \"c:/Users/l2653/Desktop/picture management\" commit -m \"fix: add com.picmgmt.auth to MapperScan for RBAC mappers\")",
+      "Bash(mvn spring-boot:run -q)",
+      "Bash(git -C \"c:/Users/l2653/Desktop/picture management\" add backend/src/main/java/com/picmgmt/config/RedisConfig.java)",
+      "Bash(git -C \"c:/Users/l2653/Desktop/picture management\" commit -m \"fix: register JavaTimeModule in RedisConfig ObjectMapper for LocalDateTime serialization\")",
+      "Bash(git -C \"c:/Users/l2653/Desktop/picture management\" add -A)",
+      "Bash(git -C 'c:/Users/l2653/Desktop/picture management' commit -m ' *)"
+    ]
+  }
+}

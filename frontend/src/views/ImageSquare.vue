@@ -7,7 +7,13 @@
         <p class="page-desc">创作者公开作品</p>
       </header>
 
-      <div v-if="images.length === 0" class="empty-state">
+      <div v-if="loading" class="empty-state">
+        <div class="skeleton-grid">
+          <div class="skeleton" v-for="n in 6" :key="n" style="aspect-ratio:1;"></div>
+        </div>
+      </div>
+
+      <div v-else-if="images.length === 0" class="empty-state">
         <el-icon><PictureFilled /></el-icon>
         <p>图片广场暂时没有内容</p>
       </div>
@@ -41,15 +47,19 @@ const images = ref([])
 const page = ref(1)
 const limit = 12
 const total = ref(0)
+const loading = ref(false)
 
 onMounted(() => fetchList())
 
 async function fetchList() {
+  loading.value = true
   try {
     const res = await getImageSquare(page.value, limit)
     images.value = res.data.records || []
     total.value = res.data.total || 0
-  } catch {}
+  } catch {} finally {
+    loading.value = false
+  }
 }
 </script>
 
@@ -69,12 +79,12 @@ async function fetchList() {
 }
 
 .page-header {
-  padding: 24px;
+  padding: 28px;
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   margin-bottom: 24px;
   background: var(--bg-surface);
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+  box-shadow: var(--shadow-md);
 }
 
 .page-title {
@@ -82,13 +92,13 @@ async function fetchList() {
   font-size: 34px;
   font-weight: 750;
   color: var(--text-primary);
-  letter-spacing: 0;
+  letter-spacing: -0.3px;
+  line-height: 1.15;
 }
 
 .page-desc {
   font-family: var(--font-display);
-  font-size: 16px;
-  font-style: normal;
+  font-size: 15px;
   color: var(--text-muted);
   margin-top: var(--space-xs);
 }
@@ -105,8 +115,25 @@ async function fetchList() {
   flex-shrink: 0;
 }
 
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+  padding-top: var(--space-md);
+}
+.skeleton-grid .skeleton {
+  aspect-ratio: 1;
+  border-radius: var(--radius-md);
+}
+
 .card-grid > :deep(.stagger-item) {
-  animation: fadeUp 0.45s ease forwards;
+  animation: fadeUp 0.4s var(--ease-out) forwards;
   opacity: 0;
+}
+
+@media (max-width: 768px) {
+  .page-container { padding: 20px var(--space-md); }
+  .page-header { padding: 20px; border-radius: var(--radius-md); }
+  .page-title { font-size: 26px; }
 }
 </style>

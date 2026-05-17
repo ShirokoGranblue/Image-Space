@@ -230,16 +230,16 @@ async function saveEdit() {
 }
 
 .page-header {
-  padding: 24px;
+  padding: 28px;
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   margin-bottom: 24px;
   background: var(--bg-surface);
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+  box-shadow: var(--shadow-md);
 }
 
 .header-top {
-  margin-bottom: var(--space-md);
+  margin-bottom: 20px;
 }
 
 .page-title {
@@ -247,13 +247,13 @@ async function saveEdit() {
   font-size: 34px;
   font-weight: 750;
   color: var(--text-primary);
-  letter-spacing: 0;
+  letter-spacing: -0.3px;
+  line-height: 1.15;
 }
 
 .page-desc {
   font-family: var(--font-display);
-  font-size: 16px;
-  font-style: normal;
+  font-size: 15px;
   color: var(--text-muted);
   margin-top: var(--space-xs);
 }
@@ -273,10 +273,7 @@ async function saveEdit() {
   gap: 10px;
 }
 
-.toolbar-left :deep(.el-select) {
-  margin-left: 0 !important;
-}
-
+.toolbar-left :deep(.el-select),
 .toolbar-right :deep(.el-select) {
   margin-left: 0 !important;
 }
@@ -301,7 +298,20 @@ async function saveEdit() {
 }
 
 .card-grid > :deep(.stagger-item) {
-  animation: fadeUp 0.45s ease forwards;
+  animation: fadeUp 0.4s var(--ease-out) forwards;
   opacity: 0;
+}
+
+@media (max-width: 768px) {
+  .page-container { padding: 20px var(--space-md); }
+  .page-header { padding: 20px; border-radius: var(--radius-md); }
+  .page-title { font-size: 26px; }
+  .toolbar { flex-direction: column; align-items: stretch; }
+  .toolbar-left, .toolbar-right { flex-wrap: wrap; }
+  .toolbar-right :deep(.el-input),
+  .toolbar-left :deep(.el-select) {
+    width: 100% !important;
+    flex: 1;
+  }
 }
 </style>

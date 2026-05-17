@@ -1,6 +1,7 @@
 package com.picmgmt.common;
 
 import cn.dev33.satoken.exception.NotLoginException;
+import cn.dev33.satoken.exception.NotPermissionException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -15,6 +16,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NotLoginException.class)
     public Result<Void> handleNotLogin(NotLoginException e) {
         return Result.error(401, "请先登录");
+    }
+
+    @ExceptionHandler(NotPermissionException.class)
+    public Result<Void> handleNotPermission(NotPermissionException e) {
+        return Result.error(403, "无权执行此操作");
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

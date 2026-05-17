@@ -60,7 +60,7 @@
             </div>
           </div>
 
-          <el-button type="primary" class="download-btn" @click="handleDownload">
+          <el-button type="primary" class="download-btn" @click="handleDownload" :loading="downloading">
             <el-icon><Download /></el-icon> 下载图片
           </el-button>
         </div>
@@ -125,6 +125,7 @@ import ImageViewer from '../components/ImageViewer.vue'
 import { getImageDetail } from '../api/image'
 import { getComments, addComment, deleteComment, uploadCommentImage } from '../api/comment'
 import { useUserStore } from '../store/user'
+import { formatSize, formatTime } from '../utils/format'
 
 const route = useRoute()
 const userStore = useUserStore()
@@ -137,6 +138,7 @@ const cmtFile = ref(null)
 const imgHover = ref(false)
 const loading = ref(false)
 const sending = ref(false)
+const downloading = ref(false)
 
 const tagTypes = ['', 'success', 'warning', 'danger', 'info']
 
@@ -206,8 +208,36 @@ async function handleDeleteComment(id) {
   } catch {}
 }
 
-function handleDownload() {
-  window.open(`/api/image/download/${image.value.id}`, '_blank')
+async function handleDownload() {
+  downloading.value = true
+  try {
+    const token = localStorage.getItem('satoken')
+    const headers = token ? { 'satoken': token } : {}
+    const response = await fetch(`/api/image/download/${image.value.id}`, { headers })
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        ElMessage.error('请先登录再下载')
+      } else {
+        ElMessage.error('下载失败')
+      }
+      return
+    }
+
+    const blob = await response.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = image.value.imageName || 'image'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  } catch {
+    ElMessage.error('下载失败，请重试')
+  } finally {
+    downloading.value = false
+  }
 }
 
 function viewCmtImg(src) {
@@ -215,17 +245,6 @@ function viewCmtImg(src) {
   viewerRef.value.open()
 }
 
-function formatSize(bytes) {
-  if (!bytes) return '0 B'
-  if (bytes < 1024) return bytes + ' B'
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-  return (bytes / (1024 * 1024)).toFixed(2) + ' MB'
-}
-
-function formatTime(time) {
-  if (!time) return ''
-  return time.replace('T', ' ').substring(0, 16)
-}
 
 </script>
 
@@ -233,15 +252,15 @@ function formatTime(time) {
 .detail-page { min-height: 100vh; background: var(--bg-base); }
 .page-container { max-width: 1120px; margin: 0 auto; padding: 28px var(--space-lg) 40px; }
 .back-bar { margin-bottom: var(--space-md); }
-.back-bar :deep(.el-button) { color: var(--text-muted); }
+.back-bar :deep(.el-button) { color: var(--text-muted); font-weight: 500; }
 .back-bar :deep(.el-button:hover) { color: var(--accent); }
 
 .detail-layout {
   display: grid; grid-template-columns: minmax(360px, 1fr) 420px; gap: var(--space-xl);
   background: var(--bg-surface);
-  border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
-  padding: 24px;
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+  border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
+  padding: 28px;
+  box-shadow: var(--shadow-md);
 }
 
 .detail-image {
@@ -249,25 +268,20 @@ function formatTime(time) {
   background: var(--bg-elevated); display: flex; align-items: center; justify-content: center;
   position: relative; cursor: pointer; border: 1px solid var(--border-subtle);
 }
-
 .detail-image img {
   width: 100%; height: 100%; object-fit: contain;
-  transition: transform 0.4s cubic-bezier(0.25, 0.1, 0.25, 1), filter 0.4s ease;
+  transition: transform 0.4s var(--ease-out), filter 0.4s ease;
 }
-
 .detail-image img.zoomed {
-  transform: scale(1.06);
-  filter: brightness(0.72);
+  transform: scale(1.05);
+  filter: brightness(0.7);
 }
 
 .img-hover-overlay {
   position: absolute; inset: 0;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  color: #fff; gap: 8px; pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; pointer-events: none;
 }
-
-.img-hover-overlay span { font-size: 14px; opacity: 0.9; }
-
 .fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 
@@ -312,29 +326,40 @@ function formatTime(time) {
 .tags-section { margin-top: 14px; }
 .tag-list { display: flex; gap: var(--space-sm); flex-wrap: wrap; }
 
-.download-btn { margin-top: auto; padding-top: 18px; }
+.download-btn {
+  margin-top: auto; padding-top: 18px;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  transition: transform 0.15s var(--ease-out), box-shadow 0.15s var(--ease-out);
+}
+.download-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
 
 .uploader-link { color: var(--accent); text-decoration: none; font-weight: 600; font-size: 14px; }
 .uploader-link:hover { color: var(--accent-glow); }
 
 .comments-section {
   margin-top: var(--space-xl); background: var(--bg-surface);
-  border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
-  padding: var(--space-lg);
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+  border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-md);
 }
 .comments-section h3 {
   font-family: var(--font-display); font-size: 22px; font-weight: 750;
   margin-bottom: var(--space-md); color: var(--text-primary);
+  letter-spacing: -0.2px;
 }
 
 .comment-input { margin-bottom: var(--space-lg); }
-
 .emoji-bar { margin-bottom: var(--space-xs); }
-
 .emoji-grid { display: flex; flex-wrap: wrap; gap: 4px; max-height: 200px; overflow-y: auto; }
-.emoji-item { cursor: pointer; font-size: 22px; padding: 4px; border-radius: 4px; transition: background 0.15s; }
-.emoji-item:hover { background: var(--bg-hover); }
+.emoji-item {
+  cursor: pointer; font-size: 22px; padding: 4px; border-radius: 4px;
+  transition: background 0.12s ease, transform 0.12s ease;
+}
+.emoji-item:hover { background: var(--bg-hover); transform: scale(1.15); }
 
 .comment-actions {
   display: flex; justify-content: space-between; align-items: center; margin-top: var(--space-sm);
@@ -342,19 +367,24 @@ function formatTime(time) {
 .comment-upload { display: flex; align-items: center; gap: var(--space-sm); }
 .upload-hint { font-size: 12px; color: var(--text-muted); }
 
-.comment-item { padding: var(--space-md) 0; border-bottom: 1px solid var(--border-subtle); }
+.comment-item {
+  padding: var(--space-md) 0; border-bottom: 1px solid var(--border-subtle);
+  transition: background 0.15s ease;
+}
+.comment-item:hover { background: rgba(37, 99, 235, 0.015); }
 .comment-header { display: flex; justify-content: space-between; margin-bottom: var(--space-xs); }
-.comment-user { font-weight: 500; color: var(--accent); font-size: 14px; }
+.comment-user { font-weight: 600; color: var(--accent); font-size: 14px; }
 .comment-time { font-size: 12px; color: var(--text-muted); }
 .comment-content { font-size: 14px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 4px; }
 .comment-img {
   max-width: 200px; max-height: 150px; border-radius: var(--radius-md); cursor: pointer;
   margin: var(--space-xs) 0; object-fit: cover; border: 1px solid var(--border-subtle);
 }
-.comment-empty { text-align: center; color: var(--text-muted); padding: var(--space-xl) 0; }
+.comment-empty { text-align: center; color: var(--text-muted); padding: var(--space-xl) 0; font-size: 14px; }
 
 @media (max-width: 900px) {
-  .detail-layout { grid-template-columns: 1fr; }
+  .detail-layout { grid-template-columns: 1fr; padding: 20px; }
   .detail-image { height: 420px; min-height: 280px; }
+  .comments-section { padding: var(--space-md); }
 }
 </style>

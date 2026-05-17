@@ -280,7 +280,7 @@ function openBackgroundEditor() {
   bgFileName.value = ''
   nextTick(async () => {
     const originalSource = await readCachedBgOriginal()
-    const bg = user.value.background
+    const bg = user.value.backgroundUrl || user.value.background
     if (originalSource) {
       loadBackgroundSource(originalSource)
       bgSourceKind.value = 'original'
@@ -532,19 +532,18 @@ function bgCacheKey() {
 }
 
 async function readCachedBgOriginal() {
-  // 1) Module-level cache
+  const currentBg = user.value.backgroundUrl || user.value.background
   const key = bgCacheKey()
   if (key) {
     const entry = _originalStore.get(key)
-    if (entry && entry.background === user.value.background && entry.source) {
+    if (entry && (entry.background === currentBg || entry.background === user.value.background) && entry.source) {
       return entry.source
     }
   }
-  // 2) IndexedDB fallback (handles >5MB Data URLs)
   if (key) {
     const cached = await idbGet(key)
-    if (cached && cached.background === user.value.background && cached.source) {
-      _originalStore.set(key, cached) // promote to module cache
+    if (cached && (cached.background === currentBg || cached.background === user.value.background) && cached.source) {
+      _originalStore.set(key, cached)
       return cached.source
     }
   }
@@ -572,10 +571,12 @@ async function saveBackground() {
     const bgPath = typeof res.data === 'string' ? res.data : res.data?.background
     if (!bgPath) throw new Error('背景上传失败')
     user.value.background = bgPath
-    if (userStore.userInfo) userStore.userInfo.background = bgPath
-    if (bgSourceKind.value !== 'current') {
-      writeCachedBgOriginal(bgPath, bgPreviewUrl.value)
+    user.value.backgroundUrl = bgPath
+    if (userStore.userInfo) {
+      userStore.userInfo.background = bgPath
+      userStore.userInfo.backgroundUrl = bgPath
     }
+    writeCachedBgOriginal(bgPath, bgPreviewUrl.value)
     ElMessage.success('背景已更新'); bgDialogVisible.value = false
   } catch {} finally { bgSaving.value = false }
 }
@@ -818,19 +819,18 @@ function avatarCacheKey() {
 }
 
 async function readCachedAvatarOriginal() {
-  // 1) Module-level cache (survives SPA navigation)
+  const currentAvatar = user.value.avatarUrl || user.value.avatar
   const key = avatarCacheKey()
   if (key) {
     const entry = _originalStore.get(key)
-    if (entry && entry.avatar === user.value.avatar && entry.source) {
+    if (entry && (entry.avatar === currentAvatar || entry.avatar === user.value.avatar) && entry.source) {
       return entry.source
     }
   }
-  // 2) IndexedDB fallback (handles >5MB Data URLs)
   if (key) {
     const cached = await idbGet(key)
-    if (cached && cached.avatar === user.value.avatar && cached.source) {
-      _originalStore.set(key, cached) // promote to module cache
+    if (cached && (cached.avatar === currentAvatar || cached.avatar === user.value.avatar) && cached.source) {
+      _originalStore.set(key, cached)
       return cached.source
     }
   }
@@ -885,7 +885,7 @@ function openAvatarEditor() {
   avatarDialogVisible.value = true
   nextTick(async () => {
     const originalSource = await readCachedAvatarOriginal()
-    loadAvatarSource(originalSource || user.value.avatar || '', originalSource ? 'original' : 'current')
+    loadAvatarSource(originalSource || user.value.avatarUrl || user.value.avatar || '', originalSource ? 'original' : 'current')
   })
 }
 
@@ -910,10 +910,12 @@ async function confirmAvatar() {
     const avatarPath = typeof res.data === 'string' ? res.data : res.data?.avatar
     if (!avatarPath) throw new Error('头像上传失败')
     user.value.avatar = avatarPath
-    if (userStore.userInfo) userStore.userInfo.avatar = avatarPath
-    if (avatarSourceKind.value !== 'current') {
-      writeCachedAvatarOriginal(avatarPath, avatarPreviewUrl.value)
+    user.value.avatarUrl = avatarPath
+    if (userStore.userInfo) {
+      userStore.userInfo.avatar = avatarPath
+      userStore.userInfo.avatarUrl = avatarPath
     }
+    writeCachedAvatarOriginal(avatarPath, avatarPreviewUrl.value)
     ElMessage.success('头像已更新'); avatarDialogVisible.value = false
   } catch (error) {
     if (error?.message === '头像上传失败') ElMessage.error(error.message)
