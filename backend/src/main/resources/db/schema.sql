@@ -60,3 +60,66 @@ CREATE TABLE IF NOT EXISTS comments (
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_image_id (image_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- RBAC tables
+-- Permissions table
+CREATE TABLE IF NOT EXISTS permissions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(50) NOT NULL,
+    group_name VARCHAR(30) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Roles table
+CREATE TABLE IF NOT EXISTS roles (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(30) NOT NULL UNIQUE,
+    name VARCHAR(30) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Role-permission mapping
+CREATE TABLE IF NOT EXISTS role_permissions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    role_id BIGINT NOT NULL,
+    permission_id BIGINT NOT NULL,
+    UNIQUE KEY uk_role_perm (role_id, permission_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- User-role mapping
+CREATE TABLE IF NOT EXISTS user_roles (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    role_id BIGINT NOT NULL,
+    UNIQUE KEY uk_user_role (user_id, role_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Seed roles
+INSERT IGNORE INTO roles (id, code, name) VALUES (1, 'admin', '管理员');
+INSERT IGNORE INTO roles (id, code, name) VALUES (2, 'moderator', '版主');
+INSERT IGNORE INTO roles (id, code, name) VALUES (3, 'user', '普通用户');
+
+-- Seed permissions
+INSERT IGNORE INTO permissions (id, code, name, group_name) VALUES
+(1, 'image:upload', '上传图片', 'image'),
+(2, 'image:edit', '编辑自己的图片', 'image'),
+(3, 'image:delete', '删除自己的图片', 'image'),
+(4, 'image:edit:any', '编辑任意图片', 'image'),
+(5, 'image:delete:any', '删除任意图片', 'image'),
+(6, 'category:manage', '管理自己的分类', 'category'),
+(7, 'category:manage:any', '管理任意分类', 'category'),
+(8, 'comment:add', '添加评论', 'comment'),
+(9, 'comment:delete', '删除自己的评论', 'comment'),
+(10, 'comment:delete:any', '删除任意评论', 'comment'),
+(11, 'user:manage', '管理用户', 'admin');
+
+-- Seed role_permissions (admin gets all)
+INSERT IGNORE INTO role_permissions (role_id, permission_id)
+SELECT 1, id FROM permissions;
+
+-- moderator permissions
+INSERT IGNORE INTO role_permissions (role_id, permission_id)
+SELECT 2, id FROM permissions WHERE code IN ('comment:delete:any', 'image:edit:any');
+
+-- user permissions
+INSERT IGNORE INTO role_permissions (role_id, permission_id)
+SELECT 3, id FROM permissions WHERE code IN ('image:upload', 'image:edit', 'image:delete', 'category:manage', 'comment:add', 'comment:delete');
