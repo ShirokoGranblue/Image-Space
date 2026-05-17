@@ -1,9 +1,11 @@
 package com.picmgmt.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
+import com.picmgmt.common.BusinessException;
+import com.picmgmt.common.ErrorCode;
 import com.picmgmt.entity.Comment;
-import com.picmgmt.mapper.CommentMapper;
-import com.picmgmt.mapper.ImageMapper;
+import com.picmgmt.repository.CommentRepository;
+import com.picmgmt.repository.ImageRepository;
 import com.picmgmt.service.CommentService;
 import com.picmgmt.vo.CommentVO;
 import lombok.RequiredArgsConstructor;
@@ -15,41 +17,41 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CommentServiceImpl implements CommentService {
 
-    private final CommentMapper commentMapper;
-    private final ImageMapper imageMapper;
+    private final CommentRepository commentRepository;
+    private final ImageRepository imageRepository;
 
     @Override
     public Comment add(Long imageId, String content, String imagePath) {
         if (content == null || content.isBlank()) {
-            throw new IllegalArgumentException("评论内容不能为空");
+            throw new BusinessException(ErrorCode.COMMENT_EMPTY);
         }
-        if (imageMapper.selectById(imageId) == null) {
-            throw new IllegalArgumentException("图片不存在");
-        }
+        imageRepository.findById(imageId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
+
         Comment comment = new Comment();
         comment.setImageId(imageId);
         comment.setUserId(StpUtil.getLoginIdAsLong());
         comment.setContent(content);
         comment.setImagePath(imagePath);
-        commentMapper.insert(comment);
+        commentRepository.insert(comment);
         return comment;
     }
 
     @Override
     public void delete(Long commentId) {
-        Comment comment = commentMapper.selectById(commentId);
+        Comment comment = commentRepository.findById(commentId);
         if (comment == null) {
-            throw new IllegalArgumentException("评论不存在");
+            throw new BusinessException(ErrorCode.COMMENT_NOT_FOUND);
         }
         long userId = StpUtil.getLoginIdAsLong();
         if (!StpUtil.hasRole("admin") && !comment.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("无权删除该评论");
+            throw new BusinessException(ErrorCode.FORBIDDEN);
         }
-        commentMapper.deleteById(commentId);
+        commentRepository.deleteById(commentId);
     }
 
     @Override
     public List<CommentVO> listByImage(Long imageId) {
-        return commentMapper.selectCommentVOList(imageId);
+        return commentRepository.listByImageId(imageId);
     }
 }
