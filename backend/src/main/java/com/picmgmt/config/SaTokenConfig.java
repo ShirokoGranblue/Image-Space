@@ -19,7 +19,6 @@ public class SaTokenConfig implements WebMvcConfigurer {
                         "/doc.html",
                         "/v3/api-docs/**",
                         "/swagger-ui/**",
-                        "/upload/**",
                         "/image/square"
                 );
     }

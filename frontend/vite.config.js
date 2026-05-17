@@ -10,11 +10,8 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
-      },
-      '/upload': {
-        target: 'http://localhost:8080',
-        changeOrigin: true
       }
+      // /upload 代理已移除 — 所有图片以 Base64 Data URL 从 API 返回，前端直接渲染
     }
   }
 })

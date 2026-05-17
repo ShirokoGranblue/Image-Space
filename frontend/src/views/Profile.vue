@@ -198,6 +198,34 @@ import { useUserStore } from '../store/user'
 import { getUserProfile, updateProfile, uploadAvatar, uploadBackground } from '../api/user'
 import { getImageList } from '../api/image'
 
+// IndexedDB utility for caching original images (Data URLs can be >5MB)
+const dbPromise = new Promise((resolve, reject) => {
+  const req = indexedDB.open('picture_management_cache', 1)
+  req.onupgradeneeded = (e) => {
+    e.target.result.createObjectStore('images')
+  }
+  req.onsuccess = () => resolve(req.result)
+  req.onerror = () => reject(req.error)
+})
+
+async function idbSet(key, val) {
+  try {
+    const db = await dbPromise
+    const tx = db.transaction('images', 'readwrite')
+    tx.objectStore('images').put(val, key)
+    return new Promise(resolve => { tx.oncomplete = resolve })
+  } catch {}
+}
+
+async function idbGet(key) {
+  try {
+    const db = await dbPromise
+    const tx = db.transaction('images', 'readonly')
+    const req = tx.objectStore('images').get(key)
+    return new Promise(resolve => { req.onsuccess = () => resolve(req.result) })
+  } catch { return null }
+}
+
 const route = useRoute()
 const userStore = useUserStore()
 const user = ref({})
@@ -250,8 +278,8 @@ function onBgFileChange(file) {
 function openBackgroundEditor() {
   bgDialogVisible.value = true
   bgFileName.value = ''
-  nextTick(() => {
-    const originalSource = readCachedBgOriginal()
+  nextTick(async () => {
+    const originalSource = await readCachedBgOriginal()
     const bg = user.value.background
     if (originalSource) {
       loadBackgroundSource(originalSource)
@@ -501,7 +529,7 @@ function bgCacheKey() {
   return id ? `bg-original:${id}` : ''
 }
 
-function readCachedBgOriginal() {
+async function readCachedBgOriginal() {
   // 1) Module-level cache
   const key = bgCacheKey()
   if (key) {
@@ -510,18 +538,13 @@ function readCachedBgOriginal() {
       return entry.source
     }
   }
-  // 2) sessionStorage fallback
+  // 2) IndexedDB fallback (handles >5MB Data URLs)
   if (key) {
-    try {
-      const raw = sessionStorage.getItem(key)
-      if (raw) {
-        const cached = JSON.parse(raw)
-        if (cached.background === user.value.background && cached.source) {
-          _originalStore.set(key, cached)
-          return cached.source
-        }
-      }
-    } catch {}
+    const cached = await idbGet(key)
+    if (cached && cached.background === user.value.background && cached.source) {
+      _originalStore.set(key, cached) // promote to module cache
+      return cached.source
+    }
   }
   return ''
 }
@@ -532,9 +555,7 @@ function writeCachedBgOriginal(bgPath, source) {
   const key = bgCacheKey()
   if (key) {
     _originalStore.set(key, entry)
-    try {
-      sessionStorage.setItem(key, JSON.stringify(entry))
-    } catch {}
+    idbSet(key, entry)
   }
 }
 
@@ -794,7 +815,7 @@ function avatarCacheKey() {
   return id ? `avatar-original:${id}` : ''
 }
 
-function readCachedAvatarOriginal() {
+async function readCachedAvatarOriginal() {
   // 1) Module-level cache (survives SPA navigation)
   const key = avatarCacheKey()
   if (key) {
@@ -803,18 +824,13 @@ function readCachedAvatarOriginal() {
       return entry.source
     }
   }
-  // 2) sessionStorage fallback (best-effort, may fail for large images)
+  // 2) IndexedDB fallback (handles >5MB Data URLs)
   if (key) {
-    try {
-      const raw = sessionStorage.getItem(key)
-      if (raw) {
-        const cached = JSON.parse(raw)
-        if (cached.avatar === user.value.avatar && cached.source) {
-          _originalStore.set(key, cached) // promote to module cache
-          return cached.source
-        }
-      }
-    } catch {}
+    const cached = await idbGet(key)
+    if (cached && cached.avatar === user.value.avatar && cached.source) {
+      _originalStore.set(key, cached) // promote to module cache
+      return cached.source
+    }
   }
   return ''
 }
@@ -826,10 +842,7 @@ function writeCachedAvatarOriginal(avatarPath, source) {
   const key = avatarCacheKey()
   if (key) {
     _originalStore.set(key, entry)
-    // Best-effort persist to sessionStorage (silently skip if data too large)
-    try {
-      sessionStorage.setItem(key, JSON.stringify(entry))
-    } catch {}
+    idbSet(key, entry)
   }
 }
 
@@ -868,8 +881,8 @@ function loadAvatarSource(source, kind = 'current') {
 function openAvatarEditor() {
   avatarFile.value = null
   avatarDialogVisible.value = true
-  nextTick(() => {
-    const originalSource = readCachedAvatarOriginal()
+  nextTick(async () => {
+    const originalSource = await readCachedAvatarOriginal()
     loadAvatarSource(originalSource || user.value.avatar || '', originalSource ? 'original' : 'current')
   })
 }

@@ -32,9 +32,10 @@ controller → service/impl → mapper (MyBatis-Plus BaseMapper)
    dto/vo      entity (@TableName 映射至 snake_case 表名)
 ```
 
-- **认证**: Sa-Token（非 Spring Security）。Token 存储在 `localStorage['satoken']`，以 `satoken` 请求头传递。`SaTokenConfig` 拦截所有路由，仅放行 `/user/login`、`/user/register`、`/doc.html/**`、`/v3/api-docs/**`、`/swagger-ui/**`、`/upload/**`。
+- **认证**: Sa-Token（非 Spring Security）。Token 存储在 `localStorage['satoken']`，以 `satoken` 请求头传递。`SaTokenConfig` 拦截所有路由，仅放行 `/user/login`、`/user/register`、`/doc.html/**`、`/v3/api-docs/**`、`/swagger-ui/**`、`/image/square`。
 - **密码加密**: 通过 Hutool 实现 BCrypt (`BCrypt.hashpw` / `BCrypt.checkpw`)，不使用 Spring Security 的编码器。
-- **文件存储**: 存储路径由 `app.upload-path` 指定（默认 `./upload`）。路径格式: `/upload/{年}/{月}/{uuid}.{扩展名}`。`WebMvcConfig` 将 `/upload/**` URL 映射至文件系统目录以提供访问。
+- **图片存储**: 所有图片（普通图片、头像、背景、评论图片）均以 Base64 Data URL 格式存储在 MySQL 的 `LONGTEXT` 字段中。上传时 `MultipartFile → byte[] → Base64 Data URL` 写入数据库。前端通过 `<img :src="dataUrl">` 直接渲染。`ImageCacheService` 提供 LRU 内存缓存，Base64 ↔ byte[] 互转时优先命中缓存，未命中则直接转换并写入缓冲区。
+- **数据迁移**: `DataMigrationRunner` 在首次启动时自动检测旧的文件路径数据（`/upload/...`），读取本地文件转换为 Base64 存入数据库，迁移完成后删除 `upload` 目录。
 - **跨域**: `WebMvcConfig` 中配置允许所有来源。前端开发环境使用 Vite 代理 (`/api` → `:8080`)，因此跨域配置仅在前后端合并部署时生效。
 
 **前端** — Vue 3 + Element Plus + Pinia + Vue Router：

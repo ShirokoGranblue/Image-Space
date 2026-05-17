@@ -2,31 +2,24 @@ package com.picmgmt.controller;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
-import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.io.FileUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.picmgmt.common.Result;
 import com.picmgmt.dto.LoginDTO;
 import com.picmgmt.dto.RegisterDTO;
-import com.picmgmt.entity.User;
+import com.picmgmt.service.ImageCacheService;
 import com.picmgmt.service.UserService;
 import com.picmgmt.vo.UserVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.LocalDate;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 @Tag(name = "用户模块")
 @RestController
@@ -35,9 +28,9 @@ import java.util.UUID;
 public class UserController {
 
     private final UserService userService;
+    private final ImageCacheService imageCacheService;
 
-    @Value("${app.upload-path:./upload}")
-    private String uploadPath;
+    private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "webp");
 
     @Operation(summary = "用户注册")
     @PostMapping("/register")
@@ -85,17 +78,25 @@ public class UserController {
     @Operation(summary = "上传头像")
     @PostMapping("/avatar")
     public Result<String> uploadAvatar(@RequestParam("file") MultipartFile file) throws IOException {
-        String path = saveFile(file, "avatars");
-        userService.updateAvatar(StpUtil.getLoginIdAsLong(), path);
-        return Result.ok(path);
+        String dataUrl = convertToDataUrl(file);
+        long userId = StpUtil.getLoginIdAsLong();
+        // 写入缓存
+        imageCacheService.encodeToDataUrl("avatar:" + userId, file.getBytes(),
+                ImageCacheService.getMimeType(FileUtil.extName(file.getOriginalFilename()).toLowerCase()));
+        userService.updateAvatar(userId, dataUrl);
+        return Result.ok(dataUrl);
     }
 
     @Operation(summary = "上传背景")
     @PostMapping("/background")
     public Result<String> uploadBackground(@RequestParam("file") MultipartFile file) throws IOException {
-        String path = saveFile(file, "backgrounds");
-        userService.updateBackground(StpUtil.getLoginIdAsLong(), path);
-        return Result.ok(path);
+        String dataUrl = convertToDataUrl(file);
+        long userId = StpUtil.getLoginIdAsLong();
+        // 写入缓存
+        imageCacheService.encodeToDataUrl("background:" + userId, file.getBytes(),
+                ImageCacheService.getMimeType(FileUtil.extName(file.getOriginalFilename()).toLowerCase()));
+        userService.updateBackground(userId, dataUrl);
+        return Result.ok(dataUrl);
     }
 
     @SaCheckRole("admin")
@@ -106,22 +107,17 @@ public class UserController {
         return Result.ok(userService.getUserList(page, limit));
     }
 
-    private String saveFile(MultipartFile file, String subDir) throws IOException {
+    /**
+     * 将 MultipartFile 转换为 Base64 Data URL
+     */
+    private String convertToDataUrl(MultipartFile file) throws IOException {
         if (file.isEmpty()) throw new IllegalArgumentException("文件不能为空");
         String ext = FileUtil.extName(file.getOriginalFilename()).toLowerCase();
-        if (!Set.of("jpg","jpeg","png","webp").contains(ext))
+        if (!ALLOWED_EXT.contains(ext))
             throw new IllegalArgumentException("仅支持图片格式");
 
-        Path basePath = Paths.get(uploadPath).toAbsolutePath().normalize();
-        LocalDate now = LocalDate.now();
-        String relativeDir = subDir + "/" + now.getYear() + "/" + String.format("%02d", now.getMonthValue());
-        String fileName = UUID.randomUUID() + "." + ext;
-
-        File dir = basePath.resolve(relativeDir).toFile();
-        if (!dir.exists()) dir.mkdirs();
-
-        File dest = new File(dir, fileName);
-        file.transferTo(dest);
-        return "/upload/" + relativeDir + "/" + fileName;
+        byte[] bytes = file.getBytes();
+        String mimeType = ImageCacheService.getMimeType(ext);
+        return "data:" + mimeType + ";base64," + java.util.Base64.getEncoder().encodeToString(bytes);
     }
 }

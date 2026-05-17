@@ -1,16 +1,11 @@
 package com.picmgmt.config;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
-
-    @Value("${app.upload-path:./upload}")
-    private String uploadPath;
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
@@ -21,9 +16,5 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .allowCredentials(true);
     }
 
-    @Override
-    public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler("/upload/**")
-                .addResourceLocations("file:" + uploadPath + "/");
-    }
+    // 不再需要静态资源映射 /upload/**，所有图片以 Base64 Data URL 存储在数据库中
 }

@@ -1,22 +1,20 @@
 package com.picmgmt.controller;
 
-import cn.hutool.core.io.FileUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.picmgmt.common.Result;
 import com.picmgmt.dto.ImageQueryDTO;
+import com.picmgmt.service.ImageCacheService;
 import com.picmgmt.service.ImageService;
 import com.picmgmt.vo.ImageVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
@@ -27,9 +25,7 @@ import java.nio.charset.StandardCharsets;
 public class ImageController {
 
     private final ImageService imageService;
-
-    @Value("${app.upload-path:./upload}")
-    private String uploadPath;
+    private final ImageCacheService imageCacheService;
 
     @Operation(summary = "上传图片")
     @PostMapping("/upload")
@@ -71,16 +67,20 @@ public class ImageController {
     @GetMapping("/download/{id}")
     public ResponseEntity<byte[]> download(@PathVariable Long id) {
         ImageVO vo = imageService.getById(id);
-        File file = new File(uploadPath, vo.getImagePath().replace("/upload", ""));
-        if (!file.exists()) {
+        String dataUrl = vo.getImagePath();
+        if (dataUrl == null || !ImageCacheService.isDataUrl(dataUrl)) {
             return ResponseEntity.notFound().build();
         }
-        byte[] bytes = FileUtil.readBytes(file);
+
+        // 优先从缓存获取解码后的字节，未命中则解码并写入缓冲区
+        byte[] bytes = imageCacheService.decodeFromDataUrl("image:" + id, dataUrl);
+        String mediaType = ImageCacheService.extractMediaType(dataUrl);
+
         String encodedName = URLEncoder.encode(vo.getImageName(), StandardCharsets.UTF_8)
                 .replace("+", "%20");
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedName)
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .contentType(MediaType.parseMediaType(mediaType))
                 .body(bytes);
     }
 

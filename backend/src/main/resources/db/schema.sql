@@ -10,8 +10,14 @@ USE picture_management;
 CREATE TABLE IF NOT EXISTS users (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
+    display_name VARCHAR(50),
     password VARCHAR(255) NOT NULL,
     role VARCHAR(20) NOT NULL DEFAULT 'user',
+    avatar LONGTEXT,
+    email VARCHAR(100),
+    phone VARCHAR(20),
+    bio VARCHAR(200),
+    background LONGTEXT,
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -24,13 +30,13 @@ CREATE TABLE IF NOT EXISTS categories (
     INDEX idx_user_id (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Images table
+-- Images table (image_path stores Base64 Data URL)
 CREATE TABLE IF NOT EXISTS images (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL,
     category_id BIGINT,
     image_name VARCHAR(255) NOT NULL,
-    image_path VARCHAR(500) NOT NULL,
+    image_path LONGTEXT NOT NULL,
     file_size BIGINT NOT NULL DEFAULT 0,
     image_type VARCHAR(20) NOT NULL,
     description TEXT,
@@ -44,12 +50,13 @@ CREATE TABLE IF NOT EXISTS images (
     INDEX idx_upload_time (upload_time)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Comments table
+-- Comments table (image_path stores Base64 Data URL)
 CREATE TABLE IF NOT EXISTS comments (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     image_id BIGINT NOT NULL,
     user_id BIGINT NOT NULL,
     content TEXT NOT NULL,
+    image_path LONGTEXT,
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_image_id (image_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
