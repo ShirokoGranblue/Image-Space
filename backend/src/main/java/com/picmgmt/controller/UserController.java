@@ -9,6 +9,9 @@ import com.picmgmt.dto.CodeLoginDTO;
 import com.picmgmt.dto.LoginDTO;
 import com.picmgmt.dto.RegisterDTO;
 import com.picmgmt.dto.SendCodeDTO;
+import com.picmgmt.dto.SendSmsCodeDTO;
+import com.picmgmt.dto.SmsLoginDTO;
+import com.picmgmt.service.CaptchaService;
 import com.picmgmt.service.UserService;
 import com.picmgmt.storage.StorageService;
 import com.picmgmt.vo.UserVO;
@@ -32,8 +35,15 @@ public class UserController {
 
     private final UserService userService;
     private final StorageService storageService;
+    private final CaptchaService captchaService;
 
     private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "webp");
+
+    @Operation(summary = "获取图形验证码")
+    @GetMapping("/captcha")
+    public Result<Map<String, String>> captcha() {
+        return Result.ok(captchaService.getCaptcha());
+    }
 
     @Operation(summary = "用户注册")
     @PostMapping("/register")
@@ -124,7 +134,7 @@ public class UserController {
     @Operation(summary = "发送邮箱验证码")
     @PostMapping("/send-code")
     public Result<Void> sendCode(@Valid @RequestBody SendCodeDTO dto) {
-        userService.sendCode(dto.getEmail().trim());
+        userService.sendCode(dto.getEmail().trim(), dto.getCaptchaId(), dto.getCaptchaCode());
         return Result.ok();
     }
 
@@ -132,5 +142,18 @@ public class UserController {
     @PostMapping("/login-by-code")
     public Result<String> loginByCode(@Valid @RequestBody CodeLoginDTO dto) {
         return Result.ok(userService.loginByCode(dto));
+    }
+
+    @Operation(summary = "发送短信验证码")
+    @PostMapping("/send-sms-code")
+    public Result<Void> sendSmsCode(@Valid @RequestBody SendSmsCodeDTO dto) {
+        userService.sendSmsCode(dto.getPhone().trim(), dto.getCaptchaId(), dto.getCaptchaCode());
+        return Result.ok();
+    }
+
+    @Operation(summary = "短信验证码登录")
+    @PostMapping("/login-by-sms-code")
+    public Result<String> loginBySmsCode(@Valid @RequestBody SmsLoginDTO dto) {
+        return Result.ok(userService.loginBySmsCode(dto));
     }
 }
