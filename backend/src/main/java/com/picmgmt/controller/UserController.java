@@ -106,4 +106,16 @@ public class UserController {
                                       @RequestParam(defaultValue = "10") Integer limit) {
         return Result.ok(userService.getUserList(page, limit));
     }
+
+    @Operation(summary = "检查邮箱/手机号是否已被使用")
+    @GetMapping("/check-field")
+    public Result<Void> checkField(@RequestParam String field,
+                                    @RequestParam String value,
+                                    @RequestParam(required = false) Long excludeId) {
+        if (!"email".equals(field) && !"phone".equals(field)) {
+            return Result.error(400, "参数错误");
+        }
+        userService.checkField(field, value, excludeId);
+        return Result.ok();
+    }
 }
