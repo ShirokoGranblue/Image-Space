@@ -99,8 +99,32 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         if (displayName != null) user.setDisplayName(displayName);
-        if (email != null) user.setEmail(email);
-        if (phone != null) user.setPhone(phone);
+        if (email != null) {
+            email = email.trim();
+            if (email.isEmpty()) {
+                user.setEmail(null);
+            } else if (!email.equals(user.getEmail())) {
+                if (userMapper.selectCount(
+                        new LambdaQueryWrapper<User>().eq(User::getEmail, email)
+                                .ne(User::getId, userId)) > 0) {
+                    throw new BusinessException(ErrorCode.EMAIL_EXISTS);
+                }
+                user.setEmail(email);
+            }
+        }
+        if (phone != null) {
+            phone = phone.trim();
+            if (phone.isEmpty()) {
+                user.setPhone(null);
+            } else if (!phone.equals(user.getPhone())) {
+                if (userMapper.selectCount(
+                        new LambdaQueryWrapper<User>().eq(User::getPhone, phone)
+                                .ne(User::getId, userId)) > 0) {
+                    throw new BusinessException(ErrorCode.PHONE_EXISTS);
+                }
+                user.setPhone(phone);
+            }
+        }
         if (bio != null) user.setBio(bio);
         userRepository.updateById(user);
         return userRepository.toVO(user);
