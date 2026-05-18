@@ -16,6 +16,7 @@
       <el-tabs v-model="loginMode" class="login-tabs">
         <el-tab-pane label="密码登录" name="password"></el-tab-pane>
         <el-tab-pane label="验证码登录" name="code"></el-tab-pane>
+        <el-tab-pane label="短信登录" name="sms"></el-tab-pane>
       </el-tabs>
       <div v-show="loginMode === 'password'">
       <el-form :model="form" :rules="rules" ref="formRef" label-position="top" class="login-form" @submit.prevent="handleLogin">
@@ -37,6 +38,12 @@
         <el-form-item label="邮箱">
           <el-input v-model="codeForm.email" placeholder="your@email.com" size="large" :prefix-icon="Message" />
         </el-form-item>
+        <el-form-item label="图形验证码">
+          <div style="display:flex;gap:8px;align-items:center">
+            <el-input v-model="captchaCode" placeholder="4位验证码" size="large" maxlength="4" style="flex:1" />
+            <img :src="captchaImage" @click="fetchCaptcha" style="height:40px;cursor:pointer;border-radius:4px;border:1px solid #ddd" title="点击刷新" />
+          </div>
+        </el-form-item>
         <el-form-item label="验证码">
           <div style="display:flex;gap:8px;width:100%">
             <el-input v-model="codeForm.code" placeholder="6位数字" size="large" maxlength="6" style="flex:1" />
@@ -51,6 +58,30 @@
           </el-button>
         </el-form-item>
       </div>
+      <div v-show="loginMode === 'sms'" class="login-form">
+        <el-form-item label="手机号">
+          <el-input v-model="smsForm.phone" placeholder="输入已绑定的手机号" size="large" :prefix-icon="Phone" maxlength="11" />
+        </el-form-item>
+        <el-form-item label="图形验证码">
+          <div style="display:flex;gap:8px;align-items:center">
+            <el-input v-model="smsCaptchaCode" placeholder="4位验证码" size="large" maxlength="4" style="flex:1" />
+            <img :src="captchaImage" @click="fetchCaptcha" style="height:40px;cursor:pointer;border-radius:4px;border:1px solid #ddd" title="点击刷新" />
+          </div>
+        </el-form-item>
+        <el-form-item label="短信验证码">
+          <div style="display:flex;gap:8px;width:100%">
+            <el-input v-model="smsForm.code" placeholder="6位数字" size="large" maxlength="6" style="flex:1" />
+            <el-button size="large" @click="handleSendSmsCode" :loading="smsSending" :disabled="smsCountdown > 0" style="min-width:120px">
+              {{ smsCountdown > 0 ? smsCountdown + 's' : '获取验证码' }}
+            </el-button>
+          </div>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" size="large" class="login-btn" @click="handleSmsLogin" :loading="loading">
+            验证并登录
+          </el-button>
+        </el-form-item>
+      </div>
       <p class="footer-link">
         还没有账号？<router-link to="/register">创建账号</router-link>
       </p>
@@ -59,10 +90,10 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import { reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { User, Lock, Message } from '@element-plus/icons-vue'
-import { login, sendCode, loginByCode } from '../api/user'
+import { User, Lock, Message, Phone } from '@element-plus/icons-vue'
+import { login, sendCode, loginByCode, getCaptcha, sendSmsCode, loginBySmsCode } from '../api/user'
 import { useUserStore } from '../store/user'
 import { ElMessage } from 'element-plus'
 
@@ -80,6 +111,19 @@ const codeForm = reactive({
   code: ''
 })
 
+const captchaId = ref('')
+const captchaImage = ref('')
+const captchaCode = ref('')
+const smsCaptchaCode = ref('')
+
+const smsForm = reactive({
+  phone: '',
+  code: ''
+})
+const smsSending = ref(false)
+const smsCountdown = ref(0)
+let smsCountdownTimer = null
+
 const form = reactive({
   username: '',
   password: ''
@@ -90,17 +134,31 @@ const rules = {
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
 }
 
+watch(loginMode, (mode) => {
+  if (mode === 'code' || mode === 'sms') {
+    fetchCaptcha()
+  }
+})
+
+async function fetchCaptcha() {
+  try {
+    const res = await getCaptcha()
+    captchaId.value = res.data.captchaId
+    captchaImage.value = res.data.captchaImage
+  } catch {}
+}
+
 async function handleSendCode() {
   if (!codeForm.email) { ElMessage.warning('请输入邮箱'); return }
+  if (!captchaCode.value) { ElMessage.warning('请输入图形验证码'); return }
   sending.value = true
   try {
-    await sendCode(codeForm.email.trim())
+    await sendCode({ email: codeForm.email.trim(), captchaId: captchaId.value, captchaCode: captchaCode.value })
     ElMessage.success('验证码已发送')
+    fetchCaptcha()
+    captchaCode.value = ''
     countdown.value = 60
-    countdownTimer = setInterval(() => {
-      countdown.value--
-      if (countdown.value <= 0) clearInterval(countdownTimer)
-    }, 1000)
+    countdownTimer = setInterval(() => { countdown.value--; if (countdown.value <= 0) clearInterval(countdownTimer) }, 1000)
   } catch {} finally { sending.value = false }
 }
 
@@ -110,6 +168,33 @@ async function handleCodeLogin() {
   loading.value = true
   try {
     const res = await loginByCode({ email: codeForm.email.trim(), code: codeForm.code.trim() })
+    userStore.setToken(res.data)
+    await userStore.fetchUserInfo()
+    ElMessage.success('欢迎回来')
+    router.push('/home')
+  } catch {} finally { loading.value = false }
+}
+
+async function handleSendSmsCode() {
+  if (!smsForm.phone) { ElMessage.warning('请输入手机号'); return }
+  if (!smsCaptchaCode.value) { ElMessage.warning('请输入图形验证码'); return }
+  smsSending.value = true
+  try {
+    await sendSmsCode({ phone: smsForm.phone.trim(), captchaId: captchaId.value, captchaCode: smsCaptchaCode.value })
+    ElMessage.success('验证码已发送')
+    fetchCaptcha()
+    smsCaptchaCode.value = ''
+    smsCountdown.value = 60
+    smsCountdownTimer = setInterval(() => { smsCountdown.value--; if (smsCountdown.value <= 0) clearInterval(smsCountdownTimer) }, 1000)
+  } catch {} finally { smsSending.value = false }
+}
+
+async function handleSmsLogin() {
+  if (!smsForm.phone) { ElMessage.warning('请输入手机号'); return }
+  if (!smsForm.code) { ElMessage.warning('请输入验证码'); return }
+  loading.value = true
+  try {
+    const res = await loginBySmsCode({ phone: smsForm.phone.trim(), code: smsForm.code.trim() })
     userStore.setToken(res.data)
     await userStore.fetchUserInfo()
     ElMessage.success('欢迎回来')
