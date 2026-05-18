@@ -26,6 +26,17 @@ spring:
     redis:
       time-to-live: 30m
       cache-null-values: false
+  mail:
+    host: smtp.qq.com
+    port: 587
+    username: ''
+    password: ''
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 mybatis-plus:
   configuration:
