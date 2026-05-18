@@ -25,6 +25,8 @@ public enum ErrorCode {
     USERNAME_EXISTS(2002, "用户名已存在"),
     PASSWORD_MISMATCH(2003, "两次密码不一致"),
     LOGIN_FAILED(2004, "用户名或密码错误"),
+    EMAIL_EXISTS(2005, "该邮箱已被其他用户使用"),
+    PHONE_EXISTS(2006, "该手机号已被其他用户使用"),
 
     // Category errors (3xxx)
     CATEGORY_NOT_FOUND(3001, "分类不存在"),

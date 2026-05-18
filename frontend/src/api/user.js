@@ -35,3 +35,7 @@ export function uploadBackground(formData) {
     headers: { 'Content-Type': 'multipart/form-data' }
   })
 }
+
+export function checkField(field, value, excludeId) {
+  return api.get('/user/check-field', { params: { field, value, excludeId } })
+}
