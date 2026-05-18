@@ -158,4 +158,23 @@ public class UserServiceImpl implements UserService {
         voPage.setRecords(voList);
         return voPage;
     }
+
+    @Override
+    public void checkField(String field, String value, Long excludeId) {
+        if (value == null || value.trim().isEmpty()) return;
+        value = value.trim();
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        if ("email".equals(field)) {
+            wrapper.eq(User::getEmail, value);
+        } else if ("phone".equals(field)) {
+            wrapper.eq(User::getPhone, value);
+        }
+        if (excludeId != null) {
+            wrapper.ne(User::getId, excludeId);
+        }
+        if (userMapper.selectCount(wrapper) > 0) {
+            throw new BusinessException("email".equals(field)
+                    ? ErrorCode.EMAIL_EXISTS : ErrorCode.PHONE_EXISTS);
+        }
+    }
 }

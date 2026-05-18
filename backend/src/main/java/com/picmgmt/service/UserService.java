@@ -25,4 +25,6 @@ public interface UserService {
     void updateBackground(Long userId, String backgroundPath);
 
     Page<UserVO> getUserList(Integer page, Integer limit);
+
+    void checkField(String field, String value, Long excludeId);
 }
