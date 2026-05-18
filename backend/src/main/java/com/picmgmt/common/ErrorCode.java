@@ -27,6 +27,10 @@ public enum ErrorCode {
     LOGIN_FAILED(2004, "用户名或密码错误"),
     EMAIL_EXISTS(2005, "该邮箱已被其他用户使用"),
     PHONE_EXISTS(2006, "该手机号已被其他用户使用"),
+    EMAIL_NOT_BOUND(2007, "该邮箱未绑定任何账号"),
+    CODE_SEND_FAILED(2008, "验证码发送失败"),
+    CODE_INVALID(2009, "验证码错误或已过期"),
+    CODE_TOO_FREQUENT(2010, "验证码发送过于频繁，请60秒后重试"),
 
     // Category errors (3xxx)
     CATEGORY_NOT_FOUND(3001, "分类不存在"),
