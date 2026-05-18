@@ -14,8 +14,8 @@ CREATE TABLE IF NOT EXISTS users (
     password VARCHAR(255) NOT NULL,
     role VARCHAR(20) NOT NULL DEFAULT 'user',
     avatar LONGTEXT,
-    email VARCHAR(100),
-    phone VARCHAR(20),
+    email VARCHAR(100) UNIQUE,
+    phone VARCHAR(20) UNIQUE,
     bio VARCHAR(200),
     background LONGTEXT,
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
