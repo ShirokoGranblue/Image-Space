@@ -24,6 +24,12 @@
           <el-input v-model="form.confirmPassword" type="password" placeholder="再次输入密码" size="large"
             @keyup.enter="handleRegister" show-password :prefix-icon="Lock" />
         </el-form-item>
+        <el-form-item label="邮箱（选填）">
+          <el-input v-model="form.email" placeholder="your@email.com" size="large" :prefix-icon="Message" />
+        </el-form-item>
+        <el-form-item label="手机号（选填）">
+          <el-input v-model="form.phone" placeholder="选填" maxlength="20" size="large" :prefix-icon="Phone" />
+        </el-form-item>
         <el-form-item>
           <el-button type="primary" size="large" class="login-btn" @click="handleRegister" :loading="loading">
             创建账号
@@ -40,7 +46,7 @@
 <script setup>
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { User, Lock } from '@element-plus/icons-vue'
+import { User, Lock, Message, Phone } from '@element-plus/icons-vue'
 import { register } from '../api/user'
 import { ElMessage } from 'element-plus'
 
@@ -51,7 +57,9 @@ const loading = ref(false)
 const form = reactive({
   username: '',
   password: '',
-  confirmPassword: ''
+  confirmPassword: '',
+  email: '',
+  phone: ''
 })
 
 const validateConfirmPassword = (rule, value, callback) => {
