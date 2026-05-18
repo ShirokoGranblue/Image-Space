@@ -5,8 +5,10 @@ import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.io.FileUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.picmgmt.common.Result;
+import com.picmgmt.dto.CodeLoginDTO;
 import com.picmgmt.dto.LoginDTO;
 import com.picmgmt.dto.RegisterDTO;
+import com.picmgmt.dto.SendCodeDTO;
 import com.picmgmt.service.UserService;
 import com.picmgmt.storage.StorageService;
 import com.picmgmt.vo.UserVO;
@@ -117,5 +119,18 @@ public class UserController {
         }
         userService.checkField(field, value, excludeId);
         return Result.ok();
+    }
+
+    @Operation(summary = "发送邮箱验证码")
+    @PostMapping("/send-code")
+    public Result<Void> sendCode(@Valid @RequestBody SendCodeDTO dto) {
+        userService.sendCode(dto.getEmail().trim());
+        return Result.ok();
+    }
+
+    @Operation(summary = "邮箱验证码登录")
+    @PostMapping("/login-by-code")
+    public Result<String> loginByCode(@Valid @RequestBody CodeLoginDTO dto) {
+        return Result.ok(userService.loginByCode(dto));
     }
 }
