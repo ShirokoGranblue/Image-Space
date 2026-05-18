@@ -71,3 +71,11 @@ storage:
   local:
     base-path: ./storage
 
+sms:
+  tencent:
+    secret-id: ''
+    secret-key: ''
+    sdk-app-id: ''
+    sign-name: 'ImageSpace'
+    template-id: ''
+
