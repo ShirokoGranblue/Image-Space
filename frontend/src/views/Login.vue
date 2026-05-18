@@ -13,6 +13,11 @@
         <h1 class="wordmark">ImageSpace</h1>
         <p class="tagline">整理、浏览和分享你的图片</p>
       </div>
+      <el-tabs v-model="loginMode" class="login-tabs">
+        <el-tab-pane label="密码登录" name="password"></el-tab-pane>
+        <el-tab-pane label="验证码登录" name="code"></el-tab-pane>
+      </el-tabs>
+      <div v-show="loginMode === 'password'">
       <el-form :model="form" :rules="rules" ref="formRef" label-position="top" class="login-form" @submit.prevent="handleLogin">
         <el-form-item label="用户名" prop="username">
           <el-input v-model="form.username" placeholder="输入你的用户名" size="large" :prefix-icon="User" />
@@ -27,6 +32,25 @@
           </el-button>
         </el-form-item>
       </el-form>
+      </div>
+      <div v-show="loginMode === 'code'" class="login-form">
+        <el-form-item label="邮箱">
+          <el-input v-model="codeForm.email" placeholder="your@email.com" size="large" :prefix-icon="Message" />
+        </el-form-item>
+        <el-form-item label="验证码">
+          <div style="display:flex;gap:8px;width:100%">
+            <el-input v-model="codeForm.code" placeholder="6位数字" size="large" maxlength="6" style="flex:1" />
+            <el-button size="large" @click="handleSendCode" :loading="sending" :disabled="countdown > 0" style="min-width:120px">
+              {{ countdown > 0 ? countdown + 's' : '获取验证码' }}
+            </el-button>
+          </div>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" size="large" class="login-btn" @click="handleCodeLogin" :loading="loading">
+            验证并登录
+          </el-button>
+        </el-form-item>
+      </div>
       <p class="footer-link">
         还没有账号？<router-link to="/register">创建账号</router-link>
       </p>
@@ -37,8 +61,8 @@
 <script setup>
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { User, Lock } from '@element-plus/icons-vue'
-import { login } from '../api/user'
+import { User, Lock, Message } from '@element-plus/icons-vue'
+import { login, sendCode, loginByCode } from '../api/user'
 import { useUserStore } from '../store/user'
 import { ElMessage } from 'element-plus'
 
@@ -46,6 +70,15 @@ const router = useRouter()
 const userStore = useUserStore()
 const formRef = ref(null)
 const loading = ref(false)
+const loginMode = ref('password')
+const sending = ref(false)
+const countdown = ref(0)
+let countdownTimer = null
+
+const codeForm = reactive({
+  email: '',
+  code: ''
+})
 
 const form = reactive({
   username: '',
@@ -55,6 +88,33 @@ const form = reactive({
 const rules = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
+}
+
+async function handleSendCode() {
+  if (!codeForm.email) { ElMessage.warning('请输入邮箱'); return }
+  sending.value = true
+  try {
+    await sendCode(codeForm.email.trim())
+    ElMessage.success('验证码已发送')
+    countdown.value = 60
+    countdownTimer = setInterval(() => {
+      countdown.value--
+      if (countdown.value <= 0) clearInterval(countdownTimer)
+    }, 1000)
+  } catch {} finally { sending.value = false }
+}
+
+async function handleCodeLogin() {
+  if (!codeForm.email) { ElMessage.warning('请输入邮箱'); return }
+  if (!codeForm.code) { ElMessage.warning('请输入验证码'); return }
+  loading.value = true
+  try {
+    const res = await loginByCode({ email: codeForm.email.trim(), code: codeForm.code.trim() })
+    userStore.setToken(res.data)
+    await userStore.fetchUserInfo()
+    ElMessage.success('欢迎回来')
+    router.push('/home')
+  } catch {} finally { loading.value = false }
 }
 
 async function handleLogin() {
@@ -224,6 +284,15 @@ async function handleLogin() {
   font-weight: 550;
 }
 .footer-link a:hover { color: var(--accent-glow); }
+
+.login-tabs { margin-bottom: var(--space-md); }
+.login-tabs :deep(.el-tabs__header) { margin-bottom: 0; }
+.login-tabs :deep(.el-tabs__nav-wrap::after) { display: none; }
+.login-tabs :deep(.el-tabs__item) {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 550;
+}
 
 @media (max-width: 480px) {
   .login-frame {
