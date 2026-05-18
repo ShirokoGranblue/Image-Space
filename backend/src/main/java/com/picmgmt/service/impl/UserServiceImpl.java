@@ -36,11 +36,31 @@ public class UserServiceImpl implements UserService {
         if (userMapper.selectCount(wrapper) > 0) {
             throw new BusinessException(ErrorCode.USERNAME_EXISTS);
         }
+        if (dto.getEmail() != null && !dto.getEmail().trim().isEmpty()) {
+            String email = dto.getEmail().trim();
+            if (userMapper.selectCount(
+                    new LambdaQueryWrapper<User>().eq(User::getEmail, email)) > 0) {
+                throw new BusinessException(ErrorCode.EMAIL_EXISTS);
+            }
+        }
+        if (dto.getPhone() != null && !dto.getPhone().trim().isEmpty()) {
+            String phone = dto.getPhone().trim();
+            if (userMapper.selectCount(
+                    new LambdaQueryWrapper<User>().eq(User::getPhone, phone)) > 0) {
+                throw new BusinessException(ErrorCode.PHONE_EXISTS);
+            }
+        }
         User user = new User();
         user.setUsername(dto.getUsername());
         user.setDisplayName(dto.getUsername());
         user.setPassword(BCrypt.hashpw(dto.getPassword(), BCrypt.gensalt()));
         user.setRole("user");
+        if (dto.getEmail() != null && !dto.getEmail().trim().isEmpty()) {
+            user.setEmail(dto.getEmail().trim());
+        }
+        if (dto.getPhone() != null && !dto.getPhone().trim().isEmpty()) {
+            user.setPhone(dto.getPhone().trim());
+        }
         userMapper.insert(user);
         return BeanUtil.copyProperties(user, UserVO.class);
     }
