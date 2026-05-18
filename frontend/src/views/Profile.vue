@@ -31,11 +31,11 @@
             <el-form-item label="展示名称">
               <el-input v-model="form.displayName" maxlength="50" />
             </el-form-item>
-            <el-form-item label="邮箱">
-              <el-input v-model="form.email" />
+            <el-form-item label="邮箱" :error="fieldErrors.email">
+              <el-input v-model="form.email" @blur="onEmailBlur" />
             </el-form-item>
-            <el-form-item label="手机号">
-              <el-input v-model="form.phone" maxlength="20" />
+            <el-form-item label="手机号" :error="fieldErrors.phone">
+              <el-input v-model="form.phone" maxlength="20" @blur="onPhoneBlur" />
             </el-form-item>
             <el-form-item label="个人介绍">
               <el-input v-model="form.bio" type="textarea" :rows="3" maxlength="200" show-word-limit />
@@ -195,7 +195,7 @@ import { ElMessage } from 'element-plus'
 import NavBar from '../components/NavBar.vue'
 import ImageCard from '../components/ImageCard.vue'
 import { useUserStore } from '../store/user'
-import { getUserProfile, updateProfile, uploadAvatar, uploadBackground } from '../api/user'
+import { getUserProfile, updateProfile, uploadAvatar, uploadBackground, checkField } from '../api/user'
 import { getImageList } from '../api/image'
 
 // IndexedDB utility for caching original images (Data URLs can be >5MB)
@@ -972,9 +972,32 @@ async function fetchWorks() {
   } catch {}
 }
 
+const fieldErrors = reactive({ email: '', phone: '' })
+
+async function onEmailBlur() {
+  fieldErrors.email = ''
+  if (!form.email || !form.email.trim()) return
+  try {
+    await checkField('email', form.email.trim(), user.value.id)
+  } catch {
+    fieldErrors.email = '该邮箱已被其他用户使用'
+  }
+}
+
+async function onPhoneBlur() {
+  fieldErrors.phone = ''
+  if (!form.phone || !form.phone.trim()) return
+  try {
+    await checkField('phone', form.phone.trim(), user.value.id)
+  } catch {
+    fieldErrors.phone = '该手机号已被其他用户使用'
+  }
+}
+
 function startEdit() {
   form.displayName = user.value.displayName || ''
   form.email = user.value.email || ''; form.phone = user.value.phone || ''; form.bio = user.value.bio || ''
+  fieldErrors.email = ''; fieldErrors.phone = ''
   editing.value = true
 }
 function cancelEdit() { editing.value = false }
