@@ -40,10 +40,22 @@ export function checkField(field, value, excludeId) {
   return api.get('/user/check-field', { params: { field, value, excludeId } })
 }
 
-export function sendCode(email) {
-  return api.post('/user/send-code', { email })
+export function sendCode(data) {
+  return api.post('/user/send-code', data)
 }
 
 export function loginByCode(data) {
   return api.post('/user/login-by-code', data)
+}
+
+export function getCaptcha() {
+  return api.get('/captcha')
+}
+
+export function sendSmsCode(data) {
+  return api.post('/user/send-sms-code', data)
+}
+
+export function loginBySmsCode(data) {
+  return api.post('/user/login-by-sms-code', data)
 }
