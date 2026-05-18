@@ -49,7 +49,7 @@ export function loginByCode(data) {
 }
 
 export function getCaptcha() {
-  return api.get('/captcha')
+  return api.get('/user/captcha')
 }
 
 export function sendSmsCode(data) {

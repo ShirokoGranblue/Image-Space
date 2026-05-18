@@ -20,7 +20,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
                                     "/user/check-field",
                                     "/user/send-code", "/user/login-by-code",
                                     "/user/send-sms-code", "/user/login-by-sms-code",
-                                    "/captcha",
+                                    "/user/captcha",
                                     "/comment/list/**")
                             .check(r -> StpUtil.checkLogin());
                 }))

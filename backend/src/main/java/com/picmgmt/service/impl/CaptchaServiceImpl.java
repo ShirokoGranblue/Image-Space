@@ -28,7 +28,7 @@ public class CaptchaServiceImpl implements CaptchaService {
         redisCacheService.put("captcha:" + captchaId, code, Duration.ofSeconds(60));
         return Map.of(
             "captchaId", captchaId,
-            "captchaImage", "data:image/png;base64," + captcha.getImageBase64Data()
+            "captchaImage", captcha.getImageBase64Data()
         );
     }
 
