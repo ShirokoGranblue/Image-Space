@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.picmgmt.dto.LoginDTO;
 import com.picmgmt.dto.RegisterDTO;
 import com.picmgmt.entity.User;
+import com.picmgmt.dto.CodeLoginDTO;
 import com.picmgmt.vo.UserVO;
 
 public interface UserService {
@@ -27,4 +28,8 @@ public interface UserService {
     Page<UserVO> getUserList(Integer page, Integer limit);
 
     void checkField(String field, String value, Long excludeId);
+
+    void sendCode(String email);
+
+    String loginByCode(CodeLoginDTO dto);
 }

@@ -5,19 +5,24 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.crypto.digest.BCrypt;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.picmgmt.cache.RedisCacheService;
 import com.picmgmt.common.BusinessException;
 import com.picmgmt.common.ErrorCode;
+import com.picmgmt.dto.CodeLoginDTO;
 import com.picmgmt.dto.LoginDTO;
 import com.picmgmt.dto.RegisterDTO;
 import com.picmgmt.entity.User;
 import com.picmgmt.mapper.UserMapper;
 import com.picmgmt.repository.UserRepository;
+import com.picmgmt.service.EmailService;
 import com.picmgmt.service.UserService;
 import com.picmgmt.vo.UserVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +30,8 @@ public class UserServiceImpl implements UserService {
 
     private final UserMapper userMapper;
     private final UserRepository userRepository;
+    private final RedisCacheService redisCacheService;
+    private final EmailService emailService;
 
     @Override
     public UserVO register(RegisterDTO dto) {
@@ -176,5 +183,43 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException("email".equals(field)
                     ? ErrorCode.EMAIL_EXISTS : ErrorCode.PHONE_EXISTS);
         }
+    }
+
+    @Override
+    public void sendCode(String email) {
+        User user = userMapper.selectOne(
+                new LambdaQueryWrapper<User>().eq(User::getEmail, email));
+        if (user == null) {
+            throw new BusinessException(ErrorCode.EMAIL_NOT_BOUND);
+        }
+        String redisKey = "code:login:" + email;
+        if (redisCacheService.get(redisKey, String.class).isPresent()) {
+            throw new BusinessException(ErrorCode.CODE_TOO_FREQUENT);
+        }
+        String code = String.format("%06d", ThreadLocalRandom.current().nextInt(1000000));
+        try {
+            emailService.sendVerificationCode(email, code);
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.CODE_SEND_FAILED);
+        }
+        redisCacheService.put(redisKey, code, Duration.ofSeconds(60));
+    }
+
+    @Override
+    public String loginByCode(CodeLoginDTO dto) {
+        String email = dto.getEmail().trim();
+        User user = userMapper.selectOne(
+                new LambdaQueryWrapper<User>().eq(User::getEmail, email));
+        if (user == null) {
+            throw new BusinessException(ErrorCode.EMAIL_NOT_BOUND);
+        }
+        String redisKey = "code:login:" + email;
+        String storedCode = redisCacheService.get(redisKey, String.class).orElse(null);
+        if (storedCode == null || !storedCode.equals(dto.getCode().trim())) {
+            throw new BusinessException(ErrorCode.CODE_INVALID);
+        }
+        redisCacheService.evict(redisKey);
+        StpUtil.login(user.getId());
+        return StpUtil.getTokenValue();
     }
 }
