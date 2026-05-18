@@ -3,8 +3,8 @@
     <NavBar />
     <div class="page-container">
       <header class="page-header">
-        <h1 class="page-title">Gallery</h1>
-        <p class="page-desc">创作者公开作品</p>
+        <h1 class="page-title">Square</h1>
+        <p class="page-desc"></p>
       </header>
 
       <div v-if="loading" class="empty-state">
@@ -20,7 +20,7 @@
 
       <div v-else class="card-grid">
         <div v-for="(img, idx) in images" :key="img.id" class="stagger-item" :style="{ animationDelay: `${idx * 0.06}s` }">
-          <ImageCard :image="img" :show-actions="false" />
+          <ImageCard :image="img" :show-actions="false" @delete="handleDeleteImage" />
         </div>
       </div>
 
@@ -41,7 +41,8 @@
 import { ref, onMounted } from 'vue'
 import NavBar from '../components/NavBar.vue'
 import ImageCard from '../components/ImageCard.vue'
-import { getImageSquare } from '../api/image'
+import { getImageSquare, deleteImage } from '../api/image'
+import { ElMessage } from 'element-plus'
 
 const images = ref([])
 const page = ref(1)
@@ -60,6 +61,15 @@ async function fetchList() {
   } catch {} finally {
     loading.value = false
   }
+}
+
+async function handleDeleteImage(id) {
+  try {
+    await deleteImage(id)
+    ElMessage.success('已删除损坏图片')
+    images.value = images.value.filter(img => img.id !== id)
+    total.value = Math.max(0, total.value - 1)
+  } catch {}
 }
 </script>
 
@@ -118,7 +128,7 @@ async function fetchList() {
 .skeleton-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 20px;
+  gap: 10px;
   padding-top: var(--space-md);
 }
 .skeleton-grid .skeleton {
@@ -132,7 +142,7 @@ async function fetchList() {
 }
 
 @media (max-width: 768px) {
-  .page-container { padding: 20px var(--space-md); }
+  .page-container { padding: 20px 8px; }
   .page-header { padding: 20px; border-radius: var(--radius-md); }
   .page-title { font-size: 26px; }
 }

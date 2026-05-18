@@ -3,10 +3,7 @@
     <NavBar />
     <div class="page-container">
       <header class="page-header">
-        <div class="header-top">
-          <h1 class="page-title">Collection</h1>
-          <p class="page-desc">你的私人影像收藏</p>
-        </div>
+        <h1 class="page-title">Collections</h1>
         <div class="toolbar">
           <div class="toolbar-left">
             <el-button type="primary" @click="uploadRef.open()">
@@ -230,25 +227,27 @@ async function saveEdit() {
 }
 
 .page-header {
-  padding: 28px;
+  padding: 20px 28px;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   margin-bottom: 24px;
   background: var(--bg-surface);
   box-shadow: var(--shadow-md);
-}
-
-.header-top {
-  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .page-title {
   font-family: var(--font-display);
-  font-size: 34px;
+  font-size: 28px;
   font-weight: 750;
   color: var(--text-primary);
   letter-spacing: -0.3px;
   line-height: 1.15;
+  margin: 0;
 }
 
 .page-desc {
@@ -289,7 +288,7 @@ async function saveEdit() {
 .skeleton-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 20px;
+  gap: 10px;
   padding-top: var(--space-md);
 }
 .skeleton-grid .skeleton {
@@ -303,7 +302,7 @@ async function saveEdit() {
 }
 
 @media (max-width: 768px) {
-  .page-container { padding: 20px var(--space-md); }
+  .page-container { padding: 20px 8px; }
   .page-header { padding: 20px; border-radius: var(--radius-md); }
   .page-title { font-size: 26px; }
   .toolbar { flex-direction: column; align-items: stretch; }

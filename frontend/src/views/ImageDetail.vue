@@ -250,7 +250,7 @@ function viewCmtImg(src) {
 
 <style scoped>
 .detail-page { min-height: 100vh; background: var(--bg-base); }
-.page-container { max-width: 1120px; margin: 0 auto; padding: 28px var(--space-lg) 40px; }
+.page-container { padding: 28px 8px 40px; }
 .back-bar { margin-bottom: var(--space-md); }
 .back-bar :deep(.el-button) { color: var(--text-muted); font-weight: 500; }
 .back-bar :deep(.el-button:hover) { color: var(--accent); }

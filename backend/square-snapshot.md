@@ -1,0 +1,31 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - link "ImageSpace 首页" [ref=e7] [cursor=pointer]:
+        - /url: /home
+        - text: ImageSpace
+      - navigation "主导航" [ref=e9]:
+        - link "我的图片" [ref=e10] [cursor=pointer]:
+          - /url: /home
+          - img [ref=e12]
+          - generic [ref=e14]: 我的图片
+        - link "图片广场" [ref=e15] [cursor=pointer]:
+          - /url: /square
+          - img [ref=e17]
+          - generic [ref=e19]: 图片广场
+  - generic [ref=e20]:
+    - banner [ref=e21]:
+      - heading "Square" [level=1] [ref=e22]
+      - paragraph
+    - 'button "查看图片: 20220724202508_25a29.png" [ref=e25] [cursor=pointer]':
+      - img "20220724202508_25a29.png" [ref=e27]
+    - generic [ref=e29]:
+      - generic [ref=e30]: 共 1 条
+      - button "上一页" [disabled] [ref=e31]:
+        - generic:
+          - img
+      - list [ref=e32]:
+        - listitem "第 1 页" [ref=e33]: "1"
+      - button "下一页" [disabled] [ref=e34]:
+        - generic:
+          - img

@@ -72,10 +72,9 @@ storage:
     base-path: ./storage
 
 sms:
-  tencent:
-    secret-id: ''
-    secret-key: ''
-    sdk-app-id: ''
+  aliyun:
+    access-key-id: ''
+    access-key-secret: ''
     sign-name: 'ImageSpace'
-    template-id: ''
+    template-code: ''
 

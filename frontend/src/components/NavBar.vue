@@ -19,12 +19,12 @@
         </nav>
 
         <div class="user-section" v-if="token">
-          <el-avatar :size="32" :src="userInfo?.avatar" class="nav-avatar" @click="goProfile" />
+          <el-avatar :size="32" :src="userInfo?.avatarUrl || userInfo?.avatar" class="nav-avatar" @click="goProfile" />
           <span class="username" @click="goProfile" :title="userInfo?.displayName || userInfo?.username">
             {{ userInfo?.displayName || userInfo?.username || '' }}
           </span>
-          <button class="logout-btn" @click="handleLogout" aria-label="退出登录">退出</button>
         </div>
+        <button v-if="token" class="logout-btn logout-btn-danger" @click="handleLogout" aria-label="退出登录">Exit</button>
 
         <!-- Mobile hamburger -->
         <button class="mobile-toggle" @click="mobileOpen = !mobileOpen" :aria-expanded="mobileOpen" aria-label="菜单"
@@ -47,9 +47,9 @@
           </router-link>
         </nav>
         <div class="mobile-user" v-if="token">
-          <el-avatar :size="28" :src="userInfo?.avatar" />
+          <el-avatar :size="28" :src="userInfo?.avatarUrl || userInfo?.avatar" />
           <span>{{ userInfo?.displayName || userInfo?.username }}</span>
-          <button class="logout-btn" @click="handleLogout">退出</button>
+          <button class="logout-btn logout-btn-danger" @click="handleLogout">Exit</button>
         </div>
       </div>
     </transition>
@@ -96,7 +96,7 @@ async function handleLogout() {
   background: rgba(255, 255, 255, 0.88);
   border-bottom: 1px solid var(--border-subtle);
   padding: 0;
-  height: 64px;
+  height: 80px;
   position: sticky;
   top: 0;
   z-index: 100;
@@ -112,10 +112,15 @@ async function handleLogout() {
   height: 100%;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
 }
 
-.navbar-left { display: flex; align-items: center; }
+.navbar-left {
+  position: absolute;
+  left: 40px;
+  display: flex;
+  align-items: center;
+}
 
 .logo {
   font-family: var(--font-display);
@@ -144,7 +149,7 @@ async function handleLogout() {
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
   padding: var(--space-sm) var(--space-md);
   text-decoration: none;
   border-radius: var(--radius-md);
@@ -241,6 +246,22 @@ async function handleLogout() {
   color: var(--danger);
   border-color: var(--danger);
   background: rgba(220, 38, 38, 0.04);
+}
+
+.logout-btn-danger {
+  background: #dc2626;
+  color: #fff;
+  border-color: #dc2626;
+  margin-left: var(--space-md);
+  position: absolute;
+  right: 20px;
+  top: 16px;
+  z-index: 2;
+}
+.logout-btn-danger:hover {
+  background: #b91c1c;
+  border-color: #b91c1c;
+  color: #fff;
 }
 
 /* ── Mobile toggle ── */
@@ -342,6 +363,7 @@ async function handleLogout() {
   .logo { font-size: 21px; }
   .nav-links { display: none; }
   .user-section { display: none; }
+  .logout-btn-danger { display: none; }
   .mobile-toggle { display: flex; }
 }
 

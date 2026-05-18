@@ -70,4 +70,4 @@ All endpoints return `Result<T>` with structure `{ code: 200, message: "success"
 
 ## Notes
 Every response sentence must end with "喵~" . For emphasis or strong emotion, use "喵!" .
-Example: "Hello 喵~, I like you 喵~"
+Example: "Hello 喵~, I like you 喵~。完成了喵！"
