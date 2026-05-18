@@ -11,10 +11,13 @@ import com.picmgmt.common.ErrorCode;
 import com.picmgmt.dto.CodeLoginDTO;
 import com.picmgmt.dto.LoginDTO;
 import com.picmgmt.dto.RegisterDTO;
+import com.picmgmt.dto.SmsLoginDTO;
 import com.picmgmt.entity.User;
 import com.picmgmt.mapper.UserMapper;
 import com.picmgmt.repository.UserRepository;
+import com.picmgmt.service.CaptchaService;
 import com.picmgmt.service.EmailService;
+import com.picmgmt.service.SmsService;
 import com.picmgmt.service.UserService;
 import com.picmgmt.vo.UserVO;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +35,8 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final RedisCacheService redisCacheService;
     private final EmailService emailService;
+    private final CaptchaService captchaService;
+    private final SmsService smsService;
 
     @Override
     public UserVO register(RegisterDTO dto) {
@@ -186,7 +191,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void sendCode(String email) {
+    public void sendCode(String email, String captchaId, String captchaCode) {
+        captchaService.verify(captchaId, captchaCode);
         User user = userMapper.selectOne(
                 new LambdaQueryWrapper<User>().eq(User::getEmail, email));
         if (user == null) {
@@ -214,6 +220,45 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException(ErrorCode.EMAIL_NOT_BOUND);
         }
         String redisKey = "code:login:" + email;
+        String storedCode = redisCacheService.get(redisKey, String.class).orElse(null);
+        if (storedCode == null || !storedCode.equals(dto.getCode().trim())) {
+            throw new BusinessException(ErrorCode.CODE_INVALID);
+        }
+        redisCacheService.evict(redisKey);
+        StpUtil.login(user.getId());
+        return StpUtil.getTokenValue();
+    }
+
+    @Override
+    public void sendSmsCode(String phone, String captchaId, String captchaCode) {
+        captchaService.verify(captchaId, captchaCode);
+        User user = userMapper.selectOne(
+                new LambdaQueryWrapper<User>().eq(User::getPhone, phone));
+        if (user == null) {
+            throw new BusinessException(ErrorCode.PHONE_NOT_BOUND);
+        }
+        String redisKey = "code:login:" + phone;
+        if (redisCacheService.get(redisKey, String.class).isPresent()) {
+            throw new BusinessException(ErrorCode.CODE_TOO_FREQUENT);
+        }
+        String code = String.format("%06d", ThreadLocalRandom.current().nextInt(1000000));
+        try {
+            smsService.sendVerificationCode(phone, code);
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.SMS_SEND_FAILED);
+        }
+        redisCacheService.put(redisKey, code, Duration.ofSeconds(60));
+    }
+
+    @Override
+    public String loginBySmsCode(SmsLoginDTO dto) {
+        String phone = dto.getPhone().trim();
+        User user = userMapper.selectOne(
+                new LambdaQueryWrapper<User>().eq(User::getPhone, phone));
+        if (user == null) {
+            throw new BusinessException(ErrorCode.PHONE_NOT_BOUND);
+        }
+        String redisKey = "code:login:" + phone;
         String storedCode = redisCacheService.get(redisKey, String.class).orElse(null);
         if (storedCode == null || !storedCode.equals(dto.getCode().trim())) {
             throw new BusinessException(ErrorCode.CODE_INVALID);
