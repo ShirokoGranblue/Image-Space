@@ -5,6 +5,7 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -16,12 +17,16 @@ public class EmailServiceImpl implements EmailService {
 
     private final JavaMailSender mailSender;
 
+    @Value("${spring.mail.username}")
+    private String fromAddress;
+
     @Override
     public void sendVerificationCode(String to, String code) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             helper.setTo(to);
+            helper.setFrom(fromAddress);
             helper.setSubject("ImageSpace 登录验证码");
             helper.setText(String.format("""
                     <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
