@@ -18,6 +18,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
                                     "/doc.html", "/v3/api-docs/**", "/swagger-ui/**",
                                     "/image/square", "/user/profile/**",
                                     "/user/check-field",
+                                    "/user/send-code", "/user/login-by-code",
                                     "/comment/list/**")
                             .check(r -> StpUtil.checkLogin());
                 }))
