@@ -8,14 +8,21 @@ import com.aliyuncs.http.MethodType;
 import com.aliyuncs.profile.DefaultProfile;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.picmgmt.cache.RedisCacheService;
 import com.picmgmt.service.SmsService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class SmsServiceImpl implements SmsService {
+
+    private final RedisCacheService redisCacheService;
 
     @Value("${sms.aliyun.access-key-id}")
     private String accessKeyId;
@@ -48,7 +55,10 @@ public class SmsServiceImpl implements SmsService {
             request.putQueryParameter("PhoneNumber", phone);
             request.putQueryParameter("SignName", signName);
             request.putQueryParameter("TemplateCode", templateCode);
-            request.putQueryParameter("TemplateParam", "{}");
+            request.putQueryParameter("TemplateParam", "{\"code\":\"##code##\"}");
+            request.putQueryParameter("CodeType", "1");
+            request.putQueryParameter("CodeLength", "4");
+            request.putQueryParameter("ReturnVerifyCode", "true");
             log.info("Sending PNVS SMS to {} sign={} template={}", phone, signName, templateCode);
             CommonResponse response = client.getCommonResponse(request);
             String data = response.getData();
@@ -58,6 +68,11 @@ public class SmsServiceImpl implements SmsService {
             if (!"OK".equals(respCode)) {
                 String msg = json.has("Message") ? json.get("Message").asText() : respCode;
                 throw new RuntimeException("阿里云PNVS错误: " + msg);
+            }
+            // Store PNVS-generated code in Redis for verification
+            String verifyCode = json.at("/Model/VerifyCode").asText("");
+            if (!verifyCode.isEmpty()) {
+                redisCacheService.put("code:login:" + phone, verifyCode, Duration.ofSeconds(300));
             }
         } catch (Exception e) {
             log.error("Failed to send SMS to {}", phone, e);
