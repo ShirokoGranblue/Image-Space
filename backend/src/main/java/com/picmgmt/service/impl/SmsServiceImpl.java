@@ -41,13 +41,15 @@ public class SmsServiceImpl implements SmsService {
             request.setSysDomain("dysmsapi.aliyuncs.com");
             request.setSysVersion("2017-05-25");
             request.setSysAction("SendSms");
+            request.putQueryParameter("RegionId", "cn-hangzhou");
             request.putQueryParameter("PhoneNumbers", phone);
             request.putQueryParameter("SignName", signName);
             request.putQueryParameter("TemplateCode", templateCode);
             request.putQueryParameter("TemplateParam", "{\"code\":\"" + code + "\"}");
+            log.info("Sending SMS to {} with sign={}, template={}", phone, signName, templateCode);
             CommonResponse response = client.getCommonResponse(request);
             String data = response.getData();
-            log.info("SMS sent to {}, response: {}", phone, data);
+            log.info("SMS response for {}: {}", phone, data);
             JsonNode json = objectMapper.readTree(data);
             String respCode = json.has("Code") ? json.get("Code").asText() : "";
             if (!"OK".equals(respCode)) {
