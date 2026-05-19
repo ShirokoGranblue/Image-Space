@@ -48,6 +48,7 @@ public class SmsServiceImpl implements SmsService {
             request.putQueryParameter("PhoneNumber", phone);
             request.putQueryParameter("SignName", signName);
             request.putQueryParameter("TemplateCode", templateCode);
+            request.putQueryParameter("TemplateParam", "{}");
             log.info("Sending PNVS SMS to {} sign={} template={}", phone, signName, templateCode);
             CommonResponse response = client.getCommonResponse(request);
             String data = response.getData();
