@@ -20,11 +20,12 @@
           </div>
         </div>
 
-        <div class="profile-name-row" v-if="!editing">
-          <h2>{{ user.displayName || user.username }}</h2>
-          <span class="username-tag">@{{ user.username }}</span>
-          <el-button v-if="isOwner" text @click="startEdit"><el-icon><Edit /></el-icon> 编辑资料</el-button>
-        </div>
+        <template v-if="!editing">
+          <div class="profile-name-row">
+            <h2>{{ user.displayName || user.username }}</h2>
+            <el-button v-if="isOwner" text @click="startEdit"><el-icon><Edit /></el-icon> 编辑资料</el-button>
+          </div>
+        </template>
 
         <div class="profile-edit" v-else>
           <el-form label-width="80px">
@@ -43,6 +44,7 @@
             <el-form-item>
               <el-button type="primary" @click="saveProfile" :loading="saving">保存</el-button>
               <el-button @click="cancelEdit">取消</el-button>
+              <el-button type="danger" text class="delete-in-edit" @click="handleDeleteAccount">注销账号</el-button>
             </el-form-item>
           </el-form>
         </div>
@@ -109,9 +111,7 @@
           <div class="bg-preview-side">
             <p class="preview-label">个人资料预览</p>
             <div class="profile-mini-card">
-              <div class="profile-mini-banner" :style="miniBannerStyle">
-                <img v-if="bgPreviewUrl" :src="bgPreviewUrl" class="profile-mini-bg" :style="miniBgImgStyle" draggable="false" />
-              </div>
+              <div class="profile-mini-banner" :style="miniBannerPreviewStyle" />
               <div class="profile-mini-header">
                 <div class="profile-mini-avatar">
                   <el-avatar :size="22" :src="user.avatar">
@@ -189,13 +189,13 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, nextTick } from 'vue'
-import { useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import NavBar from '../components/NavBar.vue'
 import ImageCard from '../components/ImageCard.vue'
 import { useUserStore } from '../store/user'
-import { getUserProfile, updateProfile, uploadAvatar, uploadBackground, checkField } from '../api/user'
+import { getUserProfile, updateProfile, uploadAvatar, uploadBackground, checkField, deleteAccount } from '../api/user'
 import { getImageList } from '../api/image'
 
 // IndexedDB utility for caching original images (Data URLs can be >5MB)
@@ -227,6 +227,7 @@ async function idbGet(key) {
 }
 
 const route = useRoute()
+const router = useRouter()
 const userStore = useUserStore()
 const user = ref({})
 const works = ref([])
@@ -236,7 +237,7 @@ const workTotal = ref(0)
 const loading = ref(false)
 const editing = ref(false)
 const saving = ref(false)
-const isOwner = computed(() => userStore.userInfo?.id === user.value.id)
+const isOwner = computed(() => !!(userStore.userInfo?.id && user.value.id && userStore.userInfo.id === user.value.id))
 
 const form = reactive({ displayName: '', email: '', phone: '', bio: '' })
 
@@ -244,7 +245,7 @@ const bannerStyle = computed(() => {
   const bg = user.value.backgroundUrl || user.value.background
   if (!bg) return { background: 'linear-gradient(135deg, #111827 0%, #2563eb 58%, #38bdf8 100%)' }
   if (bg.startsWith('#') || bg.startsWith('rgb')) return { backgroundColor: bg }
-  return { backgroundImage: `url(${bg})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+  return { backgroundImage: `url(${bg})`, backgroundSize: '100% auto', backgroundPosition: 'top' }
 })
 
 // Background editor
@@ -275,9 +276,16 @@ function onBgFileChange(file) {
   reader.readAsDataURL(file.raw)
 }
 
+watch(bgDialogVisible, (val) => { if (!val) teardownBgResizeObserver() })
+
+onUnmounted(() => {
+  teardownBgResizeObserver()
+})
+
 function openBackgroundEditor() {
   bgDialogVisible.value = true
   bgFileName.value = ''
+  nextTick(() => { setupBgResizeObserver() })
   nextTick(async () => {
     const originalSource = await readCachedBgOriginal()
     const bg = user.value.backgroundUrl || user.value.background
@@ -297,13 +305,30 @@ function openBackgroundEditor() {
   })
 }
 
+let bgResizeObserver = null
+
 function updateBgCropBounds() {
-  if (!bgCropContainer.value) return
-  bgStageW.value = bgCropContainer.value.clientWidth
-  bgStageH.value = bgCropContainer.value.clientHeight
+  const el = bgCropContainer.value
+  if (!el) return
+  bgStageW.value = el.clientWidth
+  bgStageH.value = el.clientHeight
+}
+
+function setupBgResizeObserver() {
+  const el = bgCropContainer.value
+  if (!el || bgResizeObserver) return
+  bgResizeObserver = new ResizeObserver(() => {
+    updateBgCropBounds()
+  })
+  bgResizeObserver.observe(el)
+}
+
+function teardownBgResizeObserver() {
+  if (bgResizeObserver) { bgResizeObserver.disconnect(); bgResizeObserver = null }
 }
 
 function initBgCrop() {
+  updateBgCropBounds()
   bgCrop.x = bgStageW.value / 2
   bgCrop.y = bgStageH.value / 2
   bgCropRatio.value = 1
@@ -335,8 +360,9 @@ function onBgSliderChange() {
 const bgImageDisplay = computed(() => {
   const nw = bgImgNatural.value.w || 1
   const nh = bgImgNatural.value.h || 1
-  const cw = bgStageW.value || 1
-  const ch = bgStageH.value || 1
+  const el = bgCropContainer.value
+  const cw = (el ? el.clientWidth : bgStageW.value) || 1
+  const ch = (el ? el.clientHeight : bgStageH.value) || 1
   const scale = Math.max(cw / nw, ch / nh)
   const width = nw * scale
   const height = nh * scale
@@ -506,23 +532,20 @@ function stopBgResize() {
 }
 
 // Mini profile card preview
-const miniBannerStyle = computed(() => ({
-  background: !bgPreviewUrl.value && !user.value.backgroundUrl
-    ? 'linear-gradient(135deg, #111827 0%, #2563eb 58%, #38bdf8 100%)'
-    : undefined
-}))
-
-const miniBgImgStyle = computed(() => {
-  if (!bgPreviewUrl.value) return { display: 'none' }
+const miniBannerPreviewStyle = computed(() => {
+  if (!bgPreviewUrl.value) {
+    return { background: !user.value.backgroundUrl
+      ? 'linear-gradient(135deg, #111827 0%, #2563eb 58%, #38bdf8 100%)' : undefined }
+  }
   const display = bgImageDisplay.value
-  const previewW = 200
-  const previewH = Math.round(previewW / BG_ASPECT)
-  const scale = previewW / bgCrop.w
+  const scale = 200 / bgCrop.w
+  const x = (display.left - bgCropBox.value.left) * scale
+  const y = (display.top - bgCropBox.value.top) * scale
   return {
-    width: `${display.width * scale}px`,
-    height: `${display.height * scale}px`,
-    left: `${(display.left - bgCropBox.value.left) * scale}px`,
-    top: `${(display.top - bgCropBox.value.top) * scale}px`
+    backgroundImage: `url(${bgPreviewUrl.value})`,
+    backgroundSize: `${display.width * scale}px ${display.height * scale}px`,
+    backgroundPosition: `${x}px ${y}px`,
+    backgroundRepeat: 'no-repeat'
   }
 })
 
@@ -588,11 +611,18 @@ function cropBackgroundImage() {
     img.onload = () => {
       const nw = bgImgNatural.value.w || img.naturalWidth
       const nh = bgImgNatural.value.h || img.naturalHeight
-      const display = bgImageDisplay.value
-      const sx = (bgCropBox.value.left - display.left) / display.width * nw
-      const sy = (bgCropBox.value.top - display.top) / display.height * nh
-      const sw = bgCrop.w / display.width * nw
-      const sh = bgCrop.h / display.height * nh
+      const el = bgCropContainer.value
+      const cw = el ? el.clientWidth : bgStageW.value
+      const ch = el ? el.clientHeight : bgStageH.value
+      const scale = Math.max(cw / nw, ch / nh)
+      const dw = nw * scale
+      const dh = nh * scale
+      const dl = (cw - dw) / 2
+      const dt = (ch - dh) / 2
+      const sx = (bgCropBox.value.left - dl) / dw * nw
+      const sy = (bgCropBox.value.top - dt) / dh * nh
+      const sw = bgCrop.w / dw * nw
+      const sh = bgCrop.h / dh * nh
       const canvas = document.createElement('canvas')
       canvas.width = 3840
       canvas.height = 2160
@@ -1002,6 +1032,23 @@ function startEdit() {
 }
 function cancelEdit() { editing.value = false }
 
+async function handleDeleteAccount() {
+  try {
+    await ElMessageBox.confirm(
+      '注销后您的个人信息将被清除，但已上传的图片将继续保留。此操作不可撤销，确定继续吗？',
+      '确认注销账号',
+      { confirmButtonText: '确认注销', cancelButtonText: '取消', type: 'warning' }
+    )
+  } catch { return }
+  try {
+    await deleteAccount()
+    localStorage.removeItem('satoken')
+    userStore.userInfo = null
+    ElMessage.success('账号已注销')
+    router.push('/login')
+  } catch {}
+}
+
 async function saveProfile() {
   saving.value = true
   try {
@@ -1133,15 +1180,15 @@ async function saveProfile() {
   font-family: var(--font-display); font-size: 26px; font-weight: 700;
   margin: 0; color: var(--text-primary); letter-spacing: -0.3px;
 }
-.username-tag {
-  color: var(--text-muted); font-size: 13px; font-family: var(--font-body);
-  padding: 3px 10px; border-radius: 999px; background: var(--bg-elevated);
-  border: 1px solid var(--border-subtle); font-weight: 500;
-}
 .bio { color: var(--text-secondary); margin-bottom: var(--space-sm); line-height: 1.7; font-size: 14px; }
 .contact { display: flex; gap: var(--space-lg); color: var(--text-muted); font-size: 13px; }
 .contact .el-icon { margin-right: 4px; vertical-align: middle; }
 .profile-edit { margin-top: var(--space-md); }
+
+.delete-in-edit {
+  float: right;
+  margin-left: auto;
+}
 
 .user-works { margin-top: 36px; }
 .user-works h3 {

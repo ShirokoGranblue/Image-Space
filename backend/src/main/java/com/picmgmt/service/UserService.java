@@ -5,7 +5,6 @@ import com.picmgmt.dto.LoginDTO;
 import com.picmgmt.dto.RegisterDTO;
 import com.picmgmt.entity.User;
 import com.picmgmt.dto.CodeLoginDTO;
-import com.picmgmt.dto.SmsLoginDTO;
 import com.picmgmt.vo.UserVO;
 
 public interface UserService {
@@ -34,7 +33,6 @@ public interface UserService {
 
     String loginByCode(CodeLoginDTO dto);
 
-    void sendSmsCode(String phone, String captchaId, String captchaCode);
+    void deleteAccount(Long userId);
 
-    String loginBySmsCode(SmsLoginDTO dto);
 }

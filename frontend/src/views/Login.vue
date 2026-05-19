@@ -14,8 +14,7 @@
       </div>
       <el-tabs v-model="loginMode" class="login-tabs">
         <el-tab-pane label="密码登录" name="password"></el-tab-pane>
-        <el-tab-pane label="验证码登录" name="code"></el-tab-pane>
-        <el-tab-pane label="短信登录" name="sms"></el-tab-pane>
+        <el-tab-pane label="邮箱登录" name="code"></el-tab-pane>
       </el-tabs>
       <div v-show="loginMode === 'password'">
       <el-form :model="form" :rules="rules" ref="formRef" label-position="top" class="login-form" @submit.prevent="handleLogin">
@@ -28,7 +27,7 @@
         </el-form-item>
         <el-form-item>
           <el-button type="primary" size="large" class="login-btn" @click="handleLogin" :loading="loading">
-            Log in
+            登录
           </el-button>
         </el-form-item>
       </el-form>
@@ -57,29 +56,18 @@
           </el-button>
         </el-form-item>
       </div>
-      <div v-show="loginMode === 'sms'" class="login-form">
-        <el-form-item label="手机号">
-          <el-input v-model="smsForm.phone" placeholder="输入已绑定的手机号" size="large" :prefix-icon="Phone" maxlength="11" />
-        </el-form-item>
-        <el-form-item label="图形验证码">
-          <div style="display:flex;gap:8px;align-items:center">
-            <el-input v-model="smsCaptchaCode" placeholder="4位验证码" size="large" maxlength="4" style="flex:1" />
-            <img :src="captchaImage" @click="fetchCaptcha" style="height:40px;cursor:pointer;border-radius:4px;border:1px solid #ddd" title="点击刷新" />
-          </div>
-        </el-form-item>
-        <el-form-item label="短信验证码">
-          <div style="display:flex;gap:8px;width:100%">
-            <el-input v-model="smsForm.code" placeholder="6位数字" size="large" maxlength="6" style="flex:1" />
-            <el-button size="large" @click="handleSendSmsCode" :loading="smsSending" :disabled="smsCountdown > 0" style="min-width:120px">
-              {{ smsCountdown > 0 ? smsCountdown + 's' : '获取验证码' }}
-            </el-button>
-          </div>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" size="large" class="login-btn" @click="handleSmsLogin" :loading="loading">
-            验证并登录
+      <div class="oauth-section">
+        <div class="divider"><span>第三方登录</span></div>
+        <div class="oauth-btns">
+          <el-button size="large" class="github-btn" @click="handleGithubLogin" :loading="githubLoading">
+            <svg class="github-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+            GitHub 登录
           </el-button>
-        </el-form-item>
+          <el-button size="large" class="google-btn" @click="handleGoogleLogin" :loading="googleLoading">
+            <svg class="google-icon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            Google 登录
+          </el-button>
+        </div>
       </div>
       <p class="footer-link">
         还没有账号？<router-link to="/register">创建账号</router-link>
@@ -91,8 +79,8 @@
 <script setup>
 import { reactive, ref, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { User, Lock, Message, Phone } from '@element-plus/icons-vue'
-import { login, sendCode, loginByCode, getCaptcha, sendSmsCode, loginBySmsCode } from '../api/user'
+import { User, Lock, Message } from '@element-plus/icons-vue'
+import { login, sendCode, loginByCode, getCaptcha, getGithubAuthUrl, getGoogleAuthUrl } from '../api/user'
 import { useUserStore } from '../store/user'
 import { ElMessage } from 'element-plus'
 
@@ -103,6 +91,8 @@ const loading = ref(false)
 const loginMode = ref('password')
 const sending = ref(false)
 const countdown = ref(0)
+const githubLoading = ref(false)
+const googleLoading = ref(false)
 let countdownTimer = null
 
 const codeForm = reactive({
@@ -113,17 +103,8 @@ const codeForm = reactive({
 const captchaId = ref('')
 const captchaImage = ref('')
 const captchaCode = ref('')
-const smsCaptchaCode = ref('')
 const captchaExpiry = ref(0)
 let captchaTimerId = null
-
-const smsForm = reactive({
-  phone: '',
-  code: ''
-})
-const smsSending = ref(false)
-const smsCountdown = ref(0)
-let smsCountdownTimer = null
 
 const form = reactive({
   username: '',
@@ -136,21 +117,28 @@ const rules = {
 }
 
 watch(loginMode, (mode) => {
-  if (mode === 'code' || mode === 'sms') {
+  if (mode === 'code') {
     fetchCaptcha()
   }
 })
 
 onMounted(() => {
-  if (loginMode.value === 'code' || loginMode.value === 'sms') {
-    fetchCaptcha()
+  const token = new URLSearchParams(window.location.search).get('satoken')
+  if (token) {
+    userStore.setToken(token)
+    window.history.replaceState({}, '', '/login')
+    userStore.fetchUserInfo().then(() => {
+      ElMessage.success('欢迎回来')
+      router.push('/home')
+    })
+    return
   }
+  fetchCaptcha()
 })
 
 onUnmounted(() => {
   clearCaptchaTimer()
   if (countdownTimer) clearInterval(countdownTimer)
-  if (smsCountdownTimer) clearInterval(smsCountdownTimer)
 })
 
 function startCaptchaTimer() {
@@ -185,10 +173,11 @@ async function handleSendCode() {
   try {
     await sendCode({ email: codeForm.email.trim(), captchaId: captchaId.value, captchaCode: captchaCode.value })
     ElMessage.success('验证码已发送')
-    fetchCaptcha()
     countdown.value = 60
     countdownTimer = setInterval(() => { countdown.value--; if (countdown.value <= 0) clearInterval(countdownTimer) }, 1000)
-  } catch {} finally { sending.value = false }
+  } catch {
+    fetchCaptcha()
+  } finally { sending.value = false }
 }
 
 async function handleCodeLogin() {
@@ -204,30 +193,20 @@ async function handleCodeLogin() {
   } catch {} finally { loading.value = false }
 }
 
-async function handleSendSmsCode() {
-  if (!smsForm.phone) { ElMessage.warning('请输入手机号'); return }
-  if (!smsCaptchaCode.value) { ElMessage.warning('请输入图形验证码'); return }
-  smsSending.value = true
+async function handleGithubLogin() {
+  githubLoading.value = true
   try {
-    await sendSmsCode({ phone: smsForm.phone.trim(), captchaId: captchaId.value, captchaCode: smsCaptchaCode.value })
-    ElMessage.success('验证码已发送')
-    fetchCaptcha()
-    smsCountdown.value = 60
-    smsCountdownTimer = setInterval(() => { smsCountdown.value--; if (smsCountdown.value <= 0) clearInterval(smsCountdownTimer) }, 1000)
-  } catch {} finally { smsSending.value = false }
+    const res = await getGithubAuthUrl()
+    window.location.href = res.data.authorizeUrl
+  } catch {} finally { githubLoading.value = false }
 }
 
-async function handleSmsLogin() {
-  if (!smsForm.phone) { ElMessage.warning('请输入手机号'); return }
-  if (!smsForm.code) { ElMessage.warning('请输入验证码'); return }
-  loading.value = true
+async function handleGoogleLogin() {
+  googleLoading.value = true
   try {
-    const res = await loginBySmsCode({ phone: smsForm.phone.trim(), code: smsForm.code.trim() })
-    userStore.setToken(res.data)
-    await userStore.fetchUserInfo()
-    ElMessage.success('欢迎回来')
-    router.push('/home')
-  } catch {} finally { loading.value = false }
+    const res = await getGoogleAuthUrl()
+    window.location.href = res.data.authorizeUrl
+  } catch {} finally { googleLoading.value = false }
 }
 
 async function handleLogin() {
@@ -384,6 +363,74 @@ async function handleLogin() {
 }
 .login-btn:not(.is-loading):active {
   transform: translateY(0);
+}
+
+.oauth-section {
+  margin-top: var(--space-lg);
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-bottom: var(--space-md);
+}
+.divider::before, .divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.divider span {
+  padding: 0 12px;
+}
+
+.oauth-btns {
+  display: flex;
+  gap: 10px;
+}
+.github-btn {
+  flex: 1;
+  height: 44px;
+  font-size: 14px;
+  font-weight: 550;
+  border-radius: var(--radius-md);
+  background: #24292f;
+  color: #fff;
+  border: none;
+}
+.github-btn:hover {
+  background: #1b1f23;
+  color: #fff;
+}
+.github-btn:active {
+  background: #0d1117;
+}
+.github-icon {
+  width: 18px;
+  height: 18px;
+  margin-right: 6px;
+}
+
+.google-btn {
+  flex: 1;
+  height: 44px;
+  font-size: 14px;
+  font-weight: 550;
+  border-radius: var(--radius-md);
+  background: #fff;
+  color: #444;
+  border: 1px solid #dadce0;
+}
+.google-btn:hover {
+  background: #f8f9fa;
+  color: #222;
+  border-color: #c0c4c8;
+}
+.google-icon {
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
 }
 
 .footer-link {

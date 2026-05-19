@@ -52,10 +52,14 @@ export function getCaptcha() {
   return api.get('/user/captcha')
 }
 
-export function sendSmsCode(data) {
-  return api.post('/user/send-sms-code', data)
+export function getGithubAuthUrl() {
+  return api.get('/user/oauth/github')
 }
 
-export function loginBySmsCode(data) {
-  return api.post('/user/login-by-sms-code', data)
+export function getGoogleAuthUrl() {
+  return api.get('/user/oauth/google')
+}
+
+export function deleteAccount() {
+  return api.delete('/user/account')
 }

@@ -21,8 +21,10 @@ public class User {
     private String avatarKey;
     private String email;
     private String phone;
+    private String githubUsername;
     private String bio;
     private String background;
     private String backgroundKey;
+    private Integer deleted;
     private LocalDateTime createTime;
 }

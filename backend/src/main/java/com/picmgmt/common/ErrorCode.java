@@ -31,9 +31,8 @@ public enum ErrorCode {
     CODE_SEND_FAILED(2008, "验证码发送失败"),
     CODE_INVALID(2009, "验证码错误或已过期"),
     CODE_TOO_FREQUENT(2010, "验证码发送过于频繁，请60秒后重试"),
-    PHONE_NOT_BOUND(2011, "该手机号未绑定任何账号"),
     CAPTCHA_INVALID(2012, "图形验证码错误或已过期"),
-    SMS_SEND_FAILED(2013, "短信验证码发送失败"),
+    USER_DELETED(2014, "用户不存在或已注销"),
 
     // Category errors (3xxx)
     CATEGORY_NOT_FOUND(3001, "分类不存在"),

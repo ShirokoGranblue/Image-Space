@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.crypto.digest.BCrypt;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.picmgmt.cache.RedisCacheService;
 import com.picmgmt.common.BusinessException;
@@ -11,13 +12,11 @@ import com.picmgmt.common.ErrorCode;
 import com.picmgmt.dto.CodeLoginDTO;
 import com.picmgmt.dto.LoginDTO;
 import com.picmgmt.dto.RegisterDTO;
-import com.picmgmt.dto.SmsLoginDTO;
 import com.picmgmt.entity.User;
 import com.picmgmt.mapper.UserMapper;
 import com.picmgmt.repository.UserRepository;
 import com.picmgmt.service.CaptchaService;
 import com.picmgmt.service.EmailService;
-import com.picmgmt.service.SmsService;
 import com.picmgmt.service.UserService;
 import com.picmgmt.vo.UserVO;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +35,6 @@ public class UserServiceImpl implements UserService {
     private final RedisCacheService redisCacheService;
     private final EmailService emailService;
     private final CaptchaService captchaService;
-    private final SmsService smsService;
 
     @Override
     public UserVO register(RegisterDTO dto) {
@@ -85,6 +83,9 @@ public class UserServiceImpl implements UserService {
         if (user == null || !BCrypt.checkpw(dto.getPassword(), user.getPassword())) {
             throw new BusinessException(ErrorCode.LOGIN_FAILED);
         }
+        if (user.getDeleted() != null && user.getDeleted() == 1) {
+            throw new BusinessException(ErrorCode.USER_DELETED);
+        }
         StpUtil.login(user.getId());
         return StpUtil.getTokenValue();
     }
@@ -103,6 +104,9 @@ public class UserServiceImpl implements UserService {
     public UserVO getUserVOById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        if (user.getDeleted() != null && user.getDeleted() == 1) {
+            throw new BusinessException(ErrorCode.USER_DELETED);
+        }
         return userRepository.toVO(user);
     }
 
@@ -192,20 +196,24 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void sendCode(String email, String captchaId, String captchaCode) {
-        captchaService.verify(captchaId, captchaCode);
         User user = userMapper.selectOne(
                 new LambdaQueryWrapper<User>().eq(User::getEmail, email));
         if (user == null) {
             throw new BusinessException(ErrorCode.EMAIL_NOT_BOUND);
         }
+        if (user.getDeleted() != null && user.getDeleted() == 1) {
+            throw new BusinessException(ErrorCode.USER_DELETED);
+        }
         String redisKey = "code:login:" + email;
-        if (redisCacheService.get(redisKey, String.class).isPresent()) {
+        if (!redisCacheService.setIfAbsent(redisKey, "pending", Duration.ofSeconds(60))) {
             throw new BusinessException(ErrorCode.CODE_TOO_FREQUENT);
         }
+        captchaService.verify(captchaId, captchaCode);
         String code = String.format("%06d", ThreadLocalRandom.current().nextInt(1000000));
         try {
             emailService.sendVerificationCode(email, code);
         } catch (Exception e) {
+            redisCacheService.evict(redisKey);
             throw new BusinessException(ErrorCode.CODE_SEND_FAILED, e.getMessage());
         }
         redisCacheService.put(redisKey, code, Duration.ofSeconds(60));
@@ -219,6 +227,9 @@ public class UserServiceImpl implements UserService {
         if (user == null) {
             throw new BusinessException(ErrorCode.EMAIL_NOT_BOUND);
         }
+        if (user.getDeleted() != null && user.getDeleted() == 1) {
+            throw new BusinessException(ErrorCode.USER_DELETED);
+        }
         String redisKey = "code:login:" + email;
         String storedCode = redisCacheService.get(redisKey, String.class).orElse(null);
         if (storedCode == null || !storedCode.equals(dto.getCode().trim())) {
@@ -230,38 +241,22 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void sendSmsCode(String phone, String captchaId, String captchaCode) {
-        captchaService.verify(captchaId, captchaCode);
-        User user = userMapper.selectOne(
-                new LambdaQueryWrapper<User>().eq(User::getPhone, phone));
-        if (user == null) {
-            throw new BusinessException(ErrorCode.PHONE_NOT_BOUND);
-        }
-        String redisKey = "code:login:" + phone;
-        if (redisCacheService.get(redisKey, String.class).isPresent()) {
-            throw new BusinessException(ErrorCode.CODE_TOO_FREQUENT);
-        }
-        try {
-            smsService.sendVerificationCode(phone);
-        } catch (Exception e) {
-            throw new BusinessException(ErrorCode.SMS_SEND_FAILED, e.getMessage());
-        }
-        redisCacheService.put(redisKey, "sent", Duration.ofSeconds(60));
+    public void deleteAccount(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        userMapper.update(null, new LambdaUpdateWrapper<User>()
+                .eq(User::getId, userId)
+                .set(User::getDeleted, 1)
+                .set(User::getDisplayName, "已注销用户")
+                .set(User::getEmail, null)
+                .set(User::getPhone, null)
+                .set(User::getBio, null)
+                .set(User::getAvatar, null)
+                .set(User::getAvatarKey, null)
+                .set(User::getBackground, null)
+                .set(User::getBackgroundKey, null)
+                .set(User::getGithubUsername, null));
+        StpUtil.logout();
     }
 
-    @Override
-    public String loginBySmsCode(SmsLoginDTO dto) {
-        String phone = dto.getPhone().trim();
-        User user = userMapper.selectOne(
-                new LambdaQueryWrapper<User>().eq(User::getPhone, phone));
-        if (user == null) {
-            throw new BusinessException(ErrorCode.PHONE_NOT_BOUND);
-        }
-        if (!smsService.checkVerificationCode(phone, dto.getCode().trim())) {
-            throw new BusinessException(ErrorCode.CODE_INVALID);
-        }
-        redisCacheService.evict("code:login:" + phone);
-        StpUtil.login(user.getId());
-        return StpUtil.getTokenValue();
-    }
 }

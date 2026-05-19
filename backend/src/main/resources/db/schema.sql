@@ -16,9 +16,13 @@ CREATE TABLE IF NOT EXISTS users (
     avatar LONGTEXT,
     email VARCHAR(100) UNIQUE,
     phone VARCHAR(20) UNIQUE,
+    github_username VARCHAR(100),
+    avatar_key VARCHAR(500),
+    background_key VARCHAR(500),
     bio VARCHAR(200),
     background LONGTEXT,
-    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted TINYINT NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Categories table

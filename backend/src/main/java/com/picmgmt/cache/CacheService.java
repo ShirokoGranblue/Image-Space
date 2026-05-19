@@ -15,4 +15,6 @@ public interface CacheService {
     void evictByPattern(String pattern);
 
     <T> T getOrLoad(String key, Class<T> type, Supplier<T> loader, Duration ttl);
+
+    <T> boolean setIfAbsent(String key, T value, Duration ttl);
 }

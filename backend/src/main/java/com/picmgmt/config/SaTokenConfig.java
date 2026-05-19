@@ -19,8 +19,9 @@ public class SaTokenConfig implements WebMvcConfigurer {
                                     "/image/square", "/user/profile/**",
                                     "/user/check-field",
                                     "/user/send-code", "/user/login-by-code",
-                                    "/user/send-sms-code", "/user/login-by-sms-code",
                                     "/user/captcha",
+                                    "/user/oauth/github", "/user/oauth/github/callback",
+                                    "/user/oauth/google", "/user/oauth/google/callback",
                                     "/comment/list/**")
                             .check(r -> StpUtil.checkLogin());
                 }))

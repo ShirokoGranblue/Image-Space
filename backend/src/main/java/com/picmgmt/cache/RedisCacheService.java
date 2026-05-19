@@ -78,4 +78,14 @@ public class RedisCacheService implements CacheService {
         }
         return value;
     }
+
+    @Override
+    public <T> boolean setIfAbsent(String key, T value, Duration ttl) {
+        Boolean result = redisTemplate.opsForValue().setIfAbsent(key, value, ttl);
+        if (Boolean.TRUE.equals(result)) {
+            caffeineLocalCache.put(key, value, ttl);
+            return true;
+        }
+        return false;
+    }
 }

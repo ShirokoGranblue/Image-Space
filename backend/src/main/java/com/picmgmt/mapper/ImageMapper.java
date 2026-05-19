@@ -15,7 +15,10 @@ public interface ImageMapper extends BaseMapper<Image> {
 
     @Select("""
         <script>
-            SELECT i.*, u.username, u.display_name, c.category_name
+            SELECT i.*,
+                   CASE WHEN u.deleted = 1 THEN '已注销用户' ELSE u.username END as username,
+                   CASE WHEN u.deleted = 1 THEN '已注销用户' ELSE u.display_name END as display_name,
+                   c.category_name
             FROM images i
             LEFT JOIN users u ON i.user_id = u.id
             LEFT JOIN categories c ON i.category_id = c.id
@@ -44,7 +47,9 @@ public interface ImageMapper extends BaseMapper<Image> {
             SELECT i.id, i.user_id, i.category_id, i.image_name, i.storage_key,
                    i.file_size, i.image_type, i.description, i.tags,
                    i.visibility, i.visible_usernames, i.upload_time,
-                   u.username, u.display_name, c.category_name
+                   CASE WHEN u.deleted = 1 THEN '已注销用户' ELSE u.username END as username,
+                   CASE WHEN u.deleted = 1 THEN '已注销用户' ELSE u.display_name END as display_name,
+                   c.category_name
             FROM images i
             LEFT JOIN users u ON i.user_id = u.id
             LEFT JOIN categories c ON i.category_id = c.id

@@ -9,9 +9,8 @@ import com.picmgmt.dto.CodeLoginDTO;
 import com.picmgmt.dto.LoginDTO;
 import com.picmgmt.dto.RegisterDTO;
 import com.picmgmt.dto.SendCodeDTO;
-import com.picmgmt.dto.SendSmsCodeDTO;
-import com.picmgmt.dto.SmsLoginDTO;
 import com.picmgmt.service.CaptchaService;
+import com.picmgmt.service.OAuthService;
 import com.picmgmt.service.UserService;
 import com.picmgmt.storage.StorageService;
 import com.picmgmt.vo.UserVO;
@@ -36,6 +35,7 @@ public class UserController {
     private final UserService userService;
     private final StorageService storageService;
     private final CaptchaService captchaService;
+    private final OAuthService oAuthService;
 
     private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "webp");
 
@@ -119,6 +119,36 @@ public class UserController {
         return Result.ok(userService.getUserList(page, limit));
     }
 
+    @Operation(summary = "GitHub OAuth授权地址")
+    @GetMapping("/oauth/github")
+    public Result<Map<String, String>> githubOAuth() {
+        String url = oAuthService.getAuthorizeUrl("github");
+        return Result.ok(Map.of("authorizeUrl", url));
+    }
+
+    @Operation(summary = "GitHub OAuth回调")
+    @GetMapping("/oauth/github/callback")
+    public void githubCallback(@RequestParam String code, @RequestParam String state,
+                                jakarta.servlet.http.HttpServletResponse response) throws java.io.IOException {
+        String token = oAuthService.handleCallback("github", code, state);
+        response.sendRedirect("http://localhost:3000/login?satoken=" + token);
+    }
+
+    @Operation(summary = "Google OAuth授权地址")
+    @GetMapping("/oauth/google")
+    public Result<Map<String, String>> googleOAuth() {
+        String url = oAuthService.getAuthorizeUrl("google");
+        return Result.ok(Map.of("authorizeUrl", url));
+    }
+
+    @Operation(summary = "Google OAuth回调")
+    @GetMapping("/oauth/google/callback")
+    public void googleCallback(@RequestParam String code, @RequestParam String state,
+                                jakarta.servlet.http.HttpServletResponse response) throws java.io.IOException {
+        String token = oAuthService.handleCallback("google", code, state);
+        response.sendRedirect("http://localhost:3000/login?satoken=" + token);
+    }
+
     @Operation(summary = "检查邮箱/手机号是否已被使用")
     @GetMapping("/check-field")
     public Result<Void> checkField(@RequestParam String field,
@@ -144,16 +174,11 @@ public class UserController {
         return Result.ok(userService.loginByCode(dto));
     }
 
-    @Operation(summary = "发送短信验证码")
-    @PostMapping("/send-sms-code")
-    public Result<Void> sendSmsCode(@Valid @RequestBody SendSmsCodeDTO dto) {
-        userService.sendSmsCode(dto.getPhone().trim(), dto.getCaptchaId(), dto.getCaptchaCode());
+    @Operation(summary = "注销账号")
+    @DeleteMapping("/account")
+    public Result<Void> deleteAccount() {
+        userService.deleteAccount(StpUtil.getLoginIdAsLong());
         return Result.ok();
     }
 
-    @Operation(summary = "短信验证码登录")
-    @PostMapping("/login-by-sms-code")
-    public Result<String> loginBySmsCode(@Valid @RequestBody SmsLoginDTO dto) {
-        return Result.ok(userService.loginBySmsCode(dto));
-    }
 }
