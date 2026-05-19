@@ -206,7 +206,7 @@ public class UserServiceImpl implements UserService {
         try {
             emailService.sendVerificationCode(email, code);
         } catch (Exception e) {
-            throw new BusinessException(ErrorCode.CODE_SEND_FAILED);
+            throw new BusinessException(ErrorCode.CODE_SEND_FAILED, e.getMessage());
         }
         redisCacheService.put(redisKey, code, Duration.ofSeconds(60));
     }
@@ -245,7 +245,7 @@ public class UserServiceImpl implements UserService {
         try {
             smsService.sendVerificationCode(phone, code);
         } catch (Exception e) {
-            throw new BusinessException(ErrorCode.SMS_SEND_FAILED);
+            throw new BusinessException(ErrorCode.SMS_SEND_FAILED, e.getMessage());
         }
         redisCacheService.put(redisKey, code, Duration.ofSeconds(60));
     }
