@@ -161,10 +161,9 @@ async function handleSendCode() {
     await sendCode({ email: codeForm.email.trim(), captchaId: captchaId.value, captchaCode: captchaCode.value })
     ElMessage.success('验证码已发送')
     fetchCaptcha()
-    captchaCode.value = ''
     countdown.value = 60
     countdownTimer = setInterval(() => { countdown.value--; if (countdown.value <= 0) clearInterval(countdownTimer) }, 1000)
-  } catch { fetchCaptcha() } finally { sending.value = false }
+  } catch {} finally { sending.value = false }
 }
 
 async function handleCodeLogin() {
@@ -188,10 +187,9 @@ async function handleSendSmsCode() {
     await sendSmsCode({ phone: smsForm.phone.trim(), captchaId: captchaId.value, captchaCode: smsCaptchaCode.value })
     ElMessage.success('验证码已发送')
     fetchCaptcha()
-    smsCaptchaCode.value = ''
     smsCountdown.value = 60
     smsCountdownTimer = setInterval(() => { smsCountdown.value--; if (smsCountdown.value <= 0) clearInterval(smsCountdownTimer) }, 1000)
-  } catch { fetchCaptcha() } finally { smsSending.value = false }
+  } catch {} finally { smsSending.value = false }
 }
 
 async function handleSmsLogin() {
