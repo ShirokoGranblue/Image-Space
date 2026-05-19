@@ -38,23 +38,22 @@ public class SmsServiceImpl implements SmsService {
             IAcsClient client = new DefaultAcsClient(profile);
             CommonRequest request = new CommonRequest();
             request.setSysMethod(MethodType.POST);
-            request.setSysDomain("dysmsapi.aliyuncs.com");
+            request.setSysDomain("dypnsapi.aliyuncs.com");
             request.setSysVersion("2017-05-25");
-            request.setSysAction("SendSms");
-            request.putQueryParameter("RegionId", "cn-hangzhou");
-            request.putQueryParameter("PhoneNumbers", phone);
+            request.setSysAction("SendSmsVerifyCode");
+            request.putQueryParameter("PhoneNumber", phone);
             request.putQueryParameter("SignName", signName);
             request.putQueryParameter("TemplateCode", templateCode);
             request.putQueryParameter("TemplateParam", "{\"code\":\"" + code + "\"}");
-            log.info("Sending SMS to {} with sign={}, template={}", phone, signName, templateCode);
+            log.info("Sending PNVS SMS to {} sign={} template={}", phone, signName, templateCode);
             CommonResponse response = client.getCommonResponse(request);
             String data = response.getData();
-            log.info("SMS response for {}: {}", phone, data);
+            log.info("PNVS SMS response for {}: {}", phone, data);
             JsonNode json = objectMapper.readTree(data);
             String respCode = json.has("Code") ? json.get("Code").asText() : "";
             if (!"OK".equals(respCode)) {
                 String msg = json.has("Message") ? json.get("Message").asText() : respCode;
-                throw new RuntimeException("阿里云短信错误: " + msg);
+                throw new RuntimeException("阿里云PNVS错误: " + msg);
             }
         } catch (Exception e) {
             log.error("Failed to send SMS to {}", phone, e);
