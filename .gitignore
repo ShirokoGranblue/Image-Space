@@ -33,6 +33,7 @@ upload/
 
 # Local config
 application-local.yml
+application.yml
 
 # Claude
 .claude/settings.local.json
