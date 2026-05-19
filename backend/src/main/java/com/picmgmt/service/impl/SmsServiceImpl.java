@@ -6,6 +6,8 @@ import com.aliyuncs.DefaultAcsClient;
 import com.aliyuncs.IAcsClient;
 import com.aliyuncs.http.MethodType;
 import com.aliyuncs.profile.DefaultProfile;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.picmgmt.service.SmsService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,6 +29,8 @@ public class SmsServiceImpl implements SmsService {
     @Value("${sms.aliyun.template-code}")
     private String templateCode;
 
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
     @Override
     public void sendVerificationCode(String phone, String code) {
         try {
@@ -42,7 +46,14 @@ public class SmsServiceImpl implements SmsService {
             request.putQueryParameter("TemplateCode", templateCode);
             request.putQueryParameter("TemplateParam", "{\"code\":\"" + code + "\"}");
             CommonResponse response = client.getCommonResponse(request);
-            log.info("SMS sent to {}, response: {}", phone, response.getData());
+            String data = response.getData();
+            log.info("SMS sent to {}, response: {}", phone, data);
+            JsonNode json = objectMapper.readTree(data);
+            String respCode = json.has("Code") ? json.get("Code").asText() : "";
+            if (!"OK".equals(respCode)) {
+                String msg = json.has("Message") ? json.get("Message").asText() : respCode;
+                throw new RuntimeException("阿里云短信错误: " + msg);
+            }
         } catch (Exception e) {
             log.error("Failed to send SMS to {}", phone, e);
             throw new RuntimeException("短信发送失败", e);

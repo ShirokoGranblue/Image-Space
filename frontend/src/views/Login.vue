@@ -11,7 +11,6 @@
           <el-icon :size="36"><PictureFilled /></el-icon>
         </div>
         <h1 class="wordmark">ImageSpace</h1>
-        <p class="tagline">整理、浏览和分享你的图片</p>
       </div>
       <el-tabs v-model="loginMode" class="login-tabs">
         <el-tab-pane label="密码登录" name="password"></el-tab-pane>
@@ -29,7 +28,7 @@
         </el-form-item>
         <el-form-item>
           <el-button type="primary" size="large" class="login-btn" @click="handleLogin" :loading="loading">
-            进入图库
+            Log in
           </el-button>
         </el-form-item>
       </el-form>
@@ -90,7 +89,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, watch } from 'vue'
+import { reactive, ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { User, Lock, Message, Phone } from '@element-plus/icons-vue'
 import { login, sendCode, loginByCode, getCaptcha, sendSmsCode, loginBySmsCode } from '../api/user'
@@ -140,6 +139,12 @@ watch(loginMode, (mode) => {
   }
 })
 
+onMounted(() => {
+  if (loginMode.value === 'code' || loginMode.value === 'sms') {
+    fetchCaptcha()
+  }
+})
+
 async function fetchCaptcha() {
   try {
     const res = await getCaptcha()
@@ -159,7 +164,7 @@ async function handleSendCode() {
     captchaCode.value = ''
     countdown.value = 60
     countdownTimer = setInterval(() => { countdown.value--; if (countdown.value <= 0) clearInterval(countdownTimer) }, 1000)
-  } catch {} finally { sending.value = false }
+  } catch { fetchCaptcha() } finally { sending.value = false }
 }
 
 async function handleCodeLogin() {
@@ -186,7 +191,7 @@ async function handleSendSmsCode() {
     smsCaptchaCode.value = ''
     smsCountdown.value = 60
     smsCountdownTimer = setInterval(() => { smsCountdown.value--; if (smsCountdown.value <= 0) clearInterval(smsCountdownTimer) }, 1000)
-  } catch {} finally { smsSending.value = false }
+  } catch { fetchCaptcha() } finally { smsSending.value = false }
 }
 
 async function handleSmsLogin() {
