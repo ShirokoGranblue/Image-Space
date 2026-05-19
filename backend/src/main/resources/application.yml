@@ -5,8 +5,8 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://127.0.0.1:3306/picture_management?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
-    username: root
-    password: 123456
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:123456}
   servlet:
     multipart:
       max-file-size: 20MB
@@ -29,8 +29,8 @@ spring:
   mail:
     host: smtp.qq.com
     port: 587
-    username: '2653740949@qq.com'
-    password: 'wilqwpuqbwtqeabe'
+    username: ${MAIL_USERNAME:2653740949@qq.com}
+    password: ${MAIL_PASSWORD:wilqwpuqbwtqeabe}
     properties:
       mail:
         smtp:
@@ -66,15 +66,23 @@ storage:
   type: minio
   minio:
     endpoint: http://127.0.0.1:9000
-    access-key: minioadmin
-    secret-key: minioadmin
+    access-key: ${MINIO_ACCESS_KEY:minioadmin}
+    secret-key: ${MINIO_SECRET_KEY:minioadmin}
   local:
     base-path: ./storage
 
-sms:
-  aliyun:
-    access-key-id: 'LTAI5tARDVzjuSGUhb9RqmgR'
-    access-key-secret: 'vOUQWg4EziWYCwbvPFySYNvq1zXZG6'
-    sign-name: '速通互联验证服务'
-    template-code: '100001'
+oauth:
+  github:
+    client-id: ${GITHUB_CLIENT_ID:Ov23liFeDfmlOaFtqMcM}
+    client-secret: ${GITHUB_CLIENT_SECRET:679bd506ebf94e226c7d62db5affd555ac1423ef}
+    redirect-uri: 'http://localhost:8088/user/oauth/github/callback'
+  google:
+    client-id: ${GOOGLE_CLIENT_ID:857850390803-scf91lfied49isc59u8qlb2fu6ph86eo.apps.googleusercontent.com}
+    client-secret: ${GOOGLE_CLIENT_SECRET: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}
+    redirect-uri: 'http://localhost:8088/user/oauth/google/callback'
+  timeout: 30000
+  proxy:
+    enabled: true
+    host: '127.0.0.1'
+    port: 7897
 
