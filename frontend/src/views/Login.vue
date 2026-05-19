@@ -41,6 +41,7 @@
           <div style="display:flex;gap:8px;align-items:center">
             <el-input v-model="captchaCode" placeholder="4位验证码" size="large" maxlength="4" style="flex:1" />
             <img :src="captchaImage" @click="fetchCaptcha" style="height:40px;cursor:pointer;border-radius:4px;border:1px solid #ddd" title="点击刷新" />
+            <span v-if="captchaExpiry > 0" style="font-size:12px;color:#999;white-space:nowrap">{{ captchaExpiry }}s</span>
           </div>
         </el-form-item>
         <el-form-item label="验证码">
@@ -65,6 +66,7 @@
           <div style="display:flex;gap:8px;align-items:center">
             <el-input v-model="smsCaptchaCode" placeholder="4位验证码" size="large" maxlength="4" style="flex:1" />
             <img :src="captchaImage" @click="fetchCaptcha" style="height:40px;cursor:pointer;border-radius:4px;border:1px solid #ddd" title="点击刷新" />
+            <span v-if="captchaExpiry > 0" style="font-size:12px;color:#999;white-space:nowrap">{{ captchaExpiry }}s</span>
           </div>
         </el-form-item>
         <el-form-item label="短信验证码">
@@ -89,7 +91,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, watch, onMounted } from 'vue'
+import { reactive, ref, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { User, Lock, Message, Phone } from '@element-plus/icons-vue'
 import { login, sendCode, loginByCode, getCaptcha, sendSmsCode, loginBySmsCode } from '../api/user'
@@ -114,6 +116,8 @@ const captchaId = ref('')
 const captchaImage = ref('')
 const captchaCode = ref('')
 const smsCaptchaCode = ref('')
+const captchaExpiry = ref(0)
+let captchaTimerId = null
 
 const smsForm = reactive({
   phone: '',
@@ -145,11 +149,34 @@ onMounted(() => {
   }
 })
 
+onUnmounted(() => {
+  clearCaptchaTimer()
+  if (countdownTimer) clearInterval(countdownTimer)
+  if (smsCountdownTimer) clearInterval(smsCountdownTimer)
+})
+
+function startCaptchaTimer() {
+  clearCaptchaTimer()
+  captchaExpiry.value = 60
+  captchaTimerId = setInterval(() => {
+    captchaExpiry.value--
+    if (captchaExpiry.value <= 0) {
+      clearCaptchaTimer()
+      fetchCaptcha()
+    }
+  }, 1000)
+}
+
+function clearCaptchaTimer() {
+  if (captchaTimerId) { clearInterval(captchaTimerId); captchaTimerId = null }
+}
+
 async function fetchCaptcha() {
   try {
     const res = await getCaptcha()
     captchaId.value = res.data.captchaId
     captchaImage.value = res.data.captchaImage
+    startCaptchaTimer()
   } catch {}
 }
 
