@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 8088
 
 spring:
   datasource:
@@ -73,8 +73,8 @@ storage:
 
 sms:
   aliyun:
-    access-key-id: ''
-    access-key-secret: ''
-    sign-name: 'ImageSpace'
-    template-code: ''
+    access-key-id: 'LTAI5tARDVzjuSGUhb9RqmgR'
+    access-key-secret: 'vOUQWg4EziWYCwbvPFySYNvq1zXZG6'
+    sign-name: '速通互联验证服务'
+    template-code: '100001'
 

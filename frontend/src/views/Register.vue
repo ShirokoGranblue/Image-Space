@@ -11,7 +11,6 @@
           <el-icon :size="36"><UserFilled /></el-icon>
         </div>
         <h1 class="wordmark">创建账号</h1>
-        <p class="tagline">用一个清晰空间管理你的影像</p>
       </div>
       <el-form :model="form" :rules="rules" ref="formRef" label-position="top" class="login-form" @submit.prevent="handleRegister">
         <el-form-item label="用户名" prop="username">

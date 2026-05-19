@@ -241,13 +241,12 @@ public class UserServiceImpl implements UserService {
         if (redisCacheService.get(redisKey, String.class).isPresent()) {
             throw new BusinessException(ErrorCode.CODE_TOO_FREQUENT);
         }
-        String code = String.format("%06d", ThreadLocalRandom.current().nextInt(1000000));
         try {
-            smsService.sendVerificationCode(phone, code);
+            smsService.sendVerificationCode(phone);
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.SMS_SEND_FAILED, e.getMessage());
         }
-        redisCacheService.put(redisKey, code, Duration.ofSeconds(60));
+        redisCacheService.put(redisKey, "sent", Duration.ofSeconds(60));
     }
 
     @Override
@@ -258,12 +257,10 @@ public class UserServiceImpl implements UserService {
         if (user == null) {
             throw new BusinessException(ErrorCode.PHONE_NOT_BOUND);
         }
-        String redisKey = "code:login:" + phone;
-        String storedCode = redisCacheService.get(redisKey, String.class).orElse(null);
-        if (storedCode == null || !storedCode.equals(dto.getCode().trim())) {
+        if (!smsService.checkVerificationCode(phone, dto.getCode().trim())) {
             throw new BusinessException(ErrorCode.CODE_INVALID);
         }
-        redisCacheService.evict(redisKey);
+        redisCacheService.evict("code:login:" + phone);
         StpUtil.login(user.getId());
         return StpUtil.getTokenValue();
     }
