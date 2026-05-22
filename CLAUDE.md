@@ -1,13 +1,14 @@
 # CLAUDE.md
 
 Development guide for Claude Code (claude.ai/code) working in this repository.
+Please read files at 'C:\Users\l2653\.claude\projects\C--Users-l2653-Desktop-picture-management\memory' when Claude Code launching
 
 ## Common Commands
 
 ```bash
 # Backend
 cd backend
-mvn spring-boot:run                          # Start backend, listens on :8080
+mvn spring-boot:run                          # Start backend, listens on :8088
 mvn test                                      # Run all tests
 
 # Frontend
@@ -21,7 +22,7 @@ npm test                                      # Run all tests
 # Database name: picture_management, default credentials root/root, see application.yml
 ```
 
-API docs are auto-generated at `http://localhost:8080/doc.html` (SpringDoc + Knife4j UI).
+API docs are auto-generated at `http://localhost:8088/doc.html` (SpringDoc + Knife4j UI).
 
 ## Architecture
 
@@ -37,7 +38,7 @@ controller → service/impl → mapper (MyBatis-Plus BaseMapper)
 - **Password encryption**: BCrypt via Hutool (`BCrypt.hashpw` / `BCrypt.checkpw`), not Spring Security's encoder.
 - **Image storage**: All images (pictures, avatars, backgrounds, comment images) stored as Base64 Data URLs in MySQL `LONGTEXT` columns. Upload: `MultipartFile → byte[] → Base64 Data URL` inserted into database. Frontend renders directly via `<img :src="dataUrl">`. `ImageCacheService` provides LRU in-memory cache — Base64 ↔ byte[] conversion checks cache first, falls back to direct conversion and writes to buffer on miss.
 - **Data migration**: `DataMigrationRunner` automatically detects legacy file-path data (`/upload/...`) on first startup, reads local files, converts to Base64, stores in database, then removes the `upload` directory.
-- **CORS**: `WebMvcConfig` allows all origins. Frontend dev uses Vite proxy (`/api` → `:8080`), so CORS config only applies when frontend and backend are deployed together.
+- **CORS**: `WebMvcConfig` allows all origins. Frontend dev uses Vite proxy (`/api` → `:8088`), so CORS config only applies when frontend and backend are deployed together.
 
 **Frontend** — Vue 3 + Element Plus + Pinia + Vue Router:
 

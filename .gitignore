@@ -44,6 +44,10 @@ application.yml
 # Backup
 _backup_*/
 
+# Docker runtime data
+docker/minio/data/
+docker/mysql/data/
+
 # OS
 .DS_Store
 Thumbs.db
