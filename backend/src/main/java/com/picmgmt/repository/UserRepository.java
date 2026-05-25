@@ -50,12 +50,12 @@ public class UserRepository {
         vo.setBio(user.getBio());
         vo.setCreateTime(user.getCreateTime());
 
-        if (user.getAvatarKey() != null) {
-            vo.setAvatarUrl(storageService.getAccessUrl("avatars", user.getAvatarKey()));
-        }
-        if (user.getBackgroundKey() != null) {
-            vo.setBackgroundUrl(storageService.getAccessUrl("backgrounds", user.getBackgroundKey()));
-        }
+        String avatarUrl = user.getAvatarKey() != null ? "/api/user/avatar/" + user.getId() : user.getAvatar();
+        String backgroundUrl = user.getBackgroundKey() != null ? "/api/user/background/" + user.getId() : user.getBackground();
+        vo.setAvatar(avatarUrl);
+        vo.setAvatarUrl(avatarUrl);
+        vo.setBackground(backgroundUrl);
+        vo.setBackgroundUrl(backgroundUrl);
         return vo;
     }
 }

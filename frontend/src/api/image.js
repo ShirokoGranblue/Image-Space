@@ -19,13 +19,13 @@ export function deleteImage(id) {
 }
 
 export function updateImage(id, data) {
-  return api.put(`/image/${id}`, null, { params: data })
+  return api.put(`/image/${id}`, data)
 }
 
 export function downloadImage(id) {
   return `/api/image/download/${id}`
 }
 
-export function getImageSquare(page, limit) {
-  return api.get('/image/square', { params: { page, limit } })
+export function getImageSquare(params) {
+  return api.get('/image/square', { params })
 }

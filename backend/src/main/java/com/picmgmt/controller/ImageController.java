@@ -35,11 +35,12 @@ public class ImageController {
     @SaCheckPermission("image:upload")
     public Result<ImageVO> upload(@RequestParam("file") MultipartFile file,
                                    @RequestParam(required = false) Long categoryId,
+                                   @RequestParam(required = false) String imageName,
                                    @RequestParam(required = false) String description,
                                    @RequestParam(required = false) String tags,
                                    @RequestParam(required = false) String visibility,
                                    @RequestParam(required = false) String visibleUsernames) {
-        return Result.ok(imageWriteService.upload(file, categoryId, description, tags, visibility, visibleUsernames));
+        return Result.ok(imageWriteService.upload(file, categoryId, description, tags, visibility, visibleUsernames, imageName));
     }
 
     @Operation(summary = "删除图片")
@@ -85,7 +86,13 @@ public class ImageController {
     @Operation(summary = "图片广场")
     @GetMapping("/square")
     public Result<Page<ImageVO>> square(@RequestParam(defaultValue = "1") Integer page,
-                                        @RequestParam(defaultValue = "12") Integer limit) {
-        return Result.ok(imageReadService.getSquare(page, limit));
+                                        @RequestParam(defaultValue = "50") Integer limit,
+                                        @RequestParam(required = false) String keyword,
+                                        @RequestParam(required = false) String tags,
+                                        @RequestParam(defaultValue = "random") String sortMode,
+                                        @RequestParam(required = false) String randomSeed,
+                                        @RequestParam(required = false) String sortField,
+                                        @RequestParam(required = false) String sortOrder) {
+        return Result.ok(imageReadService.getSquare(page, limit, keyword, tags, sortMode, randomSeed, sortField, sortOrder));
     }
 }

@@ -38,6 +38,7 @@ docker-compose.yml
 
 # Claude
 .claude/settings.local.json
+.claude/settings.json
 
 # Playwright MCP
 .playwright-mcp/
@@ -57,5 +58,7 @@ Thumbs.db
 *.err.log
 *.out.log
 
-docs/superpowers/plans
-docs/superpowers/specs
+# skills log
+docs/superpowers/
+# codex pets
+pets/

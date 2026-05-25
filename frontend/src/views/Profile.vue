@@ -12,7 +12,7 @@
 
       <div class="profile-header">
         <div class="avatar-wrap">
-          <el-avatar :size="120" :src="user.avatarUrl || user.avatar" class="avatar">
+          <el-avatar :size="120" :src="avatarDisplayUrl" class="avatar">
             <el-icon :size="48"><UserFilled /></el-icon>
           </el-avatar>
           <div v-if="isOwner" class="avatar-upload" @click="openAvatarEditor">
@@ -59,13 +59,50 @@
       </div>
 
       <div class="user-works">
-        <h3>作品</h3>
+        <div class="works-heading">
+          <h3>作品</h3>
+          <div v-if="isOwner && works.length > 0" class="works-actions">
+            <el-checkbox
+              :model-value="allWorksSelected"
+              :indeterminate="partiallyWorksSelected"
+              @change="toggleSelectAllWorks"
+            >
+              全选本页
+            </el-checkbox>
+            <el-button v-if="selectedWorkIds.length > 0" @click="clearWorkSelection">取消选择</el-button>
+            <el-button
+              v-if="selectedWorkIds.length > 0"
+              type="danger"
+              @click="handleBatchWorkDelete"
+            >
+              删除选中 {{ selectedWorkIds.length }}
+            </el-button>
+          </div>
+        </div>
         <div v-if="works.length === 0" class="empty-state"><p>暂无作品</p></div>
         <div v-else class="card-grid">
-          <ImageCard v-for="img in works" :key="img.id" :image="img" :show-actions="false" />
+          <ImageCard
+            v-for="img in works"
+            :key="img.id"
+            :image="img"
+            :show-actions="isOwner"
+            :selectable="isOwner"
+            :selected="selectedWorkIds.includes(img.id)"
+            @delete="handleWorkDelete"
+            @edit="handleWorkEdit"
+            @toggle-select="toggleWorkSelection"
+          />
         </div>
-        <div class="pagination-wrap" v-if="workTotal > workLimit">
-          <el-pagination v-model:current-page="workPage" :page-size="workLimit" :total="workTotal" layout="prev, pager, next" @current-change="fetchWorks" />
+        <div class="pagination-wrap" v-if="workTotal > 0">
+          <el-pagination
+            v-model:current-page="workPage"
+            :page-size="workLimit"
+            :page-sizes="IMAGE_PAGE_SIZES"
+            :total="workTotal"
+            layout="total, sizes, prev, pager, next"
+            @size-change="onWorkPageSizeChange"
+            @current-change="fetchWorks"
+          />
         </div>
       </div>
     </div>
@@ -114,7 +151,7 @@
               <div class="profile-mini-banner" :style="miniBannerPreviewStyle" />
               <div class="profile-mini-header">
                 <div class="profile-mini-avatar">
-                  <el-avatar :size="22" :src="user.avatar">
+                  <el-avatar :size="22" :src="avatarDisplayUrl">
                     <el-icon :size="10"><UserFilled /></el-icon>
                   </el-avatar>
                 </div>
@@ -185,6 +222,60 @@
         <el-button type="primary" @click="confirmAvatar" :loading="avatarSaving" :disabled="!avatarPreviewUrl">确认</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="imageEditVisible" title="编辑图片信息" width="480px">
+      <el-form :model="imageEditForm" label-width="86px" v-if="imageEditForm.id">
+        <el-form-item label="图片名称">
+          <el-input v-model="imageEditForm.imageName" />
+        </el-form-item>
+        <el-form-item label="分类">
+          <div class="category-row">
+            <el-select
+              v-model="imageEditForm.categoryId"
+              placeholder="选择分类"
+              clearable
+              filterable
+              style="width: 100%"
+            >
+              <el-option v-for="cat in categories" :key="cat.id" :label="cat.categoryName" :value="cat.id" />
+            </el-select>
+            <el-button @click="openWorkCreateCategory">新建分类</el-button>
+          </div>
+        </el-form-item>
+        <el-form-item label="描述">
+          <el-input v-model="imageEditForm.description" type="textarea" :rows="3" />
+        </el-form-item>
+        <el-form-item label="标签">
+          <TagInput v-model="imageEditForm.tags" placeholder="多个标签用 # 分隔" />
+        </el-form-item>
+        <el-form-item label="可见权限">
+          <el-select v-model="imageEditForm.visibility" style="width: 100%">
+            <el-option label="仅自己" value="PRIVATE" />
+            <el-option label="公开" value="PUBLIC" />
+            <el-option label="指定用户" value="SPECIFIED" />
+          </el-select>
+        </el-form-item>
+        <el-form-item v-if="imageEditForm.visibility === 'SPECIFIED'" label="指定用户">
+          <el-input v-model="imageEditForm.visibleUsernames" placeholder="输入用户名，多个用户用逗号或空格分隔" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="imageEditVisible = false">取消</el-button>
+        <el-button type="primary" @click="saveWorkEdit">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="workCategoryDialogVisible" title="新建分类" width="360px">
+      <el-form label-width="70px" @submit.prevent>
+        <el-form-item label="分类名">
+          <el-input v-model="newWorkCategoryName" maxlength="20" show-word-limit @keyup.enter="submitWorkCategory" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="workCategoryDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="creatingWorkCategory" @click="submitWorkCategory">创建</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -194,9 +285,12 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import NavBar from '../components/NavBar.vue'
 import ImageCard from '../components/ImageCard.vue'
+import TagInput from '../components/TagInput.vue'
 import { useUserStore } from '../store/user'
 import { getUserProfile, updateProfile, uploadAvatar, uploadBackground, checkField, deleteAccount } from '../api/user'
-import { getImageList } from '../api/image'
+import { getImageList, deleteImage, updateImage } from '../api/image'
+import { getCategoryList, createCategory } from '../api/category'
+import { DEFAULT_IMAGE_PAGE_SIZE, IMAGE_PAGE_SIZES, buildImageListParams } from '../utils/imageRequests'
 
 // IndexedDB utility for caching original images (Data URLs can be >5MB)
 const dbPromise = new Promise((resolve, reject) => {
@@ -232,17 +326,68 @@ const userStore = useUserStore()
 const user = ref({})
 const works = ref([])
 const workPage = ref(1)
-const workLimit = 12
+const workLimit = ref(DEFAULT_IMAGE_PAGE_SIZE)
 const workTotal = ref(0)
 const loading = ref(false)
 const editing = ref(false)
 const saving = ref(false)
 const isOwner = computed(() => !!(userStore.userInfo?.id && user.value.id && userStore.userInfo.id === user.value.id))
+const avatarVersion = ref(0)
+const backgroundVersion = ref(0)
+const categories = ref([])
+const selectedWorkIds = ref([])
+const imageEditVisible = ref(false)
+const workCategoryDialogVisible = ref(false)
+const newWorkCategoryName = ref('')
+const creatingWorkCategory = ref(false)
+const workImageIds = computed(() => works.value.map(img => img.id))
+const allWorksSelected = computed(() => workImageIds.value.length > 0 && workImageIds.value.every(id => selectedWorkIds.value.includes(id)))
+const partiallyWorksSelected = computed(() => selectedWorkIds.value.length > 0 && !allWorksSelected.value)
 
 const form = reactive({ displayName: '', email: '', phone: '', bio: '' })
+const imageEditForm = reactive({
+  id: null,
+  imageName: '',
+  categoryId: null,
+  tags: '',
+  description: '',
+  visibility: 'PRIVATE',
+  visibleUsernames: ''
+})
+
+function canonicalMediaUrl(url) {
+  if (!url || typeof url !== 'string') return ''
+  if (url.startsWith('data:') || url.startsWith('blob:')) return url
+  return url.split('#')[0].split('?')[0]
+}
+
+function mediaUrlWithVersion(url, version) {
+  if (!url || typeof url !== 'string') return url
+  if (!version || url.startsWith('data:') || url.startsWith('blob:') || url.startsWith('#') || url.startsWith('rgb')) {
+    return url
+  }
+  return `${url}${url.includes('?') ? '&' : '?'}v=${version}`
+}
+
+function isSameMediaUrl(a, b) {
+  const left = canonicalMediaUrl(a)
+  const right = canonicalMediaUrl(b)
+  return !!left && left === right
+}
+
+function currentAvatarUrl() {
+  return user.value.avatarUrl || user.value.avatar || ''
+}
+
+function currentBackgroundUrl() {
+  return user.value.backgroundUrl || user.value.background || ''
+}
+
+const avatarDisplayUrl = computed(() => mediaUrlWithVersion(currentAvatarUrl(), avatarVersion.value))
+const backgroundDisplayUrl = computed(() => mediaUrlWithVersion(currentBackgroundUrl(), backgroundVersion.value))
 
 const bannerStyle = computed(() => {
-  const bg = user.value.backgroundUrl || user.value.background
+  const bg = backgroundDisplayUrl.value
   if (!bg) return { background: 'linear-gradient(135deg, #111827 0%, #2563eb 58%, #38bdf8 100%)' }
   if (bg.startsWith('#') || bg.startsWith('rgb')) return { backgroundColor: bg }
   return { backgroundImage: `url(${bg})`, backgroundSize: '100% auto', backgroundPosition: 'top' }
@@ -288,7 +433,7 @@ function openBackgroundEditor() {
   nextTick(() => { setupBgResizeObserver() })
   nextTick(async () => {
     const originalSource = await readCachedBgOriginal()
-    const bg = user.value.backgroundUrl || user.value.background
+    const bg = currentBackgroundUrl()
     if (originalSource) {
       loadBackgroundSource(originalSource)
       bgSourceKind.value = 'original'
@@ -534,7 +679,7 @@ function stopBgResize() {
 // Mini profile card preview
 const miniBannerPreviewStyle = computed(() => {
   if (!bgPreviewUrl.value) {
-    return { background: !user.value.backgroundUrl
+    return { background: !currentBackgroundUrl()
       ? 'linear-gradient(135deg, #111827 0%, #2563eb 58%, #38bdf8 100%)' : undefined }
   }
   const display = bgImageDisplay.value
@@ -555,17 +700,17 @@ function bgCacheKey() {
 }
 
 async function readCachedBgOriginal() {
-  const currentBg = user.value.backgroundUrl || user.value.background
+  const currentBg = currentBackgroundUrl()
   const key = bgCacheKey()
   if (key) {
     const entry = _originalStore.get(key)
-    if (entry && (entry.background === currentBg || entry.background === user.value.background) && entry.source) {
+    if (entry && isSameMediaUrl(entry.background, currentBg) && entry.source) {
       return entry.source
     }
   }
   if (key) {
     const cached = await idbGet(key)
-    if (cached && (cached.background === currentBg || cached.background === user.value.background) && cached.source) {
+    if (cached && isSameMediaUrl(cached.background, currentBg) && cached.source) {
       _originalStore.set(key, cached)
       return cached.source
     }
@@ -575,7 +720,7 @@ async function readCachedBgOriginal() {
 
 function writeCachedBgOriginal(bgPath, source) {
   if (!bgPath || !source) return
-  const entry = { background: bgPath, source }
+  const entry = { background: canonicalMediaUrl(bgPath), source }
   const key = bgCacheKey()
   if (key) {
     _originalStore.set(key, entry)
@@ -587,19 +732,23 @@ async function saveBackground() {
   if (!bgPreviewUrl.value) return
   bgSaving.value = true
   try {
+    const originalSource = bgSourceKind.value === 'new' || bgSourceKind.value === 'original'
+      ? bgPreviewUrl.value
+      : await readCachedBgOriginal()
     const backgroundBlob = await cropBackgroundImage()
     const fd = new FormData()
     fd.append('file', backgroundBlob, 'background.jpg')
     const res = await uploadBackground(fd)
     const bgPath = typeof res.data === 'string' ? res.data : res.data?.background
     if (!bgPath) throw new Error('背景上传失败')
+    backgroundVersion.value = Date.now()
     user.value.background = bgPath
     user.value.backgroundUrl = bgPath
     if (userStore.userInfo) {
       userStore.userInfo.background = bgPath
-      userStore.userInfo.backgroundUrl = bgPath
+      userStore.userInfo.backgroundUrl = mediaUrlWithVersion(bgPath, backgroundVersion.value)
     }
-    writeCachedBgOriginal(bgPath, bgPreviewUrl.value)
+    if (originalSource) writeCachedBgOriginal(bgPath, originalSource)
     ElMessage.success('背景已更新'); bgDialogVisible.value = false
   } catch {} finally { bgSaving.value = false }
 }
@@ -850,17 +999,17 @@ function avatarCacheKey() {
 }
 
 async function readCachedAvatarOriginal() {
-  const currentAvatar = user.value.avatarUrl || user.value.avatar
+  const currentAvatar = currentAvatarUrl()
   const key = avatarCacheKey()
   if (key) {
     const entry = _originalStore.get(key)
-    if (entry && (entry.avatar === currentAvatar || entry.avatar === user.value.avatar) && entry.source) {
+    if (entry && isSameMediaUrl(entry.avatar, currentAvatar) && entry.source) {
       return entry.source
     }
   }
   if (key) {
     const cached = await idbGet(key)
-    if (cached && (cached.avatar === currentAvatar || cached.avatar === user.value.avatar) && cached.source) {
+    if (cached && isSameMediaUrl(cached.avatar, currentAvatar) && cached.source) {
       _originalStore.set(key, cached)
       return cached.source
     }
@@ -870,7 +1019,7 @@ async function readCachedAvatarOriginal() {
 
 function writeCachedAvatarOriginal(avatarPath, source) {
   if (!avatarPath || !source) return
-  const entry = { avatar: avatarPath, source }
+  const entry = { avatar: canonicalMediaUrl(avatarPath), source }
   // Always update the module-level cache first
   const key = avatarCacheKey()
   if (key) {
@@ -916,7 +1065,7 @@ function openAvatarEditor() {
   avatarDialogVisible.value = true
   nextTick(async () => {
     const originalSource = await readCachedAvatarOriginal()
-    loadAvatarSource(originalSource || user.value.avatarUrl || user.value.avatar || '', originalSource ? 'original' : 'current')
+    loadAvatarSource(originalSource || currentAvatarUrl() || '', originalSource ? 'original' : 'current')
   })
 }
 
@@ -934,19 +1083,23 @@ async function confirmAvatar() {
   if (!avatarPreviewUrl.value) return
   avatarSaving.value = true
   try {
+    const originalSource = avatarSourceKind.value === 'new' || avatarSourceKind.value === 'original'
+      ? avatarPreviewUrl.value
+      : await readCachedAvatarOriginal()
     const croppedBlob = await cropImage()
     const fd = new FormData()
     fd.append('file', croppedBlob, 'avatar.png')
     const res = await uploadAvatar(fd)
     const avatarPath = typeof res.data === 'string' ? res.data : res.data?.avatar
     if (!avatarPath) throw new Error('头像上传失败')
+    avatarVersion.value = Date.now()
     user.value.avatar = avatarPath
     user.value.avatarUrl = avatarPath
     if (userStore.userInfo) {
       userStore.userInfo.avatar = avatarPath
-      userStore.userInfo.avatarUrl = avatarPath
+      userStore.userInfo.avatarUrl = mediaUrlWithVersion(avatarPath, avatarVersion.value)
     }
-    writeCachedAvatarOriginal(avatarPath, avatarPreviewUrl.value)
+    if (originalSource) writeCachedAvatarOriginal(avatarPath, originalSource)
     ElMessage.success('头像已更新'); avatarDialogVisible.value = false
   } catch (error) {
     if (error?.message === '头像上传失败') ElMessage.error(error.message)
@@ -991,15 +1144,130 @@ onMounted(async () => {
       await userStore.fetchUserInfo()
     }
     const res = await getUserProfile(profileId)
-    user.value = res.data; fetchWorks()
+    user.value = res.data
+    fetchWorks()
+    if (isOwner.value) fetchCategories()
   } catch {} finally { loading.value = false }
 })
 
 async function fetchWorks() {
   try {
-    const res = await getImageList({ page: workPage.value, limit: workLimit, sortField: 'upload_time', sortOrder: 'desc' })
+    const res = await getImageList(buildImageListParams({
+      page: workPage.value,
+      limit: workLimit.value,
+      sortField: 'upload_time',
+      sortOrder: 'desc'
+    }))
     works.value = res.data.records || []; workTotal.value = res.data.total || 0
+    selectedWorkIds.value = selectedWorkIds.value.filter(id => works.value.some(img => img.id === id))
   } catch {}
+}
+
+async function fetchCategories() {
+  try {
+    const res = await getCategoryList()
+    categories.value = res.data || []
+  } catch {}
+}
+
+function onWorkPageSizeChange(size) {
+  workLimit.value = size
+  workPage.value = 1
+  fetchWorks()
+}
+
+function toggleWorkSelection(id) {
+  selectedWorkIds.value = selectedWorkIds.value.includes(id)
+    ? selectedWorkIds.value.filter(item => item !== id)
+    : [...selectedWorkIds.value, id]
+}
+
+function toggleSelectAllWorks(checked) {
+  selectedWorkIds.value = checked ? [...workImageIds.value] : []
+}
+
+function clearWorkSelection() {
+  selectedWorkIds.value = []
+}
+
+async function handleBatchWorkDelete() {
+  const ids = [...selectedWorkIds.value]
+  if (ids.length === 0) return
+  try {
+    await ElMessageBox.confirm(
+      `确定删除选中的 ${ids.length} 张图片吗？`,
+      '批量删除图片',
+      { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' }
+    )
+  } catch { return }
+  try {
+    await Promise.all(ids.map(id => deleteImage(id)))
+    ElMessage.success(`已删除 ${ids.length} 张图片`)
+    selectedWorkIds.value = []
+    fetchWorks()
+  } catch {}
+}
+
+async function handleWorkDelete(id) {
+  try {
+    await deleteImage(id)
+    selectedWorkIds.value = selectedWorkIds.value.filter(item => item !== id)
+    ElMessage.success('删除成功')
+    fetchWorks()
+  } catch {}
+}
+
+function handleWorkEdit(img) {
+  imageEditForm.id = img.id
+  imageEditForm.imageName = img.imageName
+  imageEditForm.categoryId = img.categoryId
+  imageEditForm.description = img.description || ''
+  imageEditForm.tags = img.tags || ''
+  imageEditForm.visibility = img.visibility || 'PRIVATE'
+  imageEditForm.visibleUsernames = img.visibleUsernames || ''
+  imageEditVisible.value = true
+  if (categories.value.length === 0) fetchCategories()
+}
+
+async function saveWorkEdit() {
+  try {
+    await updateImage(imageEditForm.id, {
+      imageName: imageEditForm.imageName,
+      categoryId: imageEditForm.categoryId,
+      description: imageEditForm.description,
+      tags: imageEditForm.tags,
+      visibility: imageEditForm.visibility,
+      visibleUsernames: imageEditForm.visibility === 'SPECIFIED' ? imageEditForm.visibleUsernames : ''
+    })
+    ElMessage.success('更新成功')
+    imageEditVisible.value = false
+    fetchWorks()
+  } catch {}
+}
+
+function openWorkCreateCategory() {
+  newWorkCategoryName.value = ''
+  workCategoryDialogVisible.value = true
+}
+
+async function submitWorkCategory() {
+  const name = newWorkCategoryName.value.trim()
+  if (!name) {
+    ElMessage.warning('请输入分类名')
+    return
+  }
+  creatingWorkCategory.value = true
+  try {
+    const res = await createCategory(name)
+    const category = res.data
+    categories.value = categories.value.filter(cat => cat.id !== category.id)
+    categories.value.push(category)
+    imageEditForm.categoryId = category.id
+    workCategoryDialogVisible.value = false
+    ElMessage.success('分类创建成功')
+  } catch {} finally {
+    creatingWorkCategory.value = false
+  }
 }
 
 const fieldErrors = reactive({ email: '', phone: '' })
@@ -1063,9 +1331,9 @@ async function saveProfile() {
 <style scoped>
 .profile-page {
   min-height: 100vh;
-  --bg-base: #f8fafd;
+  --bg-base: #f6f8fc;
   --bg-surface: #ffffff;
-  --bg-elevated: #f9fafb;
+  --bg-elevated: #f8fbff;
   --bg-hover: #eff4ff;
   --border-subtle: #e8ecf0;
   --border-visible: #d5dbe3;
@@ -1082,26 +1350,29 @@ async function saveProfile() {
   --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
   --shadow-elevated: 0 10px 32px rgba(15, 23, 42, 0.08);
   --shadow-dialog: 0 18px 48px rgba(15, 23, 42, 0.12);
-  background: var(--bg-base);
+  background:
+    radial-gradient(circle at 18% 12%, rgba(37, 99, 235, 0.08), transparent 28%),
+    linear-gradient(180deg, #fbfdff 0%, var(--bg-base) 50%, #f8fafc 100%);
   color: var(--text-primary);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 .page-container {
-  max-width: 960px;
+  max-width: 1040px;
   margin: 0 auto;
-  padding: 24px var(--space-lg) 48px;
+  padding: 28px var(--space-lg) 56px;
 }
 
 .profile-banner {
-  height: 220px;
-  border-radius: var(--radius-lg);
+  height: 258px;
+  border-radius: 18px;
   background-size: cover;
   background-position: center;
   position: relative;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid rgba(226, 232, 240, 0.9);
   overflow: hidden;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
   transition: box-shadow 0.3s ease;
 }
 .profile-banner::after {
@@ -1144,18 +1415,37 @@ async function saveProfile() {
 }
 
 .profile-header {
-  background: var(--bg-surface);
-  border-radius: var(--radius-lg);
-  padding: 28px 32px 28px;
-  margin-top: -48px;
+  border-radius: 18px;
+  padding: 0 32px 28px;
+  margin-top: -120px;
   position: relative;
-  border: 1px solid var(--border-subtle);
-  box-shadow: var(--shadow-elevated);
+  border: 0;
+  box-shadow: none;
 }
-.avatar-wrap { position: relative; display: inline-block; margin-top: -82px; }
+.profile-header::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 120px;
+  bottom: 0;
+  z-index: 0;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(226, 232, 240, 0.94);
+  border-top: 0;
+  border-radius: 0 0 18px 18px;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.profile-header > * {
+  position: relative;
+  z-index: 1;
+}
+.avatar-wrap { position: relative; display: inline-block; margin-top: 0; }
 .avatar {
-  border: 4px solid var(--bg-surface);
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+  border: 4px solid rgba(255, 255, 255, 0.92);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
   border-radius: 50%;
   transition: box-shadow 0.25s ease;
 }
@@ -1175,9 +1465,9 @@ async function saveProfile() {
   transform: scale(1.08);
 }
 
-.profile-name-row { display: flex; align-items: center; gap: var(--space-md); margin-top: var(--space-md); flex-wrap: wrap; }
+.profile-name-row { display: flex; align-items: center; gap: var(--space-md); margin-top: 18px; flex-wrap: wrap; }
 .profile-name-row h2 {
-  font-family: var(--font-display); font-size: 26px; font-weight: 700;
+  font-family: var(--font-display); font-size: 28px; font-weight: 750;
   margin: 0; color: var(--text-primary); letter-spacing: -0.3px;
 }
 .bio { color: var(--text-secondary); margin-bottom: var(--space-sm); line-height: 1.7; font-size: 14px; }
@@ -1190,15 +1480,39 @@ async function saveProfile() {
   margin-left: auto;
 }
 
-.user-works { margin-top: 36px; }
-.user-works h3 {
+.user-works { margin-top: 42px; }
+.works-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+  flex-wrap: wrap;
+}
+.works-heading h3 {
   font-family: var(--font-display); font-size: 20px; font-weight: 700;
-  color: var(--text-primary); margin-bottom: var(--space-lg); letter-spacing: -0.2px;
+  color: var(--text-primary); margin: 0; letter-spacing: -0.2px;
+}
+.works-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  padding: 6px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.76);
+}
+.category-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
 }
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 18px;
 }
 .empty-state { text-align: center; color: var(--text-muted); padding: var(--space-2xl) 0; }
 .pagination-wrap { display: flex; justify-content: center; padding: var(--space-xl) 0 var(--space-sm); }
@@ -1450,9 +1764,13 @@ async function saveProfile() {
 
 @media (max-width: 720px) {
   .page-container { padding: 16px var(--space-md) 32px; }
-  .profile-banner { height: 160px; border-radius: var(--radius-md); }
-  .profile-header { padding: 20px; margin-top: -36px; }
-  .avatar-wrap { margin-top: -62px; }
+  .profile-banner { height: 218px; border-radius: var(--radius-md); }
+  .profile-header { padding: 0 20px 24px; margin-top: -120px; }
+  .profile-header::before { top: 120px; }
+  .avatar-wrap { margin-top: 0; }
+  .works-heading { align-items: flex-start; }
+  .works-actions { width: 100%; }
+  .category-row { grid-template-columns: 1fr; }
   .avatar-editor-layout { grid-template-columns: 1fr; }
   .avatar-preview-side { display: flex; align-items: center; justify-content: center; gap: 18px; }
   .background-editor-layout { grid-template-columns: 1fr; }

@@ -1,9 +1,20 @@
 <template>
-  <article class="image-card" tabindex="0" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave"
+  <article class="image-card" :class="{ selected }" tabindex="0" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave"
     @focus="onFocus" @blur="onBlur" @click="goDetail"
     @keydown.enter.prevent="goDetail" @keydown.space.prevent="goDetail"
     role="button" :aria-label="`查看图片: ${image.imageName}`">
     <div class="card-frame">
+      <button
+        v-if="selectable"
+        class="select-toggle"
+        :class="{ checked: selected }"
+        type="button"
+        :aria-pressed="String(selected)"
+        :title="selected ? '取消选择' : '选择图片'"
+        @click.stop="emit('toggle-select', image.id)"
+      >
+        <span class="select-mark"></span>
+      </button>
       <img
         v-if="!imgFailed"
         :src="imageSrc"
@@ -62,10 +73,12 @@ import { ElMessageBox } from 'element-plus'
 
 const props = defineProps({
   image: { type: Object, required: true },
-  showActions: { type: Boolean, default: false }
+  showActions: { type: Boolean, default: false },
+  selectable: { type: Boolean, default: false },
+  selected: { type: Boolean, default: false }
 })
 
-const emit = defineEmits(['edit', 'delete', 'removed'])
+const emit = defineEmits(['edit', 'delete', 'removed', 'toggle-select'])
 
 const router = useRouter()
 const hover = ref(false)
@@ -74,7 +87,7 @@ const imgFailed = ref(false)
 
 const imageSrc = computed(() => {
   if (imgFailed.value) return ''
-  return props.image.imageUrl || props.image.imagePath || ''
+  return props.image.id ? `/api/image/download/${props.image.id}` : ''
 })
 
 const visibilityLabel = computed(() => {
@@ -126,22 +139,27 @@ function goDetail() {
   position: relative;
   cursor: pointer;
   aspect-ratio: 1;
-  border-radius: var(--radius-lg);
+  border-radius: 14px;
   overflow: hidden;
   background: var(--bg-elevated);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid rgba(226, 232, 240, 0.9);
   box-shadow: var(--shadow-sm);
-  transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out);
+  transition: transform 0.28s var(--ease-out), box-shadow 0.28s var(--ease-out), border-color 0.28s ease;
 }
 
 .image-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
+  transform: translateY(-5px);
+  border-color: rgba(37, 99, 235, 0.24);
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.11);
 }
 
 .image-card:active {
   transform: translateY(-1px) scale(0.985);
   transition: transform 0.1s var(--ease-out);
+}
+.image-card.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14), 0 18px 36px rgba(15, 23, 42, 0.11);
 }
 
 .card-frame {
@@ -151,16 +169,75 @@ function goDetail() {
   overflow: hidden;
 }
 
+.select-toggle {
+  position: absolute;
+  right: var(--space-sm);
+  bottom: var(--space-sm);
+  z-index: 4;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  background: rgba(15, 23, 42, 0.58);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: opacity 0.18s ease, transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+.image-card:hover .select-toggle,
+.image-card:focus-within .select-toggle {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+.select-toggle:hover {
+  transform: translateY(0) scale(1.08);
+  background: rgba(37, 99, 235, 0.82);
+  border-color: #fff;
+}
+.select-toggle.checked {
+  background: var(--accent);
+  border-color: #fff;
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.26);
+}
+.select-mark {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  position: relative;
+}
+.select-toggle.checked .select-mark {
+  border: 0;
+}
+.select-toggle.checked .select-mark::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0;
+  width: 6px;
+  height: 10px;
+  border-right: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: rotate(42deg);
+}
+
 .card-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.45s var(--ease-out), filter 0.4s ease;
+  transition: transform 0.45s var(--ease-out), filter 0.32s ease;
 }
 
 .card-img.zoomed {
-  transform: scale(1.06);
-  filter: brightness(0.6);
+  transform: scale(1.055);
+  filter: brightness(0.72) saturate(1.05);
 }
 
 /* Fallback when image fails */
@@ -178,7 +255,7 @@ function goDetail() {
   position: absolute;
   inset: 0;
   border: 1px solid rgba(255,255,255,0.25);
-  border-radius: var(--radius-lg);
+  border-radius: 14px;
   pointer-events: none;
   transition: border-color 0.3s ease;
 }
@@ -192,12 +269,12 @@ function goDetail() {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  padding: var(--space-md);
+  padding: 14px;
   background: linear-gradient(
     180deg,
-    transparent 35%,
-    rgba(15,23,42,0.4) 68%,
-    rgba(15,23,42,0.85) 100%
+    rgba(15,23,42,0.04) 0%,
+    rgba(15,23,42,0.18) 46%,
+    rgba(15,23,42,0.78) 100%
   );
 }
 
@@ -214,15 +291,15 @@ function goDetail() {
 .category-badge,
 .visibility-badge {
   font-size: 11px;
-  padding: 3px 10px;
-  border-radius: 999px;
+  padding: 4px 9px;
+  border-radius: 7px;
   font-weight: 600;
   font-family: var(--font-body);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 }
 .category-badge {
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.9);
   color: var(--text-primary);
 }
 .visibility-badge {
@@ -241,6 +318,7 @@ function goDetail() {
   overflow: hidden;
   text-overflow: ellipsis;
   margin-bottom: 2px;
+  text-shadow: 0 1px 10px rgba(15, 23, 42, 0.28);
 }
 
 .img-meta {
@@ -263,9 +341,9 @@ function goDetail() {
 .action-btn {
   width: 34px;
   height: 34px;
-  border-radius: 50%;
+  border-radius: 10px;
   border: 1px solid rgba(255,255,255,0.18);
-  background: rgba(15,23,42,0.5);
+  background: rgba(15,23,42,0.52);
   color: #fff;
   display: flex;
   align-items: center;

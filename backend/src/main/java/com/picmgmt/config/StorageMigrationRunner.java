@@ -13,6 +13,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 
@@ -41,9 +42,11 @@ public class StorageMigrationRunner implements CommandLineRunner {
         int avatarCount = migrateAvatars();
         int bgCount = migrateBackgrounds();
         int commentCount = migrateCommentImages();
+        int tagCount = migrateLegacyTags();
         System.setProperty(MIGRATION_FLAG, "1");
         log.info("===== 迁移完成: 图片 {} 张, 头像 {} 个, 背景 {} 个, 评论 {} 条 =====",
                 imageCount, avatarCount, bgCount, commentCount);
+        log.info("Legacy comma tag migration completed: {} images", tagCount);
 
         if (imageCount + avatarCount + bgCount + commentCount > 0) {
             log.info("旧 Base64 列仍保留。确认系统正常后，手动执行 DROP COLUMN:");
@@ -137,5 +140,33 @@ public class StorageMigrationRunner implements CommandLineRunner {
             }
         }
         return count;
+    }
+
+    private int migrateLegacyTags() {
+        List<Image> images = imageMapper.selectList(null);
+        int count = 0;
+        for (Image image : images) {
+            String migratedTags = migrateLegacyTagValue(image.getTags());
+            if (migratedTags == null) continue;
+            image.setTags(migratedTags);
+            imageMapper.updateById(image);
+            count++;
+        }
+        return count;
+    }
+
+    private String migrateLegacyTagValue(String tags) {
+        if (tags == null || tags.isBlank() || tags.contains("#") || !tags.contains(",")) {
+            return null;
+        }
+        String migrated = Arrays.stream(tags.split(","))
+                .map(String::trim)
+                .filter(tag -> !tag.isBlank())
+                .reduce((left, right) -> left + "#" + right)
+                .orElse("");
+        if (migrated.isBlank() || migrated.equals(tags)) {
+            return null;
+        }
+        return migrated;
     }
 }

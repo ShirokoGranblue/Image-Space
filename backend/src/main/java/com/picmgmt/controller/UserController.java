@@ -4,11 +4,14 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.io.FileUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.picmgmt.common.BusinessException;
+import com.picmgmt.common.ErrorCode;
 import com.picmgmt.common.Result;
 import com.picmgmt.dto.CodeLoginDTO;
 import com.picmgmt.dto.LoginDTO;
 import com.picmgmt.dto.RegisterDTO;
 import com.picmgmt.dto.SendCodeDTO;
+import com.picmgmt.entity.User;
 import com.picmgmt.service.CaptchaService;
 import com.picmgmt.service.OAuthService;
 import com.picmgmt.service.UserService;
@@ -17,11 +20,15 @@ import com.picmgmt.vo.UserVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.http.CacheControl;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -95,7 +102,7 @@ public class UserController {
         String mimeType = "image/" + (ext.equals("jpg") ? "jpeg" : ext);
         storageService.upload("avatars", objectKey, file.getBytes(), mimeType);
         userService.updateAvatar(userId, objectKey);
-        return Result.ok(storageService.getAccessUrl("avatars", objectKey));
+        return Result.ok(userMediaUrl("avatar", userId));
     }
 
     @Operation(summary = "上传背景")
@@ -108,7 +115,29 @@ public class UserController {
         String mimeType = "image/" + (ext.equals("jpg") ? "jpeg" : ext);
         storageService.upload("backgrounds", objectKey, file.getBytes(), mimeType);
         userService.updateBackground(userId, objectKey);
-        return Result.ok(storageService.getAccessUrl("backgrounds", objectKey));
+        return Result.ok(userMediaUrl("background", userId));
+    }
+
+    @Operation(summary = "下载头像")
+    @GetMapping("/avatar/{id}")
+    public ResponseEntity<byte[]> avatar(@PathVariable Long id) {
+        User user = getExistingUser(id);
+        String objectKey = resolveObjectKey("avatars", user.getAvatarKey(), user.getAvatar());
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .contentType(mediaType(objectKey))
+                .body(storageService.download("avatars", objectKey));
+    }
+
+    @Operation(summary = "下载背景")
+    @GetMapping("/background/{id}")
+    public ResponseEntity<byte[]> background(@PathVariable Long id) {
+        User user = getExistingUser(id);
+        String objectKey = resolveObjectKey("backgrounds", user.getBackgroundKey(), user.getBackground());
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .contentType(mediaType(objectKey))
+                .body(storageService.download("backgrounds", objectKey));
     }
 
     @Operation(summary = "管理员获取用户列表")
@@ -179,6 +208,55 @@ public class UserController {
     public Result<Void> deleteAccount() {
         userService.deleteAccount(StpUtil.getLoginIdAsLong());
         return Result.ok();
+    }
+
+    private User getExistingUser(Long id) {
+        User user = userService.getById(id);
+        if (user == null || (user.getDeleted() != null && user.getDeleted() == 1)) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+        return user;
+    }
+
+    private String userMediaUrl(String type, Long userId) {
+        return "/api/user/" + type + "/" + userId;
+    }
+
+    private String resolveObjectKey(String bucket, String storageKey, String legacyValue) {
+        String key = storageKey != null && !storageKey.isBlank() ? storageKey : legacyValue;
+        if (key == null || key.isBlank()) {
+            throw new BusinessException(ErrorCode.NOT_FOUND);
+        }
+        if (key.startsWith("http://") || key.startsWith("https://")) {
+            try {
+                key = URI.create(key).getPath();
+            } catch (IllegalArgumentException ignored) {
+                throw new BusinessException(ErrorCode.NOT_FOUND);
+            }
+        }
+        String storagePrefix = "/storage/" + bucket + "/";
+        String bucketPrefix = "/" + bucket + "/";
+        if (key.startsWith(storagePrefix)) {
+            key = key.substring(storagePrefix.length());
+        } else if (key.startsWith(bucketPrefix)) {
+            key = key.substring(bucketPrefix.length());
+        } else if (key.startsWith("/")) {
+            key = key.substring(1);
+        }
+        if (key.isBlank()) {
+            throw new BusinessException(ErrorCode.NOT_FOUND);
+        }
+        return key;
+    }
+
+    private MediaType mediaType(String path) {
+        String ext = FileUtil.extName(path).toLowerCase();
+        return switch (ext) {
+            case "jpg", "jpeg" -> MediaType.IMAGE_JPEG;
+            case "png" -> MediaType.IMAGE_PNG;
+            case "webp" -> MediaType.parseMediaType("image/webp");
+            default -> MediaType.APPLICATION_OCTET_STREAM;
+        };
     }
 
 }

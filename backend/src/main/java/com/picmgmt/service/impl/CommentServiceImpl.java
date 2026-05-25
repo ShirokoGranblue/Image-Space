@@ -47,6 +47,15 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
+    public Comment getById(Long commentId) {
+        Comment comment = commentRepository.findById(commentId);
+        if (comment == null) {
+            throw new BusinessException(ErrorCode.COMMENT_NOT_FOUND);
+        }
+        return comment;
+    }
+
+    @Override
     public void delete(Long commentId) {
         Comment comment = commentRepository.findById(commentId);
         if (comment == null) {

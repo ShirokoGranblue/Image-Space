@@ -9,7 +9,7 @@ export function createCategory(categoryName) {
 }
 
 export function deleteCategory(id) {
-  return api.delete(`/category/${id}`)
+  return api.delete(`/category/${id}`, { params: { id } })
 }
 
 export function updateCategory(id, categoryName) {

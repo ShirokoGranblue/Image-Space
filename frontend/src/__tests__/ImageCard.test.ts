@@ -71,4 +71,21 @@ describe('ImageCard', () => {
       expect(wrapper.text()).toContain('仅自己')
     })
   })
+
+  describe('Selection', () => {
+    it('emits toggle-select without opening detail when selection button is clicked', async () => {
+      const wrapper = mountCard({ selectable: true })
+
+      await wrapper.find('.select-toggle').trigger('click')
+
+      expect(wrapper.emitted('toggle-select')).toEqual([[mockImage.id]])
+    })
+
+    it('marks the card selected when selected prop is true', () => {
+      const wrapper = mountCard({ selectable: true, selected: true })
+
+      expect(wrapper.find('.image-card.selected').exists()).toBe(true)
+      expect(wrapper.find('.select-toggle').attributes('aria-pressed')).toBe('true')
+    })
+  })
 })

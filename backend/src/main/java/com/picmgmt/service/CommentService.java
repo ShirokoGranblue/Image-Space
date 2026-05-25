@@ -12,4 +12,6 @@ public interface CommentService {
     void delete(Long commentId);
 
     List<CommentVO> listByImage(Long imageId);
+
+    Comment getById(Long commentId);
 }

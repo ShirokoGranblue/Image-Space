@@ -10,7 +10,7 @@
 
       <div class="detail-layout" v-if="image.id">
         <div class="detail-image" @click="viewerRef.open()" @mouseenter="imgHover = true" @mouseleave="imgHover = false">
-          <img :src="image.imageUrl || image.imagePath" :alt="image.imageName" :class="{ zoomed: imgHover }" />
+          <img :src="detailImageSrc" :alt="image.imageName" :class="{ zoomed: imgHover }" />
           <transition name="fade">
             <div class="img-hover-overlay" v-if="imgHover">
               <el-icon :size="36"><ZoomIn /></el-icon>
@@ -33,6 +33,13 @@
                 <span v-else class="meta-placeholder">未分类</span>
               </span>
             </div>
+            <div class="meta-item meta-tags">
+              <span class="meta-label"><el-icon><CollectionTag /></el-icon> 标签</span>
+              <span class="meta-value detail-tag-list" v-if="tagList.length">
+                <el-tag v-for="(tag, i) in tagList" :key="i" size="small" :type="tagTypes[i % tagTypes.length]" effect="plain">{{ tag }}</el-tag>
+              </span>
+              <span v-else class="meta-placeholder">无标签</span>
+            </div>
             <div class="meta-item">
               <span class="meta-label"><el-icon><Document /></el-icon> 文件大小</span>
               <span class="meta-value">{{ formatSize(image.fileSize) }}</span>
@@ -52,12 +59,6 @@
           </div>
           <div class="desc-block desc-empty" v-else>
             <p class="desc-text">暂无描述</p>
-          </div>
-
-          <div class="tags-section" v-if="image.tags">
-            <div class="tag-list">
-              <el-tag v-for="(tag, i) in tagList" :key="i" :type="tagTypes[i % tagTypes.length]" effect="plain">{{ tag }}</el-tag>
-            </div>
           </div>
 
           <el-button type="primary" class="download-btn" @click="handleDownload" :loading="downloading">
@@ -101,7 +102,7 @@
               <span class="comment-time">{{ formatTime(c.createTime) }}</span>
             </div>
             <p class="comment-content">{{ c.content }}</p>
-            <img v-if="c.imageUrl || c.imagePath" :src="c.imageUrl || c.imagePath" class="comment-img" @click="viewCmtImg(c.imageUrl || c.imagePath)" />
+            <img v-if="c.imagePath" :src="`/api/comment/image/${c.id}`" class="comment-img" @click="viewCmtImg(`/api/comment/image/${c.id}`)" />
             <el-button v-if="c.userId === currentUserId" text size="small" type="danger" @click="handleDeleteComment(c.id)">删除</el-button>
           </div>
         </div>
@@ -126,6 +127,7 @@ import { getImageDetail } from '../api/image'
 import { getComments, addComment, deleteComment, uploadCommentImage } from '../api/comment'
 import { useUserStore } from '../store/user'
 import { formatSize, formatTime } from '../utils/format'
+import { getImageDownloadUrl } from '../utils/imageRequests'
 
 const route = useRoute()
 const userStore = useUserStore()
@@ -142,14 +144,15 @@ const downloading = ref(false)
 
 const tagTypes = ['', 'success', 'warning', 'danger', 'info']
 
-const emojis = ['😀','😂','🤣','😊','😍','🤩','😎','🥳','😢','😡','👍','👎','❤️','🔥','⭐','🎉','💯','✅','🙏','💪','🤝','👀','💡','📌','🚀','🎨','🐱','🌸','✨','🎵','🍕','☕','💻','📷','🎮','🏆']
+const emojis = ['😀','😂','🤣','😊','😍','🤩','😎','🥳','😢','😡','👍','👎','❤️','🔥','⭐','🎉','💯','✅', '😓', '🙏','💪','🤝','👀','💡','📌','🚀','🎨','🐱','🌸','✨','🎵','🍕','☕','💻','📷','🎮','🏆']
 
 const tagList = computed(() => {
   if (!image.value.tags) return []
-  return image.value.tags.split(',').map(t => t.trim()).filter(Boolean)
+  return image.value.tags.split('#').map(t => t.trim()).filter(Boolean)
 })
 
 const currentUserId = computed(() => userStore.userInfo?.id)
+const detailImageSrc = computed(() => getImageDownloadUrl(image.value.id))
 
 onMounted(async () => {
   loading.value = true
@@ -160,7 +163,7 @@ onMounted(async () => {
     ])
     image.value = imgRes.data
     comments.value = cmtRes.data || []
-    viewerSrc.value = imgRes.data.imageUrl || imgRes.data.imagePath
+    viewerSrc.value = getImageDownloadUrl(imgRes.data.id)
   } catch {} finally {
     loading.value = false
   }
@@ -213,7 +216,7 @@ async function handleDownload() {
   try {
     const token = localStorage.getItem('satoken')
     const headers = token ? { 'satoken': token } : {}
-    const response = await fetch(`/api/image/download/${image.value.id}`, { headers })
+    const response = await fetch(getImageDownloadUrl(image.value.id), { headers })
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -314,6 +317,14 @@ function viewCmtImg(src) {
 .meta-label .el-icon { font-size: 13px; }
 .meta-value { font-size: 14px; color: var(--text-primary); font-weight: 500; }
 .meta-placeholder { color: var(--text-muted); font-size: 13px; }
+.meta-tags {
+  grid-column: 1 / -1;
+}
+.detail-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
 
 .desc-block {
   margin-top: 18px; padding: 14px 16px;
@@ -322,9 +333,6 @@ function viewCmtImg(src) {
 }
 .desc-empty { background: transparent; border-style: dashed; }
 .desc-text { font-size: 14px; color: var(--text-secondary); line-height: 1.7; margin: 0; }
-
-.tags-section { margin-top: 14px; }
-.tag-list { display: flex; gap: var(--space-sm); flex-wrap: wrap; }
 
 .download-btn {
   margin-top: auto; padding-top: 18px;
@@ -377,8 +385,9 @@ function viewCmtImg(src) {
 .comment-time { font-size: 12px; color: var(--text-muted); }
 .comment-content { font-size: 14px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 4px; }
 .comment-img {
-  max-width: 200px; max-height: 150px; border-radius: var(--radius-md); cursor: pointer;
-  margin: var(--space-xs) 0; object-fit: cover; border: 1px solid var(--border-subtle);
+  width: 512px; height: 512px; max-width: 100%; border-radius: var(--radius-md); cursor: pointer;
+  margin: var(--space-xs) 0; object-fit: contain; border: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
 }
 .comment-empty { text-align: center; color: var(--text-muted); padding: var(--space-xl) 0; font-size: 14px; }
 
@@ -386,5 +395,6 @@ function viewCmtImg(src) {
   .detail-layout { grid-template-columns: 1fr; padding: 20px; }
   .detail-image { height: 420px; min-height: 280px; }
   .comments-section { padding: var(--space-md); }
+  .comment-img { height: min(512px, calc(100vw - 58px)); }
 }
 </style>

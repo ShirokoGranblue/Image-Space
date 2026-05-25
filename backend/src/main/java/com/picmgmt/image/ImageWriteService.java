@@ -34,7 +34,7 @@ public class ImageWriteService {
 
     @Transactional
     public ImageVO upload(MultipartFile file, Long categoryId, String description,
-                          String tags, String visibility, String visibleUsernames) {
+                          String tags, String visibility, String visibleUsernames, String imageName) {
         if (file.isEmpty()) throw new BusinessException(ErrorCode.BAD_REQUEST, "文件不能为空");
 
         String originalFilename = file.getOriginalFilename();
@@ -82,7 +82,7 @@ public class ImageWriteService {
         Image image = new Image();
         image.setUserId(userId);
         image.setCategoryId(categoryId);
-        image.setImageName(originalFilename);
+        image.setImageName(buildStoredImageName(originalFilename, imageName, ext));
         image.setStorageKey(objectKey);
         image.setFileSize(file.getSize());
         image.setImageType(ext.toUpperCase());
@@ -148,5 +148,16 @@ public class ImageWriteService {
         if (bytes.length >= 12 && bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46
                 && bytes[8] == 0x57 && bytes[9] == 0x45 && bytes[10] == 0x42 && bytes[11] == 0x50) return true;
         return false;
+    }
+
+    private String buildStoredImageName(String originalFilename, String imageName, String ext) {
+        String fallbackBody = FileUtil.mainName(originalFilename);
+        String body = imageName == null || imageName.isBlank() ? fallbackBody : imageName.trim();
+        body = FileUtil.mainName(body);
+        body = body.replaceAll("[\\\\/:*?\"<>|]", "_").trim();
+        if (body.isBlank()) {
+            body = fallbackBody;
+        }
+        return body + "." + ext;
     }
 }

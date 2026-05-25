@@ -24,11 +24,19 @@ public interface ImageMapper extends BaseMapper<Image> {
             LEFT JOIN categories c ON i.category_id = c.id
             <where>
                 <if test='userId != null'>AND i.user_id = #{userId}</if>
-                <if test='keyword != null and keyword != \"\"'>AND i.image_name LIKE CONCAT('%', #{keyword}, '%')</if>
+                <if test='keyword != null and keyword != \"\"'>AND BINARY i.image_name = #{keyword}</if>
                 <if test='categoryId != null'>AND i.category_id = #{categoryId}</if>
                 <if test='visibility != null and visibility != \"\"'>AND i.visibility = #{visibility}</if>
+                <if test='tagFilters != null and tagFilters.size > 0'>
+                    AND (
+                    <foreach collection='tagFilters' item='tag' separator=' OR '>
+                        i.tags LIKE CONCAT('%', #{tag}, '%')
+                    </foreach>
+                    )
+                </if>
             </where>
             <choose>
+                <when test='sortMode == \"random\"'>ORDER BY MD5(CONCAT(#{randomSeed}, i.id)), i.id</when>
                 <when test='sortField == \"image_name\"'>ORDER BY i.image_name ${sortOrder}</when>
                 <when test='sortField == \"file_size\"'>ORDER BY i.file_size ${sortOrder}</when>
                 <otherwise>ORDER BY i.upload_time ${sortOrder}</otherwise>
@@ -39,8 +47,11 @@ public interface ImageMapper extends BaseMapper<Image> {
                                      @Param("keyword") String keyword,
                                      @Param("categoryId") Long categoryId,
                                      @Param("visibility") String visibility,
+                                     @Param("tagFilters") List<String> tagFilters,
                                      @Param("sortField") String sortField,
-                                     @Param("sortOrder") String sortOrder);
+                                     @Param("sortOrder") String sortOrder,
+                                     @Param("sortMode") String sortMode,
+                                     @Param("randomSeed") String randomSeed);
 
     @Select("""
         <script>
@@ -55,11 +66,19 @@ public interface ImageMapper extends BaseMapper<Image> {
             LEFT JOIN categories c ON i.category_id = c.id
             <where>
                 <if test='userId != null'>AND i.user_id = #{userId}</if>
-                <if test='keyword != null and keyword != \"\"'>AND i.image_name LIKE CONCAT('%', #{keyword}, '%')</if>
+                <if test='keyword != null and keyword != \"\"'>AND BINARY i.image_name = #{keyword}</if>
                 <if test='categoryId != null'>AND i.category_id = #{categoryId}</if>
                 <if test='visibility != null and visibility != \"\"'>AND i.visibility = #{visibility}</if>
+                <if test='tagFilters != null and tagFilters.size > 0'>
+                    AND (
+                    <foreach collection='tagFilters' item='tag' separator=' OR '>
+                        i.tags LIKE CONCAT('%', #{tag}, '%')
+                    </foreach>
+                    )
+                </if>
             </where>
             <choose>
+                <when test='sortMode == \"random\"'>ORDER BY MD5(CONCAT(#{randomSeed}, i.id)), i.id</when>
                 <when test='sortField == \"image_name\"'>ORDER BY i.image_name ${sortOrder}</when>
                 <when test='sortField == \"file_size\"'>ORDER BY i.file_size ${sortOrder}</when>
                 <otherwise>ORDER BY i.upload_time ${sortOrder}</otherwise>
@@ -71,6 +90,9 @@ public interface ImageMapper extends BaseMapper<Image> {
                                      @Param("keyword") String keyword,
                                      @Param("categoryId") Long categoryId,
                                      @Param("visibility") String visibility,
+                                     @Param("tagFilters") List<String> tagFilters,
                                      @Param("sortField") String sortField,
-                                     @Param("sortOrder") String sortOrder);
+                                     @Param("sortOrder") String sortOrder,
+                                     @Param("sortMode") String sortMode,
+                                     @Param("randomSeed") String randomSeed);
 }

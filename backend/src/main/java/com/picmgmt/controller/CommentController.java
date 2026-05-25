@@ -9,6 +9,9 @@ import com.picmgmt.vo.CommentVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
+
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -39,7 +42,27 @@ public class CommentController {
         String objectKey = UUID.randomUUID() + "." + ext;
         String mimeType = "image/" + (ext.equals("jpg") ? "jpeg" : ext);
         storageService.upload("comments", objectKey, file.getBytes(), mimeType);
-        return Result.ok(storageService.getAccessUrl("comments", objectKey));
+        return Result.ok(objectKey);
+    }
+
+    @Operation(summary = "下载评论图片")
+    @GetMapping("/image/{id}")
+    public ResponseEntity<byte[]> image(@PathVariable Long id) {
+        Comment comment = commentService.getById(id);
+        byte[] bytes = storageService.download("comments", comment.getImagePath());
+        return ResponseEntity.ok()
+            .contentType(getMediaType(comment.getImagePath()))
+            .body(bytes);
+    }
+
+    private MediaType getMediaType(String path) {
+        String ext = FileUtil.extName(path).toLowerCase();
+        return switch (ext) {
+            case "jpg", "jpeg" -> MediaType.IMAGE_JPEG;
+            case "png" -> MediaType.IMAGE_PNG;
+            case "webp" -> MediaType.parseMediaType("image/webp");
+            default -> MediaType.APPLICATION_OCTET_STREAM;
+        };
     }
 
     @Operation(summary = "添加评论")

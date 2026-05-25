@@ -158,7 +158,7 @@ public class OAuthServiceImpl implements OAuthService {
             String objectKey = userId + "/oauth_avatar." + ext;
             String mimeType = "image/" + (ext.equals("jpg") ? "jpeg" : ext);
             storageService.upload("avatars", objectKey, bytes, mimeType);
-            return storageService.getAccessUrl("avatars", objectKey);
+            return objectKey;
         } catch (Exception e) {
             log.warn("Failed to download avatar for user {}: {}", userId, e.getMessage());
             return null;

@@ -6,7 +6,7 @@ import lombok.Data;
 public class ImageQueryDTO {
 
     private Integer page = 1;
-    private Integer limit = 12;
+    private Integer limit = 50;
     private String keyword;
     private Long categoryId;
     private String sortField = "upload_time";
