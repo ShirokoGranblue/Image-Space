@@ -278,6 +278,7 @@ function onCmtFileChange(file) {
 }
 
 async function handleAddComment() {
+  if (sending.value) return
   const text = commentText.value.trim()
   if (!text && !cmtFile.value) {
     ElMessage.warning('请输入评论内容')

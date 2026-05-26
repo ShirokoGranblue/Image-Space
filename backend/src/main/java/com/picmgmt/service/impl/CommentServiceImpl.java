@@ -7,6 +7,7 @@ import com.picmgmt.entity.Comment;
 import com.picmgmt.repository.CommentRepository;
 import com.picmgmt.repository.ImageRepository;
 import com.picmgmt.service.CommentService;
+import com.picmgmt.service.NotificationService;
 import com.picmgmt.vo.CommentVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,18 +20,20 @@ public class CommentServiceImpl implements CommentService {
 
     private final CommentRepository commentRepository;
     private final ImageRepository imageRepository;
+    private final NotificationService notificationService;
 
     @Override
     public Comment add(Long imageId, String content, String imagePath) {
-        if (content == null || content.isBlank()) {
+        if ((content == null || content.isBlank()) && (imagePath == null || imagePath.isBlank())) {
             throw new BusinessException(ErrorCode.COMMENT_EMPTY);
         }
-        imageRepository.findById(imageId)
+        var image = imageRepository.findById(imageId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
 
+        long actorUserId = StpUtil.getLoginIdAsLong();
         Comment comment = new Comment();
         comment.setImageId(imageId);
-        comment.setUserId(StpUtil.getLoginIdAsLong());
+        comment.setUserId(actorUserId);
         comment.setContent(content);
         // 如果是完整 URL (如 http://host:port/comments/uuid.png?...)，提取纯 storage key
         String key = imagePath;
@@ -43,6 +46,9 @@ public class CommentServiceImpl implements CommentService {
         }
         comment.setImagePath(key);
         commentRepository.insert(comment);
+        if (image.getUserId() != null && !image.getUserId().equals(actorUserId)) {
+            notificationService.createCommentNotification(image, actorUserId, comment.getId(), content);
+        }
         return comment;
     }
 

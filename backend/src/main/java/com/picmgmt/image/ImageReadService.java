@@ -6,6 +6,7 @@ import com.picmgmt.common.BusinessException;
 import com.picmgmt.common.ErrorCode;
 import com.picmgmt.dto.ImageQueryDTO;
 import com.picmgmt.entity.Image;
+import com.picmgmt.mapper.ImageLikeMapper;
 import com.picmgmt.mapper.ImageMapper;
 import com.picmgmt.repository.ImageRepository;
 import com.picmgmt.storage.StorageService;
@@ -23,6 +24,7 @@ public class ImageReadService {
 
     private final ImageRepository imageRepository;
     private final ImageMapper imageMapper;
+    private final ImageLikeMapper imageLikeMapper;
     private final ImagePermissionService permissionService;
     private final StorageService storageService;
 
@@ -36,11 +38,16 @@ public class ImageReadService {
         if (!permissionService.canView(image)) {
             throw new BusinessException(ErrorCode.IMAGE_PERMISSION_DENIED);
         }
-        return imageRepository.toVO(image);
+        ImageVO vo = imageRepository.toVO(image);
+        decorateLikeInfo(vo);
+        return vo;
     }
 
     public Page<ImageVO> page(ImageQueryDTO dto) {
-        long userId = StpUtil.getLoginIdAsLong();
+        Long userId = dto.getTargetUserId();
+        if (userId == null) {
+            userId = StpUtil.getLoginIdAsLong();
+        }
         String sortField = ALLOWED_SORT_FIELDS.contains(dto.getSortField()) ? dto.getSortField() : "upload_time";
         String sortOrder = "asc".equalsIgnoreCase(dto.getSortOrder()) ? "asc" : "desc";
 
@@ -51,6 +58,7 @@ public class ImageReadService {
             if (vo.getStorageKey() != null) {
                 vo.setImageUrl(storageService.getAccessUrl("images", vo.getStorageKey()));
             }
+            decorateLikeInfo(vo);
         }
         return result;
     }
@@ -72,6 +80,7 @@ public class ImageReadService {
             if (vo.getStorageKey() != null) {
                 vo.setImageUrl(storageService.getAccessUrl("images", vo.getStorageKey()));
             }
+            decorateLikeInfo(vo);
         }
         return result;
     }
@@ -108,5 +117,20 @@ public class ImageReadService {
             return 50;
         }
         return limit;
+    }
+
+    private void decorateLikeInfo(ImageVO vo) {
+        if (vo == null || vo.getId() == null) {
+            return;
+        }
+        Long count = imageLikeMapper.countByImageId(vo.getId());
+        vo.setLikeCount(count == null ? 0L : count);
+        if (StpUtil.isLogin()) {
+            long userId = StpUtil.getLoginIdAsLong();
+            Long liked = imageLikeMapper.countByImageIdAndUserId(vo.getId(), userId);
+            vo.setLikedByMe(liked != null && liked > 0);
+        } else {
+            vo.setLikedByMe(false);
+        }
     }
 }

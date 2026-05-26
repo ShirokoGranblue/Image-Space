@@ -140,7 +140,7 @@
               <el-slider v-model="bgCropRatio" :min="0.45" :max="1" :step="0.01" style="flex:1;margin:0 10px" @input="onBgSliderChange" />
               <span class="slider-val">{{ Math.round(bgCropRatio * 100) }}%</span>
             </div>
-            <el-upload :auto-upload="false" :show-file-list="false" :on-change="onBgFileChange" accept="image/*" class="bg-upload">
+            <el-upload :auto-upload="false" :show-file-list="false" :on-change="onBgFileChange" accept="image/jpeg,image/png,image/webp,image/gif" class="bg-upload">
               <el-button type="primary">选择图片</el-button>
             </el-upload>
             <p class="upload-hint" v-if="bgFileName">{{ bgFileName }}</p>
@@ -213,7 +213,7 @@
             </div>
           </div>
         </div>
-        <el-upload :auto-upload="false" :show-file-list="false" :on-change="onAvatarFileChange" accept="image/*" class="avatar-replace-upload">
+        <el-upload :auto-upload="false" :show-file-list="false" :on-change="onAvatarFileChange" accept="image/jpeg,image/png,image/webp,image/gif" class="avatar-replace-upload">
           <el-button>更换图片</el-button>
         </el-upload>
       </div>
@@ -396,6 +396,7 @@ const bannerStyle = computed(() => {
 // Background editor
 const bgDialogVisible = ref(false)
 const bgPreviewUrl = ref('')
+const bgFile = ref(null)
 const bgFileName = ref('')
 const bgSaving = ref(false)
 const bgCropContainer = ref(null)
@@ -412,6 +413,7 @@ let bgResizeDir = ''
 
 function onBgFileChange(file) {
   if (!file?.raw) return
+  bgFile.value = file.raw
   bgFileName.value = file.name
   const reader = new FileReader()
   reader.onload = (e) => {
@@ -429,6 +431,7 @@ onUnmounted(() => {
 
 function openBackgroundEditor() {
   bgDialogVisible.value = true
+  bgFile.value = null
   bgFileName.value = ''
   nextTick(() => { setupBgResizeObserver() })
   nextTick(async () => {
@@ -735,9 +738,9 @@ async function saveBackground() {
     const originalSource = bgSourceKind.value === 'new' || bgSourceKind.value === 'original'
       ? bgPreviewUrl.value
       : await readCachedBgOriginal()
-    const backgroundBlob = await cropBackgroundImage()
+    const backgroundBlob = isGifFile(bgFile.value) ? bgFile.value : await cropBackgroundImage()
     const fd = new FormData()
-    fd.append('file', backgroundBlob, 'background.jpg')
+    fd.append('file', backgroundBlob, isGifFile(bgFile.value) ? 'background.gif' : 'background.jpg')
     const res = await uploadBackground(fd)
     const bgPath = typeof res.data === 'string' ? res.data : res.data?.background
     if (!bgPath) throw new Error('背景上传失败')
@@ -1086,9 +1089,9 @@ async function confirmAvatar() {
     const originalSource = avatarSourceKind.value === 'new' || avatarSourceKind.value === 'original'
       ? avatarPreviewUrl.value
       : await readCachedAvatarOriginal()
-    const croppedBlob = await cropImage()
+    const croppedBlob = isGifFile(avatarFile.value) ? avatarFile.value : await cropImage()
     const fd = new FormData()
-    fd.append('file', croppedBlob, 'avatar.png')
+    fd.append('file', croppedBlob, isGifFile(avatarFile.value) ? 'avatar.gif' : 'avatar.png')
     const res = await uploadAvatar(fd)
     const avatarPath = typeof res.data === 'string' ? res.data : res.data?.avatar
     if (!avatarPath) throw new Error('头像上传失败')
@@ -1136,6 +1139,10 @@ function cropImage() {
   })
 }
 
+function isGifFile(file) {
+  return !!file && (file.type === 'image/gif' || /\.gif$/i.test(file.name || ''))
+}
+
 onMounted(async () => {
   loading.value = true
   const profileId = route.params.id || userStore.userInfo?.id
@@ -1156,7 +1163,8 @@ async function fetchWorks() {
       page: workPage.value,
       limit: workLimit.value,
       sortField: 'upload_time',
-      sortOrder: 'desc'
+      sortOrder: 'desc',
+      targetUserId: profileId.value
     }))
     works.value = res.data.records || []; workTotal.value = res.data.total || 0
     selectedWorkIds.value = selectedWorkIds.value.filter(id => works.value.some(img => img.id === id))
