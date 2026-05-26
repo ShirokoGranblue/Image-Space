@@ -2,6 +2,7 @@
 
 Development guide for Claude Code (claude.ai/code) working in this repository.
 Please read files at 'C:\Users\l2653\.claude\projects\C--Users-l2653-Desktop-picture-management\memory' when Claude Code launching
+Keep this file updating.
 
 ## Common Commands
 
@@ -34,10 +35,10 @@ controller → service/impl → mapper (MyBatis-Plus BaseMapper)
    dto/vo      entity (@TableName maps to snake_case table names)
 ```
 
-- **Auth**: Sa-Token (not Spring Security). Token stored in `localStorage['satoken']`, passed via `satoken` request header. `SaTokenConfig` intercepts all routes, only allows `/user/login`, `/user/register`, `/doc.html/**`, `/v3/api-docs/**`, `/swagger-ui/**`, `/image/square`.
+- **Auth**: Sa-Token (not Spring Security). Token stored in `localStorage['satoken']`, passed via `satoken` request header. `SaTokenConfig` intercepts all routes, allows: `/user/login`, `/user/register`, `/user/captcha`, `/user/send-code`, `/user/login-by-code`, `/user/check-field`, `/user/profile/**`, `/user/oauth/github`, `/user/oauth/github/callback`, `/user/oauth/google`, `/user/oauth/google/callback`, `/doc.html`, `/doc.html/**`, `/v3/api-docs/**`, `/swagger-ui/**`, `/webjars/**`, `/image/square`, `/system/webhook-url`, `/comment/list/**`.
 - **Password encryption**: BCrypt via Hutool (`BCrypt.hashpw` / `BCrypt.checkpw`), not Spring Security's encoder.
 - **Image storage**: MinIO object storage via `MinioStorageService`. Images uploaded as `MultipartFile → byte[]` stored in MinIO buckets (`avatars`, `backgrounds`, `images`, `comments`). `StorageMigrationRunner` automatically migrates legacy Base64 data on first startup. nginx proxies `/minio/` to MinIO and rewrites internal URLs via `sub_filter`.
-- **Data migration**: `DataMigrationRunner` automatically detects legacy file-path data (`/upload/...`) on first startup, reads local files, converts to Base64, stores in database, then removes the `upload` directory.
+- **Data migration**: `StorageMigrationRunner` automatically migrates legacy Base64 data to MinIO on startup. Detects Base64-encoded images in database, uploads to MinIO buckets, and replaces database values with MinIO object keys.
 - **CORS**: `WebMvcConfig` allows all origins. Frontend dev uses Vite proxy (`/api` → `:8088`), so CORS config only applies when frontend and backend are deployed together.
 
 **Frontend** — Vue 3 + Element Plus + Pinia + Vue Router:
@@ -89,8 +90,8 @@ users → user_roles (role_id) → role_permissions → permissions (code)
 - UserController (avatar/background/comments) only uses `StpUtil.getLoginIdAsLong()`, no permission check
 - `users.role` is a display string only — actual RBAC is table-driven
 - New user registration (OAuth or regular) MUST insert `user_roles` row with `role_id=3` (user role)
-- `UserServiceImpl.register()` and `OAuthServiceImpl.handleCallback()` both call `ensureUserRole()`
-- Permission codes: `image:upload`, `image:edit`, `image:delete`, `image:edit:any`, `image:delete:any`, `category:manage`, `category:manage:any`, `comment:add`, `comment:delete`, `comment:delete:any`, `user:manage`
+- `OAuthServiceImpl.handleCallback()` calls `ensureUserRole()`. `UserServiceImpl.register()` inserts `user_roles` row inline (same effect)
+- Permission codes in DB: `image:upload`, `image:edit`, `image:delete`, `image:edit:any`, `image:delete:any`, `category:manage`, `category:manage:any`, `comment:add`, `comment:delete`, `comment:delete:any`, `user:manage`. Enforced via `@SaCheckPermission`: `image:upload/edit/delete` + `user:manage`; others reserved for future use
 
 ## .gitignore Protected Files
 
