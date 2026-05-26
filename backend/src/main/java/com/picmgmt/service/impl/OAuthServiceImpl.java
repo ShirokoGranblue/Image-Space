@@ -10,6 +10,7 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.picmgmt.auth.UserRole;
 import com.picmgmt.auth.UserRoleMapper;
 import com.picmgmt.config.OAuthPooledHttp;
@@ -113,6 +114,7 @@ public class OAuthServiceImpl implements OAuthService {
         if (email != null && !email.isEmpty()) {
             user = userMapper.selectOne(new LambdaQueryWrapper<User>().eq(User::getEmail, email));
             if (user != null && (user.getDeleted() == null || user.getDeleted() == 0)) {
+                ensureUserRole(user.getId());
                 bindOAuthUsername(user, provider, oauthUsername);
                 StpUtil.login(user.getId());
                 log.info("{} OAuth login: email match, user {}", provider, user.getUsername());
@@ -132,10 +134,7 @@ public class OAuthServiceImpl implements OAuthService {
         user.setRole("user");
         user.setEmail(email);
         userMapper.insert(user);
-        UserRole userRole = new UserRole();
-        userRole.setUserId(user.getId());
-        userRole.setRoleId(3L);
-        userRoleMapper.insert(userRole);
+        ensureUserRole(user.getId());
         bindOAuthUsername(user, provider, oauthUsername);
 
         String avatarKey = downloadAndUploadAvatar(avatarUrl, user.getId());
@@ -152,9 +151,19 @@ public class OAuthServiceImpl implements OAuthService {
     private void bindOAuthUsername(User user, String provider, String oauthUsername) {
         if ("github".equals(provider)) {
             if (user.getGithubUsername() == null) {
-                user.setGithubUsername(oauthUsername);
-                userMapper.updateById(user);
+                userMapper.update(null, new LambdaUpdateWrapper<User>()
+                        .eq(User::getId, user.getId())
+                        .set(User::getGithubUsername, oauthUsername));
             }
+        }
+    }
+
+    private void ensureUserRole(Long userId) {
+        if (userRoleMapper.selectRoleIdsByUserId(userId).isEmpty()) {
+            UserRole ur = new UserRole();
+            ur.setUserId(userId);
+            ur.setRoleId(3L);
+            userRoleMapper.insert(ur);
         }
     }
 
