@@ -13,6 +13,10 @@ storage:
   minio:
     endpoint: http://minio:9000
 
+app:
+  public-base-url: ${APP_PUBLIC_BASE_URL:http://20.200.212.66}
+  webhook-path: ${APP_WEBHOOK_PATH:/api/webhook}
+
 oauth:
   proxy:
     enabled: false

@@ -61,6 +61,8 @@ springdoc:
 
 app:
   upload-path: ./upload
+  public-base-url: ${APP_PUBLIC_BASE_URL:http://20.200.212.66}
+  webhook-path: ${APP_WEBHOOK_PATH:/api/webhook}
 
 storage:
   type: minio
