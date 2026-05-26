@@ -22,6 +22,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.CacheControl;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +30,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -43,6 +46,9 @@ public class UserController {
     private final StorageService storageService;
     private final CaptchaService captchaService;
     private final OAuthService oAuthService;
+
+    @Value("${app.frontend-base-url:http://4.230.10.11}")
+    private String frontendBaseUrl;
 
     private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "webp");
 
@@ -160,7 +166,7 @@ public class UserController {
     public void githubCallback(@RequestParam String code, @RequestParam String state,
                                 jakarta.servlet.http.HttpServletResponse response) throws java.io.IOException {
         String token = oAuthService.handleCallback("github", code, state);
-        response.sendRedirect("http://localhost:3000/login?satoken=" + token);
+        response.sendRedirect(buildLoginRedirect(token));
     }
 
     @Operation(summary = "Google OAuth授权地址")
@@ -175,7 +181,7 @@ public class UserController {
     public void googleCallback(@RequestParam String code, @RequestParam String state,
                                 jakarta.servlet.http.HttpServletResponse response) throws java.io.IOException {
         String token = oAuthService.handleCallback("google", code, state);
-        response.sendRedirect("http://localhost:3000/login?satoken=" + token);
+        response.sendRedirect(buildLoginRedirect(token));
     }
 
     @Operation(summary = "检查邮箱/手机号是否已被使用")
@@ -220,6 +226,16 @@ public class UserController {
 
     private String userMediaUrl(String type, Long userId) {
         return "/api/user/" + type + "/" + userId;
+    }
+
+    private String buildLoginRedirect(String token) {
+        String baseUrl = frontendBaseUrl == null || frontendBaseUrl.isBlank()
+                ? "http://4.230.10.11"
+                : frontendBaseUrl.trim();
+        while (baseUrl.endsWith("/")) {
+            baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+        }
+        return baseUrl + "/login?satoken=" + URLEncoder.encode(token, StandardCharsets.UTF_8);
     }
 
     private String resolveObjectKey(String bucket, String storageKey, String legacyValue) {
