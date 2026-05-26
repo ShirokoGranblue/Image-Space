@@ -12,9 +12,11 @@ spring:
 storage:
   minio:
     endpoint: http://minio:9000
+    access-key: ${MINIO_ACCESS_KEY:minioadmin}
+    secret-key: ${MINIO_SECRET_KEY:minioadmin}
 
 app:
-  public-base-url: ${APP_PUBLIC_BASE_URL:http://20.200.212.66}
+  public-base-url: ${APP_PUBLIC_BASE_URL:http://4.230.10.11}
   webhook-path: ${APP_WEBHOOK_PATH:/api/webhook}
 
 oauth:

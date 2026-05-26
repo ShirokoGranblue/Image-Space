@@ -10,7 +10,7 @@ public class WebhookUrlService {
     private final String webhookPath;
 
     public WebhookUrlService(
-            @Value("${app.public-base-url:http://20.200.212.66}") String publicBaseUrl,
+            @Value("${app.public-base-url:http://4.230.10.11}") String publicBaseUrl,
             @Value("${app.webhook-path:/api/webhook}") String webhookPath) {
         this.publicBaseUrl = publicBaseUrl;
         this.webhookPath = webhookPath;
@@ -26,7 +26,7 @@ public class WebhookUrlService {
     }
 
     private String trimTrailingSlash(String value) {
-        String normalized = value == null || value.isBlank() ? "http://20.200.212.66" : value.trim();
+        String normalized = value == null || value.isBlank() ? "http://4.230.10.11" : value.trim();
         while (normalized.endsWith("/") && normalized.length() > "http://".length()) {
             normalized = normalized.substring(0, normalized.length() - 1);
         }
