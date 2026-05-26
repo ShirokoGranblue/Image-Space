@@ -36,7 +36,7 @@ controller → service/impl → mapper (MyBatis-Plus BaseMapper)
 
 - **Auth**: Sa-Token (not Spring Security). Token stored in `localStorage['satoken']`, passed via `satoken` request header. `SaTokenConfig` intercepts all routes, only allows `/user/login`, `/user/register`, `/doc.html/**`, `/v3/api-docs/**`, `/swagger-ui/**`, `/image/square`.
 - **Password encryption**: BCrypt via Hutool (`BCrypt.hashpw` / `BCrypt.checkpw`), not Spring Security's encoder.
-- **Image storage**: All images (pictures, avatars, backgrounds, comment images) stored as Base64 Data URLs in MySQL `LONGTEXT` columns. Upload: `MultipartFile → byte[] → Base64 Data URL` inserted into database. Frontend renders directly via `<img :src="dataUrl">`. `ImageCacheService` provides LRU in-memory cache — Base64 ↔ byte[] conversion checks cache first, falls back to direct conversion and writes to buffer on miss.
+- **Image storage**: MinIO object storage via `MinioStorageService`. Images uploaded as `MultipartFile → byte[]` stored in MinIO buckets (`avatars`, `backgrounds`, `images`, `comments`). `StorageMigrationRunner` automatically migrates legacy Base64 data on first startup. nginx proxies `/minio/` to MinIO and rewrites internal URLs via `sub_filter`.
 - **Data migration**: `DataMigrationRunner` automatically detects legacy file-path data (`/upload/...`) on first startup, reads local files, converts to Base64, stores in database, then removes the `upload` directory.
 - **CORS**: `WebMvcConfig` allows all origins. Frontend dev uses Vite proxy (`/api` → `:8088`), so CORS config only applies when frontend and backend are deployed together.
 
