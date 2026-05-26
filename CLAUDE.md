@@ -69,6 +69,39 @@ When a category is deleted, `CategoryServiceImpl.delete()` sets all child images
 ### API response format
 All endpoints return `Result<T>` with structure `{ code: 200, message: "success", data: ... }`. The axios interceptor in `api/index.js` unwraps the response — Vue components receive `Result` objects as `res.data`. Non-200 codes trigger `ElMessage.error`.
 
+## Production Deployment
+
+- **Server**: Azure VM `4.230.10.11`, Ubuntu 24.04, SSH key `~/Downloads/ShirokoGranblue_key.pem`, user `azureuser`
+- **Domain**: `image-space.app` (name.com), DNS resolves to `4.230.10.11`
+- **SSL**: Let's Encrypt via certbot, cert at `/etc/letsencrypt/live/image-space.app/`, expires 2026-08-24, auto-renews
+- **Deploy path**: `/home/azureuser/Picture-Managentor/`
+- **nginx config**: `deploy/nginx/default.conf` — 4 server blocks (www HTTP/HTTPS redirect + main HTTP→HTTPS + main HTTPS). **Do NOT replace with HTTP-only config** — HTTPS will break.
+- **Docker volumes**: `/etc/letsencrypt:/etc/letsencrypt:ro` mounted into nginx for SSL certs
+- **.env file**: Server has `.env` with real credentials. `docker compose restart` does NOT reload `.env` — use `docker compose up -d` to recreate container when .env changes.
+
+## Permission System (RBAC)
+
+`SaTokenPermissionImpl` resolves permissions via table chain:
+```
+users → user_roles (role_id) → role_permissions → permissions (code)
+```
+- `@SaCheckPermission("image:upload")` etc. on ImageController checks permission codes
+- UserController (avatar/background/comments) only uses `StpUtil.getLoginIdAsLong()`, no permission check
+- `users.role` is a display string only — actual RBAC is table-driven
+- New user registration (OAuth or regular) MUST insert `user_roles` row with `role_id=3` (user role)
+- `UserServiceImpl.register()` and `OAuthServiceImpl.handleCallback()` both call `ensureUserRole()`
+- Permission codes: `image:upload`, `image:edit`, `image:delete`, `image:edit:any`, `image:delete:any`, `category:manage`, `category:manage:any`, `comment:add`, `comment:delete`, `comment:delete:any`, `user:manage`
+
+## .gitignore Protected Files
+
+These files contain real credentials and are gitignored — update them directly on server:
+- `application.yml` — local dev config with real defaults
+- `docker-compose.yml` — local docker compose with real values
+- `.env` — server environment variables (only on server)
+
+Templates without secrets: `application.example.yml`, `docker-compose.example.yaml`
+
 ## Notes
-Every response sentence must end with "喵~" . For emphasis or strong emotion, use "喵!" .
-Example: "Hello 喵~, I like you 喵~。完成了喵！"
+Every response sentence must end with "喵~" . For emphasis or strong and excited emotion, use "喵!" .Example: "Hello 喵~, I like you 喵~。完成了喵！".
+When you finished some work/task,automatically submit and push the modified content to my Github repository and sync the server's and host's changes or configurations.
+
