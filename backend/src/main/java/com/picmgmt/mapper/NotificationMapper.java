@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.picmgmt.entity.Notification;
 import com.picmgmt.vo.NotificationVO;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -37,6 +38,6 @@ public interface NotificationMapper extends BaseMapper<Notification> {
     @Update("UPDATE notifications SET read_flag = 1 WHERE recipient_user_id = #{recipientUserId} AND read_flag = 0")
     int markAllRead(@Param("recipientUserId") Long recipientUserId);
 
-    @org.apache.ibatis.annotations.Delete("DELETE FROM notifications WHERE id = #{id} AND recipient_user_id = #{recipientUserId}")
+    @Delete("DELETE FROM notifications WHERE id = #{id} AND recipient_user_id = #{recipientUserId}")
     int deleteByIdAndUser(@Param("id") Long id, @Param("recipientUserId") Long recipientUserId);
 }

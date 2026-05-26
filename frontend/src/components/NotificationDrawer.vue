@@ -19,7 +19,11 @@
             :key="item.id"
             class="notification-item"
             :class="{ unread: !item.read }"
+            tabindex="0"
+            role="link"
             @click="openNotification(item)"
+            @keydown.enter="openNotification(item)"
+            @keydown.space.prevent="openNotification(item)"
           >
             <img :src="item.imagePreviewUrl || fallbackImage" alt="" class="notification-thumb" />
             <span class="notification-body">

@@ -1143,14 +1143,16 @@ function isGifFile(file) {
   return !!file && (file.type === 'image/gif' || /\.gif$/i.test(file.name || ''))
 }
 
+const profileId = ref(null)
+
 onMounted(async () => {
   loading.value = true
-  const profileId = route.params.id || userStore.userInfo?.id
+  profileId.value = route.params.id || userStore.userInfo?.id
   try {
     if (userStore.token && !userStore.userInfo) {
       await userStore.fetchUserInfo()
     }
-    const res = await getUserProfile(profileId)
+    const res = await getUserProfile(profileId.value)
     user.value = res.data
     fetchWorks()
     if (isOwner.value) fetchCategories()

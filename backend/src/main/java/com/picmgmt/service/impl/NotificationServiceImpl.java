@@ -2,6 +2,8 @@ package com.picmgmt.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.picmgmt.common.BusinessException;
+import com.picmgmt.common.ErrorCode;
 import com.picmgmt.entity.Image;
 import com.picmgmt.entity.Notification;
 import com.picmgmt.entity.User;
@@ -82,7 +84,7 @@ public class NotificationServiceImpl implements NotificationService {
         long userId = StpUtil.getLoginIdAsLong();
         int rows = notificationMapper.deleteByIdAndUser(id, userId);
         if (rows == 0) {
-            throw new com.picmgmt.common.BusinessException(com.picmgmt.common.ErrorCode.FORBIDDEN);
+            throw new BusinessException(ErrorCode.FORBIDDEN);
         }
     }
 
