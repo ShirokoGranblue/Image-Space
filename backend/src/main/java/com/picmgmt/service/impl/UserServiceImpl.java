@@ -6,6 +6,8 @@ import cn.hutool.crypto.digest.BCrypt;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.picmgmt.auth.UserRole;
+import com.picmgmt.auth.UserRoleMapper;
 import com.picmgmt.cache.RedisCacheService;
 import com.picmgmt.common.BusinessException;
 import com.picmgmt.common.ErrorCode;
@@ -35,6 +37,7 @@ public class UserServiceImpl implements UserService {
     private final RedisCacheService redisCacheService;
     private final EmailService emailService;
     private final CaptchaService captchaService;
+    private final UserRoleMapper userRoleMapper;
 
     @Override
     public UserVO register(RegisterDTO dto) {
@@ -72,6 +75,10 @@ public class UserServiceImpl implements UserService {
             user.setPhone(dto.getPhone().trim());
         }
         userMapper.insert(user);
+        UserRole userRole = new UserRole();
+        userRole.setUserId(user.getId());
+        userRole.setRoleId(3L);
+        userRoleMapper.insert(userRole);
         return BeanUtil.copyProperties(user, UserVO.class);
     }
 

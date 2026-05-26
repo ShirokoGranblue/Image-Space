@@ -10,6 +10,8 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.picmgmt.auth.UserRole;
+import com.picmgmt.auth.UserRoleMapper;
 import com.picmgmt.config.OAuthPooledHttp;
 import com.picmgmt.entity.User;
 import com.picmgmt.mapper.UserMapper;
@@ -48,6 +50,7 @@ public class OAuthServiceImpl implements OAuthService {
 
     private final UserMapper userMapper;
     private final StorageService storageService;
+    private final UserRoleMapper userRoleMapper;
 
     @Value("${oauth.github.client-id}")
     private String githubClientId;
@@ -73,9 +76,11 @@ public class OAuthServiceImpl implements OAuthService {
     @Value("${oauth.proxy.port:0}")
     private int proxyPort;
 
-    public OAuthServiceImpl(UserMapper userMapper, StorageService storageService) {
+    public OAuthServiceImpl(UserMapper userMapper, StorageService storageService,
+                            UserRoleMapper userRoleMapper) {
         this.userMapper = userMapper;
         this.storageService = storageService;
+        this.userRoleMapper = userRoleMapper;
     }
 
     @Override
@@ -127,6 +132,10 @@ public class OAuthServiceImpl implements OAuthService {
         user.setRole("user");
         user.setEmail(email);
         userMapper.insert(user);
+        UserRole userRole = new UserRole();
+        userRole.setUserId(user.getId());
+        userRole.setRoleId(3L);
+        userRoleMapper.insert(userRole);
         bindOAuthUsername(user, provider, oauthUsername);
 
         String avatarKey = downloadAndUploadAvatar(avatarUrl, user.getId());
