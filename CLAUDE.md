@@ -50,13 +50,20 @@ controller → service/impl → mapper (MyBatis-Plus BaseMapper)
 | `/home` | My Images (CRUD) | Yes |
 | `/square` | Image Square | No |
 | `/categories` | Category Management | Yes |
+| `/profile/:id` | User Profile | No |
+| `/image/:id` | Image Detail | No |
 
 Route guard in `router/index.js`, checks `localStorage['satoken']` for `meta.requiresAuth` routes.
+
+**Notification system:** `NotificationController` provides `GET /list`, `GET /unread-count`, `PUT /{id}/read`, `PUT /read-all`, `DELETE /{id}`. Frontend `NotificationBell.vue` polls unread count every 15s and shows badge. `NotificationDrawer.vue` renders list with delete button (hover to show). Notifications created for COMMENT and LIKE types via `NotificationServiceImpl`.
 
 ## Key Design Decisions
 
 ### In-memory pagination for images
 `ImageServiceImpl.page()` uses `ImageMapper.selectImageVOList()` to query all matching rows, then slices in Java. The query uses dynamic `<if>` tags and `ORDER BY ${sortField}`. Sort fields are **whitelist-validated** (`upload_time`, `image_name`, `file_size`) before interpolation to prevent SQL injection. This approach is viable given the local-use scenario (≤10 concurrent users).
+
+### Image query by target user
+`ImageQueryDTO` has `targetUserId` field. When set (e.g. Profile page viewing another user), `ImageReadService.page()` filters by that ID. When null, defaults to `StpUtil.getLoginIdAsLong()` for "my images" page. `Profile.vue` passes `profileId` as `targetUserId` to show correct user's works.
 
 ### Service-layer ownership checks
 `ImageServiceImpl.delete()` and `update()` both verify `image.userId == loginId || hasRole("admin")` before mutating. `CategoryServiceImpl` follows the same pattern.
