@@ -25,6 +25,8 @@ public enum ErrorCode {
     USERNAME_EXISTS(2002, "用户名已存在"),
     PASSWORD_MISMATCH(2003, "两次密码不一致"),
     LOGIN_FAILED(2004, "用户名或密码错误"),
+    PASSWORD_INCORRECT(2016, "当前密码不正确"),
+    PASSWORD_TOO_SHORT(2017, "新密码不能少于6个字符"),
     EMAIL_EXISTS(2005, "该邮箱已被其他用户使用"),
     PHONE_EXISTS(2006, "该手机号已被其他用户使用"),
     EMAIL_NOT_BOUND(2007, "该邮箱未绑定任何账号"),

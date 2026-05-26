@@ -266,4 +266,19 @@ public class UserServiceImpl implements UserService {
         StpUtil.logout();
     }
 
+    @Override
+    public void changePassword(Long userId, String oldPassword, String newPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        if (oldPassword == null || oldPassword.isBlank() || !BCrypt.checkpw(oldPassword, user.getPassword())) {
+            throw new BusinessException(ErrorCode.PASSWORD_INCORRECT);
+        }
+        if (newPassword == null || newPassword.isBlank() || newPassword.length() < 6) {
+            throw new BusinessException(ErrorCode.PASSWORD_TOO_SHORT);
+        }
+        userMapper.update(null, new LambdaUpdateWrapper<User>()
+                .eq(User::getId, userId)
+                .set(User::getPassword, BCrypt.hashpw(newPassword, BCrypt.gensalt())));
+    }
+
 }

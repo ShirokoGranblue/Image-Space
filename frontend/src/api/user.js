@@ -63,3 +63,7 @@ export function getGoogleAuthUrl() {
 export function deleteAccount() {
   return api.delete('/user/account')
 }
+
+export function changePassword(data) {
+  return api.put('/user/password', data)
+}

@@ -48,7 +48,7 @@ sa-token:
   token-name: satoken
   timeout: 604800
   active-timeout: -1
-  is-concurrent: true
+  is-concurrent: false
   is-share: false
   token-style: uuid
   is-log: true

@@ -35,4 +35,5 @@ public interface UserService {
 
     void deleteAccount(Long userId);
 
+    void changePassword(Long userId, String oldPassword, String newPassword);
 }

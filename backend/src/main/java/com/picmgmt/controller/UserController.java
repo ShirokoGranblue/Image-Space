@@ -50,7 +50,7 @@ public class UserController {
     @Value("${app.frontend-base-url:https://image-space.app}")
     private String frontendBaseUrl;
 
-    private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "webp");
+    private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "webp", "gif");
 
     @Operation(summary = "获取图形验证码")
     @GetMapping("/captcha")
@@ -209,6 +209,14 @@ public class UserController {
         return Result.ok(userService.loginByCode(dto));
     }
 
+    @Operation(summary = "修改密码")
+    @PutMapping("/password")
+    public Result<Void> changePassword(@RequestBody Map<String, String> body) {
+        userService.changePassword(StpUtil.getLoginIdAsLong(),
+                body.get("oldPassword"), body.get("newPassword"));
+        return Result.ok();
+    }
+
     @Operation(summary = "注销账号")
     @DeleteMapping("/account")
     public Result<Void> deleteAccount() {
@@ -271,6 +279,7 @@ public class UserController {
             case "jpg", "jpeg" -> MediaType.IMAGE_JPEG;
             case "png" -> MediaType.IMAGE_PNG;
             case "webp" -> MediaType.parseMediaType("image/webp");
+            case "gif" -> MediaType.IMAGE_GIF;
             default -> MediaType.APPLICATION_OCTET_STREAM;
         };
     }
