@@ -47,7 +47,7 @@ public class UserController {
     private final CaptchaService captchaService;
     private final OAuthService oAuthService;
 
-    @Value("${app.frontend-base-url:http://4.230.10.11}")
+    @Value("${app.frontend-base-url:https://image-space.app}")
     private String frontendBaseUrl;
 
     private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "webp");
@@ -230,7 +230,7 @@ public class UserController {
 
     private String buildLoginRedirect(String token) {
         String baseUrl = frontendBaseUrl == null || frontendBaseUrl.isBlank()
-                ? "http://4.230.10.11"
+                ? "https://image-space.app"
                 : frontendBaseUrl.trim();
         while (baseUrl.endsWith("/")) {
             baseUrl = baseUrl.substring(0, baseUrl.length() - 1);

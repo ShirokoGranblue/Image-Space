@@ -77,17 +77,17 @@ services:
       DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change-me}
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-change-me}
-      APP_PUBLIC_BASE_URL: ${APP_PUBLIC_BASE_URL:-http://4.230.10.11}
-      APP_FRONTEND_BASE_URL: ${APP_FRONTEND_BASE_URL:-http://4.230.10.11}
+      APP_PUBLIC_BASE_URL: ${APP_PUBLIC_BASE_URL:-https://image-space.app}
+      APP_FRONTEND_BASE_URL: ${APP_FRONTEND_BASE_URL:-https://image-space.app}
       APP_WEBHOOK_PATH: ${APP_WEBHOOK_PATH:-/api/webhook}
       MAIL_USERNAME: ${MAIL_USERNAME:-your_email@qq.com}
       MAIL_PASSWORD: ${MAIL_PASSWORD:-your_smtp_password}
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-your_github_client_id}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-your_github_client_secret}
-      GITHUB_REDIRECT_URI: ${GITHUB_REDIRECT_URI:-http://4.230.10.11/api/user/oauth/github/callback}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-your_google_client_id}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-your_google_client_secret}
-      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://4.230.10.11/api/user/oauth/google/callback}
+      GITHUB_REDIRECT_URI: ${GITHUB_REDIRECT_URI:-https://image-space.app/api/user/oauth/github/callback}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-857850390803-ah505c173rn5jt1t72n80h0vap0eea8i.apps.googleusercontent.com}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-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}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-https://image-space.app/api/user/oauth/google/callback}
     depends_on:
       mysql:
         condition: service_healthy
