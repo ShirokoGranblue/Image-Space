@@ -32,5 +32,13 @@ app:
   webhook-path: ${APP_WEBHOOK_PATH:/api/webhook}
 
 oauth:
+  github:
+    client-id: ${GITHUB_CLIENT_ID:your_github_client_id}
+    client-secret: ${GITHUB_CLIENT_SECRET:your_github_client_secret}
+    redirect-uri: ${GITHUB_REDIRECT_URI:http://4.230.10.11/api/user/oauth/github/callback}
+  google:
+    client-id: ${GOOGLE_CLIENT_ID:your_google_client_id}
+    client-secret: ${GOOGLE_CLIENT_SECRET:your_google_client_secret}
+    redirect-uri: ${GOOGLE_REDIRECT_URI:http://4.230.10.11/api/user/oauth/google/callback}
   proxy:
     enabled: false

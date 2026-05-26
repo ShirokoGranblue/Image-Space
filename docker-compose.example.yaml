@@ -81,6 +81,12 @@ services:
       APP_WEBHOOK_PATH: ${APP_WEBHOOK_PATH:-/api/webhook}
       MAIL_USERNAME: ${MAIL_USERNAME:-your_email@qq.com}
       MAIL_PASSWORD: ${MAIL_PASSWORD:-your_smtp_password}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-your_github_client_id}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-your_github_client_secret}
+      GITHUB_REDIRECT_URI: ${GITHUB_REDIRECT_URI:-http://4.230.10.11/api/user/oauth/github/callback}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-your_google_client_id}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-your_google_client_secret}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://4.230.10.11/api/user/oauth/google/callback}
     depends_on:
       mysql:
         condition: service_healthy
