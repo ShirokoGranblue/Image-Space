@@ -1372,12 +1372,14 @@ function openPasswordDialog() {
 }
 
 async function submitPassword() {
-  if (!passwordForm.oldPassword) { ElMessage.warning('请输入当前密码'); return }
-  if (!passwordForm.newPassword || passwordForm.newPassword.length < 6) { ElMessage.warning('新密码不能少于6个字符'); return }
-  if (passwordForm.newPassword !== passwordForm.confirmPassword) { ElMessage.warning('两次输入的新密码不一致'); return }
+  const oldPw = passwordForm.oldPassword.trim()
+  const newPw = passwordForm.newPassword.trim()
+  if (!oldPw) { ElMessage.warning('请输入当前密码'); return }
+  if (!newPw || newPw.length < 6) { ElMessage.warning('新密码不能少于6个字符'); return }
+  if (newPw !== passwordForm.confirmPassword.trim()) { ElMessage.warning('两次输入的新密码不一致'); return }
   passwordSaving.value = true
   try {
-    await changePassword({ oldPassword: passwordForm.oldPassword, newPassword: passwordForm.newPassword })
+    await changePassword({ oldPassword: oldPw, newPassword: newPw })
     ElMessage.success('密码修改成功')
     passwordDialogVisible.value = false
   } catch {} finally { passwordSaving.value = false }
