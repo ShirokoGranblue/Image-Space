@@ -93,9 +93,15 @@ public class OAuthServiceImpl implements OAuthService {
     @Override
     public OAuthResult handleCallback(String provider, String code, String state, String baseUrl) {
         AuthRequest authRequest = buildAuthRequest(provider);
-        String redirectDomain = redisTemplate.opsForValue().get("oauth:domain:" + state);
-        if (redirectDomain != null && !redirectDomain.isBlank()) {
-            redisTemplate.delete("oauth:domain:" + state);
+
+        String redirectDomain = null;
+        try {
+            redirectDomain = redisTemplate.opsForValue().get("oauth:domain:" + state);
+            if (redirectDomain != null && !redirectDomain.isBlank()) {
+                redisTemplate.delete("oauth:domain:" + state);
+            }
+        } catch (Exception e) {
+            log.warn("Redis unavailable during {} OAuth callback: {}", provider, e.getMessage());
         }
         if (redirectDomain == null || redirectDomain.isBlank()) {
             redirectDomain = baseUrl;

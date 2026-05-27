@@ -69,8 +69,8 @@ When a category is deleted, `CategoryServiceImpl.delete()` sets all child images
 ### API response format
 All endpoints return `Result<T>` with structure `{ code: 200, message: "success", data: ... }`. The axios interceptor in `api/index.js` unwraps the response — Vue components receive `Result` objects as `res.data`. Non-200 codes trigger `ElMessage.error`.
 
-### Dynamic OAuth callback URLs
-`OAuthService.getAuthorizeUrl()` and `handleCallback()` accept a `baseUrl` parameter built from the request `Host` header + `X-Forwarded-Proto`. This preserves the domain when logging in from subdomains (e.g. `admin.image-space.app`). The OAuth redirect_uri is constructed as `{baseUrl}/api/user/oauth/{provider}/callback`. OAuth providers (GitHub/Google) must have all subdomain callback URLs registered.
+### Subdomain-preserving OAuth login
+`OAuthService.getAuthorizeUrl()` stores the originating `baseUrl` (from the validated `Host` header) in Redis keyed `oauth:domain:{state}` (TTL 10 min). The OAuth `redirect_uri` is always the fixed configured value (`image-space.app`) — only one callback URL needs to be registered with GitHub/Google. After the OAuth callback, the stored domain is retrieved from Redis and the user is redirected back to the originating subdomain with their token. `buildBaseUrl()` validates the Host against `ALLOWED_OAUTH_HOSTS` (`image-space.app`, `admin.image-space.app`) to prevent Host header injection.
 
 ### Admin subdomain
 `admin.image-space.app` serves the same frontend as the main domain, protected by Cloudflare Access (Zero Trust). nginx server_name includes both `image-space.app` and `admin.image-space.app` in the main HTTPS server block. `www.image-space.app` and `api.image-space.app` 301 redirect to the bare domain.

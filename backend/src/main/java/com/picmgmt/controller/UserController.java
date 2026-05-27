@@ -24,6 +24,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.CacheControl;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -39,6 +40,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @Tag(name = "用户模块")
+@Slf4j
 @RestController
 @RequestMapping("/user")
 @RequiredArgsConstructor
@@ -261,6 +263,10 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
         return request.getRemoteAddr();
     }
 
+    private static final Set<String> ALLOWED_OAUTH_HOSTS = Set.of(
+        "image-space.app", "admin.image-space.app"
+    );
+
     private String buildBaseUrl(HttpServletRequest request) {
         String scheme = request.getHeader("X-Forwarded-Proto");
         if (scheme == null || scheme.isBlank()) {
@@ -268,6 +274,11 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
         }
         String host = request.getHeader("Host");
         if (host == null || host.isBlank()) {
+            return "https://image-space.app";
+        }
+        String hostname = host.contains(":") ? host.substring(0, host.indexOf(':')) : host;
+        if (!ALLOWED_OAUTH_HOSTS.contains(hostname)) {
+            log.warn("Blocked OAuth request with unexpected Host header: {}", host);
             return "https://image-space.app";
         }
         return scheme + "://" + host;
