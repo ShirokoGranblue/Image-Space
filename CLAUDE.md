@@ -69,6 +69,12 @@ When a category is deleted, `CategoryServiceImpl.delete()` sets all child images
 ### API response format
 All endpoints return `Result<T>` with structure `{ code: 200, message: "success", data: ... }`. The axios interceptor in `api/index.js` unwraps the response — Vue components receive `Result` objects as `res.data`. Non-200 codes trigger `ElMessage.error`.
 
+### Dynamic OAuth callback URLs
+`OAuthService.getAuthorizeUrl()` and `handleCallback()` accept a `baseUrl` parameter built from the request `Host` header + `X-Forwarded-Proto`. This preserves the domain when logging in from subdomains (e.g. `admin.image-space.app`). The OAuth redirect_uri is constructed as `{baseUrl}/api/user/oauth/{provider}/callback`. OAuth providers (GitHub/Google) must have all subdomain callback URLs registered.
+
+### Admin subdomain
+`admin.image-space.app` serves the same frontend as the main domain, protected by Cloudflare Access (Zero Trust). nginx server_name includes both `image-space.app` and `admin.image-space.app` in the main HTTPS server block. `www.image-space.app` and `api.image-space.app` 301 redirect to the bare domain.
+
 ## Notes
 Every response sentence must end with "喵~" . For emphasis or strong emotion, use "喵!" .
 Example: "Hello 喵~, I like you 喵~。完成了喵！"
