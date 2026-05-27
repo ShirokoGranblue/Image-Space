@@ -49,3 +49,8 @@ oauth:
     redirect-uri: ${GOOGLE_REDIRECT_URI:https://image-space.app/api/user/oauth/google/callback}
   proxy:
     enabled: false
+
+turnstile:
+  enabled: ${TURNSTILE_ENABLED:false}
+  secret-key: ${TURNSTILE_SECRET_KEY:}
+  siteverify-url: ${TURNSTILE_SITEVERIFY_URL:https://challenges.cloudflare.com/turnstile/v0/siteverify}

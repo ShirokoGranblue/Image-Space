@@ -14,11 +14,13 @@ import com.picmgmt.dto.SendCodeDTO;
 import com.picmgmt.entity.User;
 import com.picmgmt.service.CaptchaService;
 import com.picmgmt.service.OAuthService;
+import com.picmgmt.service.TurnstileService;
 import com.picmgmt.service.UserService;
 import com.picmgmt.storage.StorageService;
 import com.picmgmt.vo.UserVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.CacheControl;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +48,7 @@ public class UserController {
     private final StorageService storageService;
     private final CaptchaService captchaService;
     private final OAuthService oAuthService;
+    private final TurnstileService turnstileService;
 
     @Value("${app.frontend-base-url:https://image-space.app}")
     private String frontendBaseUrl;
@@ -60,13 +63,15 @@ public class UserController {
 
     @Operation(summary = "用户注册")
     @PostMapping("/register")
-    public Result<UserVO> register(@Valid @RequestBody RegisterDTO dto) {
+    public Result<UserVO> register(@Valid @RequestBody RegisterDTO dto, HttpServletRequest request) {
+        turnstileService.verify(dto.getTurnstileToken(), clientIp(request));
         return Result.ok(userService.register(dto));
     }
 
     @Operation(summary = "用户登录")
     @PostMapping("/login")
-    public Result<String> login(@Valid @RequestBody LoginDTO dto) {
+    public Result<String> login(@Valid @RequestBody LoginDTO dto, HttpServletRequest request) {
+        turnstileService.verify(dto.getTurnstileToken(), clientIp(request));
         return Result.ok(userService.login(dto));
     }
 
@@ -198,7 +203,8 @@ public class UserController {
 
     @Operation(summary = "发送邮箱验证码")
     @PostMapping("/send-code")
-    public Result<Void> sendCode(@Valid @RequestBody SendCodeDTO dto) {
+    public Result<Void> sendCode(@Valid @RequestBody SendCodeDTO dto, HttpServletRequest request) {
+        turnstileService.verify(dto.getTurnstileToken(), clientIp(request));
         userService.sendCode(dto.getEmail().trim(), dto.getCaptchaId(), dto.getCaptchaCode());
         return Result.ok();
     }
@@ -234,6 +240,22 @@ public class UserController {
 
     private String userMediaUrl(String type, Long userId) {
         return "/api/user/" + type + "/" + userId;
+    }
+
+    private String clientIp(HttpServletRequest request) {
+        String cfIp = request.getHeader("CF-Connecting-IP");
+        if (cfIp != null && !cfIp.isBlank()) {
+            return cfIp.trim();
+        }
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
+        String realIp = request.getHeader("X-Real-IP");
+        if (realIp != null && !realIp.isBlank()) {
+            return realIp.trim();
+        }
+        return request.getRemoteAddr();
     }
 
     private String buildLoginRedirect(String token) {

@@ -88,3 +88,8 @@ oauth:
     enabled: true
     host: '127.0.0.1'
     port: 7897
+
+turnstile:
+  enabled: ${TURNSTILE_ENABLED:false}
+  secret-key: ${TURNSTILE_SECRET_KEY:}
+  siteverify-url: ${TURNSTILE_SITEVERIFY_URL:https://challenges.cloudflare.com/turnstile/v0/siteverify}

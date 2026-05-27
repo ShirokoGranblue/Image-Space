@@ -92,6 +92,8 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-your_google_client_id}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-your_google_client_secret}
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-https://image-space.app/api/user/oauth/google/callback}
+      TURNSTILE_ENABLED: ${TURNSTILE_ENABLED:-false}
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
     depends_on:
       mysql:
         condition: service_healthy

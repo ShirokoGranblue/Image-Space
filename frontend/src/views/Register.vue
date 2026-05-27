@@ -29,6 +29,12 @@
         <el-form-item label="手机号（选填）">
           <el-input v-model="form.phone" placeholder="选填" maxlength="20" size="large" :prefix-icon="Phone" />
         </el-form-item>
+        <TurnstileWidget
+          ref="turnstileRef"
+          @verified="turnstileToken = $event"
+          @expired="turnstileToken = ''"
+          @error="turnstileToken = ''"
+        />
         <el-form-item>
           <el-button type="primary" size="large" class="login-btn" @click="handleRegister" :loading="loading">
             创建账号
@@ -48,10 +54,13 @@ import { useRouter } from 'vue-router'
 import { User, Lock, Message, Phone } from '@element-plus/icons-vue'
 import { register } from '../api/user'
 import { ElMessage } from 'element-plus'
+import TurnstileWidget from '../components/TurnstileWidget.vue'
 
 const router = useRouter()
 const formRef = ref(null)
 const loading = ref(false)
+const turnstileRef = ref(null)
+const turnstileToken = ref('')
 
 const form = reactive({
   username: '',
@@ -87,15 +96,27 @@ const rules = {
 async function handleRegister() {
   const valid = await formRef.value.validate().catch(() => false)
   if (!valid) return
+  const token = getTurnstileToken()
+  if (!token) { ElMessage.warning('请完成人机验证'); return }
 
   loading.value = true
   try {
-    await register(form)
+    await register({ ...form, turnstileToken: token })
     ElMessage.success('注册成功，请登录')
     router.push('/login')
   } catch {} finally {
+    resetTurnstile()
     loading.value = false
   }
+}
+
+function getTurnstileToken() {
+  return turnstileRef.value?.getToken?.() || turnstileToken.value
+}
+
+function resetTurnstile() {
+  turnstileToken.value = ''
+  turnstileRef.value?.reset?.()
 }
 </script>
 

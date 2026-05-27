@@ -36,6 +36,8 @@ public enum ErrorCode {
     CAPTCHA_INVALID(2012, "图形验证码错误或已过期"),
     USER_DELETED(2014, "用户不存在或已注销"),
 
+    TURNSTILE_INVALID(2018, "Turnstile verification failed"),
+
     // Category errors (3xxx)
     CATEGORY_NOT_FOUND(3001, "分类不存在"),
     CATEGORY_NAME_EXISTS(3002, "分类名称已存在"),
