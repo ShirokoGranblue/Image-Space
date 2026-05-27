@@ -32,10 +32,12 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.net.InetSocketAddress;
 import java.net.Proxy;
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -48,6 +50,7 @@ public class OAuthServiceImpl implements OAuthService {
 
     private final UserMapper userMapper;
     private final StorageService storageService;
+    private final StringRedisTemplate redisTemplate;
 
     @Value("${oauth.github.client-id}")
     private String githubClientId;
@@ -73,20 +76,31 @@ public class OAuthServiceImpl implements OAuthService {
     @Value("${oauth.proxy.port:0}")
     private int proxyPort;
 
-    public OAuthServiceImpl(UserMapper userMapper, StorageService storageService) {
+    public OAuthServiceImpl(UserMapper userMapper, StorageService storageService, StringRedisTemplate redisTemplate) {
         this.userMapper = userMapper;
         this.storageService = storageService;
+        this.redisTemplate = redisTemplate;
     }
 
     @Override
     public String getAuthorizeUrl(String provider, String baseUrl) {
-        AuthRequest authRequest = buildAuthRequest(provider, baseUrl);
-        return authRequest.authorize(AuthStateUtils.createState());
+        String state = AuthStateUtils.createState();
+        redisTemplate.opsForValue().set("oauth:domain:" + state, baseUrl, Duration.ofMinutes(10));
+        AuthRequest authRequest = buildAuthRequest(provider);
+        return authRequest.authorize(state);
     }
 
     @Override
     public OAuthResult handleCallback(String provider, String code, String state, String baseUrl) {
-        AuthRequest authRequest = buildAuthRequest(provider, baseUrl);
+        AuthRequest authRequest = buildAuthRequest(provider);
+        String redirectDomain = redisTemplate.opsForValue().get("oauth:domain:" + state);
+        if (redirectDomain != null && !redirectDomain.isBlank()) {
+            redisTemplate.delete("oauth:domain:" + state);
+        }
+        if (redirectDomain == null || redirectDomain.isBlank()) {
+            redirectDomain = baseUrl;
+        }
+
         AuthResponse<AuthUser> response = authRequest.login(AuthCallback.builder()
                 .code(code)
                 .state(state)
@@ -110,7 +124,7 @@ public class OAuthServiceImpl implements OAuthService {
                 bindOAuthUsername(user, provider, oauthUsername);
                 StpUtil.login(user.getId());
                 log.info("{} OAuth login: email match, user {}", provider, user.getUsername());
-                return new OAuthResult(StpUtil.getTokenValue(), baseUrl);
+                return new OAuthResult(StpUtil.getTokenValue(), redirectDomain);
             }
         }
 
@@ -135,7 +149,7 @@ public class OAuthServiceImpl implements OAuthService {
 
         StpUtil.login(user.getId());
         log.info("{} OAuth login: auto-registered user {}", provider, username);
-        return new OAuthResult(StpUtil.getTokenValue(), baseUrl);
+        return new OAuthResult(StpUtil.getTokenValue(), redirectDomain);
     }
 
     private void bindOAuthUsername(User user, String provider, String oauthUsername) {
@@ -163,23 +177,18 @@ public class OAuthServiceImpl implements OAuthService {
         }
     }
 
-    private AuthRequest buildAuthRequest(String provider, String baseUrl) {
+    private AuthRequest buildAuthRequest(String provider) {
         HttpConfig httpConfig = HttpConfig.builder()
                 .timeout(timeout)
                 .proxy(proxyEnabled ? new Proxy(Proxy.Type.HTTP,
                         new InetSocketAddress(proxyHost, proxyPort)) : Proxy.NO_PROXY)
                 .build();
 
-        String redirectUriBase = baseUrl != null && !baseUrl.isBlank() ? baseUrl.trim() : "https://image-space.app";
-        while (redirectUriBase.endsWith("/")) {
-            redirectUriBase = redirectUriBase.substring(0, redirectUriBase.length() - 1);
-        }
-
         if ("google".equals(provider)) {
             return new IdTokenGoogleRequest(AuthConfig.builder()
                     .clientId(googleClientId)
                     .clientSecret(googleClientSecret)
-                    .redirectUri(redirectUriBase + "/api/user/oauth/google/callback")
+                    .redirectUri(googleRedirectUri)
                     .scopes(List.of(AuthGoogleScope.USER_EMAIL.getScope(),
                             AuthGoogleScope.USER_PROFILE.getScope(),
                             AuthGoogleScope.USER_OPENID.getScope()))
@@ -190,7 +199,7 @@ public class OAuthServiceImpl implements OAuthService {
         return new ParallelGithubRequest(AuthConfig.builder()
                 .clientId(githubClientId)
                 .clientSecret(githubClientSecret)
-                .redirectUri(redirectUriBase + "/api/user/oauth/github/callback")
+                .redirectUri(githubRedirectUri)
                 .scopes(List.of(AuthGithubScope.USER.getScope(),
                         AuthGithubScope.USER_EMAIL.getScope()))
                 .httpConfig(httpConfig)
