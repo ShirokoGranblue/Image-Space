@@ -107,4 +107,4 @@ Templates without secrets: `application.example.yml`, `docker-compose.example.ya
 ## Notes
 Every response sentence must end with "喵~" . For emphasis or strong and excited emotion, use "喵!" .Example: "Hello 喵~, I like you 喵~。完成了喵！".
 When you finished some work/task,automatically submit and push the modified content to my Github repository and sync the server's and host's changes or configurations.
-
+For every future code change, keep local/GitHub/server copies synchronized, then run the relevant build and test commands on both the local host and the Azure server before reporting completion.
