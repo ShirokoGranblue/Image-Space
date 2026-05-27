@@ -44,11 +44,4 @@ public class NotificationController {
         notificationService.markAllRead();
         return Result.ok();
     }
-
-    @Operation(summary = "删除通知")
-    @DeleteMapping("/{id}")
-    public Result<Void> delete(@PathVariable Long id) {
-        notificationService.delete(id);
-        return Result.ok();
-    }
 }

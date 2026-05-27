@@ -11,5 +11,4 @@ public class ImageQueryDTO {
     private Long categoryId;
     private String sortField = "upload_time";
     private String sortOrder = "desc";
-    private Long targetUserId;
 }

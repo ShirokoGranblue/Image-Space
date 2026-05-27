@@ -6,6 +6,7 @@ import com.picmgmt.entity.Comment;
 import com.picmgmt.entity.Image;
 import com.picmgmt.repository.CommentRepository;
 import com.picmgmt.repository.ImageRepository;
+import com.picmgmt.service.NotificationService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,13 +27,14 @@ class CommentServiceImplTest {
 
     @Mock private CommentRepository commentRepository;
     @Mock private ImageRepository imageRepository;
+    @Mock private NotificationService notificationService;
 
     private CommentServiceImpl service;
     private MockedStatic<StpUtil> stpMock;
 
     @BeforeEach
     void setUp() {
-        service = new CommentServiceImpl(commentRepository, imageRepository);
+        service = new CommentServiceImpl(commentRepository, imageRepository, notificationService);
         stpMock = mockStatic(StpUtil.class);
     }
 
@@ -88,6 +90,41 @@ class CommentServiceImplTest {
         assertEquals("nice pic", result.getContent());
         assertEquals(1L, result.getUserId());
         assertEquals(1L, result.getImageId());
+    }
+
+    @Test
+    void add_shouldNotifyImageOwnerWhenOtherUserComments() {
+        stpMock.when(StpUtil::getLoginIdAsLong).thenReturn(2L);
+
+        Image image = new Image();
+        image.setId(1L);
+        image.setUserId(1L);
+        image.setImageName("summer.jpg");
+        when(imageRepository.findById(1L)).thenReturn(Optional.of(image));
+        doAnswer(invocation -> {
+            Comment comment = invocation.getArgument(0, Comment.class);
+            comment.setId(10L);
+            return null;
+        }).when(commentRepository).insert(any(Comment.class));
+
+        service.add(1L, "nice pic", null);
+
+        verify(notificationService).createCommentNotification(image, 2L, 10L, "nice pic");
+    }
+
+    @Test
+    void add_shouldNotNotifyWhenOwnerCommentsOwnImage() {
+        stpMock.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
+
+        Image image = new Image();
+        image.setId(1L);
+        image.setUserId(1L);
+        image.setImageName("summer.jpg");
+        when(imageRepository.findById(1L)).thenReturn(Optional.of(image));
+
+        service.add(1L, "self note", null);
+
+        verify(notificationService, never()).createCommentNotification(any(), anyLong(), anyLong(), any());
     }
 
     @Test

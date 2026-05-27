@@ -1,0 +1,7 @@
+- [OAuth and Account Deletion](project_oauth_account_deletion.md) — GitHub/Google OAuth login, soft account deletion, SMS removal
+- [Credentials in Env Vars](project_credential_security.md) — Sensitive config moved to environment variables, .gitignore applied
+- [Bugs Fixed May 2026](bugs_fixed_20260520.md) — Cache TTL, race conditions, OAuth avatar, Vue rendering, and other fixes
+- [Domain and HTTPS Migration](project_domain_https_migration.md) — Migrated to image-space.app with Let's Encrypt SSL, nginx HTTPS config
+- [OAuth Permission Bug](bug_oauth_user_roles_permission.md) — New users missing user_roles entry, @SaCheckPermission denying image upload
+- [Docker Deployment](project_docker_deployment.md) — Docker Compose stack on Azure VM, nginx reverse proxy, deploy flow
+- [MinIO Storage Migration](project_minio_storage_migration.md) — Migrated from Base64/MySQL to MinIO object storage

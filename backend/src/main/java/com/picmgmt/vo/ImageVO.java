@@ -23,5 +23,7 @@ public class ImageVO {
     private String tags;
     private String visibility;
     private String visibleUsernames;
+    private Long likeCount;
+    private Boolean likedByMe;
     private LocalDateTime uploadTime;
 }

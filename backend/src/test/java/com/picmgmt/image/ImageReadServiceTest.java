@@ -1,6 +1,7 @@
 package com.picmgmt.image;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.picmgmt.mapper.ImageLikeMapper;
 import com.picmgmt.mapper.ImageMapper;
 import com.picmgmt.repository.ImageRepository;
 import com.picmgmt.storage.StorageService;
@@ -26,6 +27,7 @@ class ImageReadServiceTest {
 
     @Mock private ImageRepository imageRepository;
     @Mock private ImageMapper imageMapper;
+    @Mock private ImageLikeMapper imageLikeMapper;
     @Mock private ImagePermissionService permissionService;
     @Mock private StorageService storageService;
 
@@ -33,7 +35,7 @@ class ImageReadServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ImageReadService(imageRepository, imageMapper, permissionService, storageService);
+        service = new ImageReadService(imageRepository, imageMapper, imageLikeMapper, permissionService, storageService);
     }
 
     @Test

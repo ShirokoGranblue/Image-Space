@@ -7,7 +7,7 @@
       <button
         v-if="selectable"
         class="select-toggle"
-        :class="{ checked: selected, 'always-show': selectable }"
+        :class="{ checked: selected }"
         type="button"
         :aria-pressed="String(selected)"
         :title="selected ? '取消选择' : '选择图片'"
@@ -33,6 +33,7 @@
       <div class="card-overlay" v-if="hover && !imgFailed">
         <div class="badge-stack">
           <span class="category-badge" v-if="image.categoryName">{{ image.categoryName }}</span>
+          <span class="visibility-badge" v-if="showActions">{{ visibilityLabel }}</span>
         </div>
         <div class="card-info">
           <p class="img-name">{{ image.imageName }}</p>
@@ -65,6 +66,12 @@ const imgFailed = ref(false)
 const imageSrc = computed(() => {
   if (imgFailed.value) return ''
   return props.image.id ? `/api/image/download/${props.image.id}` : ''
+})
+
+const visibilityLabel = computed(() => {
+  if (props.image.visibility === 'PUBLIC') return '公开'
+  if (props.image.visibility === 'SPECIFIED') return '指定用户'
+  return '仅自己'
 })
 
 function onMouseEnter() { hover.value = true }
@@ -159,12 +166,6 @@ function goDetail() {
   transition: opacity 0.18s ease, transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
 }
 
-.select-toggle.always-show {
-  opacity: 0.7;
-  pointer-events: auto;
-  transform: translateY(0);
-}
-
 .image-card:hover .select-toggle,
 .image-card:focus-within .select-toggle {
   opacity: 1;
@@ -179,6 +180,9 @@ function goDetail() {
 }
 
 .select-toggle.checked {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
   background: var(--accent);
   border-color: #fff;
   box-shadow: 0 10px 20px rgba(37, 99, 235, 0.26);
@@ -276,6 +280,18 @@ function goDetail() {
   -webkit-backdrop-filter: blur(6px);
   background: rgba(255, 255, 255, 0.9);
   color: var(--text-primary);
+}
+
+.visibility-badge {
+  font-size: 11px;
+  padding: 4px 9px;
+  border-radius: 7px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  background: rgba(37, 99, 235, 0.9);
+  color: #fff;
 }
 
 .card-info { width: 100%; }

@@ -29,6 +29,10 @@ vi.mock('../api/user', () => ({
   logout: vi.fn(() => Promise.resolve()),
 }))
 
+vi.mock('../api/notification', () => ({
+  getUnreadNotificationCount: vi.fn(() => Promise.resolve({ data: 0 })),
+}))
+
 // Stub element-plus components to avoid teleport/overlay issues
 const ElHeader = { name: 'ElHeader', template: '<header><slot /></header>' }
 const ElAvatar = {

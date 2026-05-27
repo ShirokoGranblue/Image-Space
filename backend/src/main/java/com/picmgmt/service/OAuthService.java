@@ -2,7 +2,9 @@ package com.picmgmt.service;
 
 public interface OAuthService {
 
-    String getAuthorizeUrl(String provider);
+    String getAuthorizeUrl(String provider, String baseUrl);
 
-    String handleCallback(String provider, String code, String state);
+    OAuthResult handleCallback(String provider, String code, String state, String baseUrl);
+
+    record OAuthResult(String token, String baseUrl) {}
 }

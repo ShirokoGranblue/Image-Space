@@ -6,7 +6,7 @@
           ref="uploadRef"
           :auto-upload="false"
           :limit="10"
-          :accept="'image/jpeg,image/png,image/webp'"
+          :accept="'image/jpeg,image/png,image/webp,image/gif'"
           :on-change="handleFileChange"
           :on-remove="handleFileRemove"
           :on-exceed="handleExceed"
@@ -19,7 +19,7 @@
           <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
           <div class="el-upload__text">将图片拖到此处，或<em>点击上传</em></div>
           <template #tip>
-            <div class="el-upload__tip">支持 JPG/PNG/WEBP，单文件 ≤ 20MB</div>
+            <div class="el-upload__tip">支持 JPG/PNG/WEBP/GIF，单文件 ≤ 20MB</div>
           </template>
         </el-upload>
       </el-form-item>
@@ -163,7 +163,7 @@ async function submitCategory() {
   }
 }
 
-const ALLOWED_EXT = ['jpg', 'jpeg', 'png', 'webp']
+const ALLOWED_EXT = ['jpg', 'jpeg', 'png', 'webp', 'gif']
 
 function getFileExt(filename) {
   return filename.split('.').pop()?.toLowerCase() || ''
@@ -177,7 +177,7 @@ function getFileBody(filename) {
 function handleFileChange(file, uploadFiles) {
   const ext = getFileExt(file.name)
   if (!ext || !ALLOWED_EXT.includes(ext)) {
-    ElMessage.error(`文件 ${file.name} 格式不支持，仅允许 JPG/PNG/WEBP`)
+    ElMessage.error(`文件 ${file.name} 格式不支持，仅允许 JPG/PNG/WEBP/GIF`)
     fileList.value = uploadFiles.filter(f => f.uid !== file.uid)
     return
   }

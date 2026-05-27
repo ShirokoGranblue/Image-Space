@@ -17,6 +17,4 @@ public interface NotificationService {
     void markRead(Long id);
 
     void markAllRead();
-
-    void delete(Long id);
 }

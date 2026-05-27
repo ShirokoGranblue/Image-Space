@@ -534,3 +534,22 @@ a:hover {
 .el-popper {
   box-shadow: var(--shadow-lg) !important;
 }
+
+:root {
+  --notification-drawer-width: 420px;
+}
+
+#app {
+  transition: transform 0.18s ease;
+  will-change: transform;
+}
+
+#app.notification-drawer-open {
+  transform: translateX(calc(-1 * var(--notification-drawer-width)));
+}
+
+@media (max-width: 520px) {
+  :root {
+    --notification-drawer-width: min(100vw, 420px);
+  }
+}

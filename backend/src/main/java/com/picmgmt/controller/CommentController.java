@@ -30,7 +30,7 @@ public class CommentController {
     private final CommentService commentService;
     private final StorageService storageService;
 
-    private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "webp");
+    private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "webp", "gif");
 
     @Operation(summary = "上传评论图片")
     @PostMapping("/upload-image")
@@ -61,6 +61,7 @@ public class CommentController {
             case "jpg", "jpeg" -> MediaType.IMAGE_JPEG;
             case "png" -> MediaType.IMAGE_PNG;
             case "webp" -> MediaType.parseMediaType("image/webp");
+            case "gif" -> MediaType.IMAGE_GIF;
             default -> MediaType.APPLICATION_OCTET_STREAM;
         };
     }

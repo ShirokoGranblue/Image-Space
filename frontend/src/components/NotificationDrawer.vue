@@ -14,16 +14,13 @@
         </header>
 
         <div class="notification-list" v-loading="loading">
-          <div
+          <button
             v-for="item in notifications"
             :key="item.id"
             class="notification-item"
             :class="{ unread: !item.read }"
-            tabindex="0"
-            role="link"
+            type="button"
             @click="openNotification(item)"
-            @keydown.enter="openNotification(item)"
-            @keydown.space.prevent="openNotification(item)"
           >
             <img :src="item.imagePreviewUrl || fallbackImage" alt="" class="notification-thumb" />
             <span class="notification-body">
@@ -37,10 +34,7 @@
               </span>
               <span class="notification-time">{{ formatTime(item.createTime) }}</span>
             </span>
-            <button class="notification-delete" type="button" title="删除通知" @click.stop="handleDelete(item)">
-              <el-icon><Close /></el-icon>
-            </button>
-          </div>
+          </button>
 
           <div v-if="!loading && notifications.length === 0" class="notification-empty">
             暂无通知
@@ -54,7 +48,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, watch, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { getNotifications, getUnreadNotificationCount, markAllNotificationsRead, markNotificationRead, deleteNotification } from '../api/notification'
+import { getNotifications, getUnreadNotificationCount, markAllNotificationsRead, markNotificationRead } from '../api/notification'
 import { useNotificationDrawer, closeNotificationDrawer, setUnreadCount } from '../composables/useNotificationDrawer'
 import { formatTime } from '../utils/format'
 
@@ -123,16 +117,6 @@ function shiftApp(open) {
 
 function actionText(item) {
   return item.type === 'LIKE' ? ' 点赞了你的图片 ' : ' 评论了你的图片 '
-}
-
-async function handleDelete(item) {
-  try {
-    await deleteNotification(item.id)
-    notifications.value = notifications.value.filter(n => n.id !== item.id)
-    if (!item.read) {
-      setUnreadCount(Math.max(0, unreadCount.value - 1))
-    }
-  } catch {}
 }
 </script>
 
@@ -206,7 +190,6 @@ async function handleDelete(item) {
 }
 
 .notification-item {
-  position: relative;
   width: 100%;
   height: 96px;
   border: 1px solid transparent;
@@ -225,35 +208,6 @@ async function handleDelete(item) {
   background: rgba(239, 244, 255, 0.88);
   border-color: rgba(37, 99, 235, 0.14);
   transform: translateX(-2px);
-}
-
-.notification-item:hover .notification-delete {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.notification-delete {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(220, 38, 38, 0.12);
-  color: rgba(220, 38, 38, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.15s ease, background 0.15s ease;
-}
-
-.notification-delete:hover {
-  background: rgba(220, 38, 38, 0.82);
-  color: #fff;
 }
 
 .notification-item.unread {

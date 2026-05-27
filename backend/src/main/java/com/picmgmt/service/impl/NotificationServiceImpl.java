@@ -2,8 +2,6 @@ package com.picmgmt.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.picmgmt.common.BusinessException;
-import com.picmgmt.common.ErrorCode;
 import com.picmgmt.entity.Image;
 import com.picmgmt.entity.Notification;
 import com.picmgmt.entity.User;
@@ -76,16 +74,6 @@ public class NotificationServiceImpl implements NotificationService {
     @Transactional
     public void markAllRead() {
         notificationMapper.markAllRead(StpUtil.getLoginIdAsLong());
-    }
-
-    @Override
-    @Transactional
-    public void delete(Long id) {
-        long userId = StpUtil.getLoginIdAsLong();
-        int rows = notificationMapper.deleteByIdAndUser(id, userId);
-        if (rows == 0) {
-            throw new BusinessException(ErrorCode.FORBIDDEN);
-        }
     }
 
     private Notification baseNotification(Image image, Long actorUserId, String type) {

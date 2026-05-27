@@ -44,10 +44,7 @@ public class ImageReadService {
     }
 
     public Page<ImageVO> page(ImageQueryDTO dto) {
-        Long userId = dto.getTargetUserId();
-        if (userId == null) {
-            userId = StpUtil.getLoginIdAsLong();
-        }
+        long userId = StpUtil.getLoginIdAsLong();
         String sortField = ALLOWED_SORT_FIELDS.contains(dto.getSortField()) ? dto.getSortField() : "upload_time";
         String sortOrder = "asc".equalsIgnoreCase(dto.getSortOrder()) ? "asc" : "desc";
 

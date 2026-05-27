@@ -24,7 +24,6 @@
           <div class="profile-name-row">
             <h2>{{ user.displayName || user.username }}</h2>
             <el-button v-if="isOwner" text @click="startEdit"><el-icon><Edit /></el-icon> 编辑资料</el-button>
-            <el-button v-if="isOwner" text @click="openPasswordDialog"><el-icon><Lock /></el-icon> 修改密码</el-button>
           </div>
         </template>
 
@@ -277,24 +276,6 @@
         <el-button type="primary" :loading="creatingWorkCategory" @click="submitWorkCategory">创建</el-button>
       </template>
     </el-dialog>
-
-    <el-dialog v-model="passwordDialogVisible" title="修改密码" width="400px">
-      <el-form :model="passwordForm" label-width="100px" @submit.prevent>
-        <el-form-item label="当前密码">
-          <el-input v-model="passwordForm.oldPassword" type="password" show-password />
-        </el-form-item>
-        <el-form-item label="新密码">
-          <el-input v-model="passwordForm.newPassword" type="password" show-password />
-        </el-form-item>
-        <el-form-item label="确认新密码">
-          <el-input v-model="passwordForm.confirmPassword" type="password" show-password />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="passwordDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitPassword" :loading="passwordSaving">确认修改</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
@@ -306,7 +287,7 @@ import NavBar from '../components/NavBar.vue'
 import ImageCard from '../components/ImageCard.vue'
 import TagInput from '../components/TagInput.vue'
 import { useUserStore } from '../store/user'
-import { getUserProfile, updateProfile, uploadAvatar, uploadBackground, checkField, deleteAccount, changePassword } from '../api/user'
+import { getUserProfile, updateProfile, uploadAvatar, uploadBackground, checkField, deleteAccount } from '../api/user'
 import { getImageList, deleteImage, updateImage } from '../api/image'
 import { getCategoryList, createCategory } from '../api/category'
 import { DEFAULT_IMAGE_PAGE_SIZE, IMAGE_PAGE_SIZES, buildImageListParams } from '../utils/imageRequests'
@@ -1162,16 +1143,14 @@ function isGifFile(file) {
   return !!file && (file.type === 'image/gif' || /\.gif$/i.test(file.name || ''))
 }
 
-const profileId = ref(null)
-
 onMounted(async () => {
   loading.value = true
-  profileId.value = route.params.id || userStore.userInfo?.id
+  const profileId = route.params.id || userStore.userInfo?.id
   try {
     if (userStore.token && !userStore.userInfo) {
       await userStore.fetchUserInfo()
     }
-    const res = await getUserProfile(profileId.value)
+    const res = await getUserProfile(profileId)
     user.value = res.data
     fetchWorks()
     if (isOwner.value) fetchCategories()
@@ -1184,8 +1163,7 @@ async function fetchWorks() {
       page: workPage.value,
       limit: workLimit.value,
       sortField: 'upload_time',
-      sortOrder: 'desc',
-      targetUserId: profileId.value
+      sortOrder: 'desc'
     }))
     works.value = res.data.records || []; workTotal.value = res.data.total || 0
     selectedWorkIds.value = selectedWorkIds.value.filter(id => works.value.some(img => img.id === id))
@@ -1354,35 +1332,6 @@ async function saveProfile() {
     if (isOwner.value) userStore.userInfo = res.data
     editing.value = false; ElMessage.success('资料已更新')
   } catch {} finally { saving.value = false }
-}
-
-const passwordDialogVisible = ref(false)
-const passwordSaving = ref(false)
-const passwordForm = reactive({
-  oldPassword: '',
-  newPassword: '',
-  confirmPassword: ''
-})
-
-function openPasswordDialog() {
-  passwordForm.oldPassword = ''
-  passwordForm.newPassword = ''
-  passwordForm.confirmPassword = ''
-  passwordDialogVisible.value = true
-}
-
-async function submitPassword() {
-  const oldPw = passwordForm.oldPassword.trim()
-  const newPw = passwordForm.newPassword.trim()
-  if (!oldPw) { ElMessage.warning('请输入当前密码'); return }
-  if (!newPw || newPw.length < 6) { ElMessage.warning('新密码不能少于6个字符'); return }
-  if (newPw !== passwordForm.confirmPassword.trim()) { ElMessage.warning('两次输入的新密码不一致'); return }
-  passwordSaving.value = true
-  try {
-    await changePassword({ oldPassword: oldPw, newPassword: newPw })
-    ElMessage.success('密码修改成功')
-    passwordDialogVisible.value = false
-  } catch {} finally { passwordSaving.value = false }
 }
 </script>
 

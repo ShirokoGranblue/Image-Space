@@ -50,10 +50,7 @@ public class UserController {
     private final OAuthService oAuthService;
     private final TurnstileService turnstileService;
 
-    @Value("${app.frontend-base-url:https://image-space.app}")
-    private String frontendBaseUrl;
-
-    private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "webp", "gif");
+private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "webp", "gif");
 
     @Operation(summary = "获取图形验证码")
     @GetMapping("/captcha")
@@ -161,32 +158,38 @@ public class UserController {
 
     @Operation(summary = "GitHub OAuth授权地址")
     @GetMapping("/oauth/github")
-    public Result<Map<String, String>> githubOAuth() {
-        String url = oAuthService.getAuthorizeUrl("github");
+    public Result<Map<String, String>> githubOAuth(HttpServletRequest request) {
+        String baseUrl = buildBaseUrl(request);
+        String url = oAuthService.getAuthorizeUrl("github", baseUrl);
         return Result.ok(Map.of("authorizeUrl", url));
     }
 
     @Operation(summary = "GitHub OAuth回调")
     @GetMapping("/oauth/github/callback")
     public void githubCallback(@RequestParam String code, @RequestParam String state,
-                                jakarta.servlet.http.HttpServletResponse response) throws java.io.IOException {
-        String token = oAuthService.handleCallback("github", code, state);
-        response.sendRedirect(buildLoginRedirect(token));
+                                jakarta.servlet.http.HttpServletResponse response,
+                                HttpServletRequest request) throws java.io.IOException {
+        String baseUrl = buildBaseUrl(request);
+        OAuthService.OAuthResult result = oAuthService.handleCallback("github", code, state, baseUrl);
+        response.sendRedirect(buildLoginRedirect(result.token(), result.baseUrl()));
     }
 
     @Operation(summary = "Google OAuth授权地址")
     @GetMapping("/oauth/google")
-    public Result<Map<String, String>> googleOAuth() {
-        String url = oAuthService.getAuthorizeUrl("google");
+    public Result<Map<String, String>> googleOAuth(HttpServletRequest request) {
+        String baseUrl = buildBaseUrl(request);
+        String url = oAuthService.getAuthorizeUrl("google", baseUrl);
         return Result.ok(Map.of("authorizeUrl", url));
     }
 
     @Operation(summary = "Google OAuth回调")
     @GetMapping("/oauth/google/callback")
     public void googleCallback(@RequestParam String code, @RequestParam String state,
-                                jakarta.servlet.http.HttpServletResponse response) throws java.io.IOException {
-        String token = oAuthService.handleCallback("google", code, state);
-        response.sendRedirect(buildLoginRedirect(token));
+                                jakarta.servlet.http.HttpServletResponse response,
+                                HttpServletRequest request) throws java.io.IOException {
+        String baseUrl = buildBaseUrl(request);
+        OAuthService.OAuthResult result = oAuthService.handleCallback("google", code, state, baseUrl);
+        response.sendRedirect(buildLoginRedirect(result.token(), result.baseUrl()));
     }
 
     @Operation(summary = "检查邮箱/手机号是否已被使用")
@@ -258,14 +261,27 @@ public class UserController {
         return request.getRemoteAddr();
     }
 
-    private String buildLoginRedirect(String token) {
-        String baseUrl = frontendBaseUrl == null || frontendBaseUrl.isBlank()
-                ? "https://image-space.app"
-                : frontendBaseUrl.trim();
-        while (baseUrl.endsWith("/")) {
-            baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+    private String buildBaseUrl(HttpServletRequest request) {
+        String scheme = request.getHeader("X-Forwarded-Proto");
+        if (scheme == null || scheme.isBlank()) {
+            scheme = "https";
         }
-        return baseUrl + "/login?satoken=" + URLEncoder.encode(token, StandardCharsets.UTF_8);
+        String host = request.getHeader("Host");
+        if (host == null || host.isBlank()) {
+            return "https://image-space.app";
+        }
+        return scheme + "://" + host;
+    }
+
+    private String buildLoginRedirect(String token, String baseUrl) {
+        String url = baseUrl;
+        if (url == null || url.isBlank()) {
+            url = "https://image-space.app";
+        }
+        while (url.endsWith("/")) {
+            url = url.substring(0, url.length() - 1);
+        }
+        return url + "/login?satoken=" + URLEncoder.encode(token, StandardCharsets.UTF_8);
     }
 
     private String resolveObjectKey(String bucket, String storageKey, String legacyValue) {

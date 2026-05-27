@@ -2,7 +2,6 @@
 
 Development guide for Claude Code (claude.ai/code) working in this repository.
 Please read files at 'C:\Users\l2653\.claude\projects\C--Users-l2653-Desktop-picture-management\memory' when Claude Code launching
-Keep this file updating.
 
 ## Common Commands
 
@@ -35,10 +34,10 @@ controller → service/impl → mapper (MyBatis-Plus BaseMapper)
    dto/vo      entity (@TableName maps to snake_case table names)
 ```
 
-- **Auth**: Sa-Token (not Spring Security). Token stored in `localStorage['satoken']`, passed via `satoken` request header. `SaTokenConfig` intercepts all routes, allows: `/user/login`, `/user/register`, `/user/captcha`, `/user/send-code`, `/user/login-by-code`, `/user/check-field`, `/user/profile/**`, `/user/oauth/github`, `/user/oauth/github/callback`, `/user/oauth/google`, `/user/oauth/google/callback`, `/doc.html`, `/doc.html/**`, `/v3/api-docs/**`, `/swagger-ui/**`, `/webjars/**`, `/image/square`, `/system/webhook-url`, `/comment/list/**`.
+- **Auth**: Sa-Token (not Spring Security). Token stored in `localStorage['satoken']`, passed via `satoken` request header. `SaTokenConfig` intercepts all routes, only allows `/user/login`, `/user/register`, `/doc.html/**`, `/v3/api-docs/**`, `/swagger-ui/**`, `/image/square`.
 - **Password encryption**: BCrypt via Hutool (`BCrypt.hashpw` / `BCrypt.checkpw`), not Spring Security's encoder.
-- **Image storage**: MinIO object storage via `MinioStorageService`. Images uploaded as `MultipartFile → byte[]` stored in MinIO buckets (`avatars`, `backgrounds`, `images`, `comments`). `StorageMigrationRunner` automatically migrates legacy Base64 data on first startup. nginx proxies `/minio/` to MinIO and rewrites internal URLs via `sub_filter`.
-- **Data migration**: `StorageMigrationRunner` automatically migrates legacy Base64 data to MinIO on startup. Detects Base64-encoded images in database, uploads to MinIO buckets, and replaces database values with MinIO object keys.
+- **Image storage**: All images (pictures, avatars, backgrounds, comment images) stored as Base64 Data URLs in MySQL `LONGTEXT` columns. Upload: `MultipartFile → byte[] → Base64 Data URL` inserted into database. Frontend renders directly via `<img :src="dataUrl">`. `ImageCacheService` provides LRU in-memory cache — Base64 ↔ byte[] conversion checks cache first, falls back to direct conversion and writes to buffer on miss.
+- **Data migration**: `DataMigrationRunner` automatically detects legacy file-path data (`/upload/...`) on first startup, reads local files, converts to Base64, stores in database, then removes the `upload` directory.
 - **CORS**: `WebMvcConfig` allows all origins. Frontend dev uses Vite proxy (`/api` → `:8088`), so CORS config only applies when frontend and backend are deployed together.
 
 **Frontend** — Vue 3 + Element Plus + Pinia + Vue Router:
@@ -50,20 +49,13 @@ controller → service/impl → mapper (MyBatis-Plus BaseMapper)
 | `/home` | My Images (CRUD) | Yes |
 | `/square` | Image Square | No |
 | `/categories` | Category Management | Yes |
-| `/profile/:id` | User Profile | No |
-| `/image/:id` | Image Detail | No |
 
 Route guard in `router/index.js`, checks `localStorage['satoken']` for `meta.requiresAuth` routes.
-
-**Notification system:** `NotificationController` provides `GET /list`, `GET /unread-count`, `PUT /{id}/read`, `PUT /read-all`, `DELETE /{id}`. Frontend `NotificationBell.vue` polls unread count every 15s and shows badge. `NotificationDrawer.vue` renders list with delete button (hover to show). Notifications created for COMMENT and LIKE types via `NotificationServiceImpl`.
 
 ## Key Design Decisions
 
 ### In-memory pagination for images
 `ImageServiceImpl.page()` uses `ImageMapper.selectImageVOList()` to query all matching rows, then slices in Java. The query uses dynamic `<if>` tags and `ORDER BY ${sortField}`. Sort fields are **whitelist-validated** (`upload_time`, `image_name`, `file_size`) before interpolation to prevent SQL injection. This approach is viable given the local-use scenario (≤10 concurrent users).
-
-### Image query by target user
-`ImageQueryDTO` has `targetUserId` field. When set (e.g. Profile page viewing another user), `ImageReadService.page()` filters by that ID. When null, defaults to `StpUtil.getLoginIdAsLong()` for "my images" page. `Profile.vue` passes `profileId` as `targetUserId` to show correct user's works.
 
 ### Service-layer ownership checks
 `ImageServiceImpl.delete()` and `update()` both verify `image.userId == loginId || hasRole("admin")` before mutating. `CategoryServiceImpl` follows the same pattern.
@@ -77,39 +69,6 @@ When a category is deleted, `CategoryServiceImpl.delete()` sets all child images
 ### API response format
 All endpoints return `Result<T>` with structure `{ code: 200, message: "success", data: ... }`. The axios interceptor in `api/index.js` unwraps the response — Vue components receive `Result` objects as `res.data`. Non-200 codes trigger `ElMessage.error`.
 
-## Production Deployment
-
-- **Server**: Azure VM `4.230.10.11`, Ubuntu 24.04, SSH key `~/Downloads/ShirokoGranblue_key.pem`, user `azureuser`
-- **Domain**: `image-space.app` (name.com), DNS resolves to `4.230.10.11`
-- **SSL**: Let's Encrypt via certbot, cert at `/etc/letsencrypt/live/image-space.app/`, expires 2026-08-24, auto-renews
-- **Deploy path**: `/home/azureuser/Picture-Managentor/`
-- **nginx config**: `deploy/nginx/default.conf` — 4 server blocks (www HTTP/HTTPS redirect + main HTTP→HTTPS + main HTTPS). **Do NOT replace with HTTP-only config** — HTTPS will break.
-- **Docker volumes**: `/etc/letsencrypt:/etc/letsencrypt:ro` mounted into nginx for SSL certs
-- **.env file**: Server has `.env` with real credentials. `docker compose restart` does NOT reload `.env` — use `docker compose up -d` to recreate container when .env changes.
-
-## Permission System (RBAC)
-
-`SaTokenPermissionImpl` resolves permissions via table chain:
-```
-users → user_roles (role_id) → role_permissions → permissions (code)
-```
-- `@SaCheckPermission("image:upload")` etc. on ImageController checks permission codes
-- UserController (avatar/background/comments) only uses `StpUtil.getLoginIdAsLong()`, no permission check
-- `users.role` is a display string only — actual RBAC is table-driven
-- New user registration (OAuth or regular) MUST insert `user_roles` row with `role_id=3` (user role)
-- `OAuthServiceImpl.handleCallback()` calls `ensureUserRole()`. `UserServiceImpl.register()` inserts `user_roles` row inline (same effect)
-- Permission codes in DB: `image:upload`, `image:edit`, `image:delete`, `image:edit:any`, `image:delete:any`, `category:manage`, `category:manage:any`, `comment:add`, `comment:delete`, `comment:delete:any`, `user:manage`. Enforced via `@SaCheckPermission`: `image:upload/edit/delete` + `user:manage`; others reserved for future use
-
-## .gitignore Protected Files
-
-These files contain real credentials and are gitignored — update them directly on server:
-- `application.yml` — local dev config with real defaults
-- `docker-compose.yml` — local docker compose with real values
-- `.env` — server environment variables (only on server)
-
-Templates without secrets: `application.example.yml`, `docker-compose.example.yaml`
-
 ## Notes
-Every response sentence must end with "喵~" . For emphasis or strong and excited emotion, use "喵!" .Example: "Hello 喵~, I like you 喵~。完成了喵！".
-When you finished some work/task,automatically submit and push the modified content to my Github repository and sync the server's and host's changes or configurations.
-
+Every response sentence must end with "喵~" . For emphasis or strong emotion, use "喵!" .
+Example: "Hello 喵~, I like you 喵~。完成了喵！"

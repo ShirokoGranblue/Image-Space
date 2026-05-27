@@ -68,4 +68,32 @@ class ImageWriteServiceTest {
 
         assertEquals("evil.jpg", result.getImageName());
     }
+
+    @Test
+    void upload_shouldAcceptGifAndUseGifMimeType() {
+        stpMock.when(StpUtil::getLoginIdAsLong).thenReturn(4L);
+        when(storageService.upload(eq("images"), any(String.class), any(byte[].class), eq("image/gif")))
+                .thenReturn("4/test.gif");
+        doAnswer(invocation -> {
+            var image = invocation.getArgument(0, com.picmgmt.entity.Image.class);
+            ImageVO vo = new ImageVO();
+            vo.setImageName(image.getImageName());
+            vo.setImageType(image.getImageType());
+            return vo;
+        }).when(imageRepository).toVO(any());
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "loop.gif",
+                "image/gif",
+                new byte[] {'G', 'I', 'F', '8', '9', 'a', 0x01, 0x00}
+        );
+
+        ImageVO result = service.upload(
+                file, null, null, null, "PUBLIC", null, null
+        );
+
+        assertEquals("loop.gif", result.getImageName());
+        assertEquals("GIF", result.getImageType());
+    }
 }

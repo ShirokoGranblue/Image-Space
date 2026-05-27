@@ -10,9 +10,6 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.picmgmt.auth.UserRole;
-import com.picmgmt.auth.UserRoleMapper;
 import com.picmgmt.config.OAuthPooledHttp;
 import com.picmgmt.entity.User;
 import com.picmgmt.mapper.UserMapper;
@@ -51,7 +48,6 @@ public class OAuthServiceImpl implements OAuthService {
 
     private final UserMapper userMapper;
     private final StorageService storageService;
-    private final UserRoleMapper userRoleMapper;
 
     @Value("${oauth.github.client-id}")
     private String githubClientId;
@@ -77,22 +73,20 @@ public class OAuthServiceImpl implements OAuthService {
     @Value("${oauth.proxy.port:0}")
     private int proxyPort;
 
-    public OAuthServiceImpl(UserMapper userMapper, StorageService storageService,
-                            UserRoleMapper userRoleMapper) {
+    public OAuthServiceImpl(UserMapper userMapper, StorageService storageService) {
         this.userMapper = userMapper;
         this.storageService = storageService;
-        this.userRoleMapper = userRoleMapper;
     }
 
     @Override
-    public String getAuthorizeUrl(String provider) {
-        AuthRequest authRequest = buildAuthRequest(provider);
+    public String getAuthorizeUrl(String provider, String baseUrl) {
+        AuthRequest authRequest = buildAuthRequest(provider, baseUrl);
         return authRequest.authorize(AuthStateUtils.createState());
     }
 
     @Override
-    public String handleCallback(String provider, String code, String state) {
-        AuthRequest authRequest = buildAuthRequest(provider);
+    public OAuthResult handleCallback(String provider, String code, String state, String baseUrl) {
+        AuthRequest authRequest = buildAuthRequest(provider, baseUrl);
         AuthResponse<AuthUser> response = authRequest.login(AuthCallback.builder()
                 .code(code)
                 .state(state)
@@ -109,20 +103,17 @@ public class OAuthServiceImpl implements OAuthService {
         String avatarUrl = authUser.getAvatar();
         String nickname = authUser.getNickname();
 
-        // Email-first: match by OAuth email to bind with existing account
         User user = null;
         if (email != null && !email.isEmpty()) {
             user = userMapper.selectOne(new LambdaQueryWrapper<User>().eq(User::getEmail, email));
             if (user != null && (user.getDeleted() == null || user.getDeleted() == 0)) {
-                ensureUserRole(user.getId());
                 bindOAuthUsername(user, provider, oauthUsername);
                 StpUtil.login(user.getId());
                 log.info("{} OAuth login: email match, user {}", provider, user.getUsername());
-                return StpUtil.getTokenValue();
+                return new OAuthResult(StpUtil.getTokenValue(), baseUrl);
             }
         }
 
-        // Auto-register new user
         user = new User();
         String username = provider + "_" + (oauthUsername != null ? oauthUsername : UUID.randomUUID().toString().substring(0, 8));
         if (userMapper.selectCount(new LambdaQueryWrapper<User>().eq(User::getUsername, username)) > 0) {
@@ -134,7 +125,6 @@ public class OAuthServiceImpl implements OAuthService {
         user.setRole("user");
         user.setEmail(email);
         userMapper.insert(user);
-        ensureUserRole(user.getId());
         bindOAuthUsername(user, provider, oauthUsername);
 
         String avatarKey = downloadAndUploadAvatar(avatarUrl, user.getId());
@@ -145,25 +135,15 @@ public class OAuthServiceImpl implements OAuthService {
 
         StpUtil.login(user.getId());
         log.info("{} OAuth login: auto-registered user {}", provider, username);
-        return StpUtil.getTokenValue();
+        return new OAuthResult(StpUtil.getTokenValue(), baseUrl);
     }
 
     private void bindOAuthUsername(User user, String provider, String oauthUsername) {
         if ("github".equals(provider)) {
             if (user.getGithubUsername() == null) {
-                userMapper.update(null, new LambdaUpdateWrapper<User>()
-                        .eq(User::getId, user.getId())
-                        .set(User::getGithubUsername, oauthUsername));
+                user.setGithubUsername(oauthUsername);
+                userMapper.updateById(user);
             }
-        }
-    }
-
-    private void ensureUserRole(Long userId) {
-        if (userRoleMapper.selectRoleIdsByUserId(userId).isEmpty()) {
-            UserRole ur = new UserRole();
-            ur.setUserId(userId);
-            ur.setRoleId(3L);
-            userRoleMapper.insert(ur);
         }
     }
 
@@ -183,18 +163,23 @@ public class OAuthServiceImpl implements OAuthService {
         }
     }
 
-    private AuthRequest buildAuthRequest(String provider) {
+    private AuthRequest buildAuthRequest(String provider, String baseUrl) {
         HttpConfig httpConfig = HttpConfig.builder()
                 .timeout(timeout)
                 .proxy(proxyEnabled ? new Proxy(Proxy.Type.HTTP,
                         new InetSocketAddress(proxyHost, proxyPort)) : Proxy.NO_PROXY)
                 .build();
 
+        String redirectUriBase = baseUrl != null && !baseUrl.isBlank() ? baseUrl.trim() : "https://image-space.app";
+        while (redirectUriBase.endsWith("/")) {
+            redirectUriBase = redirectUriBase.substring(0, redirectUriBase.length() - 1);
+        }
+
         if ("google".equals(provider)) {
             return new IdTokenGoogleRequest(AuthConfig.builder()
                     .clientId(googleClientId)
                     .clientSecret(googleClientSecret)
-                    .redirectUri(googleRedirectUri)
+                    .redirectUri(redirectUriBase + "/api/user/oauth/google/callback")
                     .scopes(List.of(AuthGoogleScope.USER_EMAIL.getScope(),
                             AuthGoogleScope.USER_PROFILE.getScope(),
                             AuthGoogleScope.USER_OPENID.getScope()))
@@ -205,7 +190,7 @@ public class OAuthServiceImpl implements OAuthService {
         return new ParallelGithubRequest(AuthConfig.builder()
                 .clientId(githubClientId)
                 .clientSecret(githubClientSecret)
-                .redirectUri(githubRedirectUri)
+                .redirectUri(redirectUriBase + "/api/user/oauth/github/callback")
                 .scopes(List.of(AuthGithubScope.USER.getScope(),
                         AuthGithubScope.USER_EMAIL.getScope()))
                 .httpConfig(httpConfig)

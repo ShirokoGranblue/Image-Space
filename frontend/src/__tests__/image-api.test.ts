@@ -10,7 +10,7 @@ vi.mock('../api/index', () => ({
 }))
 
 import api from '../api/index'
-import { getImageSquare, updateImage } from '../api/image'
+import { getImageSquare, likeImage, unlikeImage, updateImage } from '../api/image'
 
 describe('image api', () => {
   it('sends update payload as JSON body', () => {
@@ -36,5 +36,13 @@ describe('image api', () => {
     getImageSquare(params)
 
     expect(api.get).toHaveBeenCalledWith('/image/square', { params })
+  })
+
+  it('calls image like endpoints', () => {
+    likeImage(7)
+    unlikeImage(7)
+
+    expect(api.post).toHaveBeenCalledWith('/image/7/like')
+    expect(api.delete).toHaveBeenCalledWith('/image/7/like')
   })
 })

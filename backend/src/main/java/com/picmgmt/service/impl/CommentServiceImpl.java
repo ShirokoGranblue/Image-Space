@@ -24,7 +24,7 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     public Comment add(Long imageId, String content, String imagePath) {
-        if ((content == null || content.isBlank()) && (imagePath == null || imagePath.isBlank())) {
+        if (content == null || content.isBlank()) {
             throw new BusinessException(ErrorCode.COMMENT_EMPTY);
         }
         var image = imageRepository.findById(imageId)

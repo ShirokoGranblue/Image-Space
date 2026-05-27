@@ -29,3 +29,11 @@ export function downloadImage(id) {
 export function getImageSquare(params) {
   return api.get('/image/square', { params })
 }
+
+export function likeImage(id) {
+  return api.post(`/image/${id}/like`)
+}
+
+export function unlikeImage(id) {
+  return api.delete(`/image/${id}/like`)
+}

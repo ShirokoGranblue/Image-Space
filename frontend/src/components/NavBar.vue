@@ -19,6 +19,7 @@
         </nav>
 
         <div class="user-section" v-if="token">
+          <NotificationBell :active="!!token" />
           <el-avatar :size="32" :src="userInfo?.avatarUrl || userInfo?.avatar" class="nav-avatar" @click="goProfile" />
           <span class="username" @click="goProfile" :title="userInfo?.displayName || userInfo?.username">
             {{ userInfo?.displayName || userInfo?.username || '' }}
@@ -47,6 +48,7 @@
           </router-link>
         </nav>
         <div class="mobile-user" v-if="token">
+          <NotificationBell :active="!!token" />
           <el-avatar :size="28" :src="userInfo?.avatarUrl || userInfo?.avatar" />
           <span>{{ userInfo?.displayName || userInfo?.username }}</span>
           <button class="logout-btn logout-btn-danger" @click="handleLogout">Exit</button>
@@ -62,6 +64,7 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '../store/user'
 import { logout } from '../api/user'
 import { ElMessage } from 'element-plus'
+import NotificationBell from './NotificationBell.vue'
 
 const router = useRouter()
 const userStore = useUserStore()

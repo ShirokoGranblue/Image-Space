@@ -7,7 +7,9 @@ import com.picmgmt.dto.ImageQueryDTO;
 import com.picmgmt.image.ImageReadService;
 import com.picmgmt.image.ImageUpdateDTO;
 import com.picmgmt.image.ImageWriteService;
+import com.picmgmt.service.ImageLikeService;
 import com.picmgmt.vo.ImageVO;
+import com.picmgmt.vo.ImageLikeStatusVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -29,6 +31,7 @@ public class ImageController {
 
     private final ImageWriteService imageWriteService;
     private final ImageReadService imageReadService;
+    private final ImageLikeService imageLikeService;
 
     @Operation(summary = "上传图片")
     @PostMapping("/upload")
@@ -73,7 +76,7 @@ public class ImageController {
                 .replace("+", "%20");
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedName)
-                .contentType(MediaType.IMAGE_JPEG)
+                .contentType(mediaType(vo.getImageType()))
                 .body(bytes);
     }
 
@@ -94,5 +97,28 @@ public class ImageController {
                                         @RequestParam(required = false) String sortField,
                                         @RequestParam(required = false) String sortOrder) {
         return Result.ok(imageReadService.getSquare(page, limit, keyword, tags, sortMode, randomSeed, sortField, sortOrder));
+    }
+
+    @Operation(summary = "点赞图片")
+    @PostMapping("/{id}/like")
+    public Result<ImageLikeStatusVO> like(@PathVariable Long id) {
+        return Result.ok(imageLikeService.like(id));
+    }
+
+    @Operation(summary = "取消点赞图片")
+    @DeleteMapping("/{id}/like")
+    public Result<ImageLikeStatusVO> unlike(@PathVariable Long id) {
+        return Result.ok(imageLikeService.unlike(id));
+    }
+
+    private MediaType mediaType(String imageType) {
+        String type = imageType == null ? "" : imageType.trim().toLowerCase();
+        return switch (type) {
+            case "jpg", "jpeg" -> MediaType.IMAGE_JPEG;
+            case "png" -> MediaType.IMAGE_PNG;
+            case "webp" -> MediaType.parseMediaType("image/webp");
+            case "gif" -> MediaType.IMAGE_GIF;
+            default -> MediaType.APPLICATION_OCTET_STREAM;
+        };
     }
 }

@@ -72,17 +72,6 @@
           <el-button type="primary" class="download-btn" @click="handleDownload" :loading="downloading">
             <el-icon><Download /></el-icon> 下载图片
           </el-button>
-
-          <div class="owner-actions" v-if="isOwner">
-            <el-button type="warning" @click="openEdit">
-              <el-icon><Edit /></el-icon> 编辑图片
-            </el-button>
-            <el-popconfirm title="确定删除？" @confirm="handleDeleteImage">
-              <el-button type="danger">
-                <el-icon><Delete /></el-icon> 删除
-              </el-button>
-            </el-popconfirm>
-          </div>
         </div>
       </div>
 
@@ -138,74 +127,23 @@
       </div>
     </div>
 
-    <el-dialog v-model="editVisible" title="编辑图片信息" width="480px">
-      <el-form :model="editForm" label-width="86px" v-if="editForm.id">
-        <el-form-item label="图片名称">
-          <el-input v-model="editForm.imageName" />
-        </el-form-item>
-        <el-form-item label="分类">
-          <div class="category-row">
-            <el-select v-model="editForm.categoryId" placeholder="选择分类" clearable filterable style="width: 100%">
-              <el-option v-for="cat in categories" :key="cat.id" :label="cat.categoryName" :value="cat.id" />
-            </el-select>
-            <el-button @click="categoryDialogVisible = true">新建</el-button>
-          </div>
-        </el-form-item>
-        <el-form-item label="描述">
-          <el-input v-model="editForm.description" type="textarea" :rows="3" />
-        </el-form-item>
-        <el-form-item label="标签">
-          <TagInput v-model="editForm.tags" placeholder="多个标签用 # 分隔" />
-        </el-form-item>
-        <el-form-item label="可见权限">
-          <el-select v-model="editForm.visibility" style="width: 100%">
-            <el-option label="仅自己" value="PRIVATE" />
-            <el-option label="公开" value="PUBLIC" />
-            <el-option label="指定用户" value="SPECIFIED" />
-          </el-select>
-        </el-form-item>
-        <el-form-item v-if="editForm.visibility === 'SPECIFIED'" label="指定用户">
-          <el-input v-model="editForm.visibleUsernames" placeholder="输入用户名，多个用户用逗号或空格分隔" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="editVisible = false">取消</el-button>
-        <el-button type="primary" @click="saveEdit">保存</el-button>
-      </template>
-    </el-dialog>
-
-    <el-dialog v-model="categoryDialogVisible" title="新建分类" width="360px">
-      <el-form label-width="70px" @submit.prevent>
-        <el-form-item label="分类名">
-          <el-input v-model="newCategoryName" maxlength="20" show-word-limit @keyup.enter="submitCategory" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="categoryDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="creatingCategory" @click="submitCategory">创建</el-button>
-      </template>
-    </el-dialog>
-
     <ImageViewer ref="viewerRef" :src="viewerSrc" />
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, nextTick, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ref, computed, nextTick, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import NavBar from '../components/NavBar.vue'
 import ImageViewer from '../components/ImageViewer.vue'
-import TagInput from '../components/TagInput.vue'
-import { getImageDetail, likeImage, unlikeImage, updateImage, deleteImage } from '../api/image'
+import { getImageDetail, likeImage, unlikeImage } from '../api/image'
 import { getComments, addComment, deleteComment, uploadCommentImage } from '../api/comment'
-import { getCategoryList, createCategory } from '../api/category'
 import { useUserStore } from '../store/user'
 import { formatSize, formatTime } from '../utils/format'
 import { getImageDownloadUrl } from '../utils/imageRequests'
 
 const route = useRoute()
-const router = useRouter()
 const userStore = useUserStore()
 const viewerRef = ref(null)
 const viewerSrc = ref('')
@@ -219,21 +157,6 @@ const sending = ref(false)
 const downloading = ref(false)
 const liking = ref(false)
 const highlightedTarget = ref('')
-const editVisible = ref(false)
-const categoryDialogVisible = ref(false)
-const newCategoryName = ref('')
-const creatingCategory = ref(false)
-const categories = ref([])
-
-const editForm = reactive({
-  id: null,
-  imageName: '',
-  categoryId: null,
-  description: '',
-  tags: '',
-  visibility: 'PRIVATE',
-  visibleUsernames: ''
-})
 
 const tagTypes = ['', 'success', 'warning', 'danger', 'info']
 
@@ -249,7 +172,6 @@ const tagList = computed(() => {
 })
 
 const currentUserId = computed(() => userStore.userInfo?.id)
-const isOwner = computed(() => currentUserId.value && image.value.userId === currentUserId.value)
 const detailImageSrc = computed(() => getImageDownloadUrl(image.value.id))
 
 onMounted(async () => {
@@ -278,7 +200,6 @@ function onCmtFileChange(file) {
 }
 
 async function handleAddComment() {
-  if (sending.value) return
   const text = commentText.value.trim()
   if (!text && !cmtFile.value) {
     ElMessage.warning('请输入评论内容')
@@ -382,70 +303,6 @@ function highlightFromNotification() {
   window.setTimeout(() => {
     if (highlightedTarget.value === targetId) highlightedTarget.value = ''
   }, 1800)
-}
-
-async function fetchCategories() {
-  try {
-    const res = await getCategoryList()
-    categories.value = res.data || []
-  } catch {}
-}
-
-function openEdit() {
-  if (!image.value.id) return
-  editForm.id = image.value.id
-  editForm.imageName = image.value.imageName
-  editForm.categoryId = image.value.categoryId
-  editForm.description = image.value.description || ''
-  editForm.tags = image.value.tags || ''
-  editForm.visibility = image.value.visibility || 'PRIVATE'
-  editForm.visibleUsernames = image.value.visibleUsernames || ''
-  fetchCategories()
-  editVisible.value = true
-}
-
-async function saveEdit() {
-  try {
-    await updateImage(editForm.id, {
-      imageName: editForm.imageName,
-      categoryId: editForm.categoryId,
-      description: editForm.description,
-      tags: editForm.tags,
-      visibility: editForm.visibility,
-      visibleUsernames: editForm.visibility === 'SPECIFIED' ? editForm.visibleUsernames : ''
-    })
-    ElMessage.success('更新成功')
-    editVisible.value = false
-    image.value.imageName = editForm.imageName
-    image.value.categoryId = editForm.categoryId
-    image.value.description = editForm.description
-    image.value.tags = editForm.tags
-    image.value.visibility = editForm.visibility
-    image.value.visibleUsernames = editForm.visibleUsernames
-  } catch {}
-}
-
-async function submitCategory() {
-  const name = newCategoryName.value.trim()
-  if (!name) { ElMessage.warning('请输入分类名'); return }
-  creatingCategory.value = true
-  try {
-    await createCategory({ categoryName: name })
-    ElMessage.success('分类创建成功')
-    categoryDialogVisible.value = false
-    newCategoryName.value = ''
-    fetchCategories()
-  } catch {} finally {
-    creatingCategory.value = false
-  }
-}
-
-async function handleDeleteImage() {
-  try {
-    await deleteImage(image.value.id)
-    ElMessage.success('已删除')
-    router.replace('/home')
-  } catch {}
 }
 
 </script>
@@ -614,20 +471,6 @@ async function handleDeleteImage() {
   55% { box-shadow: 0 0 0 14px rgba(37, 99, 235, 0); background: rgba(37, 99, 235, 0.06); }
   100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
 }
-
-.owner-actions {
-  margin-top: 12px;
-  display: flex;
-  gap: 8px;
-}
-
-.category-row {
-  display: flex;
-  gap: 8px;
-  width: 100%;
-}
-.category-row .el-select { flex: 1; }
-.category-row .el-button { flex-shrink: 0; }
 
 @media (max-width: 900px) {
   .detail-layout { grid-template-columns: 1fr; padding: 20px; }
