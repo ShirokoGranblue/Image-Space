@@ -23,13 +23,9 @@ public class TurnstileServiceImpl implements TurnstileService {
     private final TurnstileProperties properties;
     private final RestOperations restOperations;
 
-    public TurnstileServiceImpl(TurnstileProperties properties, RestTemplateBuilder restTemplateBuilder) {
-        this(properties, restTemplateBuilder.build());
-    }
-
-    TurnstileServiceImpl(TurnstileProperties properties, RestOperations restOperations) {
+    public TurnstileServiceImpl(TurnstileProperties properties, RestTemplateBuilder builder) {
         this.properties = properties;
-        this.restOperations = restOperations;
+        this.restOperations = builder.build();
     }
 
     @Override
