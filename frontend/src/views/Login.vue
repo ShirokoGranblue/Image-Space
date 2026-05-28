@@ -171,7 +171,7 @@ onUnmounted(() => {
 async function fetchCaptcha() {
   try {
     const res = await getCaptcha()
-    captchaImage.value = res.data.image
+    captchaImage.value = res.data.captchaImage
     captchaId.value = res.data.captchaId
   } catch {}
 }
