@@ -16,10 +16,10 @@
             <el-icon class="nav-icon"><Grid /></el-icon>
             <span class="nav-label">图片广场</span>
           </router-link>
-          <router-link v-if="isAdminDomain" to="/play" class="nav-link" :class="{ active: $route.path === '/play' }">
+          <button v-if="isAdminDomain" class="nav-link particle-settings-btn" @click="toggleParticleSettings">
             <el-icon class="nav-icon"><MagicStick /></el-icon>
-            <span class="nav-label">粒子</span>
-          </router-link>
+            <span class="nav-label">粒子设置</span>
+          </button>
         </nav>
 
         <div class="user-section" v-if="token">
@@ -50,9 +50,9 @@
           <router-link to="/square" class="mobile-nav-item" :class="{ active: $route.path === '/square' }" @click="mobileOpen = false">
             <el-icon><Grid /></el-icon> 图片广场
           </router-link>
-          <router-link v-if="isAdminDomain" to="/play" class="mobile-nav-item" :class="{ active: $route.path === '/play' }" @click="mobileOpen = false">
-            <el-icon><MagicStick /></el-icon> 粒子
-          </router-link>
+          <button v-if="isAdminDomain" class="mobile-nav-item particle-settings-btn" @click="mobileOpen = false; toggleParticleSettings()">
+            <el-icon><MagicStick /></el-icon> 粒子设置
+          </button>
         </nav>
         <div class="mobile-user" v-if="token">
           <NotificationBell :active="!!token" />
@@ -71,7 +71,10 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '../store/user'
 import { logout } from '../api/user'
 import { ElMessage } from 'element-plus'
+import { useParticles } from '../composables/useParticles'
 import NotificationBell from './NotificationBell.vue'
+
+const { toggleSettings: toggleParticleSettings } = useParticles()
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -171,6 +174,14 @@ async function handleLogout() {
 .nav-link.active .nav-icon { color: var(--text-primary); }
 .nav-link:hover .nav-label,
 .nav-link:hover .nav-icon { color: var(--text-primary); }
+
+.particle-settings-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+}
 
 .user-section {
   display: flex;
