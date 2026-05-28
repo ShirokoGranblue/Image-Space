@@ -39,6 +39,8 @@ docker-compose.yml
 # Claude
 .claude/settings.local.json
 .claude/settings.json
+CLAUDE.md
+.claude/
 
 # Playwright MCP
 .playwright-mcp/
@@ -64,3 +66,6 @@ docs/superpowers/
 pets/
 
 memory/
+memory.md
+AGENTS.md
+.playwright-mcp/
