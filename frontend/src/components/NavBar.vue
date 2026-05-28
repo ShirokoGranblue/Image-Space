@@ -119,7 +119,6 @@ async function handleLogout() {
   font-family: var(--font-display);
   font-size: 22px;
   font-weight: 600;
-  font-style: italic;
   color: var(--text-primary);
   text-decoration: none;
   letter-spacing: -0.01em;

@@ -1470,7 +1470,6 @@ async function saveProfile() {
 }
 .works-heading h3 {
   font-family: var(--font-display); font-size: 28px; font-weight: 600;
-  font-style: italic;
   color: var(--text-primary); margin: 0; letter-spacing: -0.01em;
 }
 .works-actions {

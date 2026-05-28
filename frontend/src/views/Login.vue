@@ -282,7 +282,6 @@ function resetCodeTurnstile() { codeTurnstileToken.value = ''; codeTurnstileRef.
 .auth-logo {
   font-family: var(--font-display);
   font-size: 26px;
-  font-style: italic;
   font-weight: 600;
   color: var(--text-primary);
   letter-spacing: -0.01em;
