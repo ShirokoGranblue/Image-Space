@@ -3,8 +3,9 @@ package com.picmgmt.service.impl;
 import com.picmgmt.common.BusinessException;
 import com.picmgmt.config.TurnstileProperties;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestOperations;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
 
@@ -21,7 +22,7 @@ class TurnstileServiceImplTest {
     void verifySkipsWhenDisabled() {
         TurnstileProperties properties = new TurnstileProperties();
         properties.setEnabled(false);
-        TurnstileServiceImpl service = new TurnstileServiceImpl(properties, failingRestOperations());
+        TurnstileServiceImpl service = new TurnstileServiceImpl(properties, builderReturning(mock(RestTemplate.class)));
 
         assertDoesNotThrow(() -> service.verify(null, "127.0.0.1"));
     }
@@ -29,7 +30,7 @@ class TurnstileServiceImplTest {
     @Test
     void verifyRejectsMissingTokenWhenEnabled() {
         TurnstileProperties properties = enabledProperties();
-        TurnstileServiceImpl service = new TurnstileServiceImpl(properties, failingRestOperations());
+        TurnstileServiceImpl service = new TurnstileServiceImpl(properties, builderReturning(mock(RestTemplate.class)));
 
         assertThrows(BusinessException.class, () -> service.verify(" ", "127.0.0.1"));
     }
@@ -37,10 +38,10 @@ class TurnstileServiceImplTest {
     @Test
     void verifyAcceptsSuccessfulCloudflareResponse() {
         TurnstileProperties properties = enabledProperties();
-        RestOperations restOperations = mock(RestOperations.class);
-        when(restOperations.postForEntity(eq(properties.getSiteverifyUrl()), any(), eq(Map.class)))
+        RestTemplate restTemplate = mock(RestTemplate.class);
+        when(restTemplate.postForEntity(eq(properties.getSiteverifyUrl()), any(), eq(Map.class)))
                 .thenReturn(ResponseEntity.ok(Map.of("success", true)));
-        TurnstileServiceImpl service = new TurnstileServiceImpl(properties, restOperations);
+        TurnstileServiceImpl service = new TurnstileServiceImpl(properties, builderReturning(restTemplate));
 
         assertDoesNotThrow(() -> service.verify("token", "127.0.0.1"));
     }
@@ -48,10 +49,10 @@ class TurnstileServiceImplTest {
     @Test
     void verifyRejectsFailedCloudflareResponse() {
         TurnstileProperties properties = enabledProperties();
-        RestOperations restOperations = mock(RestOperations.class);
-        when(restOperations.postForEntity(eq(properties.getSiteverifyUrl()), any(), eq(Map.class)))
+        RestTemplate restTemplate = mock(RestTemplate.class);
+        when(restTemplate.postForEntity(eq(properties.getSiteverifyUrl()), any(), eq(Map.class)))
                 .thenReturn(ResponseEntity.ok(Map.of("success", false)));
-        TurnstileServiceImpl service = new TurnstileServiceImpl(properties, restOperations);
+        TurnstileServiceImpl service = new TurnstileServiceImpl(properties, builderReturning(restTemplate));
 
         assertThrows(BusinessException.class, () -> service.verify("token", "127.0.0.1"));
     }
@@ -64,7 +65,9 @@ class TurnstileServiceImplTest {
         return properties;
     }
 
-    private RestOperations failingRestOperations() {
-        return mock(RestOperations.class);
+    private RestTemplateBuilder builderReturning(RestTemplate rest) {
+        RestTemplateBuilder builder = mock(RestTemplateBuilder.class);
+        when(builder.build()).thenReturn(rest);
+        return builder;
     }
 }
