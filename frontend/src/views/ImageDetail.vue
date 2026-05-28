@@ -123,7 +123,7 @@
                 text
                 @click="handleToggleCommentLike(c)"
               >
-                <el-icon><component :is="c.likedByMe ? HeartFilled : Heart" /></el-icon>
+                <el-icon><HeartFilled v-if="c.likedByMe" /><Heart v-else /></el-icon>
                 {{ (c.likeCount || 0) > 0 ? c.likeCount : '' }}
               </el-button>
               <el-button v-if="c.userId === currentUserId" text size="small" type="danger" @click="handleDeleteComment(c.id)">删除</el-button>
