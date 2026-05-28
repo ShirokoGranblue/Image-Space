@@ -21,4 +21,7 @@ public interface CommentLikeMapper extends BaseMapper<CommentLike> {
 
     @Select("SELECT COUNT(*) FROM comment_likes WHERE comment_id = #{commentId} AND user_id = #{userId}")
     Long countByCommentIdAndUserId(@Param("commentId") Long commentId, @Param("userId") Long userId);
+
+    @Delete("DELETE FROM comment_likes WHERE comment_id = #{commentId}")
+    int deleteByCommentId(@Param("commentId") Long commentId);
 }
