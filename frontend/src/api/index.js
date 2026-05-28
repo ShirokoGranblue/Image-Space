@@ -23,8 +23,11 @@ api.interceptors.response.use(
     const res = response.data
     if (res.code === 401) {
       localStorage.removeItem('satoken')
-      ElMessage.error('登录已过期，请重新登录')
-      router.push('/login')
+      const path = router.currentRoute?.value?.path
+      if (path !== '/login' && path !== '/register') {
+        ElMessage.error('登录已过期，请重新登录')
+        router.push('/login')
+      }
       return Promise.reject(new Error(res.message || '未授权'))
     }
     if (res.code !== 200) {
