@@ -344,23 +344,24 @@ async function saveEdit() {
 }
 
 .page-header {
-  padding: 0 0 20px;
+  padding: 0 0 14px;
   margin-bottom: 4px;
   border-bottom: 1px solid var(--border-subtle);
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 12px;
 }
 
 .page-title {
   font-family: var(--font-display);
-  font-size: 30px;
-  font-weight: 750;
+  font-size: 38px;
+  font-weight: 600;
+  font-style: italic;
   color: var(--text-primary);
-  letter-spacing: -0.3px;
-  line-height: 1.15;
+  letter-spacing: -0.02em;
+  line-height: 1;
   margin: 0;
 }
 

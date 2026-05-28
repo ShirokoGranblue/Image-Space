@@ -114,14 +114,14 @@ a:hover { opacity: 0.6; }
   animation: fadeUp 0.4s var(--ease-out);
   width: min(100%, 1280px);
   margin: 0 auto;
-  padding: 32px 28px 56px;
+  padding: 24px 28px 48px;
 }
 
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(max(160px, calc((100% - 80px)/5)), 1fr));
-  gap: 16px;
-  margin-top: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(max(160px, calc((100% - 60px)/5)), 1fr));
+  gap: 10px;
+  margin-top: 16px;
 }
 
 .empty-state {

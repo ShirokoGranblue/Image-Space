@@ -1340,32 +1340,6 @@ async function saveProfile() {
 <style scoped>
 .profile-page {
   min-height: 100vh;
-  --bg-base: #f6f8fc;
-  --bg-surface: #ffffff;
-  --bg-elevated: #f8fbff;
-  --bg-hover: #eff4ff;
-  --border-subtle: #e8ecf0;
-  --border-visible: #d5dbe3;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #6b7a8d;
-  --accent: #2563eb;
-  --accent-glow: #1d4ed8;
-  --accent-dim: #1e40af;
-  --font-display: 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
-  --font-body: 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
-  --space-xs: 4px; --space-sm: 8px; --space-md: 16px; --space-lg: 24px; --space-xl: 32px; --space-2xl: 48px;
-  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px;
-  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-elevated: 0 10px 32px rgba(15, 23, 42, 0.08);
-  --shadow-dialog: 0 18px 48px rgba(15, 23, 42, 0.12);
-  background:
-    radial-gradient(circle at 18% 12%, rgba(37, 99, 235, 0.08), transparent 28%),
-    linear-gradient(180deg, #fbfdff 0%, var(--bg-base) 50%, #f8fafc 100%);
-  color: var(--text-primary);
-  font-family: var(--font-body);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 .page-container {
   max-width: 1040px;
@@ -1374,14 +1348,13 @@ async function saveProfile() {
 }
 
 .profile-banner {
-  height: 258px;
+  height: 220px;
   border-radius: 2px;
   background-size: cover;
   background-position: center;
   position: relative;
-  border: 1px solid rgba(226, 232, 240, 0.9);
+  border: 1px solid var(--border-subtle);
   overflow: hidden;
-  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
   transition: box-shadow 0.3s ease;
 }
 .profile-banner::after {
@@ -1484,18 +1457,21 @@ async function saveProfile() {
   margin-left: auto;
 }
 
-.user-works { margin-top: 42px; }
+.user-works { margin-top: 36px; }
 .works-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-md);
-  margin-bottom: var(--space-lg);
+  margin-bottom: var(--space-md);
   flex-wrap: wrap;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
 }
 .works-heading h3 {
-  font-family: var(--font-display); font-size: 20px; font-weight: 700;
-  color: var(--text-primary); margin: 0; letter-spacing: -0.2px;
+  font-family: var(--font-display); font-size: 28px; font-weight: 600;
+  font-style: italic;
+  color: var(--text-primary); margin: 0; letter-spacing: -0.01em;
 }
 .works-actions {
   display: flex;

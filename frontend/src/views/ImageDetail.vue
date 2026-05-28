@@ -129,28 +129,22 @@
         <h3>评论区</h3>
 
         <div class="comment-input">
-          <div class="emoji-bar">
-            <el-popover placement="top" :width="340" trigger="click">
-              <template #reference>
-                <el-button circle size="small">😊</el-button>
-              </template>
-              <div class="emoji-grid">
-                <span v-for="e in emojis" :key="e" class="emoji-item" @click="insertEmoji(e)">{{ e }}</span>
-              </div>
-            </el-popover>
-          </div>
-          <el-input v-model="commentText" type="textarea" :rows="3" placeholder="写下你的评论..." maxlength="500" show-word-limit />
-          <div class="comment-actions">
-            <div class="comment-upload">
-              <el-upload :auto-upload="false" :show-file-list="false" :on-change="onCmtFileChange" accept="image/jpeg,image/png,image/webp,image/gif">
-                <el-button size="small" circle>
-                  <el-icon><PictureFilled /></el-icon>
-                </el-button>
-              </el-upload>
-              <span class="upload-hint" v-if="cmtFile">已选: {{ cmtFile.name }}</span>
+          <el-popover placement="top" :width="340" trigger="click">
+            <template #reference>
+              <el-button circle size="small" class="emoji-btn">😊</el-button>
+            </template>
+            <div class="emoji-grid">
+              <span v-for="e in emojis" :key="e" class="emoji-item" @click="insertEmoji(e)">{{ e }}</span>
             </div>
-            <el-button type="primary" @click="handleAddComment" :loading="sending">发表评论</el-button>
-          </div>
+          </el-popover>
+          <el-input v-model="commentText" placeholder="写下你的评论..." maxlength="500" class="comment-text-input" @keyup.enter="handleAddComment" />
+          <el-upload :auto-upload="false" :show-file-list="false" :on-change="onCmtFileChange" accept="image/jpeg,image/png,image/webp,image/gif">
+            <el-button size="small" circle class="upload-btn">
+              <el-icon><PictureFilled /></el-icon>
+            </el-button>
+          </el-upload>
+          <span class="upload-hint" v-if="cmtFile">{{ cmtFile.name }}</span>
+          <el-button type="primary" @click="handleAddComment" :loading="sending">发表</el-button>
         </div>
 
         <div class="comment-list" v-if="comments.length > 0">
@@ -479,10 +473,10 @@ function highlightFromNotification() {
 }
 
 .detail-image {
-  width: 100%; height: min(65vw, 640px); min-height: 360px; overflow: hidden; border-radius: var(--radius-md);
+  width: 100%; height: min(72vw, 720px); min-height: 400px; overflow: hidden; border-radius: 0;
   background: var(--bg-elevated); display: flex; align-items: center; justify-content: center;
   position: relative; cursor: pointer; border: 1px solid var(--border-subtle);
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 .detail-image img {
   width: 100%; height: 100%; object-fit: contain;
@@ -515,21 +509,29 @@ function highlightFromNotification() {
 .meta-bar {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px 24px;
+  align-items: center;
+  gap: 6px 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
 }
 .meta-item {
-  display: flex; flex-direction: column; gap: 4px;
-}
-.meta-label {
-  font-size: 11px; font-weight: 600; color: var(--text-muted);
-  text-transform: uppercase; letter-spacing: 0.5px;
   display: flex; align-items: center; gap: 4px;
 }
-.meta-label .el-icon { font-size: 13px; }
-.meta-value { font-size: 14px; color: var(--text-primary); font-weight: 500; }
+.meta-item + .meta-item::before {
+  content: '·';
+  margin-right: 12px;
+  color: var(--text-muted);
+}
+.meta-label {
+  font-size: 13px; font-weight: 500; color: var(--text-secondary);
+  display: flex; align-items: center; gap: 4px;
+}
+.meta-label .el-icon { font-size: 14px; }
+.meta-value { font-size: 13px; color: var(--text-primary); font-weight: 500; }
 .meta-placeholder { color: var(--text-muted); font-size: 13px; }
 .meta-tags {
   width: 100%;
+  margin-top: 4px;
 }
 .detail-tag-list {
   display: flex;
@@ -588,20 +590,22 @@ function highlightFromNotification() {
   letter-spacing: -0.2px;
 }
 
-.comment-input { margin-bottom: var(--space-lg); }
-.emoji-bar { margin-bottom: var(--space-xs); }
+.comment-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: var(--space-lg);
+}
+.comment-text-input { flex: 1; }
+.emoji-btn { flex-shrink: 0; }
+.upload-btn { flex-shrink: 0; }
 .emoji-grid { display: flex; flex-wrap: wrap; gap: 4px; max-height: 200px; overflow-y: auto; }
 .emoji-item {
   cursor: pointer; font-size: 22px; padding: 4px; border-radius: 4px;
   transition: background 0.12s ease, transform 0.12s ease;
 }
 .emoji-item:hover { background: var(--bg-hover); transform: scale(1.15); }
-
-.comment-actions {
-  display: flex; justify-content: space-between; align-items: center; margin-top: var(--space-sm);
-}
-.comment-upload { display: flex; align-items: center; gap: var(--space-sm); }
-.upload-hint { font-size: 12px; color: var(--text-muted); }
+.upload-hint { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
 
 .comment-item {
   padding: var(--space-md) 0; border-bottom: 1px solid var(--border-subtle);

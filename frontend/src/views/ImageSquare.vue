@@ -181,11 +181,12 @@ async function handleDeleteImage(id) {
 
 .page-title {
   font-family: var(--font-display);
-  font-size: 30px;
-  font-weight: 750;
+  font-size: 38px;
+  font-weight: 600;
+  font-style: italic;
   color: var(--text-primary);
-  letter-spacing: -0.3px;
-  line-height: 1.15;
+  letter-spacing: -0.02em;
+  line-height: 1;
   margin: 0;
 }
 
