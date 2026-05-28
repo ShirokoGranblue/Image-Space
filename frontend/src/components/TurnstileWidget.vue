@@ -1,7 +1,5 @@
 <template>
-  <div v-if="enabled" class="turnstile-wrap">
-    <div ref="containerRef"></div>
-  </div>
+  <div v-show="enabled" class="turnstile-wrap" ref="containerRef"></div>
 </template>
 
 <script setup>
