@@ -176,7 +176,7 @@ function resetTurnstile() {
   font-family: var(--font-display);
   font-size: 26px;
   font-style: italic;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-primary);
   letter-spacing: -0.01em;
 }
@@ -184,7 +184,7 @@ function resetTurnstile() {
 .auth-title {
   font-family: var(--font-display);
   font-size: 28px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-primary);
   margin: 8px 0 32px;
   letter-spacing: -0.01em;
