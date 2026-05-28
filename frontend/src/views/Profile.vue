@@ -735,9 +735,10 @@ async function saveBackground() {
   if (!bgPreviewUrl.value) return
   bgSaving.value = true
   try {
-    const originalSource = bgSourceKind.value === 'new' || bgSourceKind.value === 'original'
+    let originalSource = bgSourceKind.value === 'new' || bgSourceKind.value === 'original'
       ? bgPreviewUrl.value
       : await readCachedBgOriginal()
+    if (!originalSource) originalSource = currentBackgroundUrl()
     const backgroundBlob = isGifFile(bgFile.value) ? bgFile.value : await cropBackgroundImage()
     const fd = new FormData()
     fd.append('file', backgroundBlob, isGifFile(bgFile.value) ? 'background.gif' : 'background.jpg')
@@ -1086,9 +1087,10 @@ async function confirmAvatar() {
   if (!avatarPreviewUrl.value) return
   avatarSaving.value = true
   try {
-    const originalSource = avatarSourceKind.value === 'new' || avatarSourceKind.value === 'original'
+    let originalSource = avatarSourceKind.value === 'new' || avatarSourceKind.value === 'original'
       ? avatarPreviewUrl.value
       : await readCachedAvatarOriginal()
+    if (!originalSource) originalSource = currentAvatarUrl()
     const croppedBlob = isGifFile(avatarFile.value) ? avatarFile.value : await cropImage()
     const fd = new FormData()
     fd.append('file', croppedBlob, isGifFile(avatarFile.value) ? 'avatar.gif' : 'avatar.png')

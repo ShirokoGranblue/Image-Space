@@ -67,12 +67,63 @@
               {{ image.likedByMe ? '已点赞' : '点赞' }}
             </el-button>
             <span class="like-count-text">{{ image.likeCount || 0 }} 次点赞</span>
+            <el-button v-if="canEdit" type="warning" @click="openEditDialog">
+              <el-icon><Edit /></el-icon> 编辑信息
+            </el-button>
             <el-button type="primary" class="download-btn" @click="handleDownload" :loading="downloading">
               <el-icon><Download /></el-icon> 下载图片
             </el-button>
           </div>
         </div>
       </div>
+
+      <el-dialog v-model="editVisible" title="编辑图片信息" width="480px">
+        <el-form :model="editForm" label-width="86px" v-if="editForm.id">
+          <el-form-item label="图片名称">
+            <el-input v-model="editForm.imageName" />
+          </el-form-item>
+          <el-form-item label="分类">
+            <div class="category-row">
+              <el-select v-model="editForm.categoryId" placeholder="选择分类" clearable filterable style="width: 100%">
+                <el-option v-for="cat in categories" :key="cat.id" :label="cat.categoryName" :value="cat.id" />
+              </el-select>
+              <el-button @click="openCreateCategory">新建分类</el-button>
+            </div>
+          </el-form-item>
+          <el-form-item label="描述">
+            <el-input v-model="editForm.description" type="textarea" :rows="3" />
+          </el-form-item>
+          <el-form-item label="标签">
+            <TagInput v-model="editForm.tags" placeholder="多个标签用 # 分隔" />
+          </el-form-item>
+          <el-form-item label="可见权限">
+            <el-select v-model="editForm.visibility" style="width: 100%">
+              <el-option label="仅自己" value="PRIVATE" />
+              <el-option label="公开" value="PUBLIC" />
+              <el-option label="指定用户" value="SPECIFIED" />
+            </el-select>
+          </el-form-item>
+          <el-form-item v-if="editForm.visibility === 'SPECIFIED'" label="指定用户">
+            <el-input v-model="editForm.visibleUsernames" placeholder="输入用户名，多个用户用逗号或空格分隔" />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="editVisible = false">取消</el-button>
+          <el-button type="primary" @click="saveEdit">保存</el-button>
+        </template>
+      </el-dialog>
+
+      <el-dialog v-model="categoryDialogVisible" title="新建分类" width="360px">
+        <el-form label-width="70px" @submit.prevent>
+          <el-form-item label="分类名">
+            <el-input v-model="newCategoryName" maxlength="20" show-word-limit @keyup.enter="submitCategory" />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="categoryDialogVisible = false">取消</el-button>
+          <el-button type="primary" :loading="creatingCategory" @click="submitCategory">创建</el-button>
+        </template>
+      </el-dialog>
 
       <div class="comments-section" v-if="image.id">
         <h3>评论区</h3>
@@ -123,8 +174,8 @@
                 text
                 @click="handleToggleCommentLike(c)"
               >
-                <el-icon><HeartFilled v-if="c.likedByMe" /><Heart v-else /></el-icon>
-                {{ (c.likeCount || 0) > 0 ? c.likeCount : '' }}
+                <span class="comment-like-heart">{{ c.likedByMe ? '❤️' : '🤍' }}</span>
+                <span v-if="c.likeCount > 0" class="comment-like-count">{{ c.likeCount }}</span>
               </el-button>
               <el-button v-if="c.userId === currentUserId" text size="small" type="danger" @click="handleDeleteComment(c.id)">删除</el-button>
             </div>
@@ -142,13 +193,15 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick, onMounted } from 'vue'
+import { ref, reactive, computed, nextTick, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import NavBar from '../components/NavBar.vue'
 import ImageViewer from '../components/ImageViewer.vue'
-import { getImageDetail, likeImage, unlikeImage } from '../api/image'
+import TagInput from '../components/TagInput.vue'
+import { getImageDetail, likeImage, unlikeImage, updateImage } from '../api/image'
 import { getComments, addComment, deleteComment, uploadCommentImage, likeComment, unlikeComment } from '../api/comment'
+import { getCategoryList, createCategory } from '../api/category'
 import { useUserStore } from '../store/user'
 import { formatSize, formatTime } from '../utils/format'
 import { getImageDownloadUrl } from '../utils/imageRequests'
@@ -167,6 +220,22 @@ const sending = ref(false)
 const downloading = ref(false)
 const liking = ref(false)
 const highlightedTarget = ref('')
+const isOwner = computed(() => currentUserId.value && currentUserId.value === image.value.userId)
+
+const editVisible = ref(false)
+const categoryDialogVisible = ref(false)
+const newCategoryName = ref('')
+const creatingCategory = ref(false)
+const categories = ref([])
+const editForm = reactive({
+  id: null,
+  imageName: '',
+  categoryId: null,
+  tags: '',
+  description: '',
+  visibility: 'PRIVATE',
+  visibleUsernames: ''
+})
 
 const tagTypes = ['', 'success', 'warning', 'danger', 'info']
 
@@ -182,6 +251,7 @@ const tagList = computed(() => {
 })
 
 const currentUserId = computed(() => userStore.userInfo?.id)
+const canEdit = computed(() => isOwner.value || userStore.userInfo?.role === 'admin')
 const detailImageSrc = computed(() => getImageDownloadUrl(image.value))
 
 onMounted(async () => {
@@ -271,6 +341,67 @@ async function handleToggleCommentLike(c) {
       : await likeComment(c.id)
     c.likeCount = res.data.likeCount
     c.likedByMe = res.data.likedByMe
+  } catch {}
+}
+
+function openEditDialog() {
+  editForm.id = image.value.id
+  editForm.imageName = image.value.imageName
+  editForm.categoryId = image.value.categoryId
+  editForm.description = image.value.description || ''
+  editForm.tags = image.value.tags || ''
+  editForm.visibility = image.value.visibility || 'PRIVATE'
+  editForm.visibleUsernames = image.value.visibleUsernames || ''
+  fetchCategories()
+  editVisible.value = true
+}
+
+async function fetchCategories() {
+  try {
+    const res = await getCategoryList()
+    categories.value = res.data || []
+  } catch {}
+}
+
+function openCreateCategory() {
+  newCategoryName.value = ''
+  categoryDialogVisible.value = true
+}
+
+async function submitCategory() {
+  const name = newCategoryName.value.trim()
+  if (!name) { ElMessage.warning('请输入分类名称'); return }
+  creatingCategory.value = true
+  try {
+    const res = await createCategory({ categoryName: name })
+    categories.value.push(res.data)
+    editForm.categoryId = res.data.id
+    categoryDialogVisible.value = false
+    ElMessage.success('分类已创建')
+  } catch {} finally {
+    creatingCategory.value = false
+  }
+}
+
+async function saveEdit() {
+  try {
+    await updateImage(editForm.id, {
+      imageName: editForm.imageName,
+      categoryId: editForm.categoryId,
+      description: editForm.description,
+      tags: editForm.tags,
+      visibility: editForm.visibility,
+      visibleUsernames: editForm.visibility === 'SPECIFIED' ? editForm.visibleUsernames : ''
+    })
+    ElMessage.success('更新成功')
+    editVisible.value = false
+    image.value.imageName = editForm.imageName
+    image.value.categoryId = editForm.categoryId
+    image.value.description = editForm.description
+    image.value.tags = editForm.tags
+    image.value.visibility = editForm.visibility
+    image.value.visibleUsernames = editForm.visibleUsernames
+    image.value.categoryName = categories.value.find(c => c.id === editForm.categoryId)?.categoryName
   } catch {}
 }
 
@@ -487,6 +618,15 @@ function highlightFromNotification() {
   align-items: center;
   gap: 4px;
 }
+.comment-like-heart {
+  font-size: 16px; cursor: pointer; user-select: none;
+  transition: transform 0.15s ease;
+}
+.comment-like-heart:hover { transform: scale(1.2); }
+.comment-like-count { font-size: 13px; color: var(--text-muted); }
+
+.category-row { display: flex; gap: 8px; align-items: center; }
+.category-row .el-button { flex-shrink: 0; }
 .comment-img {
   width: 512px; height: 512px; max-width: 100%; border-radius: var(--radius-md); cursor: pointer;
   margin: var(--space-xs) 0; object-fit: contain; border: 1px solid var(--border-subtle);
