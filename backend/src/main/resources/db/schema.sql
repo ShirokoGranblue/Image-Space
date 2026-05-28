@@ -65,6 +65,17 @@ CREATE TABLE IF NOT EXISTS comments (
     INDEX idx_image_id (image_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Comment likes table
+CREATE TABLE IF NOT EXISTS comment_likes (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    comment_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_comment_user (comment_id, user_id),
+    INDEX idx_comment_id (comment_id),
+    INDEX idx_user_id (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Image likes table
 CREATE TABLE IF NOT EXISTS image_likes (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,

@@ -47,6 +47,9 @@ public enum ErrorCode {
     COMMENT_NOT_FOUND(4001, "评论不存在"),
     COMMENT_EMPTY(4002, "评论内容不能为空"),
 
+    // Notification errors (6xxx)
+    NOTIFICATION_NOT_FOUND(6001, "通知不存在"),
+
     // Storage errors (5xxx)
     STORAGE_UPLOAD_FAILED(5001, "文件上传失败"),
     STORAGE_DOWNLOAD_FAILED(5002, "文件下载失败");

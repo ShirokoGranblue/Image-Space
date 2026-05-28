@@ -21,7 +21,7 @@
         <div class="detail-info">
           <h2 class="img-title">{{ image.imageName }}</h2>
 
-          <div class="meta-grid">
+          <div class="meta-bar">
             <div class="meta-item">
               <span class="meta-label"><el-icon><User /></el-icon> 上传者</span>
               <router-link :to="`/profile/${image.userId}`" class="uploader-link">{{ image.displayName || image.username }}</router-link>
@@ -32,13 +32,6 @@
                 <el-tag size="small" v-if="image.categoryName">{{ image.categoryName }}</el-tag>
                 <span v-else class="meta-placeholder">未分类</span>
               </span>
-            </div>
-            <div class="meta-item meta-tags">
-              <span class="meta-label"><el-icon><CollectionTag /></el-icon> 标签</span>
-              <span class="meta-value detail-tag-list" v-if="tagList.length">
-                <el-tag v-for="(tag, i) in tagList" :key="i" size="small" :type="tagTypes[i % tagTypes.length]" effect="plain">{{ tag }}</el-tag>
-              </span>
-              <span v-else class="meta-placeholder">无标签</span>
             </div>
             <div class="meta-item">
               <span class="meta-label"><el-icon><Document /></el-icon> 文件大小</span>
@@ -52,6 +45,13 @@
               <span class="meta-label"><el-icon><Clock /></el-icon> 上传日期</span>
               <span class="meta-value">{{ formatTime(image.uploadTime) }}</span>
             </div>
+            <div class="meta-item meta-tags">
+              <span class="meta-label"><el-icon><CollectionTag /></el-icon> 标签</span>
+              <span class="meta-value detail-tag-list" v-if="tagList.length">
+                <el-tag v-for="(tag, i) in tagList" :key="i" size="small" :type="tagTypes[i % tagTypes.length]" effect="plain">{{ tag }}</el-tag>
+              </span>
+              <span v-else class="meta-placeholder">无标签</span>
+            </div>
           </div>
 
           <div class="desc-block" v-if="image.description">
@@ -61,17 +61,16 @@
             <p class="desc-text">暂无描述</p>
           </div>
 
-          <div id="like-activity" class="like-panel" :class="{ 'notification-highlight': highlightedTarget === 'like' }">
+          <div id="like-activity" class="action-bar" :class="{ 'notification-highlight': highlightedTarget === 'like' }">
             <el-button :type="image.likedByMe ? 'danger' : 'default'" @click="handleToggleLike" :loading="liking">
               <el-icon><StarFilled /></el-icon>
               {{ image.likedByMe ? '已点赞' : '点赞' }}
             </el-button>
-            <span>{{ image.likeCount || 0 }} 次点赞</span>
+            <span class="like-count-text">{{ image.likeCount || 0 }} 次点赞</span>
+            <el-button type="primary" class="download-btn" @click="handleDownload" :loading="downloading">
+              <el-icon><Download /></el-icon> 下载图片
+            </el-button>
           </div>
-
-          <el-button type="primary" class="download-btn" @click="handleDownload" :loading="downloading">
-            <el-icon><Download /></el-icon> 下载图片
-          </el-button>
         </div>
       </div>
 
@@ -117,7 +116,18 @@
             </div>
             <p class="comment-content">{{ c.content }}</p>
             <img v-if="c.imagePath" :src="`/api/comment/image/${c.id}`" class="comment-img" @click="viewCmtImg(`/api/comment/image/${c.id}`)" />
-            <el-button v-if="c.userId === currentUserId" text size="small" type="danger" @click="handleDeleteComment(c.id)">删除</el-button>
+            <div class="comment-footer">
+              <el-button
+                :type="c.likedByMe ? 'danger' : 'default'"
+                size="small"
+                text
+                @click="handleToggleCommentLike(c)"
+              >
+                <el-icon><component :is="c.likedByMe ? HeartFilled : Heart" /></el-icon>
+                {{ (c.likeCount || 0) > 0 ? c.likeCount : '' }}
+              </el-button>
+              <el-button v-if="c.userId === currentUserId" text size="small" type="danger" @click="handleDeleteComment(c.id)">删除</el-button>
+            </div>
           </div>
         </div>
 
@@ -138,7 +148,7 @@ import { ElMessage } from 'element-plus'
 import NavBar from '../components/NavBar.vue'
 import ImageViewer from '../components/ImageViewer.vue'
 import { getImageDetail, likeImage, unlikeImage } from '../api/image'
-import { getComments, addComment, deleteComment, uploadCommentImage } from '../api/comment'
+import { getComments, addComment, deleteComment, uploadCommentImage, likeComment, unlikeComment } from '../api/comment'
 import { useUserStore } from '../store/user'
 import { formatSize, formatTime } from '../utils/format'
 import { getImageDownloadUrl } from '../utils/imageRequests'
@@ -250,6 +260,20 @@ async function handleDeleteComment(id) {
   } catch {}
 }
 
+async function handleToggleCommentLike(c) {
+  if (!userStore.token) {
+    ElMessage.warning('请先登录后再点赞')
+    return
+  }
+  try {
+    const res = c.likedByMe
+      ? await unlikeComment(c.id)
+      : await likeComment(c.id)
+    c.likeCount = res.data.likeCount
+    c.likedByMe = res.data.likedByMe
+  } catch {}
+}
+
 async function handleDownload() {
   downloading.value = true
   try {
@@ -315,7 +339,6 @@ function highlightFromNotification() {
 .back-bar :deep(.el-button:hover) { color: var(--accent); }
 
 .detail-layout {
-  display: grid; grid-template-columns: minmax(360px, 1fr) 420px; gap: var(--space-xl);
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
   padding: 28px;
@@ -323,9 +346,10 @@ function highlightFromNotification() {
 }
 
 .detail-image {
-  height: min(58vw, 560px); min-height: 360px; overflow: hidden; border-radius: var(--radius-md);
+  width: 100%; height: min(65vw, 640px); min-height: 360px; overflow: hidden; border-radius: var(--radius-md);
   background: var(--bg-elevated); display: flex; align-items: center; justify-content: center;
   position: relative; cursor: pointer; border: 1px solid var(--border-subtle);
+  margin-bottom: 24px;
 }
 .detail-image img {
   width: 100%; height: 100%; object-fit: contain;
@@ -345,8 +369,6 @@ function highlightFromNotification() {
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 
 .detail-info {
-  flex: 1; min-width: 0;
-  display: flex; flex-direction: column;
   padding: 4px 0;
 }
 .img-title {
@@ -357,10 +379,10 @@ function highlightFromNotification() {
   letter-spacing: -0.3px; line-height: 1.3;
 }
 
-.meta-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px 20px;
+.meta-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 24px;
 }
 .meta-item {
   display: flex; flex-direction: column; gap: 4px;
@@ -374,7 +396,7 @@ function highlightFromNotification() {
 .meta-value { font-size: 14px; color: var(--text-primary); font-weight: 500; }
 .meta-placeholder { color: var(--text-muted); font-size: 13px; }
 .meta-tags {
-  grid-column: 1 / -1;
+  width: 100%;
 }
 .detail-tag-list {
   display: flex;
@@ -390,7 +412,7 @@ function highlightFromNotification() {
 .desc-empty { background: transparent; border-style: dashed; }
 .desc-text { font-size: 14px; color: var(--text-secondary); line-height: 1.7; margin: 0; }
 
-.like-panel {
+.like-panel, .action-bar {
   margin-top: 18px;
   padding: 12px 14px;
   border: 1px solid var(--border-subtle);
@@ -403,11 +425,17 @@ function highlightFromNotification() {
   font-size: 14px;
 }
 
+.like-count-text {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
 .download-btn {
-  margin-top: auto; padding-top: 18px;
+  padding-top: 18px;
   font-weight: 600;
   border-radius: var(--radius-md);
   transition: transform 0.15s var(--ease-out), box-shadow 0.15s var(--ease-out);
+  margin-left: auto;
 }
 .download-btn:hover {
   transform: translateY(-1px);
@@ -454,6 +482,11 @@ function highlightFromNotification() {
 .comment-user:hover { color: var(--accent-glow); }
 .comment-time { font-size: 12px; color: var(--text-muted); }
 .comment-content { font-size: 14px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 4px; }
+.comment-footer {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 .comment-img {
   width: 512px; height: 512px; max-width: 100%; border-radius: var(--radius-md); cursor: pointer;
   margin: var(--space-xs) 0; object-fit: contain; border: 1px solid var(--border-subtle);
@@ -473,7 +506,7 @@ function highlightFromNotification() {
 }
 
 @media (max-width: 900px) {
-  .detail-layout { grid-template-columns: 1fr; padding: 20px; }
+  .detail-layout { padding: 20px; }
   .detail-image { height: 420px; min-height: 280px; }
   .comments-section { padding: var(--space-md); }
   .comment-img { height: min(512px, calc(100vw - 58px)); }

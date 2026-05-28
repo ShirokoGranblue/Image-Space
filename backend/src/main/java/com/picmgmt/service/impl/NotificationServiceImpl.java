@@ -2,6 +2,9 @@ package com.picmgmt.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.picmgmt.common.BusinessException;
+import com.picmgmt.common.ErrorCode;
+import com.picmgmt.entity.Comment;
 import com.picmgmt.entity.Image;
 import com.picmgmt.entity.Notification;
 import com.picmgmt.entity.User;
@@ -16,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -49,6 +53,19 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
+    @Transactional
+    public void createCommentLikeNotification(Comment comment, Long actorUserId) {
+        if (comment == null || comment.getUserId() == null || actorUserId == null
+                || comment.getUserId().equals(actorUserId)) {
+            return;
+        }
+        Notification notification = baseNotification(comment.getImageId(), comment.getUserId(), actorUserId, "COMMENT_LIKE");
+        notification.setCommentId(comment.getId());
+        notification.setContentPreview(truncate(comment.getContent()));
+        notificationMapper.insert(notification);
+    }
+
+    @Override
     public Page<NotificationVO> listMine(Integer page, Integer limit, boolean unreadOnly) {
         long loginId = StpUtil.getLoginIdAsLong();
         Page<NotificationVO> result = notificationMapper.selectNotificationVOPage(
@@ -77,11 +94,39 @@ public class NotificationServiceImpl implements NotificationService {
         notificationMapper.markAllRead(StpUtil.getLoginIdAsLong());
     }
 
+    @Override
+    @Transactional
+    public void deleteById(Long id) {
+        long userId = StpUtil.getLoginIdAsLong();
+        Notification notification = notificationMapper.selectById(id);
+        if (notification == null) {
+            throw new BusinessException(ErrorCode.NOTIFICATION_NOT_FOUND);
+        }
+        if (!notification.getRecipientUserId().equals(userId)) {
+            throw new BusinessException(ErrorCode.FORBIDDEN);
+        }
+        notificationMapper.deleteById(id);
+    }
+
+    @Override
+    @Transactional
+    public void deleteBatch(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        long userId = StpUtil.getLoginIdAsLong();
+        notificationMapper.deleteBatch(ids, userId);
+    }
+
     private Notification baseNotification(Image image, Long actorUserId, String type) {
+        return baseNotification(image.getId(), image.getUserId(), actorUserId, type);
+    }
+
+    private Notification baseNotification(Long imageId, Long recipientUserId, Long actorUserId, String type) {
         Notification notification = new Notification();
-        notification.setRecipientUserId(image.getUserId());
+        notification.setImageId(imageId);
+        notification.setRecipientUserId(recipientUserId);
         notification.setActorUserId(actorUserId);
-        notification.setImageId(image.getId());
         notification.setType(type);
         notification.setReadFlag(0);
         notification.setCreateTime(LocalDateTime.now());
@@ -115,7 +160,7 @@ public class NotificationServiceImpl implements NotificationService {
         if (vo.getCommentId() != null) {
             url.append("&commentId=").append(vo.getCommentId());
         }
-        if ("COMMENT".equals(vo.getType())) {
+        if ("COMMENT".equals(vo.getType()) || "COMMENT_LIKE".equals(vo.getType())) {
             url.append("&highlight=comment");
         } else if ("LIKE".equals(vo.getType())) {
             url.append("&highlight=like");

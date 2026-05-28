@@ -9,6 +9,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Tag(name = "通知模块")
 @RestController
 @RequestMapping("/notification")
@@ -42,6 +44,20 @@ public class NotificationController {
     @PutMapping("/read-all")
     public Result<Void> markAllRead() {
         notificationService.markAllRead();
+        return Result.ok();
+    }
+
+    @Operation(summary = "删除单条通知")
+    @DeleteMapping("/{id}")
+    public Result<Void> delete(@PathVariable Long id) {
+        notificationService.deleteById(id);
+        return Result.ok();
+    }
+
+    @Operation(summary = "批量删除通知")
+    @PostMapping("/delete-batch")
+    public Result<Void> deleteBatch(@RequestBody List<Long> ids) {
+        notificationService.deleteBatch(ids);
         return Result.ok();
     }
 }

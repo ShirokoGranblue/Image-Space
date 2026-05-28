@@ -56,6 +56,7 @@ describe('NotificationDrawer', () => {
           'el-icon': { template: '<i />' },
           'el-button': { template: '<button @click="$emit(\'click\')"><slot /></button>' },
           'el-badge': { template: '<span><slot /></span>' },
+          'el-checkbox': { template: '<input type="checkbox" />', props: ['modelValue'] },
         },
       },
     })
@@ -81,6 +82,7 @@ describe('NotificationDrawer', () => {
           'el-icon': { template: '<i />' },
           'el-button': { template: '<button @click="$emit(\'click\')"><slot /></button>' },
           'el-badge': { template: '<span><slot /></span>' },
+          'el-checkbox': { template: '<input type="checkbox" />', props: ['modelValue'] },
         },
       },
     })
@@ -88,7 +90,7 @@ describe('NotificationDrawer', () => {
     openNotificationDrawer()
     await flushPromises()
 
-    document.querySelector<HTMLButtonElement>('.notification-item')?.click()
+    document.querySelector<HTMLButtonElement>('.notification-item-content')?.click()
     await flushPromises()
 
     expect(markNotificationRead).toHaveBeenCalledWith(1)

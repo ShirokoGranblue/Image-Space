@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.picmgmt.common.BusinessException;
 import com.picmgmt.entity.Comment;
 import com.picmgmt.entity.Image;
+import com.picmgmt.mapper.CommentLikeMapper;
 import com.picmgmt.repository.CommentRepository;
 import com.picmgmt.repository.ImageRepository;
 import com.picmgmt.service.NotificationService;
@@ -28,13 +29,14 @@ class CommentServiceImplTest {
     @Mock private CommentRepository commentRepository;
     @Mock private ImageRepository imageRepository;
     @Mock private NotificationService notificationService;
+    @Mock private CommentLikeMapper commentLikeMapper;
 
     private CommentServiceImpl service;
     private MockedStatic<StpUtil> stpMock;
 
     @BeforeEach
     void setUp() {
-        service = new CommentServiceImpl(commentRepository, imageRepository, notificationService);
+        service = new CommentServiceImpl(commentRepository, imageRepository, notificationService, commentLikeMapper);
         stpMock = mockStatic(StpUtil.class);
     }
 

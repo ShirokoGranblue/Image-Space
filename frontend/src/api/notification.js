@@ -15,3 +15,11 @@ export function markNotificationRead(id) {
 export function markAllNotificationsRead() {
   return api.put('/notification/read-all')
 }
+
+export function deleteNotification(id) {
+  return api.delete(`/notification/${id}`)
+}
+
+export function deleteNotifications(ids) {
+  return api.post('/notification/delete-batch', ids)
+}

@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.picmgmt.common.BusinessException;
 import com.picmgmt.common.ErrorCode;
 import com.picmgmt.entity.Comment;
+import com.picmgmt.mapper.CommentLikeMapper;
 import com.picmgmt.repository.CommentRepository;
 import com.picmgmt.repository.ImageRepository;
 import com.picmgmt.service.CommentService;
@@ -21,6 +22,7 @@ public class CommentServiceImpl implements CommentService {
     private final CommentRepository commentRepository;
     private final ImageRepository imageRepository;
     private final NotificationService notificationService;
+    private final CommentLikeMapper commentLikeMapper;
 
     @Override
     public Comment add(Long imageId, String content, String imagePath) {
@@ -76,6 +78,26 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     public List<CommentVO> listByImage(Long imageId) {
-        return commentRepository.listByImageId(imageId);
+        List<CommentVO> list = commentRepository.listByImageId(imageId);
+        decorateLikeInfo(list);
+        return list;
+    }
+
+    private void decorateLikeInfo(List<CommentVO> list) {
+        Long currentUserId = null;
+        try {
+            currentUserId = StpUtil.getLoginIdAsLong();
+        } catch (Exception ignored) {
+        }
+        for (CommentVO vo : list) {
+            Long count = commentLikeMapper.countByCommentId(vo.getId());
+            vo.setLikeCount(count != null ? count : 0L);
+            if (currentUserId != null) {
+                Long userCount = commentLikeMapper.countByCommentIdAndUserId(vo.getId(), currentUserId);
+                vo.setLikedByMe(userCount != null && userCount > 0);
+            } else {
+                vo.setLikedByMe(false);
+            }
+        }
     }
 }

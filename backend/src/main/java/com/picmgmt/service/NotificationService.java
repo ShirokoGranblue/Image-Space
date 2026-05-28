@@ -1,8 +1,10 @@
 package com.picmgmt.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.picmgmt.entity.Comment;
 import com.picmgmt.entity.Image;
 import com.picmgmt.vo.NotificationVO;
+import java.util.List;
 
 public interface NotificationService {
 
@@ -17,4 +19,10 @@ public interface NotificationService {
     void markRead(Long id);
 
     void markAllRead();
+
+    void createCommentLikeNotification(Comment comment, Long actorUserId);
+
+    void deleteById(Long id);
+
+    void deleteBatch(List<Long> ids);
 }

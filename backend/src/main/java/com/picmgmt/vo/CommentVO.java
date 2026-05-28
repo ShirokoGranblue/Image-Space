@@ -15,5 +15,7 @@ public class CommentVO {
     private String content;
     private String imagePath;
     private String imageUrl;
+    private Long likeCount;
+    private Boolean likedByMe;
     private LocalDateTime createTime;
 }

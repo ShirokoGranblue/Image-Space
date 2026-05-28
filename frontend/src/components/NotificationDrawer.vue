@@ -14,32 +14,56 @@
         </header>
 
         <div class="notification-list" v-loading="loading">
-          <button
+          <div
             v-for="item in notifications"
             :key="item.id"
             class="notification-item"
             :class="{ unread: !item.read }"
-            type="button"
-            @click="openNotification(item)"
           >
-            <img :src="item.imagePreviewUrl || fallbackImage" alt="" class="notification-thumb" />
-            <span class="notification-body">
-              <span class="notification-title">
-                <strong>{{ item.actorName || '用户' }}</strong>
-                {{ actionText(item) }}
-                <strong>{{ item.imageName || '图片' }}</strong>
+            <el-checkbox
+              class="notification-checkbox"
+              :model-value="selectedIds.has(item.id)"
+              @change="toggleSelect(item.id)"
+              @click.stop
+            />
+            <button
+              class="notification-item-content"
+              type="button"
+              @click="openNotification(item)"
+            >
+              <img :src="item.imagePreviewUrl || fallbackImage" alt="" class="notification-thumb" />
+              <span class="notification-body">
+                <span class="notification-title">
+                  <strong>{{ item.actorName || '用户' }}</strong>
+                  {{ actionText(item) }}
+                  <strong>{{ item.imageName || '图片' }}</strong>
+                </span>
+                <span v-if="(item.type === 'COMMENT' || item.type === 'COMMENT_LIKE') && item.contentPreview" class="notification-preview">
+                  {{ item.contentPreview }}
+                </span>
+                <span class="notification-time">{{ formatTime(item.createTime) }}</span>
               </span>
-              <span v-if="item.type === 'COMMENT' && item.contentPreview" class="notification-preview">
-                {{ item.contentPreview }}
-              </span>
-              <span class="notification-time">{{ formatTime(item.createTime) }}</span>
-            </span>
-          </button>
+            </button>
+          </div>
 
           <div v-if="!loading && notifications.length === 0" class="notification-empty">
             暂无通知
           </div>
         </div>
+
+        <footer class="notification-footer" v-if="notifications.length > 0">
+          <el-button
+            size="small"
+            :disabled="selectedIds.size === 0"
+            @click="clearSelection"
+          >取消</el-button>
+          <el-button
+            size="small"
+            type="danger"
+            :disabled="selectedIds.size === 0"
+            @click="handleDeleteSelected"
+          >删除选中({{ selectedIds.size }})</el-button>
+        </footer>
       </aside>
     </transition>
   </Teleport>
@@ -48,7 +72,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, watch, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { getNotifications, getUnreadNotificationCount, markAllNotificationsRead, markNotificationRead } from '../api/notification'
+import { getNotifications, getUnreadNotificationCount, markAllNotificationsRead, markNotificationRead, deleteNotification, deleteNotifications } from '../api/notification'
 import { useNotificationDrawer, closeNotificationDrawer, setUnreadCount } from '../composables/useNotificationDrawer'
 import { formatTime } from '../utils/format'
 
@@ -56,6 +80,7 @@ const router = useRouter()
 const { state } = useNotificationDrawer()
 const notifications = ref([])
 const loading = ref(false)
+const selectedIds = ref(new Set())
 const fallbackImage = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='
 const unreadCount = computed(() => state.unreadCount)
 const unreadText = computed(() => unreadCount.value > 0 ? `${unreadCount.value} 条未读` : '全部已读')
@@ -116,7 +141,37 @@ function shiftApp(open) {
 }
 
 function actionText(item) {
-  return item.type === 'LIKE' ? ' 点赞了你的图片 ' : ' 评论了你的图片 '
+  if (item.type === 'LIKE') return ' 点赞了你的图片 '
+  if (item.type === 'COMMENT_LIKE') return ' 点赞了你的评论 '
+  return ' 评论了你的图片 '
+}
+
+function toggleSelect(id) {
+  const next = new Set(selectedIds.value)
+  if (next.has(id)) {
+    next.delete(id)
+  } else {
+    next.add(id)
+  }
+  selectedIds.value = next
+}
+
+function clearSelection() {
+  selectedIds.value = new Set()
+}
+
+async function handleDeleteSelected() {
+  if (selectedIds.value.size === 0) return
+  try {
+    const ids = [...selectedIds.value]
+    if (ids.length === 1) {
+      await deleteNotification(ids[0])
+    } else {
+      await deleteNotifications(ids)
+    }
+    clearSelection()
+    await refresh()
+  } catch {}
 }
 </script>
 
@@ -195,12 +250,10 @@ function actionText(item) {
   border: 1px solid transparent;
   border-radius: 12px;
   background: transparent;
-  display: grid;
-  grid-template-columns: 72px 1fr;
-  gap: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   padding: 10px;
-  cursor: pointer;
-  text-align: left;
   transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
 }
 
@@ -212,6 +265,27 @@ function actionText(item) {
 
 .notification-item.unread {
   background: rgba(37, 99, 235, 0.06);
+}
+
+.notification-checkbox {
+  flex-shrink: 0;
+  margin-right: 4px;
+}
+
+.notification-item-content {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  background: transparent;
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 12px;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
 }
 
 .notification-thumb {
@@ -263,6 +337,15 @@ function actionText(item) {
   justify-content: center;
   color: var(--text-muted);
   font-size: 14px;
+}
+
+.notification-footer {
+  padding: 12px 22px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .notification-slide-enter-active,

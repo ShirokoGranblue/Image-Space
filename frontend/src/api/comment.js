@@ -17,3 +17,11 @@ export function uploadCommentImage(formData) {
     headers: { 'Content-Type': 'multipart/form-data' }
   })
 }
+
+export function likeComment(id) {
+  return api.post(`/comment/${id}/like`)
+}
+
+export function unlikeComment(id) {
+  return api.delete(`/comment/${id}/like`)
+}
