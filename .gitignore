@@ -49,8 +49,8 @@ CLAUDE.md
 _backup_*/
 
 # Docker runtime data
-docker/minio/data/
-docker/mysql/data/
+docker/minio/
+docker/mysql/
 
 # OS
 .DS_Store
