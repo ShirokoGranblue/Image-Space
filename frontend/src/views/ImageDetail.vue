@@ -476,7 +476,6 @@ function highlightFromNotification() {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
   padding: 28px;
-  box-shadow: var(--shadow-md);
 }
 
 .detail-image {
@@ -573,7 +572,6 @@ function highlightFromNotification() {
 }
 .download-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
 }
 
 .uploader-link { color: var(--accent); text-decoration: none; font-weight: 600; font-size: 14px; }
@@ -583,7 +581,6 @@ function highlightFromNotification() {
   margin-top: var(--space-xl); background: var(--bg-surface);
   border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
   padding: var(--space-xl);
-  box-shadow: var(--shadow-md);
 }
 .comments-section h3 {
   font-family: var(--font-display); font-size: 22px; font-weight: 750;

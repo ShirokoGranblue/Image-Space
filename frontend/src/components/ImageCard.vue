@@ -104,27 +104,24 @@ function goDetail() {
   position: relative;
   cursor: pointer;
   aspect-ratio: 1;
-  border-radius: 14px;
+  border-radius: 2px;
   overflow: hidden;
   background: var(--bg-elevated);
-  border: 1px solid rgba(226, 232, 240, 0.9);
-  box-shadow: var(--shadow-sm);
-  transition: transform 0.28s var(--ease-out), box-shadow 0.28s var(--ease-out), border-color 0.28s ease;
+  border: 1px solid var(--border-subtle);
+  transition: opacity 0.25s ease, border-color 0.25s ease;
 }
 
 .image-card:hover {
-  transform: translateY(-5px);
-  border-color: rgba(37, 99, 235, 0.24);
-  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.11);
+  opacity: 0.85;
+  border-color: var(--text-primary);
 }
 
 .image-card:active {
-  transform: translateY(-1px) scale(0.985);
-  transition: transform 0.1s var(--ease-out);
+  opacity: 0.7;
 }
 .image-card.selected {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14), 0 18px 36px rgba(15, 23, 42, 0.11);
+  border-color: var(--text-primary);
+  border-width: 2px;
 }
 
 .card-frame {
@@ -165,7 +162,7 @@ function goDetail() {
 
 .select-toggle:hover {
   transform: translateY(0) scale(1.08);
-  background: rgba(37, 99, 235, 0.82);
+  background: var(--text-primary);
   border-color: #fff;
 }
 
@@ -175,7 +172,7 @@ function goDetail() {
   transform: translateY(0);
   background: var(--accent);
   border-color: #fff;
-  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.26);
+  box-shadow: none;
 }
 
 .select-mark {
@@ -227,12 +224,12 @@ function goDetail() {
   position: absolute;
   inset: 0;
   border: 1px solid rgba(255,255,255,0.25);
-  border-radius: 14px;
+  border-radius: 2px;
   pointer-events: none;
   transition: border-color 0.3s ease;
 }
 .image-card:hover .card-border {
-  border-color: rgba(37, 99, 235, 0.3);
+  border-color: rgba(0, 0, 0, 0.15);
 }
 
 .card-overlay {

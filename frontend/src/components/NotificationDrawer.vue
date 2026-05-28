@@ -183,11 +183,8 @@ async function handleDeleteSelected() {
   z-index: 2000;
   width: var(--notification-drawer-width, 420px);
   height: 100dvh;
-  background: rgba(255, 255, 255, 0.96);
-  border-left: 1px solid rgba(203, 213, 225, 0.78);
-  box-shadow: -28px 0 56px rgba(15, 23, 42, 0.16);
-  backdrop-filter: saturate(180%) blur(18px);
-  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  background: var(--bg-base);
+  border-left: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
 }

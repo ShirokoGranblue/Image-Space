@@ -169,17 +169,12 @@ async function handleDeleteImage(id) {
 }
 
 .page-header {
-  padding: 22px 24px;
-  border: 1px solid rgba(226, 232, 240, 0.92);
-  border-radius: 16px;
-  margin-bottom: 22px;
-  background: rgba(255, 255, 255, 0.86);
-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  padding: 0 0 20px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border-subtle);
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-end;
   gap: 18px;
   flex-wrap: wrap;
 }
@@ -252,7 +247,7 @@ async function handleDeleteImage(id) {
 
 @media (max-width: 768px) {
   .page-container { padding: 20px 8px; }
-  .page-header { padding: 20px; border-radius: var(--radius-md); align-items: stretch; }
+  .page-header { padding: 0 0 16px; align-items: stretch; }
   .page-title { font-size: 26px; }
   .square-toolbar { justify-content: stretch; }
   .square-search,

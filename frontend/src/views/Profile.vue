@@ -388,7 +388,7 @@ const backgroundDisplayUrl = computed(() => mediaUrlWithVersion(currentBackgroun
 
 const bannerStyle = computed(() => {
   const bg = backgroundDisplayUrl.value
-  if (!bg) return { background: 'linear-gradient(135deg, #111827 0%, #2563eb 58%, #38bdf8 100%)' }
+  if (!bg) return { background: '#1a1a1a' }
   if (bg.startsWith('#') || bg.startsWith('rgb')) return { backgroundColor: bg }
   return { backgroundImage: `url(${bg})`, backgroundSize: '100% auto', backgroundPosition: 'top' }
 })
@@ -683,7 +683,7 @@ function stopBgResize() {
 const miniBannerPreviewStyle = computed(() => {
   if (!bgPreviewUrl.value) {
     return { background: !currentBackgroundUrl()
-      ? 'linear-gradient(135deg, #111827 0%, #2563eb 58%, #38bdf8 100%)' : undefined }
+      ? '#1a1a1a' : undefined }
   }
   const display = bgImageDisplay.value
   const scale = 200 / bgCrop.w
@@ -1375,7 +1375,7 @@ async function saveProfile() {
 
 .profile-banner {
   height: 258px;
-  border-radius: 18px;
+  border-radius: 2px;
   background-size: cover;
   background-position: center;
   position: relative;
@@ -1413,8 +1413,6 @@ async function saveProfile() {
   background: rgba(15, 23, 42, 0.68);
   border: 1px solid rgba(255,255,255,0.2);
   color: #fff;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   border-radius: var(--radius-sm);
   font-weight: 500;
   transition: background 0.2s;
@@ -1442,10 +1440,7 @@ async function saveProfile() {
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(226, 232, 240, 0.94);
   border-top: 0;
-  border-radius: 0 0 18px 18px;
-  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  border-radius: 0;
 }
 .profile-header > * {
   position: relative;
@@ -1773,7 +1768,7 @@ async function saveProfile() {
 
 @media (max-width: 720px) {
   .page-container { padding: 16px var(--space-md) 32px; }
-  .profile-banner { height: 218px; border-radius: var(--radius-md); }
+  .profile-banner { height: 218px; border-radius: 2px; }
   .profile-header { padding: 0 20px 24px; margin-top: -120px; }
   .profile-header::before { top: 120px; }
   .avatar-wrap { margin-top: 0; }
