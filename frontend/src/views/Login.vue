@@ -225,7 +225,7 @@ async function handleGithubLogin() {
   githubLoading.value = true
   try {
     const res = await getGithubAuthUrl()
-    window.location.href = res.data
+    window.location.href = res.data.authorizeUrl
   } catch {} finally { githubLoading.value = false }
 }
 
@@ -233,7 +233,7 @@ async function handleGoogleLogin() {
   googleLoading.value = true
   try {
     const res = await getGoogleAuthUrl()
-    window.location.href = res.data
+    window.location.href = res.data.authorizeUrl
   } catch {} finally { googleLoading.value = false }
 }
 
