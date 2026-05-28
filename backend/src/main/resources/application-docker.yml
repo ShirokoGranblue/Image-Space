@@ -54,3 +54,10 @@ turnstile:
   enabled: ${TURNSTILE_ENABLED:false}
   secret-key: ${TURNSTILE_SECRET_KEY:}
   siteverify-url: ${TURNSTILE_SITEVERIFY_URL:https://challenges.cloudflare.com/turnstile/v0/siteverify}
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+
+sa-token:
+  is-log: false

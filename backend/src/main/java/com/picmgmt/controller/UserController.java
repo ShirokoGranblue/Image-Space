@@ -216,7 +216,8 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
 
     @Operation(summary = "邮箱验证码登录")
     @PostMapping("/login-by-code")
-    public Result<String> loginByCode(@Valid @RequestBody CodeLoginDTO dto) {
+    public Result<String> loginByCode(@Valid @RequestBody CodeLoginDTO dto, HttpServletRequest request) {
+        turnstileService.verify(dto.getTurnstileToken(), clientIp(request));
         return Result.ok(userService.loginByCode(dto));
     }
 

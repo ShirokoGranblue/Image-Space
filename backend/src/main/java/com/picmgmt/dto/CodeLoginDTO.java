@@ -11,4 +11,6 @@ public class CodeLoginDTO {
 
     @NotBlank(message = "验证码不能为空")
     private String code;
+
+    private String turnstileToken;
 }
