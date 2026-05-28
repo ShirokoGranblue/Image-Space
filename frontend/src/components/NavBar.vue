@@ -16,6 +16,10 @@
             <el-icon class="nav-icon"><Grid /></el-icon>
             <span class="nav-label">图片广场</span>
           </router-link>
+          <router-link v-if="isAdminDomain" to="/play" class="nav-link" :class="{ active: $route.path === '/play' }">
+            <el-icon class="nav-icon"><MagicStick /></el-icon>
+            <span class="nav-label">粒子</span>
+          </router-link>
         </nav>
 
         <div class="user-section" v-if="token">
@@ -46,6 +50,9 @@
           <router-link to="/square" class="mobile-nav-item" :class="{ active: $route.path === '/square' }" @click="mobileOpen = false">
             <el-icon><Grid /></el-icon> 图片广场
           </router-link>
+          <router-link v-if="isAdminDomain" to="/play" class="mobile-nav-item" :class="{ active: $route.path === '/play' }" @click="mobileOpen = false">
+            <el-icon><MagicStick /></el-icon> 粒子
+          </router-link>
         </nav>
         <div class="mobile-user" v-if="token">
           <NotificationBell :active="!!token" />
@@ -72,6 +79,7 @@ const userStore = useUserStore()
 const token = computed(() => userStore.token)
 const userInfo = computed(() => userStore.userInfo)
 const mobileOpen = ref(false)
+const isAdminDomain = window.location.hostname === 'admin.image-space.app' || window.location.hostname === 'localhost'
 
 onMounted(() => {
   if (userStore.token && !userStore.userInfo) {

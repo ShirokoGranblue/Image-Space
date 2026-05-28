@@ -27,6 +27,12 @@ const routes = [
     component: () => import('../views/ImageSquare.vue')
   },
   {
+    path: '/play',
+    name: 'ParticlePlay',
+    component: () => import('../views/ParticlePlay.vue'),
+    meta: { adminOnly: true }
+  },
+  {
     path: '/image/:id',
     name: 'ImageDetail',
     component: () => import('../views/ImageDetail.vue')
@@ -45,7 +51,12 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('satoken')
-  if (to.meta.requiresAuth && !token) {
+  const hostname = window.location.hostname
+  const isAdminDomain = hostname === 'admin.image-space.app' || hostname === 'localhost'
+
+  if (to.meta.adminOnly && !isAdminDomain) {
+    next('/home')
+  } else if (to.meta.requiresAuth && !token) {
     next('/login')
   } else if ((to.path === '/login' || to.path === '/register') && token) {
     next('/home')
