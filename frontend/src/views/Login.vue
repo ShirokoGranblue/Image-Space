@@ -157,6 +157,17 @@ const trackStyle = computed(() => ({
 }))
 
 onMounted(async () => {
+  const token = new URLSearchParams(window.location.search).get('satoken')
+  if (token) {
+    userStore.setToken(token)
+    window.history.replaceState({}, '', '/login')
+    try {
+      await userStore.fetchUserInfo()
+      ElMessage.success('欢迎回来')
+      router.push('/home')
+    } catch { ElMessage.error('登录失败，请重试') }
+    return
+  }
   fetchCaptcha()
   try {
     const res = await getImageList({ page: 1, limit: 30, visibility: 'PUBLIC' })
