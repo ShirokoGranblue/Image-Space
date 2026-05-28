@@ -14,6 +14,13 @@ describe('image request helpers', () => {
     expect(getImageDownloadUrl(null)).toBe('')
   })
 
+  it('prefers backend-provided versioned image urls when available', () => {
+    expect(getImageDownloadUrl({
+      id: 9,
+      imageUrl: '/api/image/download/9?v=b031160aee8f',
+    })).toBe('/api/image/download/9?v=b031160aee8f')
+  })
+
   it('sorts personal images by name ascending', () => {
     expect(buildImageListParams({
       page: 1,

@@ -4,6 +4,7 @@ import com.picmgmt.cache.CacheService;
 import com.picmgmt.entity.User;
 import com.picmgmt.mapper.UserMapper;
 import com.picmgmt.storage.StorageService;
+import com.picmgmt.util.MediaUrlUtil;
 import com.picmgmt.vo.UserVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -50,8 +51,12 @@ public class UserRepository {
         vo.setBio(user.getBio());
         vo.setCreateTime(user.getCreateTime());
 
-        String avatarUrl = user.getAvatarKey() != null ? "/api/user/avatar/" + user.getId() : user.getAvatar();
-        String backgroundUrl = user.getBackgroundKey() != null ? "/api/user/background/" + user.getId() : user.getBackground();
+        String avatarUrl = user.getAvatarKey() != null
+                ? MediaUrlUtil.userMediaUrl("avatar", user.getId(), user.getAvatarKey())
+                : user.getAvatar();
+        String backgroundUrl = user.getBackgroundKey() != null
+                ? MediaUrlUtil.userMediaUrl("background", user.getId(), user.getBackgroundKey())
+                : user.getBackground();
         vo.setAvatar(avatarUrl);
         vo.setAvatarUrl(avatarUrl);
         vo.setBackground(backgroundUrl);

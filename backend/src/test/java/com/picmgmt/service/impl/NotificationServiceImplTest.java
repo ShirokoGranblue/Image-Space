@@ -96,15 +96,14 @@ class NotificationServiceImplTest {
         actor.setDisplayName("Alice");
         actor.setAvatarKey("2/avatar.png");
         when(userMapper.selectById(2L)).thenReturn(actor);
-        when(storageService.getAccessUrl("avatars", "2/avatar.png")).thenReturn("/api/user/avatar/2");
-        when(storageService.getAccessUrl("images", "1/summer.jpg")).thenReturn("/api/image/download/7");
 
         Page<NotificationVO> result = service.listMine(1, 20, false);
 
         NotificationVO resultVo = result.getRecords().get(0);
         assertEquals("Alice", resultVo.getActorName());
-        assertEquals("/api/user/avatar/2", resultVo.getActorAvatarUrl());
-        assertEquals("/api/image/download/7", resultVo.getImagePreviewUrl());
+        assertEquals("/api/user/avatar/2?v=e3be9a8665ae", resultVo.getActorAvatarUrl());
+        assertEquals("/api/image/download/7?v=f38dd8785366", resultVo.getImagePreviewUrl());
         assertEquals("/image/7?notificationId=9", resultVo.getTargetUrl());
+        verifyNoInteractions(storageService);
     }
 }

@@ -10,6 +10,7 @@ import com.picmgmt.mapper.ImageLikeMapper;
 import com.picmgmt.mapper.ImageMapper;
 import com.picmgmt.repository.ImageRepository;
 import com.picmgmt.storage.StorageService;
+import com.picmgmt.util.MediaUrlUtil;
 import com.picmgmt.vo.ImageVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -53,7 +54,7 @@ public class ImageReadService {
                 pageParam, userId, normalizeKeyword(dto.getKeyword()), dto.getCategoryId(), null, null, sortField, sortOrder, "latest", null);
         for (ImageVO vo : result.getRecords()) {
             if (vo.getStorageKey() != null) {
-                vo.setImageUrl(storageService.getAccessUrl("images", vo.getStorageKey()));
+                vo.setImageUrl(MediaUrlUtil.imageDownloadUrl(vo.getId(), vo.getStorageKey()));
             }
             decorateLikeInfo(vo);
         }
@@ -75,7 +76,7 @@ public class ImageReadService {
                 safeSortField, safeSortOrder, safeSortMode, safeRandomSeed);
         for (ImageVO vo : result.getRecords()) {
             if (vo.getStorageKey() != null) {
-                vo.setImageUrl(storageService.getAccessUrl("images", vo.getStorageKey()));
+                vo.setImageUrl(MediaUrlUtil.imageDownloadUrl(vo.getId(), vo.getStorageKey()));
             }
             decorateLikeInfo(vo);
         }

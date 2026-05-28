@@ -1,8 +1,13 @@
 export const IMAGE_PAGE_SIZES = [30, 50, 100]
 export const DEFAULT_IMAGE_PAGE_SIZE = 50
 
-export function getImageDownloadUrl(id) {
-  return id ? `/api/image/download/${id}` : ''
+export function getImageDownloadUrl(imageOrId) {
+  if (!imageOrId) return ''
+  if (typeof imageOrId === 'object') {
+    if (imageOrId.imageUrl) return imageOrId.imageUrl
+    return imageOrId.id ? `/api/image/download/${imageOrId.id}` : ''
+  }
+  return `/api/image/download/${imageOrId}`
 }
 
 export function buildImageListParams(query) {

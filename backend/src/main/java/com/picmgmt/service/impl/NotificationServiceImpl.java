@@ -9,6 +9,7 @@ import com.picmgmt.mapper.NotificationMapper;
 import com.picmgmt.mapper.UserMapper;
 import com.picmgmt.service.NotificationService;
 import com.picmgmt.storage.StorageService;
+import com.picmgmt.util.MediaUrlUtil;
 import com.picmgmt.vo.NotificationVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -93,7 +94,7 @@ public class NotificationServiceImpl implements NotificationService {
             String displayName = actor.getDisplayName();
             vo.setActorName(displayName != null && !displayName.isBlank() ? displayName : actor.getUsername());
             if (actor.getAvatarKey() != null && !actor.getAvatarKey().isBlank()) {
-                vo.setActorAvatarUrl(storageService.getAccessUrl("avatars", actor.getAvatarKey()));
+                vo.setActorAvatarUrl(MediaUrlUtil.userMediaUrl("avatar", actor.getId(), actor.getAvatarKey()));
             } else if (actor.getAvatar() != null && !actor.getAvatar().isBlank()) {
                 vo.setActorAvatarUrl(actor.getAvatar());
             }
@@ -101,7 +102,7 @@ public class NotificationServiceImpl implements NotificationService {
             vo.setActorName("已注销用户");
         }
         if (vo.getImageStorageKey() != null && !vo.getImageStorageKey().isBlank()) {
-            vo.setImagePreviewUrl(storageService.getAccessUrl("images", vo.getImageStorageKey()));
+            vo.setImagePreviewUrl(MediaUrlUtil.imageDownloadUrl(vo.getImageId(), vo.getImageStorageKey()));
         } else if (vo.getImageId() != null) {
             vo.setImagePreviewUrl("/api/image/download/" + vo.getImageId());
         }

@@ -172,7 +172,7 @@ const tagList = computed(() => {
 })
 
 const currentUserId = computed(() => userStore.userInfo?.id)
-const detailImageSrc = computed(() => getImageDownloadUrl(image.value.id))
+const detailImageSrc = computed(() => getImageDownloadUrl(image.value))
 
 onMounted(async () => {
   loading.value = true
@@ -183,7 +183,7 @@ onMounted(async () => {
     ])
     image.value = imgRes.data
     comments.value = cmtRes.data || []
-    viewerSrc.value = getImageDownloadUrl(imgRes.data.id)
+    viewerSrc.value = getImageDownloadUrl(imgRes.data)
     await nextTick()
     highlightFromNotification()
   } catch {} finally {
@@ -255,7 +255,7 @@ async function handleDownload() {
   try {
     const token = localStorage.getItem('satoken')
     const headers = token ? { 'satoken': token } : {}
-    const response = await fetch(getImageDownloadUrl(image.value.id), { headers })
+    const response = await fetch(getImageDownloadUrl(image.value), { headers })
 
     if (!response.ok) {
       if (response.status === 401) {

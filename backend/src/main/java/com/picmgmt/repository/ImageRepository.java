@@ -9,6 +9,7 @@ import com.picmgmt.mapper.CategoryMapper;
 import com.picmgmt.mapper.ImageMapper;
 import com.picmgmt.mapper.UserMapper;
 import com.picmgmt.storage.StorageService;
+import com.picmgmt.util.MediaUrlUtil;
 import com.picmgmt.vo.ImageVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -76,7 +77,7 @@ public class ImageRepository {
         vo.setUploadTime(image.getUploadTime());
 
         if (image.getStorageKey() != null) {
-            vo.setImageUrl(storageService.getAccessUrl("images", image.getStorageKey()));
+            vo.setImageUrl(MediaUrlUtil.imageDownloadUrl(image.getId(), image.getStorageKey()));
         }
         User user = userMapper.selectById(image.getUserId());
         if (user != null) {

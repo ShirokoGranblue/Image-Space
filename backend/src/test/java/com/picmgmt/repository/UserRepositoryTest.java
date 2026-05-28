@@ -21,7 +21,7 @@ class UserRepositoryTest {
     @Mock private CacheService cacheService;
 
     @Test
-    void toVO_shouldExposeAvatarAndBackgroundThroughApiProxyUrls() {
+    void toVO_shouldExposeAvatarAndBackgroundThroughVersionedApiProxyUrls() {
         UserRepository repository = new UserRepository(userMapper, storageService, cacheService);
         User user = new User();
         user.setId(4L);
@@ -31,10 +31,12 @@ class UserRepositoryTest {
 
         UserVO vo = repository.toVO(user);
 
-        assertEquals("/api/user/avatar/4", vo.getAvatarUrl());
-        assertEquals("/api/user/avatar/4", vo.getAvatar());
-        assertEquals("/api/user/background/4", vo.getBackgroundUrl());
-        assertEquals("/api/user/background/4", vo.getBackground());
+        String expectedAvatarUrl = "/api/user/avatar/4?v=867e55914ef4";
+        String expectedBackgroundUrl = "/api/user/background/4?v=326f74a30ecc";
+        assertEquals(expectedAvatarUrl, vo.getAvatarUrl());
+        assertEquals(expectedAvatarUrl, vo.getAvatar());
+        assertEquals(expectedBackgroundUrl, vo.getBackgroundUrl());
+        assertEquals(expectedBackgroundUrl, vo.getBackground());
         verifyNoInteractions(storageService);
     }
 }

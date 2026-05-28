@@ -47,6 +47,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { getImageDownloadUrl } from '../utils/imageRequests'
 
 const props = defineProps({
   image: { type: Object, required: true },
@@ -64,7 +65,7 @@ const imgFailed = ref(false)
 
 const imageSrc = computed(() => {
   if (imgFailed.value) return ''
-  return props.image.id ? `/api/image/download/${props.image.id}` : ''
+  return getImageDownloadUrl(props.image)
 })
 
 const visibilityLabel = computed(() => {

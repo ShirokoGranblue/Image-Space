@@ -65,6 +65,9 @@ Route guard in `router/index.js`, checks `localStorage['satoken']` for `meta.req
 ### Deleting a category reassigns images to "uncategorized"
 When a category is deleted, `CategoryServiceImpl.delete()` sets all child images' `category_id` to `NULL` rather than deleting the images themselves.
 
+### Media URLs are versioned to avoid stale CDN cache
+Backend image/avatar/background URLs are generated through `MediaUrlUtil`, which appends `?v=<sha256(storage_key)>` to API proxy URLs such as `/api/image/download/{id}`, `/api/user/avatar/{id}`, and `/api/user/background/{id}`. When content is replaced and the MinIO storage key changes, the URL changes too, so Cloudflare fetches fresh bytes. Frontend image rendering should prefer backend-provided `imageUrl` values via `getImageDownloadUrl(image)` instead of rebuilding fixed download URLs.
+
 ### Custom SQL exists only in ImageMapper
 `UserMapper` and `CategoryMapper` use MyBatis-Plus `BaseMapper` methods directly. `ImageMapper.selectImageVOList` is the only custom query — it LEFT JOINs users and categories tables to build `ImageVO` in a single query.
 
