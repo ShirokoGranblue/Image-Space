@@ -373,7 +373,8 @@ async function submitCategory() {
   if (!name) { ElMessage.warning('请输入分类名称'); return }
   creatingCategory.value = true
   try {
-    const res = await createCategory({ categoryName: name })
+    const res = await createCategory(name)
+    categories.value = categories.value.filter(c => c.id !== res.data.id)
     categories.value.push(res.data)
     editForm.categoryId = res.data.id
     categoryDialogVisible.value = false
@@ -400,9 +401,11 @@ async function saveEdit() {
     image.value.description = editForm.description
     image.value.tags = editForm.tags
     image.value.visibility = editForm.visibility
-    image.value.visibleUsernames = editForm.visibleUsernames
+    image.value.visibleUsernames = editForm.visibility === 'SPECIFIED' ? editForm.visibleUsernames : ''
     image.value.categoryName = categories.value.find(c => c.id === editForm.categoryId)?.categoryName
-  } catch {}
+  } catch {
+    ElMessage.error('更新失败，请重试')
+  }
 }
 
 async function handleDownload() {
