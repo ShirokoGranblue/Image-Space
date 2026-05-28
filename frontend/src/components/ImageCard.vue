@@ -47,7 +47,6 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessageBox } from 'element-plus'
 
 const props = defineProps({
   image: { type: Object, required: true },
@@ -89,18 +88,8 @@ function onPopHide() {
   hoverLocked.value = false
   hover.value = false
 }
-async function handleImgError() {
+function handleImgError() {
   imgFailed.value = true
-  try {
-    await ElMessageBox.confirm(
-      '该图片似乎已损坏或为空，是否立即删除？',
-      '图片加载失败',
-      { confirmButtonText: '删除', cancelButtonText: '保留', type: 'warning' }
-    )
-    emit('delete', props.image.id)
-  } catch {
-    // user chose to keep
-  }
 }
 function goDetail() {
   if (hoverLocked.value) return

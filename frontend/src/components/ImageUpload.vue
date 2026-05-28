@@ -212,6 +212,7 @@ async function handleUpload() {
   }
   uploading.value = true
   let success = 0
+  let errors = []
   for (const file of fileList.value) {
     try {
       const fd = new FormData()
@@ -225,9 +226,14 @@ async function handleUpload() {
       if (form.visibility === 'SPECIFIED') fd.append('visibleUsernames', form.visibleUsernames)
       await uploadImage(fd)
       success++
-    } catch {}
+    } catch (e) {
+      errors.push(file.name + ': ' + (e?.response?.data?.message || e?.message || '上传失败'))
+    }
   }
   uploading.value = false
+  if (errors.length) {
+    ElMessage.error(errors.join('; '))
+  }
   ElMessage.success(`成功上传 ${success} / ${fileList.value.length} 张图片`)
   visible.value = false
   emit('uploaded')
