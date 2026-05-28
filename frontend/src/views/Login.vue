@@ -16,12 +16,6 @@
         <el-tab-pane label="密码登录" name="password"></el-tab-pane>
         <el-tab-pane label="邮箱登录" name="code"></el-tab-pane>
       </el-tabs>
-      <TurnstileWidget
-        ref="turnstileRef"
-        @verified="turnstileToken = $event"
-        @expired="turnstileToken = ''"
-        @error="turnstileToken = ''"
-      />
       <div v-show="loginMode === 'password'">
       <el-form :model="form" :rules="rules" ref="formRef" label-position="top" class="login-form" @submit.prevent="handleLogin">
         <el-form-item label="用户名" prop="username">
@@ -31,6 +25,12 @@
           <el-input v-model="form.password" type="password" placeholder="••••••••" size="large"
             @keyup.enter="handleLogin" show-password :prefix-icon="Lock" />
         </el-form-item>
+        <TurnstileWidget
+          ref="turnstileRef"
+          @verified="turnstileToken = $event"
+          @expired="turnstileToken = ''"
+          @error="turnstileToken = ''"
+        />
         <el-form-item>
           <el-button type="primary" size="large" class="login-btn" @click="handleLogin" :loading="loading">
             登录
@@ -56,6 +56,12 @@
             </el-button>
           </div>
         </el-form-item>
+        <TurnstileWidget
+          ref="codeTurnstileRef"
+          @verified="codeTurnstileToken = $event"
+          @expired="codeTurnstileToken = ''"
+          @error="codeTurnstileToken = ''"
+        />
         <el-form-item>
           <el-button type="primary" size="large" class="login-btn" @click="handleCodeLogin" :loading="loading">
             验证并登录
@@ -102,6 +108,8 @@ const githubLoading = ref(false)
 const googleLoading = ref(false)
 const turnstileRef = ref(null)
 const turnstileToken = ref('')
+const codeTurnstileRef = ref(null)
+const codeTurnstileToken = ref('')
 let countdownTimer = null
 
 const codeForm = reactive({
@@ -178,7 +186,7 @@ async function fetchCaptcha() {
 async function handleSendCode() {
   if (!codeForm.email) { ElMessage.warning('请输入邮箱'); return }
   if (!captchaCode.value) { ElMessage.warning('请输入图形验证码'); return }
-  const token = getTurnstileToken()
+  const token = getCodeTurnstileToken()
   if (!token) { ElMessage.warning('请完成人机验证'); return }
   sending.value = true
   try {
@@ -189,7 +197,7 @@ async function handleSendCode() {
   } catch {
     fetchCaptcha()
   } finally {
-    resetTurnstile()
+    resetCodeTurnstile()
     sending.value = false
   }
 }
@@ -197,14 +205,19 @@ async function handleSendCode() {
 async function handleCodeLogin() {
   if (!codeForm.email) { ElMessage.warning('请输入邮箱'); return }
   if (!codeForm.code) { ElMessage.warning('请输入验证码'); return }
+  const token = getCodeTurnstileToken()
+  if (!token) { ElMessage.warning('请完成人机验证'); return }
   loading.value = true
   try {
-    const res = await loginByCode({ email: codeForm.email.trim(), code: codeForm.code.trim() })
+    const res = await loginByCode({ email: codeForm.email.trim(), code: codeForm.code.trim(), turnstileToken: token })
     userStore.setToken(res.data)
     await userStore.fetchUserInfo()
     ElMessage.success('欢迎回来')
     router.push('/home')
-  } catch {} finally { loading.value = false }
+  } catch {} finally {
+    resetCodeTurnstile()
+    loading.value = false
+  }
 }
 
 async function handleGithubLogin() {
@@ -246,9 +259,18 @@ function getTurnstileToken() {
   return turnstileRef.value?.getToken?.() || turnstileToken.value
 }
 
+function getCodeTurnstileToken() {
+  return codeTurnstileRef.value?.getToken?.() || codeTurnstileToken.value
+}
+
 function resetTurnstile() {
   turnstileToken.value = ''
   turnstileRef.value?.reset?.()
+}
+
+function resetCodeTurnstile() {
+  codeTurnstileToken.value = ''
+  codeTurnstileRef.value?.reset?.()
 }
 </script>
 
