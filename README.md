@@ -1,4 +1,4 @@
-# Image Space · 图片空间
+# Image Space
 
 A full-stack picture management system with social features — upload, organize, and share your images.
 
