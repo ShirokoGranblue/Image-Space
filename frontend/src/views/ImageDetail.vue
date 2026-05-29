@@ -77,7 +77,7 @@
         </div>
       </div>
 
-      <el-dialog v-model="editVisible" title="编辑图片信息" width="480px">
+      <el-dialog v-model="editVisible" title="编辑" width="480px">
         <el-form :model="editForm" label-width="86px" v-if="editForm.id">
           <el-form-item label="图片名称">
             <el-input v-model="editForm.imageName" />

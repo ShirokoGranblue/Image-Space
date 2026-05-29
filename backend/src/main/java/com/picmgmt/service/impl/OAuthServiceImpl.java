@@ -10,6 +10,7 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.picmgmt.config.GoogleJwtVerifier;
 import com.picmgmt.config.OAuthPooledHttp;
 import com.picmgmt.entity.User;
 import com.picmgmt.mapper.UserMapper;
@@ -75,6 +76,8 @@ public class OAuthServiceImpl implements OAuthService {
     private String proxyHost;
     @Value("${oauth.proxy.port:0}")
     private int proxyPort;
+
+    private final GoogleJwtVerifier googleJwtVerifier = new GoogleJwtVerifier();
 
     public OAuthServiceImpl(UserMapper userMapper, StorageService storageService, StringRedisTemplate redisTemplate) {
         this.userMapper = userMapper;
@@ -199,7 +202,7 @@ public class OAuthServiceImpl implements OAuthService {
                             AuthGoogleScope.USER_PROFILE.getScope(),
                             AuthGoogleScope.USER_OPENID.getScope()))
                     .httpConfig(httpConfig)
-                    .build());
+                    .build(), googleJwtVerifier);
         }
 
         return new ParallelGithubRequest(AuthConfig.builder()
@@ -213,60 +216,43 @@ public class OAuthServiceImpl implements OAuthService {
     }
 
     /**
-     * Google: parse ID token locally, skip the userinfo API call entirely.
-     * Validates JWT claims (aud, iss, exp) before trusting the payload.
+     * Google: parse ID token locally, verify JWT signature against Google's public keys,
+     * then validate claims. Falls back to userinfo API on any verification failure.
      */
     static class IdTokenGoogleRequest extends AuthGoogleRequest {
-        IdTokenGoogleRequest(AuthConfig config) {
+        private final GoogleJwtVerifier verifier;
+
+        IdTokenGoogleRequest(AuthConfig config, GoogleJwtVerifier verifier) {
             super(config);
+            this.verifier = verifier;
         }
 
         @Override
         protected AuthUser getUserInfo(AuthToken authToken) {
             String idToken = authToken.getIdToken();
             if (StrUtil.isNotEmpty(idToken)) {
+                // Verify JWT signature and claims before trusting the payload
+                if (!verifier.verify(idToken, this.config.getClientId())) {
+                    log.warn("Google ID token: verification failed, falling back to userinfo API");
+                    return super.getUserInfo(authToken);
+                }
+
                 try {
                     String[] parts = idToken.split("\\.");
-                    if (parts.length == 3) {
-                        String payload = StrUtil.utf8Str(Base64.decode(parts[1]));
-                        JSONObject claims = JSONUtil.parseObj(payload);
+                    String payload = StrUtil.utf8Str(Base64.decode(parts[1]));
+                    JSONObject claims = JSONUtil.parseObj(payload);
 
-                        // Verify required OIDC claims before trusting the payload
-                        long now = System.currentTimeMillis() / 1000;
-                        String aud = claims.getStr("aud");
-                        String iss = claims.getStr("iss");
-                        Long exp = claims.getLong("exp");
-                        Long iat = claims.getLong("iat");
-
-                        if (!"https://accounts.google.com".equals(iss) && !"accounts.google.com".equals(iss)) {
-                            log.warn("Google ID token: invalid iss={}", iss);
-                            return super.getUserInfo(authToken);
-                        }
-                        if (!this.config.getClientId().equals(aud)) {
-                            log.warn("Google ID token: aud mismatch, expected {} got {}", this.config.getClientId(), aud);
-                            return super.getUserInfo(authToken);
-                        }
-                        if (exp == null || exp <= now) {
-                            log.warn("Google ID token: expired or missing exp, exp={}", exp);
-                            return super.getUserInfo(authToken);
-                        }
-                        if (iat != null && iat > now + 300) {
-                            log.warn("Google ID token: iat in the future, iat={}", iat);
-                            return super.getUserInfo(authToken);
-                        }
-
-                        return AuthUser.builder()
-                                .uuid(claims.getStr("sub"))
-                                .username(claims.getStr("email"))
-                                .nickname(claims.getStr("name"))
-                                .email(claims.getStr("email"))
-                                .avatar(claims.getStr("picture"))
-                                .token(authToken)
-                                .source("GOOGLE")
-                                .build();
-                    }
+                    return AuthUser.builder()
+                            .uuid(claims.getStr("sub"))
+                            .username(claims.getStr("email"))
+                            .nickname(claims.getStr("name"))
+                            .email(claims.getStr("email"))
+                            .avatar(claims.getStr("picture"))
+                            .token(authToken)
+                            .source("GOOGLE")
+                            .build();
                 } catch (Exception e) {
-                    log.warn("Failed to parse Google ID token, falling back to userinfo API: {}", e.getMessage());
+                    log.warn("Failed to parse Google ID token payload, falling back to userinfo API: {}", e.getMessage());
                 }
             }
             return super.getUserInfo(authToken);

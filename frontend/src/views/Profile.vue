@@ -146,7 +146,7 @@
             <p class="upload-hint" v-if="bgFileName">{{ bgFileName }}</p>
           </div>
           <div class="bg-preview-side">
-            <p class="preview-label">个人资料预览</p>
+            <p class="preview-label">预览</p>
             <div class="profile-mini-card">
               <div class="profile-mini-banner" :style="miniBannerPreviewStyle" />
               <div class="profile-mini-header">

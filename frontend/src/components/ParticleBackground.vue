@@ -34,10 +34,12 @@ onMounted(() => {
     rafId = requestAnimationFrame(loop)
   }
   rafId = requestAnimationFrame(loop)
+  document.addEventListener('click', handleClick)
 })
 
 onUnmounted(() => {
   if (rafId) cancelAnimationFrame(rafId)
+  document.removeEventListener('click', handleClick)
 })
 
 function handleClick(e) {
@@ -68,7 +70,6 @@ function handleMouseLeave() {
   <svg
     ref="svgRef"
     class="particle-canvas"
-    @click="handleClick"
     @mousemove="handleMouseMove"
     @mouseleave="handleMouseLeave"
   >
@@ -112,6 +113,6 @@ function handleMouseLeave() {
   cursor: crosshair;
   user-select: none;
   -webkit-user-select: none;
-  pointer-events: auto;
+  pointer-events: none;
 }
 </style>

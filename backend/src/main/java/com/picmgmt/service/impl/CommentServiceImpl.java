@@ -85,9 +85,8 @@ public class CommentServiceImpl implements CommentService {
 
     private void decorateLikeInfo(List<CommentVO> list) {
         Long currentUserId = null;
-        try {
+        if (StpUtil.isLogin()) {
             currentUserId = StpUtil.getLoginIdAsLong();
-        } catch (Exception ignored) {
         }
         for (CommentVO vo : list) {
             Long count = commentLikeMapper.countByCommentId(vo.getId());

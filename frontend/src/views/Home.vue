@@ -65,7 +65,7 @@
 
       <div v-else-if="images.length === 0" class="empty-state">
         <el-icon><PictureFilled /></el-icon>
-        <p>还没有图片，点击上方按钮上传吧</p>
+        <p>还没有图片，点击上方按钮上传</p>
       </div>
 
       <div v-else class="card-grid">

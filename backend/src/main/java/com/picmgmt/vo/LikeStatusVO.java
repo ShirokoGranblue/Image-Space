@@ -7,9 +7,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CommentLikeStatusVO {
-
-    private Long commentId;
+public class LikeStatusVO {
+    private Long targetId;
     private Long likeCount;
     private Boolean likedByMe;
 }

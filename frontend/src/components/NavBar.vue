@@ -10,15 +10,15 @@
         <nav class="nav-links" role="navigation" aria-label="主导航">
           <router-link to="/home" class="nav-link" :class="{ active: $route.path === '/home' }">
             <el-icon class="nav-icon"><PictureFilled /></el-icon>
-            <span class="nav-label">我的图片</span>
+            <span class="nav-label">Images</span>
           </router-link>
           <router-link to="/square" class="nav-link" :class="{ active: $route.path === '/square' }">
             <el-icon class="nav-icon"><Grid /></el-icon>
-            <span class="nav-label">图片广场</span>
+            <span class="nav-label">Square</span>
           </router-link>
           <button v-if="isAdminDomain" class="nav-link particle-settings-btn" @click="toggleParticleSettings">
             <el-icon class="nav-icon"><MagicStick /></el-icon>
-            <span class="nav-label">粒子设置</span>
+            <span class="nav-label">Particle Settings</span>
           </button>
         </nav>
 
@@ -45,13 +45,13 @@
       <div class="mobile-drawer" v-if="mobileOpen" @keydown.escape="mobileOpen = false">
         <nav class="mobile-nav">
           <router-link to="/home" class="mobile-nav-item" :class="{ active: $route.path === '/home' }" @click="mobileOpen = false">
-            <el-icon><PictureFilled /></el-icon> 我的图片
+            <el-icon><PictureFilled /></el-icon> Images
           </router-link>
           <router-link to="/square" class="mobile-nav-item" :class="{ active: $route.path === '/square' }" @click="mobileOpen = false">
-            <el-icon><Grid /></el-icon> 图片广场
+            <el-icon><Grid /></el-icon> Square
           </router-link>
           <button v-if="isAdminDomain" class="mobile-nav-item particle-settings-btn" @click="mobileOpen = false; toggleParticleSettings()">
-            <el-icon><MagicStick /></el-icon> 粒子设置
+            <el-icon><MagicStick /></el-icon> Particle Settings
           </button>
         </nav>
         <div class="mobile-user" v-if="token">

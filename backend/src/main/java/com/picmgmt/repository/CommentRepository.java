@@ -2,8 +2,9 @@ package com.picmgmt.repository;
 
 import com.picmgmt.cache.CacheService;
 import com.picmgmt.entity.Comment;
-import com.picmgmt.mapper.CommentLikeMapper;
+import com.picmgmt.like.LikeTarget;
 import com.picmgmt.mapper.CommentMapper;
+import com.picmgmt.service.LikeService;
 import com.picmgmt.storage.StorageService;
 import com.picmgmt.vo.CommentVO;
 import lombok.RequiredArgsConstructor;
@@ -17,9 +18,9 @@ import java.util.List;
 public class CommentRepository {
 
     private final CommentMapper commentMapper;
-    private final CommentLikeMapper commentLikeMapper;
     private final StorageService storageService;
     private final CacheService cacheService;
+    private final LikeService likeService;
 
     private static final Duration TTL = Duration.ofMinutes(10);
     private static final String LIST_KEY_PREFIX = "comment:list:";
@@ -33,7 +34,7 @@ public class CommentRepository {
         Comment comment = commentMapper.selectById(commentId);
         commentMapper.deleteById(commentId);
         if (comment != null) {
-            commentLikeMapper.deleteByCommentId(commentId);
+            likeService.deleteAllByTarget(LikeTarget.COMMENT, commentId);
             cacheService.evict(LIST_KEY_PREFIX + comment.getImageId());
             if (comment.getImageKey() != null) {
                 storageService.delete("comments", comment.getImageKey());

@@ -5,12 +5,11 @@
       <header class="page-header">
         <div>
           <h1 class="page-title">Square</h1>
-          <p class="page-desc">发现公开图片</p>
         </div>
         <div class="square-toolbar">
           <el-input
             v-model="query.keyword"
-            placeholder="精确输入图片名称"
+            placeholder="输入图片名称"
             clearable
             @clear="onFilterChange"
             @keyup.enter="onFilterChange"
@@ -56,7 +55,7 @@
 
       <div v-else-if="images.length === 0" class="empty-state">
         <el-icon><PictureFilled /></el-icon>
-        <p>图片广场暂时没有内容</p>
+        <p>暂时没有内容</p>
       </div>
 
       <div v-else class="card-grid">

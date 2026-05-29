@@ -7,9 +7,10 @@ import com.picmgmt.dto.ImageQueryDTO;
 import com.picmgmt.image.ImageReadService;
 import com.picmgmt.image.ImageUpdateDTO;
 import com.picmgmt.image.ImageWriteService;
-import com.picmgmt.service.ImageLikeService;
+import com.picmgmt.like.LikeTarget;
+import com.picmgmt.service.LikeService;
 import com.picmgmt.vo.ImageVO;
-import com.picmgmt.vo.ImageLikeStatusVO;
+import com.picmgmt.vo.LikeStatusVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -31,7 +32,7 @@ public class ImageController {
 
     private final ImageWriteService imageWriteService;
     private final ImageReadService imageReadService;
-    private final ImageLikeService imageLikeService;
+    private final LikeService likeService;
 
     @Operation(summary = "上传图片")
     @PostMapping("/upload")
@@ -101,14 +102,14 @@ public class ImageController {
 
     @Operation(summary = "点赞图片")
     @PostMapping("/{id}/like")
-    public Result<ImageLikeStatusVO> like(@PathVariable Long id) {
-        return Result.ok(imageLikeService.like(id));
+    public Result<LikeStatusVO> like(@PathVariable Long id) {
+        return Result.ok(likeService.like(LikeTarget.IMAGE, id));
     }
 
     @Operation(summary = "取消点赞图片")
     @DeleteMapping("/{id}/like")
-    public Result<ImageLikeStatusVO> unlike(@PathVariable Long id) {
-        return Result.ok(imageLikeService.unlike(id));
+    public Result<LikeStatusVO> unlike(@PathVariable Long id) {
+        return Result.ok(likeService.unlike(LikeTarget.IMAGE, id));
     }
 
     private MediaType mediaType(String imageType) {

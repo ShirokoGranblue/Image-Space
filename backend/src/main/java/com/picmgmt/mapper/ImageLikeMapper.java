@@ -21,4 +21,7 @@ public interface ImageLikeMapper extends BaseMapper<ImageLike> {
 
     @Select("SELECT COUNT(*) FROM image_likes WHERE image_id = #{imageId} AND user_id = #{userId}")
     Long countByImageIdAndUserId(@Param("imageId") Long imageId, @Param("userId") Long userId);
+
+    @Delete("DELETE FROM image_likes WHERE image_id = #{imageId}")
+    int deleteByImageId(@Param("imageId") Long imageId);
 }
