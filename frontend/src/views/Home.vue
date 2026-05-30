@@ -422,9 +422,8 @@ async function saveEdit() {
   gap: 8px;
   align-items: center;
 }
-.category-row .el-select {
+.category-row :deep(.el-select) {
   flex: 1;
-  min-width: 0;
 }
 .category-row .el-button {
   flex-shrink: 0;
