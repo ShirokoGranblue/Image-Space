@@ -418,9 +418,16 @@ async function saveEdit() {
 
 .category-row {
   width: 100%;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 10px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.category-row .el-select {
+  flex: 1;
+  min-width: 0;
+}
+.category-row .el-button {
+  flex-shrink: 0;
 }
 
 .pagination-wrap {

@@ -260,9 +260,9 @@ a:hover { opacity: 0.6; }
 .el-input__inner::placeholder { color: var(--gray3); }
 
 .el-textarea__inner {
-  background: var(--white) !important; border-color: var(--gray2) !important;
+  background: var(--white) !important; border: 1px solid var(--gray3) !important;
   box-shadow: none !important; border-radius: var(--radius-sm) !important;
-  font-family: var(--font-body);
+  font-family: var(--font-body); min-height: 80px;
 }
 
 .el-dialog {

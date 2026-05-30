@@ -705,6 +705,7 @@ function highlightFromNotification() {
 }
 
 .category-row { display: flex; gap: 8px; align-items: center; }
+.category-row .el-select { flex: 1; min-width: 0; }
 .category-row .el-button { flex-shrink: 0; }
 .comment-img {
   width: 512px; height: 512px; max-width: 100%; border-radius: var(--radius-md); cursor: pointer;
