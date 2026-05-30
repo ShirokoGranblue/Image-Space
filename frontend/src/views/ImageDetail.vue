@@ -169,7 +169,7 @@
               <span class="comment-time">{{ formatTime(c.createTime) }}</span>
             </div>
             <p class="comment-content">{{ c.content }}</p>
-            <img v-if="c.imagePath" :src="`/api/comment/image/${c.id}`" class="comment-img" @click="viewCmtImg(`/api/comment/image/${c.id}`)" />
+            <img v-if="c.imageUrl" :src="c.imageUrl" class="comment-img" @click="viewCmtImg(c.imageUrl)" />
             <div class="comment-footer">
               <div class="comment-footer-left"></div>
               <div class="comment-footer-right">
