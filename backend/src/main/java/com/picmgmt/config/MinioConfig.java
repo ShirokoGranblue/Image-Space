@@ -16,6 +16,8 @@ public class MinioConfig {
     private String endpoint;
     private String accessKey;
     private String secretKey;
+    private String bucketName;
+    private String publicUrl;
 
     @Bean
     @ConditionalOnProperty(name = "storage.type", havingValue = "r2", matchIfMissing = true)
