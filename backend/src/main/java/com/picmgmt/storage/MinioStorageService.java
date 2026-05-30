@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
 import java.net.URI;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -54,6 +55,7 @@ public class MinioStorageService implements StorageService {
                             .object(objectKey)
                             .stream(is, bytes.length, -1)
                             .contentType(finalContentType)
+                            .headers(Map.of("Cache-Control", "no-cache, max-age=300"))
                             .build());
 
             log.debug("上传成功: {}/{} ({} bytes)", bucketName(), objectKey, bytes.length);
