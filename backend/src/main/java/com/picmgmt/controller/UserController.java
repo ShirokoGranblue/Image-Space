@@ -17,6 +17,7 @@ import com.picmgmt.service.OAuthService;
 import com.picmgmt.service.TurnstileService;
 import com.picmgmt.service.UserService;
 import com.picmgmt.storage.StorageService;
+import com.picmgmt.util.MediaUrlUtil;
 import com.picmgmt.vo.UserVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -51,6 +52,7 @@ public class UserController {
     private final CaptchaService captchaService;
     private final OAuthService oAuthService;
     private final TurnstileService turnstileService;
+    private final MediaUrlUtil mediaUrlUtil;
 
 private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "webp", "gif");
 
@@ -108,11 +110,11 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
         long userId = StpUtil.getLoginIdAsLong();
         String ext = FileUtil.extName(file.getOriginalFilename()).toLowerCase();
         if (!ALLOWED_EXT.contains(ext)) throw new IllegalArgumentException("仅支持图片格式");
-        String objectKey = userId + "/" + UUID.randomUUID() + "." + ext;
+        String objectKey = "avatars/" + UUID.randomUUID() + "." + ext;
         String mimeType = "image/" + (ext.equals("jpg") ? "jpeg" : ext);
         storageService.upload("avatars", objectKey, file.getBytes(), mimeType);
         userService.updateAvatar(userId, objectKey);
-        return Result.ok(userMediaUrl("avatar", userId));
+        return Result.ok(mediaUrlUtil.userMediaUrl(objectKey));
     }
 
     @Operation(summary = "上传背景")
@@ -121,11 +123,11 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
         long userId = StpUtil.getLoginIdAsLong();
         String ext = FileUtil.extName(file.getOriginalFilename()).toLowerCase();
         if (!ALLOWED_EXT.contains(ext)) throw new IllegalArgumentException("仅支持图片格式");
-        String objectKey = userId + "/" + UUID.randomUUID() + "." + ext;
+        String objectKey = "backgrounds/" + UUID.randomUUID() + "." + ext;
         String mimeType = "image/" + (ext.equals("jpg") ? "jpeg" : ext);
         storageService.upload("backgrounds", objectKey, file.getBytes(), mimeType);
         userService.updateBackground(userId, objectKey);
-        return Result.ok(userMediaUrl("background", userId));
+        return Result.ok(mediaUrlUtil.userMediaUrl(objectKey));
     }
 
     @Operation(summary = "下载头像")
@@ -242,10 +244,6 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
             throw new BusinessException(ErrorCode.USER_NOT_FOUND);
         }
         return user;
-    }
-
-    private String userMediaUrl(String type, Long userId) {
-        return "/api/user/" + type + "/" + userId;
     }
 
     private String clientIp(HttpServletRequest request) {

@@ -66,7 +66,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { getImageDownloadUrl } from '../utils/imageRequests'
+import { getImageDownloadUrl, getFallbackUrl } from '../utils/imageRequests'
 
 const props = defineProps({
   image: { type: Object, required: true },
@@ -81,9 +81,13 @@ const router = useRouter()
 const hover = ref(false)
 const hoverLocked = ref(false)
 const imgFailed = ref(false)
+const fallbackTried = ref(false)
 
 const imageSrc = computed(() => {
-  if (imgFailed.value) return ''
+  if (imgFailed.value) {
+    if (fallbackTried.value) return ''
+    return getFallbackUrl(props.image)
+  }
   return getImageDownloadUrl(props.image)
 })
 
@@ -109,7 +113,17 @@ function onPopHide() {
   hover.value = false
 }
 function handleImgError() {
-  imgFailed.value = true
+  if (fallbackTried.value) {
+    return
+  }
+  const fallback = getFallbackUrl(props.image)
+  if (fallback && getImageDownloadUrl(props.image) !== fallback) {
+    fallbackTried.value = true
+    imgFailed.value = false
+  } else {
+    imgFailed.value = true
+    fallbackTried.value = true
+  }
 }
 function goDetail() {
   if (hoverLocked.value) return

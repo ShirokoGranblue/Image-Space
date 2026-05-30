@@ -39,7 +39,7 @@ public class CommentController {
         String ext = FileUtil.extName(file.getOriginalFilename()).toLowerCase();
         if (!ALLOWED_EXT.contains(ext)) throw new IllegalArgumentException("仅支持 JPG/PNG/WEBP 格式");
 
-        String objectKey = UUID.randomUUID() + "." + ext;
+        String objectKey = "comments/" + UUID.randomUUID() + "." + ext;
         String mimeType = "image/" + (ext.equals("jpg") ? "jpeg" : ext);
         storageService.upload("comments", objectKey, file.getBytes(), mimeType);
         return Result.ok(objectKey);

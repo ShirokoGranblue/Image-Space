@@ -57,6 +57,11 @@ public class LocalStorageService implements StorageService {
     }
 
     @Override
+    public String getPresignedUrl(String bucket, String objectKey, java.time.Duration expiry) {
+        return "/api/files/" + bucket + "/" + objectKey;
+    }
+
+    @Override
     public FileMeta getFileMeta(String bucket, String objectKey) {
         try {
             Path path = Paths.get(basePath, bucket, objectKey);

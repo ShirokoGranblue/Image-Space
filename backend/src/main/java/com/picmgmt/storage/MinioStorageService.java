@@ -73,11 +73,16 @@ public class MinioStorageService implements StorageService {
 
     @Override
     public String getAccessUrl(String bucket, String objectKey) {
+        return getPresignedUrl(bucket, objectKey, java.time.Duration.ofHours(1));
+    }
+
+    @Override
+    public String getPresignedUrl(String bucket, String objectKey, java.time.Duration expiry) {
         try {
             return minioClient.getPresignedObjectUrl(GetPresignedObjectUrlArgs.builder()
                     .bucket(bucket).object(objectKey)
                     .method(io.minio.http.Method.GET)
-                    .expiry(1, TimeUnit.HOURS)
+                    .expiry((int) expiry.getSeconds(), TimeUnit.SECONDS)
                     .build());
         } catch (Exception e) {
             log.warn("生成预签名 URL 失败: {}/{}", bucket, objectKey);

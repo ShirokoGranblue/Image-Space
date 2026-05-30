@@ -16,5 +16,4 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .allowCredentials(true);
     }
 
-    // 不再需要静态资源映射 /upload/**，所有图片以 Base64 Data URL 存储在数据库中
 }

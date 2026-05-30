@@ -10,6 +10,14 @@ export function getImageDownloadUrl(imageOrId) {
   return `/api/image/download/${imageOrId}`
 }
 
+export function getFallbackUrl(imageOrId) {
+  if (!imageOrId) return ''
+  if (typeof imageOrId === 'object') {
+    return imageOrId.id ? `/api/image/download/${imageOrId.id}` : ''
+  }
+  return `/api/image/download/${imageOrId}`
+}
+
 export function buildImageListParams(query) {
   const sortField = query.sortField || 'upload_time'
   return {

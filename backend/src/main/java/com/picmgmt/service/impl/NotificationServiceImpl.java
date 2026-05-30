@@ -30,6 +30,7 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationMapper notificationMapper;
     private final UserMapper userMapper;
     private final StorageService storageService;
+    private final MediaUrlUtil mediaUrlUtil;
 
     @Override
     @Transactional
@@ -139,7 +140,7 @@ public class NotificationServiceImpl implements NotificationService {
             String displayName = actor.getDisplayName();
             vo.setActorName(displayName != null && !displayName.isBlank() ? displayName : actor.getUsername());
             if (actor.getAvatarKey() != null && !actor.getAvatarKey().isBlank()) {
-                vo.setActorAvatarUrl(MediaUrlUtil.userMediaUrl("avatar", actor.getId(), actor.getAvatarKey()));
+                vo.setActorAvatarUrl(mediaUrlUtil.userMediaUrl(actor.getAvatarKey()));
             } else if (actor.getAvatar() != null && !actor.getAvatar().isBlank()) {
                 vo.setActorAvatarUrl(actor.getAvatar());
             }
@@ -147,7 +148,7 @@ public class NotificationServiceImpl implements NotificationService {
             vo.setActorName("已注销用户");
         }
         if (vo.getImageStorageKey() != null && !vo.getImageStorageKey().isBlank()) {
-            vo.setImagePreviewUrl(MediaUrlUtil.imageDownloadUrl(vo.getImageId(), vo.getImageStorageKey()));
+            vo.setImagePreviewUrl(storageService.getPresignedUrl("images", vo.getImageStorageKey(), java.time.Duration.ofMinutes(5)));
         } else if (vo.getImageId() != null) {
             vo.setImagePreviewUrl("/api/image/download/" + vo.getImageId());
         }

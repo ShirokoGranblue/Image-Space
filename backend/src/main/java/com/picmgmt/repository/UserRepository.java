@@ -19,6 +19,7 @@ public class UserRepository {
     private final UserMapper userMapper;
     private final StorageService storageService;
     private final CacheService cacheService;
+    private final MediaUrlUtil mediaUrlUtil;
 
     private static final Duration TTL = Duration.ofMinutes(30);
     private static final String KEY_PREFIX = "user:entity:";
@@ -52,10 +53,10 @@ public class UserRepository {
         vo.setCreateTime(user.getCreateTime());
 
         String avatarUrl = user.getAvatarKey() != null
-                ? MediaUrlUtil.userMediaUrl("avatar", user.getId(), user.getAvatarKey())
+                ? mediaUrlUtil.userMediaUrl(user.getAvatarKey())
                 : user.getAvatar();
         String backgroundUrl = user.getBackgroundKey() != null
-                ? MediaUrlUtil.userMediaUrl("background", user.getId(), user.getBackgroundKey())
+                ? mediaUrlUtil.userMediaUrl(user.getBackgroundKey())
                 : user.getBackground();
         vo.setAvatar(avatarUrl);
         vo.setAvatarUrl(avatarUrl);

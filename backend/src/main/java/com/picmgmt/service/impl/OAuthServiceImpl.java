@@ -176,7 +176,7 @@ public class OAuthServiceImpl implements OAuthService {
             byte[] bytes = HttpUtil.downloadBytes(avatarUrl);
             String ext = FileUtil.extName(avatarUrl);
             if (ext == null || ext.length() > 5) ext = "png";
-            String objectKey = userId + "/oauth_avatar." + ext;
+            String objectKey = "avatars/oauth_" + userId + "." + ext;
             String mimeType = "image/" + (ext.equals("jpg") ? "jpeg" : ext);
             storageService.upload("avatars", objectKey, bytes, mimeType);
             return objectKey;

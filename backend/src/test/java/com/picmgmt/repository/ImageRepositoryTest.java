@@ -13,7 +13,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import java.time.Duration;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.any;
 
 @ExtendWith(MockitoExtension.class)
 class ImageRepositoryTest {
@@ -25,7 +29,7 @@ class ImageRepositoryTest {
     @Mock private CacheService cacheService;
 
     @Test
-    void toVO_shouldExposeVersionedDownloadUrlFromStorageKey() {
+    void toVO_shouldUsePresignedUrlFromStorageService() {
         ImageRepository repository = new ImageRepository(
                 imageMapper, userMapper, categoryMapper, storageService, cacheService);
         Image image = new Image();
@@ -33,9 +37,13 @@ class ImageRepositoryTest {
         image.setUserId(4L);
         image.setStorageKey("4/summer.png");
 
+        String presignedUrl = "https://cdn.image-space.app/images/4/summer.png?X-Amz-Expires=300&signature=abc";
+        when(storageService.getPresignedUrl(eq("images"), eq("4/summer.png"), any(Duration.class)))
+                .thenReturn(presignedUrl);
+
         ImageVO vo = repository.toVO(image);
 
-        assertEquals("/api/image/download/7?v=3864dd6014f3", vo.getImageUrl());
-        verifyNoInteractions(storageService);
+        assertEquals(presignedUrl, vo.getImageUrl());
+        verify(storageService).getPresignedUrl(eq("images"), eq("4/summer.png"), any(Duration.class));
     }
 }

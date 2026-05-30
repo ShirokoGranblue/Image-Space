@@ -3,10 +3,17 @@ package com.picmgmt.util;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
-public final class MediaUrlUtil {
+@Component
+public class MediaUrlUtil {
 
-    private MediaUrlUtil() {
+    @Value("${storage.r2.public-url:https://cdn.image-space.app}")
+    private String storagePublicUrl;
+
+    public String getPublicUrl() {
+        return storagePublicUrl.replaceAll("/$", "");
     }
 
     public static String withVersion(String url, String versionSource) {
@@ -17,18 +24,20 @@ public final class MediaUrlUtil {
         return url + separator + "v=" + versionToken(versionSource);
     }
 
-    public static String imageDownloadUrl(Long imageId, String storageKey) {
-        if (imageId == null) {
+    public String imageDownloadUrl(String storageKey) {
+        if (storageKey == null || storageKey.isBlank()) {
             return null;
         }
-        return withVersion("/api/image/download/" + imageId, storageKey);
+        String url = getPublicUrl() + "/" + storageKey.replaceAll("^/", "");
+        return withVersion(url, storageKey);
     }
 
-    public static String userMediaUrl(String type, Long userId, String storageKey) {
-        if (type == null || type.isBlank() || userId == null) {
+    public String userMediaUrl(String storageKey) {
+        if (storageKey == null || storageKey.isBlank()) {
             return null;
         }
-        return withVersion("/api/user/" + type + "/" + userId, storageKey);
+        String url = getPublicUrl() + "/" + storageKey.replaceAll("^/", "");
+        return withVersion(url, storageKey);
     }
 
     private static String versionToken(String value) {

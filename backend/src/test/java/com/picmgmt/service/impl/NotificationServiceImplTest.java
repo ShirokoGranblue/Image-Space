@@ -8,6 +8,7 @@ import com.picmgmt.entity.User;
 import com.picmgmt.mapper.NotificationMapper;
 import com.picmgmt.mapper.UserMapper;
 import com.picmgmt.storage.StorageService;
+import com.picmgmt.util.MediaUrlUtil;
 import com.picmgmt.vo.NotificationVO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +18,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.Duration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
@@ -28,13 +31,14 @@ class NotificationServiceImplTest {
     @Mock private NotificationMapper notificationMapper;
     @Mock private UserMapper userMapper;
     @Mock private StorageService storageService;
+    @Mock private MediaUrlUtil mediaUrlUtil;
 
     private NotificationServiceImpl service;
     private MockedStatic<StpUtil> stpMock;
 
     @BeforeEach
     void setUp() {
-        service = new NotificationServiceImpl(notificationMapper, userMapper, storageService);
+        service = new NotificationServiceImpl(notificationMapper, userMapper, storageService, mediaUrlUtil);
         stpMock = mockStatic(StpUtil.class);
     }
 
@@ -97,13 +101,19 @@ class NotificationServiceImplTest {
         actor.setAvatarKey("2/avatar.png");
         when(userMapper.selectById(2L)).thenReturn(actor);
 
+        String expectedAvatarUrl = "https://cdn.image-space.app/2/avatar.png?v=e3be9a8665ae";
+        String expectedPreviewUrl = "https://cdn.image-space.app/images/1/summer.jpg?X-Amz-Expires=300&sig=xyz";
+        when(mediaUrlUtil.userMediaUrl("2/avatar.png")).thenReturn(expectedAvatarUrl);
+        when(storageService.getPresignedUrl(eq("images"), eq("1/summer.jpg"), any(Duration.class)))
+                .thenReturn(expectedPreviewUrl);
+
         Page<NotificationVO> result = service.listMine(1, 20, false);
 
         NotificationVO resultVo = result.getRecords().get(0);
         assertEquals("Alice", resultVo.getActorName());
-        assertEquals("/api/user/avatar/2?v=e3be9a8665ae", resultVo.getActorAvatarUrl());
-        assertEquals("/api/image/download/7?v=f38dd8785366", resultVo.getImagePreviewUrl());
+        assertEquals(expectedAvatarUrl, resultVo.getActorAvatarUrl());
+        assertEquals(expectedPreviewUrl, resultVo.getImagePreviewUrl());
         assertEquals("/image/7?notificationId=9", resultVo.getTargetUrl());
-        verifyNoInteractions(storageService);
+        verify(storageService).getPresignedUrl(eq("images"), eq("1/summer.jpg"), any(Duration.class));
     }
 }
