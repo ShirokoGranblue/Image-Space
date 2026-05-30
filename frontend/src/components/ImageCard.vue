@@ -19,7 +19,7 @@
         v-if="showActions"
         class="card-actions"
         trigger="click"
-        @command="(cmd) => emit(cmd, image.id)"
+        @command="(cmd) => emit(cmd, image)"
         @visible-change="(v) => v ? onPopShow() : onPopHide()"
         popper-class="card-action-dropdown"
         @click.stop="() => {}"
