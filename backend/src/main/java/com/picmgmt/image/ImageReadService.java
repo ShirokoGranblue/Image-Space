@@ -32,15 +32,6 @@ public class ImageReadService {
     private static final Set<String> ALLOWED_SQUARE_SORT_FIELDS = Set.of("upload_time", "file_size", "image_name");
     private static final Set<Integer> ALLOWED_PAGE_SIZES = Set.of(30, 50, 100);
 
-    public ImageReadService(ImageRepository imageRepository, ImageMapper imageMapper, ImageLikeMapper imageLikeMapper,
-                            ImagePermissionService permissionService, StorageService storageService) {
-        this.imageRepository = imageRepository;
-        this.imageMapper = imageMapper;
-        this.imageLikeMapper = imageLikeMapper;
-        this.permissionService = permissionService;
-        this.storageService = storageService;
-    }
-    
     public ImageVO getById(Long id) {
         Image image = imageRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));

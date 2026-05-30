@@ -31,14 +31,6 @@ public class ImageRepository {
     private static final String ENTITY_KEY_PREFIX = "image:entity:";
     private static final String PAGE_KEY_PREFIX = "image:page:";
 
-    public ImageRepository(ImageMapper imageMapper, UserMapper userMapper, CategoryMapper categoryMapper,
-                           StorageService storageService, CacheService cacheService) {
-        this.imageMapper = imageMapper;
-        this.userMapper = userMapper;
-        this.categoryMapper = categoryMapper;
-        this.storageService = storageService;
-        this.cacheService = cacheService;
-    }
     public Optional<Image> findById(Long id) {
         String key = ENTITY_KEY_PREFIX + id;
         return cacheService.get(key, Image.class)
