@@ -1,25 +1,18 @@
 <template>
-  <el-header class="navbar">
+  <header class="navbar" ref="navbarEl">
     <div class="navbar-inner">
       <div class="navbar-left">
-        <router-link to="/home" class="logo" aria-label="ImageSpace 首页">ImageSpace</router-link>
+        <router-link to="/home" class="logo" aria-label="ImageSpace 首页">IMAGESPACE</router-link>
       </div>
 
-      <!-- Desktop nav -->
       <div class="navbar-right">
         <nav class="nav-links" role="navigation" aria-label="主导航">
           <router-link to="/home" class="nav-link" :class="{ active: $route.path === '/home' }">
-            <el-icon class="nav-icon"><PictureFilled /></el-icon>
-            <span class="nav-label">Images</span>
+            Images
           </router-link>
           <router-link to="/square" class="nav-link" :class="{ active: $route.path === '/square' }">
-            <el-icon class="nav-icon"><Grid /></el-icon>
-            <span class="nav-label">Square</span>
+            Square
           </router-link>
-          <button v-if="isAdminDomain" class="nav-link particle-settings-btn" @click="toggleParticleSettings">
-            <el-icon class="nav-icon"><MagicStick /></el-icon>
-            <span class="nav-label">Particle Settings</span>
-          </button>
         </nav>
 
         <div class="user-section" v-if="token">
@@ -31,28 +24,21 @@
         </div>
         <button v-if="token" class="logout-btn" @click="handleLogout" aria-label="退出登录">Exit</button>
 
-        <!-- Mobile hamburger -->
-        <button class="mobile-toggle" @click="mobileOpen = !mobileOpen" :aria-expanded="mobileOpen" aria-label="菜单"
-          @keydown.escape="mobileOpen = false">
+        <button class="mobile-toggle" @click="mobileOpen = !mobileOpen" :aria-expanded="mobileOpen" aria-label="菜单">
           <span class="hamburger-line" :class="{ open: mobileOpen }"></span>
         </button>
-
       </div>
     </div>
 
-    <!-- Mobile drawer -->
     <transition name="slide-down">
-      <div class="mobile-drawer" v-if="mobileOpen" @keydown.escape="mobileOpen = false">
+      <div class="mobile-drawer" v-if="mobileOpen">
         <nav class="mobile-nav">
           <router-link to="/home" class="mobile-nav-item" :class="{ active: $route.path === '/home' }" @click="mobileOpen = false">
-            <el-icon><PictureFilled /></el-icon> Images
+            Images
           </router-link>
           <router-link to="/square" class="mobile-nav-item" :class="{ active: $route.path === '/square' }" @click="mobileOpen = false">
-            <el-icon><Grid /></el-icon> Square
+            Square
           </router-link>
-          <button v-if="isAdminDomain" class="mobile-nav-item particle-settings-btn" @click="mobileOpen = false; toggleParticleSettings()">
-            <el-icon><MagicStick /></el-icon> Particle Settings
-          </button>
         </nav>
         <div class="mobile-user" v-if="token">
           <NotificationBell :active="!!token" />
@@ -62,19 +48,16 @@
         </div>
       </div>
     </transition>
-  </el-header>
+  </header>
 </template>
 
 <script setup>
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../store/user'
 import { logout } from '../api/user'
 import { ElMessage } from 'element-plus'
-import { useParticles } from '../composables/useParticles'
 import NotificationBell from './NotificationBell.vue'
-
-const { toggleSettings: toggleParticleSettings } = useParticles()
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -82,13 +65,24 @@ const userStore = useUserStore()
 const token = computed(() => userStore.token)
 const userInfo = computed(() => userStore.userInfo)
 const mobileOpen = ref(false)
-const isAdminDomain = window.location.hostname === 'admin.image-space.app' || window.location.hostname === 'localhost'
+const navbarEl = ref(null)
 
 onMounted(() => {
   if (userStore.token && !userStore.userInfo) {
     userStore.fetchUserInfo()
   }
+  window.addEventListener('scroll', onScroll)
 })
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', onScroll)
+})
+
+function onScroll() {
+  if (navbarEl.value) {
+    navbarEl.value.classList.toggle('scrolled', window.scrollY > 60)
+  }
+}
 
 function goProfile() {
   router.push(`/profile/${userStore.userInfo?.id || 0}`)
@@ -107,20 +101,23 @@ async function handleLogout() {
 
 <style scoped>
 .navbar {
-  background: var(--bg-base);
-  border-bottom: 1px solid var(--border-subtle);
-  padding: 0;
-  height: 60px;
-  position: sticky;
-  top: 0;
+  position: fixed;
+  top: 0; left: 0; right: 0;
   z-index: 100;
+  padding: 1.2rem 2.5rem;
+  border-bottom: 1px solid transparent;
+  transition: all 0.4s ease;
+  background: rgba(250,250,250,0);
+}
+.navbar.scrolled {
+  background: rgba(250,250,250,0.92);
+  border-color: var(--gray2);
+  backdrop-filter: blur(12px);
 }
 
 .navbar-inner {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 0 28px;
-  height: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -128,11 +125,10 @@ async function handleLogout() {
 
 .logo {
   font-family: var(--font-display);
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-size: 1.6rem;
+  letter-spacing: 0.05em;
+  color: var(--black);
   text-decoration: none;
-  letter-spacing: -0.01em;
   transition: opacity 0.2s;
 }
 .logo:hover { opacity: 0.6; }
@@ -145,42 +141,22 @@ async function handleLogout() {
 
 .nav-links {
   display: flex;
-  gap: 0;
+  gap: 2rem;
 }
 
 .nav-link {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--gray3);
   text-decoration: none;
-  position: relative;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: color 0.2s;
+  padding: 0;
 }
-.nav-link::after {
-  content: '';
-  position: absolute;
-  bottom: 0; left: 14px; right: 14px;
-  height: 2px;
-  background: var(--text-primary);
-  transform: scaleX(0);
-  transition: transform 0.2s var(--ease-out);
-}
-.nav-link:hover::after,
-.nav-link.active::after { transform: scaleX(1); }
-
-.nav-icon { font-size: 16px; color: var(--text-muted); transition: color 0.2s; }
-.nav-label { font-size: 13px; font-weight: 500; color: var(--text-muted); transition: color 0.2s; }
-.nav-link.active .nav-label,
-.nav-link.active .nav-icon { color: var(--text-primary); }
-.nav-link:hover .nav-label,
-.nav-link:hover .nav-icon { color: var(--text-primary); }
-
-.particle-settings-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: inherit;
+.nav-link:hover,
+.nav-link.active {
+  color: var(--black);
 }
 
 .user-section {
@@ -193,7 +169,7 @@ async function handleLogout() {
 .username {
   font-size: 13px;
   font-weight: 500;
-  color: var(--text-secondary);
+  color: var(--gray4);
   max-width: 100px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -201,15 +177,17 @@ async function handleLogout() {
 }
 
 .logout-btn {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 500;
-  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gray3);
   background: none;
-  border: 1px solid var(--border-visible);
-  padding: 5px 14px;
+  border: 1px solid var(--gray2);
+  padding: 0.45rem 1rem;
   cursor: pointer;
   transition: all 0.2s;
-  letter-spacing: 0;
+  font-family: var(--font-body);
 }
 .logout-btn:hover { color: var(--danger); border-color: var(--danger); }
 
@@ -227,7 +205,7 @@ async function handleLogout() {
 .hamburger-line::after {
   display: block;
   width: 20px; height: 2px;
-  background: var(--text-primary);
+  background: var(--black);
   transition: all 0.25s var(--ease-out);
 }
 .hamburger-line { position: relative; }
@@ -244,9 +222,9 @@ async function handleLogout() {
 
 .mobile-drawer {
   position: absolute;
-  top: 60px; left: 0; right: 0;
-  background: var(--bg-base);
-  border-bottom: 1px solid var(--border-subtle);
+  top: 100%; left: 0; right: 0;
+  background: var(--white);
+  border-bottom: 1px solid var(--gray2);
   padding: 12px 24px 20px;
   z-index: 99;
 }
@@ -255,22 +233,24 @@ async function handleLogout() {
   display: flex; flex-direction: column; gap: 2px;
 }
 .mobile-nav-item {
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center;
   padding: 12px;
   text-decoration: none;
-  color: var(--text-secondary);
-  font-size: 14px; font-weight: 500;
+  color: var(--gray4);
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: 0.04em;
   transition: color 0.15s;
 }
 .mobile-nav-item:hover,
-.mobile-nav-item.active { color: var(--text-primary); }
+.mobile-nav-item.active { color: var(--black); }
 
 .mobile-user {
   display: flex; align-items: center; gap: 8px;
   padding: 12px 0 0; margin-top: 8px;
-  border-top: 1px solid var(--border-subtle);
+  border-top: 1px solid var(--gray2);
 }
-.mobile-user span { flex: 1; font-size: 13px; font-weight: 500; color: var(--text-primary); }
+.mobile-user span { flex: 1; font-size: 13px; font-weight: 500; color: var(--black); }
 
 .slide-down-enter-active,
 .slide-down-leave-active { transition: all 0.2s var(--ease-out); }
@@ -278,7 +258,7 @@ async function handleLogout() {
 .slide-down-leave-to { opacity: 0; transform: translateY(-8px); }
 
 @media (max-width: 768px) {
-  .navbar-inner { padding: 0 20px; }
+  .navbar { padding: 1rem 1.5rem; }
   .nav-links { display: none; }
   .user-section { display: none; }
   .logout-btn { display: none; }
@@ -286,8 +266,7 @@ async function handleLogout() {
 }
 
 @media (max-width: 480px) {
-  .navbar { height: 52px; }
-  .mobile-drawer { top: 52px; }
-  .logo { font-size: 20px; }
+  .navbar { padding: 0.8rem 1rem; }
+  .logo { font-size: 1.3rem; }
 }
 </style>

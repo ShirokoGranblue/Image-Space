@@ -44,29 +44,6 @@ services:
     networks:
       - picture_management
 
-  minio:
-    image: minio/minio:latest
-    container_name: minio
-    restart: unless-stopped
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me}
-      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
-      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-change-me}
-    volumes:
-      - minio_data:/data
-    command: server /data --console-address :9001
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - picture_management
-
   backend:
     build: ./backend
     container_name: backend
@@ -77,8 +54,10 @@ services:
       SPRING_PROFILES_ACTIVE: docker
       DB_USERNAME: ${DB_USERNAME:-root}
       DB_PASSWORD: ${DB_PASSWORD:-change-me}
-      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
-      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      R2_ACCESS_KEY: ${R2_ACCESS_KEY:-}
+      R2_SECRET_KEY: ${R2_SECRET_KEY:-}
+      R2_ENDPOINT: ${R2_ENDPOINT:-}
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME:-}
       APP_PUBLIC_BASE_URL: ${APP_PUBLIC_BASE_URL:-https://image-space.app}
       APP_FRONTEND_BASE_URL: ${APP_FRONTEND_BASE_URL:-https://image-space.app}
       APP_WEBHOOK_PATH: ${APP_WEBHOOK_PATH:-/api/webhook}
@@ -88,18 +67,16 @@ services:
       MAIL_PASSWORD: ${MAIL_PASSWORD:-your_smtp_password}
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-your_github_client_id}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-your_github_client_secret}
-      GITHUB_REDIRECT_URI: ${GITHUB_REDIRECT_URI:-https://image-space.app/api/user/oauth/github/callback}
+      GITHUB_REDIRECT_URI: ${GITHUB_REDIRECT_URI:-}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-your_google_client_id}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-your_google_client_secret}
-      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-https://image-space.app/api/user/oauth/google/callback}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-}
       TURNSTILE_ENABLED: ${TURNSTILE_ENABLED:-false}
       TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
     depends_on:
       mysql:
         condition: service_healthy
       redis:
-        condition: service_healthy
-      minio:
         condition: service_healthy
     networks:
       - picture_management
@@ -135,4 +112,3 @@ networks:
 volumes:
   mysql_data:
   redis_data:
-  minio_data:

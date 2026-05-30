@@ -3,7 +3,7 @@
     <!-- Left: Form -->
     <div class="auth-form-side">
       <div class="auth-form-wrap">
-        <router-link to="/home" class="auth-logo">ImageSpace</router-link>
+        <router-link to="/home" class="auth-logo">IMAGESPACE</router-link>
         <h1 class="auth-title">创建账号</h1>
 
         <el-form :model="form" :rules="rules" ref="formRef" label-position="top" class="auth-form" @submit.prevent="handleRegister">
@@ -155,7 +155,6 @@ function resetTurnstile() {
   min-height: 100dvh;
 }
 
-/* ── Left: Form ── */
 .auth-form-side {
   width: 42%;
   max-width: 500px;
@@ -163,7 +162,8 @@ function resetTurnstile() {
   align-items: center;
   justify-content: center;
   padding: 48px 40px;
-  background: var(--bg-base);
+  background: var(--white);
+  overflow-y: auto;
 }
 
 .auth-form-wrap {
@@ -175,138 +175,111 @@ function resetTurnstile() {
 .auth-logo {
   font-family: var(--font-display);
   font-size: 26px;
-  font-weight: 600;
-  color: var(--text-primary);
-  letter-spacing: -0.01em;
+  letter-spacing: 0.05em;
+  color: var(--black);
+  text-decoration: none;
 }
 
 .auth-title {
   font-family: var(--font-display);
-  font-size: 28px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 8px 0 32px;
-  letter-spacing: -0.01em;
+  font-size: 32px;
+  font-weight: 400;
+  color: var(--black);
+  margin: 4px 0 32px;
+  letter-spacing: 0.02em;
 }
 
-.auth-form {
-  margin-top: 0;
-}
+.auth-form { margin-top: 0; }
 
 .auth-form :deep(.el-form-item__label) {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-muted) !important;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gray3) !important;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   padding-bottom: 4px;
 }
 
 .auth-submit {
   width: 100%;
   height: 46px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: -0.01em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   margin-top: 4px;
 }
 
 .auth-footer {
   text-align: center;
-  color: var(--text-muted);
+  color: var(--gray3);
   font-size: 13px;
   margin-top: 24px;
 }
-
 .auth-footer a {
-  color: var(--text-primary);
-  font-weight: 500;
+  color: var(--black);
+  font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
-/* ── Right: Diagonal gallery ── */
+/* Right: Diagonal gallery */
 .auth-gallery-side {
   width: 58%;
   position: relative;
   overflow: hidden;
-  background: var(--bg-surface);
-  border-left: 1px solid var(--border-subtle);
+  background: var(--black);
 }
-
 .gallery-outer {
   position: absolute;
   inset: -10%;
   overflow: hidden;
 }
-
 .gallery-inner {
   position: absolute;
   inset: -20%;
-  transform: rotate(15deg);
+  transform: rotate(12deg);
 }
-
 .gallery-track {
   animation: scrollDiagonal 80s linear infinite;
 }
-
 .gallery-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
   padding: 8px;
 }
-
 .gallery-img {
   width: 100%;
   aspect-ratio: 1;
   object-fit: cover;
-  filter: grayscale(30%);
-  transition: filter 0.4s;
+  filter: grayscale(100%);
+  transition: filter 0.5s ease;
 }
-
-.gallery-img:hover {
-  filter: grayscale(0%);
-}
+.gallery-img:hover { filter: grayscale(0%); }
 
 @keyframes scrollDiagonal {
   0% { transform: translateY(0); }
   100% { transform: translateY(-50%); }
 }
 
-/* ── Mobile ── */
 @media (max-width: 768px) {
-  .auth-page {
-    flex-direction: column;
-  }
-
+  .auth-page { flex-direction: column; }
   .auth-gallery-side {
     width: 100%;
-    height: 180px;
+    height: 160px;
     order: 1;
     border-left: none;
-    border-bottom: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--gray2);
   }
-
-  .gallery-outer {
-    inset: -30%;
-  }
-
-  .gallery-inner {
-    inset: -40%;
-    transform: rotate(12deg);
-  }
-
-  .gallery-grid {
-    grid-template-columns: repeat(6, 1fr);
-    gap: 4px;
-  }
-
+  .gallery-outer { inset: -30%; }
+  .gallery-inner { inset: -40%; transform: rotate(12deg); }
+  .gallery-grid { grid-template-columns: repeat(6, 1fr); gap: 4px; }
   .auth-form-side {
     width: 100%;
     max-width: none;
     order: 2;
-    padding: 32px 24px;
+    padding: 28px 24px;
   }
 }
 </style>

@@ -16,10 +16,10 @@
           multiple
           drag
         >
-          <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
-          <div class="el-upload__text">将图片拖到此处，或<em>点击上传</em></div>
+          <el-icon class="upload-icon"><UploadFilled /></el-icon>
+          <div class="upload-text">将图片拖到此处，或<em>点击上传</em></div>
           <template #tip>
-            <div class="el-upload__tip">支持 JPG/PNG/WEBP/GIF，单文件 ≤ 20MB</div>
+            <div class="upload-tip">支持 JPG/PNG/WEBP/GIF，单文件 ≤ 20MB</div>
           </template>
         </el-upload>
       </el-form-item>
@@ -259,7 +259,7 @@ defineExpose({ open })
 }
 
 .upload-dialog :deep(.el-dialog) {
-  border-radius: 16px;
+  border-radius: 2px;
 }
 
 .upload-area {
@@ -270,17 +270,41 @@ defineExpose({ open })
 .upload-area :deep(.el-upload-dragger) {
   width: 100%;
   box-sizing: border-box;
-  padding: 30px 18px;
-  background: linear-gradient(180deg, #fbfdff 0%, var(--bg-elevated) 100%);
-  border: 1px dashed var(--border-visible);
-  border-radius: 14px;
-  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+  padding: 36px 18px;
+  background: var(--gray1);
+  border: 2px dashed var(--gray2);
+  border-radius: 2px;
+  transition: border-color 0.2s ease, background 0.2s ease;
 }
 
 .upload-area :deep(.el-upload-dragger:hover) {
   border-color: var(--accent);
-  background: #fff;
-  transform: translateY(-1px);
+  background: var(--gray1);
+}
+
+.upload-icon {
+  font-size: 40px;
+  color: var(--gray3);
+  margin-bottom: 8px;
+}
+
+.upload-text {
+  color: var(--gray3);
+  font-family: 'DM Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+}
+.upload-text em {
+  color: var(--accent);
+  font-style: normal;
+  font-weight: 500;
+}
+
+.upload-tip {
+  color: var(--gray3);
+  font-family: 'DM Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: 12px;
+  margin-top: 4px;
 }
 
 .upload-area :deep(.el-upload-list) {
@@ -327,7 +351,7 @@ defineExpose({ open })
   display: grid;
   gap: 10px;
   padding: 10px;
-  border-radius: 12px;
+  border-radius: 2px;
   background: var(--bg-elevated);
   border: 1px solid var(--border-subtle);
 }

@@ -48,7 +48,7 @@
             <div class="meta-item meta-tags">
               <span class="meta-label"><el-icon><CollectionTag /></el-icon> 标签</span>
               <span class="meta-value detail-tag-list" v-if="tagList.length">
-                <el-tag v-for="(tag, i) in tagList" :key="i" size="small" :type="tagTypes[i % tagTypes.length]" effect="plain">{{ tag }}</el-tag>
+                <el-tag v-for="(tag, i) in tagList" :key="i" size="small" effect="plain" class="flat-tag">{{ tag }}</el-tag>
               </span>
               <span v-else class="meta-placeholder">无标签</span>
             </div>
@@ -62,17 +62,26 @@
           </div>
 
           <div id="like-activity" class="action-bar" :class="{ 'notification-highlight': highlightedTarget === 'like' }">
-            <el-button :type="image.likedByMe ? 'danger' : 'default'" @click="handleToggleLike" :loading="liking">
+            <el-button :class="{ 'liked': image.likedByMe }" @click="handleToggleLike" :loading="liking">
               <el-icon><StarFilled /></el-icon>
               {{ image.likedByMe ? '已点赞' : '点赞' }}
             </el-button>
             <span class="like-count-text">{{ image.likeCount || 0 }} 次点赞</span>
-            <el-button v-if="canEdit" type="warning" @click="openEditDialog">
-              <el-icon><Edit /></el-icon> 编辑信息
-            </el-button>
             <el-button type="primary" class="download-btn" @click="handleDownload" :loading="downloading">
               <el-icon><Download /></el-icon> 下载图片
             </el-button>
+            <el-dropdown v-if="canEdit" trigger="click" class="more-actions">
+              <el-button circle class="more-trigger">
+                <el-icon><MoreFilled /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item @click="openEditDialog">
+                    <el-icon><Edit /></el-icon> 编辑信息
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
           </div>
         </div>
       </div>
@@ -162,16 +171,30 @@
             <p class="comment-content">{{ c.content }}</p>
             <img v-if="c.imagePath" :src="`/api/comment/image/${c.id}`" class="comment-img" @click="viewCmtImg(`/api/comment/image/${c.id}`)" />
             <div class="comment-footer">
-              <el-button
-                :type="c.likedByMe ? 'danger' : 'default'"
-                size="small"
-                text
-                @click="handleToggleCommentLike(c)"
-              >
-                <span class="comment-like-heart">{{ c.likedByMe ? '❤️' : '🤍' }}</span>
-                <span v-if="c.likeCount > 0" class="comment-like-count">{{ c.likeCount }}</span>
-              </el-button>
-              <el-button v-if="c.userId === currentUserId" text size="small" type="danger" @click="handleDeleteComment(c.id)">删除</el-button>
+              <div class="comment-footer-left"></div>
+              <div class="comment-footer-right">
+                <el-button
+                  :class="{ 'liked': c.likedByMe }"
+                  size="small"
+                  text
+                  @click="handleToggleCommentLike(c)"
+                >
+                  <span class="comment-like-heart">{{ c.likedByMe ? '❤️' : '🤍' }}</span>
+                  <span v-if="c.likeCount > 0" class="comment-like-count">{{ c.likeCount }}</span>
+                </el-button>
+                <el-dropdown v-if="c.userId === currentUserId" trigger="click" class="comment-more">
+                  <el-button text size="small" class="comment-more-trigger">
+                    <el-icon><MoreFilled /></el-icon>
+                  </el-button>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item @click="handleDeleteComment(c.id)">
+                        <el-icon><Delete /></el-icon> 删除
+                      </el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
+              </div>
             </div>
           </div>
         </div>
@@ -475,7 +498,7 @@ function highlightFromNotification() {
 .detail-image {
   width: 100%; height: min(72vw, 720px); min-height: 400px; overflow: hidden; border-radius: 0;
   background: var(--bg-elevated); display: flex; align-items: center; justify-content: center;
-  position: relative; cursor: pointer; border: 1px solid var(--border-subtle);
+  position: relative; cursor: pointer; border: 1px solid var(--gray2);
   margin-bottom: 20px;
 }
 .detail-image img {
@@ -484,7 +507,7 @@ function highlightFromNotification() {
 }
 .detail-image img.zoomed {
   transform: scale(1.05);
-  filter: brightness(0.7);
+  filter: brightness(0.6);
 }
 
 .img-hover-overlay {
@@ -500,10 +523,10 @@ function highlightFromNotification() {
 }
 .img-title {
   font-family: var(--font-display);
-  font-size: 24px; font-weight: 700;
+  font-size: 28px; font-weight: 400;
   margin-bottom: 20px;
   word-break: break-word; color: var(--text-primary);
-  letter-spacing: -0.3px; line-height: 1.3;
+  letter-spacing: 0.02em; line-height: 1;
 }
 
 .meta-bar {
@@ -513,6 +536,7 @@ function highlightFromNotification() {
   gap: 6px 16px;
   font-size: 13px;
   color: var(--text-secondary);
+  font-family: var(--font-body);
 }
 .meta-item {
   display: flex; align-items: center; gap: 4px;
@@ -538,6 +562,15 @@ function highlightFromNotification() {
   flex-wrap: wrap;
   gap: 6px;
 }
+.flat-tag {
+  border: 1px solid var(--gray2);
+  background: transparent;
+  color: var(--gray4);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 400;
+  border-radius: 0;
+}
 
 .desc-block {
   margin-top: 18px; padding: 14px 16px;
@@ -547,17 +580,27 @@ function highlightFromNotification() {
 .desc-empty { background: transparent; border-style: dashed; }
 .desc-text { font-size: 14px; color: var(--text-secondary); line-height: 1.7; margin: 0; }
 
-.like-panel, .action-bar {
+.action-bar {
   margin-top: 18px;
   padding: 12px 14px;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  background: var(--bg-elevated);
+  background: var(--gray1);
   display: flex;
   align-items: center;
   gap: 12px;
   color: var(--text-secondary);
   font-size: 14px;
+}
+
+.action-bar .el-button.liked {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.action-bar .el-button.liked:hover {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 .like-count-text {
@@ -576,18 +619,28 @@ function highlightFromNotification() {
   transform: translateY(-1px);
 }
 
+.more-actions {
+  margin-left: 0;
+}
+.more-trigger {
+  border: 1px solid var(--gray2);
+  color: var(--gray4);
+}
+
 .uploader-link { color: var(--accent); text-decoration: none; font-weight: 600; font-size: 14px; }
-.uploader-link:hover { color: var(--accent-glow); }
+.uploader-link:hover { opacity: 0.7; }
 
 .comments-section {
-  margin-top: var(--space-xl); background: var(--bg-surface);
-  border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
+  margin-top: var(--space-xl);
+  background: var(--gray1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
   padding: var(--space-xl);
 }
 .comments-section h3 {
-  font-family: var(--font-display); font-size: 22px; font-weight: 750;
+  font-family: var(--font-display); font-size: 24px; font-weight: 400;
   margin-bottom: var(--space-md); color: var(--text-primary);
-  letter-spacing: -0.2px;
+  letter-spacing: 0.02em;
 }
 
 .comment-input {
@@ -608,19 +661,33 @@ function highlightFromNotification() {
 .upload-hint { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
 
 .comment-item {
-  padding: var(--space-md) 0; border-bottom: 1px solid var(--border-subtle);
-  transition: background 0.15s ease;
+  padding: var(--space-md) 0;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 0.15s ease, transform 0.15s var(--ease-out);
 }
-.comment-item:hover { background: rgba(37, 99, 235, 0.015); }
+.comment-item:hover {
+  background: rgba(216, 90, 48, 0.03);
+  transform: translateX(4px);
+}
 .comment-header { display: flex; justify-content: space-between; margin-bottom: var(--space-xs); }
 .comment-user { font-weight: 600; color: var(--accent); font-size: 14px; text-decoration: none; }
-.comment-user:hover { color: var(--accent-glow); }
+.comment-user:hover { opacity: 0.7; }
 .comment-time { font-size: 12px; color: var(--text-muted); }
 .comment-content { font-size: 14px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 4px; }
 .comment-footer {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 4px;
+}
+.comment-footer-left { flex: 1; }
+.comment-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+.comment-footer .el-button.liked {
+  color: var(--accent);
 }
 .comment-like-heart {
   font-size: 16px; cursor: pointer; user-select: none;
@@ -628,6 +695,14 @@ function highlightFromNotification() {
 }
 .comment-like-heart:hover { transform: scale(1.2); }
 .comment-like-count { font-size: 13px; color: var(--text-muted); }
+
+.comment-more-trigger {
+  color: var(--gray3);
+  padding: 4px;
+}
+.comment-more-trigger:hover {
+  color: var(--black);
+}
 
 .category-row { display: flex; gap: 8px; align-items: center; }
 .category-row .el-button { flex-shrink: 0; }
@@ -644,9 +719,9 @@ function highlightFromNotification() {
 }
 
 @keyframes notificationRipple {
-  0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.34); background: rgba(37, 99, 235, 0.12); }
-  55% { box-shadow: 0 0 0 14px rgba(37, 99, 235, 0); background: rgba(37, 99, 235, 0.06); }
-  100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(216, 90, 48, 0.34); background: rgba(216, 90, 48, 0.12); }
+  55% { box-shadow: 0 0 0 14px rgba(216, 90, 48, 0); background: rgba(216, 90, 48, 0.06); }
+  100% { box-shadow: 0 0 0 0 rgba(216, 90, 48, 0); }
 }
 
 @media (max-width: 900px) {

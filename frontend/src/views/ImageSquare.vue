@@ -2,9 +2,10 @@
   <div class="square-page">
     <NavBar />
     <div class="page-container">
-      <header class="page-header">
+      <header class="page-header reveal">
         <div>
           <h1 class="page-title">Square</h1>
+          <p class="page-desc">浏览社区公开作品，用标签发现同风格创作</p>
         </div>
         <div class="square-toolbar">
           <el-input
@@ -58,23 +59,26 @@
         <p>暂时没有内容</p>
       </div>
 
-      <div v-else class="card-grid">
-        <div v-for="(img, idx) in images" :key="img.id" class="stagger-item" :style="{ animationDelay: `${idx * 0.06}s` }">
-          <ImageCard :image="img" :show-actions="false" @delete="handleDeleteImage" />
+      <div v-else class="reveal">
+        <div class="card-grid">
+          <div v-for="(img, idx) in images" :key="img.id" class="stagger-item" :style="{ animationDelay: `${idx * 0.06}s` }">
+            <ImageCard :image="img" :show-actions="false" @delete="handleDeleteImage" />
+          </div>
+        </div>
+
+        <div class="pagination-wrap" v-if="total > 0">
+          <el-pagination
+            v-model:current-page="query.page"
+            :page-size="query.limit"
+            :page-sizes="IMAGE_PAGE_SIZES"
+            :total="total"
+            layout="total, sizes, prev, pager, next"
+            @size-change="onPageSizeChange"
+            @current-change="fetchList"
+          />
         </div>
       </div>
 
-      <div class="pagination-wrap" v-if="total > 0">
-        <el-pagination
-          v-model:current-page="query.page"
-          :page-size="query.limit"
-          :page-sizes="IMAGE_PAGE_SIZES"
-          :total="total"
-          layout="total, sizes, prev, pager, next"
-          @size-change="onPageSizeChange"
-          @current-change="fetchList"
-        />
-      </div>
     </div>
   </div>
 </template>
@@ -156,7 +160,7 @@ async function handleDeleteImage(id) {
 <style scoped>
 .square-page {
   min-height: 100vh;
-  background: var(--bg-base);
+  background: var(--white);
   display: flex;
   flex-direction: column;
 }
@@ -170,7 +174,7 @@ async function handleDeleteImage(id) {
 .page-header {
   padding: 0 0 20px;
   margin-bottom: 4px;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--gray2);
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
@@ -181,44 +185,34 @@ async function handleDeleteImage(id) {
 .page-title {
   font-family: var(--font-display);
   font-size: 38px;
-  font-weight: 600;
-  color: var(--text-primary);
-  letter-spacing: -0.02em;
+  font-weight: 400;
+  color: var(--black);
+  letter-spacing: 0.04em;
   line-height: 1;
   margin: 0;
 }
 
 .page-desc {
-  font-family: var(--font-display);
   font-size: 14px;
-  color: var(--text-muted);
-  margin-top: var(--space-xs);
+  color: var(--gray3);
+  margin-top: 6px;
+  font-weight: 400;
 }
 
 .square-toolbar {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   flex-wrap: wrap;
   gap: 10px;
   flex: 1;
+  justify-content: flex-end;
 }
 
-.square-search {
-  width: 220px;
-}
+.square-search { width: 220px; }
+.square-tags { width: 260px; }
+.square-sort { width: 120px; }
 
-.square-tags {
-  width: 260px;
-}
-
-.square-sort {
-  width: 120px;
-}
-
-.card-grid {
-  flex: 1;
-}
+.card-grid { flex: 1; }
 
 .pagination-wrap {
   display: flex;
@@ -245,14 +239,11 @@ async function handleDeleteImage(id) {
 }
 
 @media (max-width: 768px) {
-  .page-container { padding: 20px 8px; }
-  .page-header { padding: 0 0 16px; align-items: stretch; }
+  .page-header { flex-direction: column; align-items: stretch; }
   .page-title { font-size: 26px; }
   .square-toolbar { justify-content: stretch; }
   .square-search,
   .square-tags,
-  .square-sort {
-    width: 100%;
-  }
+  .square-sort { width: 100%; }
 }
 </style>

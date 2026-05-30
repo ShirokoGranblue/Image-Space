@@ -21,17 +21,32 @@ public class MinioStorageService implements StorageService {
 
     @Override
     public String upload(String bucket, String objectKey, byte[] bytes, String contentType) {
-        ensureBucket(bucket);
-        try (var is = new ByteArrayInputStream(bytes)) {
-            minioClient.putObject(PutObjectArgs.builder()
-                    .bucket(bucket)
-                    .object(objectKey)
-                    .stream(is, bytes.length, -1)
-                    .contentType(contentType)
-                    .build());
+        if (bucket == null || bucket.isBlank()) {
+            throw new BusinessException(ErrorCode.STORAGE_UPLOAD_FAILED);
+        }
+        if (objectKey == null || objectKey.isBlank()) {
+            throw new BusinessException(ErrorCode.STORAGE_UPLOAD_FAILED);
+        }
+
+        objectKey = objectKey.startsWith("/") ? objectKey.substring(1) : objectKey;
+
+        String finalContentType = contentType != null && !contentType.isBlank()
+                ? contentType
+                : "application/octet-stream";
+
+        try (ByteArrayInputStream is = new ByteArrayInputStream(bytes)) {
+            minioClient.putObject(
+                    PutObjectArgs.builder()
+                            .bucket(bucket)
+                            .object(objectKey)
+                            .stream(is, bytes.length, -1)
+                            .contentType(finalContentType)
+                            .build());
+
             log.debug("上传成功: {}/{} ({} bytes)", bucket, objectKey, bytes.length);
             return objectKey;
         } catch (Exception e) {
+            log.error("上传失败: bucket={}, objectKey={}, size={}", bucket, objectKey, bytes.length, e);
             throw new BusinessException(ErrorCode.STORAGE_UPLOAD_FAILED, e);
         }
     }
@@ -78,18 +93,6 @@ public class MinioStorageService implements StorageService {
             return new FileMeta(stat.size(), stat.contentType());
         } catch (Exception e) {
             return null;
-        }
-    }
-
-    private void ensureBucket(String bucket) {
-        try {
-            boolean exists = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucket).build());
-            if (!exists) {
-                minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
-                log.info("创建桶: {}", bucket);
-            }
-        } catch (Exception e) {
-            log.warn("创建桶失败: {}", bucket, e.getMessage());
         }
     }
 }

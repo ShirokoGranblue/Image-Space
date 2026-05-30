@@ -1,8 +1,12 @@
 <template>
   <button class="notification-bell" type="button" title="通知" @click="toggle">
-    <el-badge :value="badgeValue" :hidden="unreadCount === 0" :max="99">
-      <el-icon><Bell /></el-icon>
-    </el-badge>
+    <div class="bell-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      </svg>
+      <span v-if="unreadCount > 0" class="bell-badge">{{ badgeValue }}</span>
+    </div>
   </button>
 </template>
 
@@ -75,25 +79,51 @@ function toggle() {
 .notification-bell {
   width: 34px;
   height: 34px;
-  border-radius: 50%;
-  border: 1px solid rgba(203, 213, 225, 0.72);
-  background: rgba(255, 255, 255, 0.82);
-  color: var(--text-muted);
+  border: none;
+  background: transparent;
+  color: var(--gray3);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+  transition: color 0.2s ease;
+  padding: 0;
+  outline: none;
 }
 
 .notification-bell:hover {
-  color: var(--accent);
-  border-color: rgba(37, 99, 235, 0.24);
-  background: #fff;
-  transform: translateY(-1px);
+  color: var(--black);
 }
 
-.notification-bell :deep(.el-icon) {
-  font-size: 18px;
+.bell-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.bell-badge {
+  position: absolute;
+  top: -5px;
+  right: -6px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--white);
+  font-size: 10px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-body);
+  line-height: 1;
+  animation: badge-blink 1.4s ease-in-out infinite;
+}
+
+@keyframes badge-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
 }
 </style>

@@ -47,7 +47,8 @@
           </div>
 
           <div v-if="!loading && notifications.length === 0" class="notification-empty">
-            暂无通知
+            <span class="empty-icon">◇</span>
+            <span>暂无通知</span>
           </div>
         </div>
 
@@ -183,15 +184,15 @@ async function handleDeleteSelected() {
   z-index: 2000;
   width: var(--notification-drawer-width, 420px);
   height: 100dvh;
-  background: var(--bg-base);
-  border-left: 1px solid var(--border-subtle);
+  background: var(--white);
+  border-left: 1px solid var(--gray2);
   display: flex;
   flex-direction: column;
 }
 
 .notification-header {
-  padding: 20px 22px 16px;
-  border-bottom: 1px solid var(--border-subtle);
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid var(--gray2);
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -201,83 +202,94 @@ async function handleDeleteSelected() {
 .notification-header h2 {
   margin: 0;
   font-family: var(--font-display);
-  color: var(--text-primary);
-  font-size: 22px;
-  letter-spacing: 0;
+  color: var(--black);
+  font-size: 26px;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  font-weight: 400;
 }
 
 .notification-header p {
-  margin: 4px 0 0;
-  color: var(--text-muted);
+  margin: 6px 0 0;
+  color: var(--gray3);
   font-size: 13px;
+  font-weight: 400;
 }
 
 .notification-header-actions {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
 }
 
 .drawer-close {
   width: 32px;
   height: 32px;
-  border-radius: 50%;
-  border: 1px solid var(--border-subtle);
-  background: #fff;
-  color: var(--text-muted);
+  border: none;
+  background: transparent;
+  color: var(--gray3);
   cursor: pointer;
-  font-size: 20px;
+  font-size: 22px;
   line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+  padding: 0;
 }
 
 .drawer-close:hover {
-  color: var(--accent);
-  border-color: rgba(37, 99, 235, 0.24);
+  color: var(--black);
 }
 
 .notification-list {
   flex: 1;
   overflow-y: auto;
-  padding: 12px;
 }
 
 .notification-item {
-  width: 100%;
-  height: 96px;
-  border: 1px solid transparent;
-  border-radius: 12px;
-  background: transparent;
   display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 10px;
-  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+  align-items: stretch;
+  gap: 12px;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--gray2);
+  border-left: 2px solid transparent;
+  background: transparent;
+  transition: background 0.2s ease, border-left-color 0.2s ease, transform 0.2s ease;
 }
 
 .notification-item:hover {
-  background: rgba(239, 244, 255, 0.88);
-  border-color: rgba(37, 99, 235, 0.14);
-  transform: translateX(-2px);
+  background: var(--white);
+  border-left-color: var(--accent);
+  transform: translateX(-4px);
 }
 
 .notification-item.unread {
-  background: rgba(37, 99, 235, 0.06);
+  background: var(--gray1);
+}
+
+.notification-item.unread:hover {
+  background: var(--gray1);
+  border-left-color: var(--accent);
+  transform: translateX(-4px);
 }
 
 .notification-checkbox {
+  display: flex;
+  align-items: center;
   flex-shrink: 0;
-  margin-right: 4px;
+  padding: 22px 0;
 }
 
 .notification-item-content {
   flex: 1;
   min-width: 0;
-  height: 100%;
   border: none;
   background: transparent;
   display: grid;
-  grid-template-columns: 72px 1fr;
-  gap: 12px;
+  grid-template-columns: 64px 1fr;
+  gap: 14px;
   padding: 0;
   cursor: pointer;
   text-align: left;
@@ -286,12 +298,10 @@ async function handleDeleteSelected() {
 }
 
 .notification-thumb {
-  width: 72px;
-  height: 72px;
+  width: 64px;
+  height: 64px;
   object-fit: cover;
-  border-radius: 10px;
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-elevated);
+  background: var(--gray1);
 }
 
 .notification-body {
@@ -299,20 +309,25 @@ async function handleDeleteSelected() {
   display: grid;
   grid-template-rows: auto 1fr auto;
   gap: 4px;
+  padding: 2px 0;
 }
 
 .notification-title {
-  color: var(--text-primary);
+  color: var(--black);
   font-size: 14px;
-  line-height: 1.35;
+  line-height: 1.4;
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 
+.notification-title strong {
+  font-weight: 600;
+}
+
 .notification-preview {
-  color: var(--text-muted);
+  color: var(--gray3);
   font-size: 13px;
   line-height: 1.3;
   overflow: hidden;
@@ -321,24 +336,33 @@ async function handleDeleteSelected() {
 }
 
 .notification-time {
-  justify-self: end;
-  color: var(--text-primary);
-  font-size: 12px;
-  font-weight: 600;
+  color: var(--gray3);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .notification-empty {
-  height: 180px;
+  padding: 80px 24px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: var(--text-muted);
+  gap: 14px;
+  color: var(--gray3);
   font-size: 14px;
+  font-family: var(--font-body);
+}
+
+.empty-icon {
+  font-size: 32px;
+  line-height: 1;
+  opacity: 0.4;
 }
 
 .notification-footer {
-  padding: 12px 22px;
-  border-top: 1px solid var(--border-subtle);
+  padding: 12px 24px;
+  border-top: 1px solid var(--gray2);
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -347,7 +371,7 @@ async function handleDeleteSelected() {
 
 .notification-slide-enter-active,
 .notification-slide-leave-active {
-  transition: transform 0.18s ease, opacity 0.18s ease;
+  transition: transform 0.25s var(--ease-out), opacity 0.25s var(--ease-out);
 }
 
 .notification-slide-enter-from,

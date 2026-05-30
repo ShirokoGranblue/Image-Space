@@ -3,7 +3,7 @@
     <!-- Left: Form -->
     <div class="auth-form-side">
       <div class="auth-form-wrap">
-        <router-link to="/home" class="auth-logo">ImageSpace</router-link>
+        <router-link to="/home" class="auth-logo">IMAGESPACE</router-link>
         <h1 class="auth-title">欢迎回来</h1>
 
         <!-- Login mode tabs -->
@@ -261,7 +261,6 @@ function resetCodeTurnstile() { codeTurnstileToken.value = ''; codeTurnstileRef.
   min-height: 100dvh;
 }
 
-/* ── Left: Form ── */
 .auth-form-side {
   width: 42%;
   max-width: 500px;
@@ -269,7 +268,7 @@ function resetCodeTurnstile() { codeTurnstileToken.value = ''; codeTurnstileRef.
   align-items: center;
   justify-content: center;
   padding: 48px 40px;
-  background: var(--bg-base);
+  background: var(--white);
   overflow-y: auto;
 }
 
@@ -282,25 +281,25 @@ function resetCodeTurnstile() { codeTurnstileToken.value = ''; codeTurnstileRef.
 .auth-logo {
   font-family: var(--font-display);
   font-size: 26px;
-  font-weight: 600;
-  color: var(--text-primary);
-  letter-spacing: -0.01em;
+  letter-spacing: 0.05em;
+  color: var(--black);
+  text-decoration: none;
 }
 
 .auth-title {
   font-family: var(--font-display);
-  font-size: 28px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 8px 0 24px;
-  letter-spacing: -0.01em;
+  font-size: 32px;
+  font-weight: 400;
+  color: var(--black);
+  margin: 4px 0 28px;
+  letter-spacing: 0.02em;
 }
 
-/* ── Tabs ── */
+/* Tabs */
 .auth-tabs {
   display: flex;
   gap: 0;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--gray2);
   margin-bottom: 24px;
 }
 
@@ -312,11 +311,11 @@ function resetCodeTurnstile() { codeTurnstileToken.value = ''; codeTurnstileRef.
   font-family: var(--font-body);
   font-size: 13px;
   font-weight: 500;
-  color: var(--text-muted);
+  color: var(--gray3);
   cursor: pointer;
   position: relative;
   transition: color 0.2s;
-  letter-spacing: 0;
+  letter-spacing: 0.02em;
 }
 .auth-tab::after {
   content: '';
@@ -324,82 +323,78 @@ function resetCodeTurnstile() { codeTurnstileToken.value = ''; codeTurnstileRef.
   bottom: -1px;
   left: 0; right: 0;
   height: 2px;
-  background: var(--text-primary);
+  background: var(--accent);
   transform: scaleX(0);
   transition: transform 0.2s var(--ease-out);
 }
-.auth-tab:hover { color: var(--text-primary); }
-.auth-tab.active { color: var(--text-primary); font-weight: 600; }
+.auth-tab:hover { color: var(--black); }
+.auth-tab.active { color: var(--black); font-weight: 600; }
 .auth-tab.active::after { transform: scaleX(1); }
 
-/* ── Form ── */
-.auth-form {
-  margin-top: 0;
-}
+/* Form */
+.auth-form { margin-top: 0; }
 
 .auth-form :deep(.el-form-item__label) {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  color: var(--text-muted) !important;
+  color: var(--gray3) !important;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   padding-bottom: 4px;
 }
 
 .auth-submit {
   width: 100%;
   height: 46px;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   margin-top: 4px;
 }
 
-/* ── Captcha ── */
+/* Captcha */
 .captcha-row {
   display: flex;
   gap: 8px;
   align-items: center;
 }
-.captcha-row .el-input { flex: 1; }
+.captcha-row :deep(.el-input) { flex: 1; }
 .captcha-img {
   height: 40px;
   cursor: pointer;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--gray2);
   flex-shrink: 0;
 }
 .code-btn {
   flex-shrink: 0;
   min-width: 72px;
   height: 40px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
-  border: 1px solid var(--border-visible);
+  letter-spacing: 0.04em;
+  border: 1px solid var(--gray2);
   background: transparent;
-  color: var(--text-primary);
+  color: var(--black);
 }
-.code-btn:hover { background: var(--bg-hover); }
 
-/* ── OAuth ── */
+/* OAuth */
 .auth-oauth {
   margin-top: 28px;
   text-align: center;
 }
-
 .oauth-divider {
-  font-size: 12px;
-  color: var(--text-muted);
+  font-size: 11px;
+  color: var(--gray3);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   display: block;
   margin-bottom: 12px;
 }
-
 .oauth-btns {
   display: flex;
   gap: 10px;
 }
-
 .oauth-btn {
   flex: 1;
   display: flex;
@@ -407,73 +402,65 @@ function resetCodeTurnstile() { codeTurnstileToken.value = ''; codeTurnstileRef.
   justify-content: center;
   gap: 8px;
   height: 42px;
-  border: 1px solid var(--border-visible);
+  border: 1px solid var(--gray2);
   background: transparent;
   font-family: var(--font-body);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   transition: background 0.2s, border-color 0.2s;
 }
-.oauth-btn:hover { background: var(--bg-hover); border-color: var(--border-strong); }
+.oauth-btn:hover { background: var(--gray1); border-color: var(--gray3); }
 .oauth-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .oauth-btn.github { color: #24292f; }
 .oauth-btn.google { color: #444; }
 
-/* ── Footer ── */
+/* Footer */
 .auth-footer {
   text-align: center;
-  color: var(--text-muted);
+  color: var(--gray3);
   font-size: 13px;
-  font-weight: 500;
   margin-top: 24px;
 }
-
 .auth-footer a {
-  color: var(--text-primary);
+  color: var(--black);
   font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
-/* ── Right: Diagonal gallery ── */
+/* Right: Diagonal gallery */
 .auth-gallery-side {
   width: 58%;
   position: relative;
   overflow: hidden;
-  background: var(--bg-surface);
-  border-left: 1px solid var(--border-subtle);
+  background: var(--black);
 }
-
 .gallery-outer {
   position: absolute;
   inset: -10%;
   overflow: hidden;
 }
-
 .gallery-inner {
   position: absolute;
   inset: -20%;
-  transform: rotate(15deg);
+  transform: rotate(12deg);
 }
-
 .gallery-track {
   animation: scrollDiagonal 80s linear infinite;
 }
-
 .gallery-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
   padding: 8px;
 }
-
 .gallery-img {
   width: 100%;
   aspect-ratio: 1;
   object-fit: cover;
-  filter: grayscale(30%);
-  transition: filter 0.4s;
+  filter: grayscale(100%);
+  transition: filter 0.5s ease;
 }
 .gallery-img:hover { filter: grayscale(0%); }
 
@@ -482,21 +469,18 @@ function resetCodeTurnstile() { codeTurnstileToken.value = ''; codeTurnstileRef.
   100% { transform: translateY(-50%); }
 }
 
-/* ── Mobile ── */
 @media (max-width: 768px) {
   .auth-page { flex-direction: column; }
-
   .auth-gallery-side {
     width: 100%;
     height: 160px;
     order: 1;
     border-left: none;
-    border-bottom: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--gray2);
   }
   .gallery-outer { inset: -30%; }
   .gallery-inner { inset: -40%; transform: rotate(12deg); }
   .gallery-grid { grid-template-columns: repeat(6, 1fr); gap: 4px; }
-
   .auth-form-side {
     width: 100%;
     max-width: none;

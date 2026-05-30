@@ -6,25 +6,26 @@
         <h1 class="page-title">Collections</h1>
         <div class="toolbar">
           <div class="toolbar-left">
-            <el-button type="primary" @click="uploadRef.open()">
+            <el-button type="primary" class="btn-slide" @click="uploadRef.open()">
               <el-icon><Plus /></el-icon> 上传图片
             </el-button>
-            <el-checkbox
-              v-if="images.length > 0"
-              :model-value="allVisibleSelected"
-              :indeterminate="partiallySelected"
-              @change="toggleSelectAll"
-            >
-              全选本页
-            </el-checkbox>
-            <el-button v-if="selectedImageIds.length > 0" @click="clearSelection">取消选择</el-button>
-            <el-button
-              v-if="selectedImageIds.length > 0"
-              type="danger"
-              @click="handleBatchDelete"
-            >
-              删除选中 {{ selectedImageIds.length }}
-            </el-button>
+            <div class="selection-actions" v-if="images.length > 0">
+              <el-checkbox
+                :model-value="allVisibleSelected"
+                :indeterminate="partiallySelected"
+                @change="toggleSelectAll"
+              >
+                全选本页
+              </el-checkbox>
+              <el-button v-if="selectedImageIds.length > 0" @click="clearSelection">取消选择</el-button>
+              <el-button
+                v-if="selectedImageIds.length > 0"
+                type="danger"
+                @click="handleBatchDelete"
+              >
+                删除选中 {{ selectedImageIds.length }}
+              </el-button>
+            </div>
             <el-select
               v-model="query.categoryId"
               placeholder="按分类筛选"
@@ -332,7 +333,7 @@ async function saveEdit() {
 <style scoped>
 .home-page {
   min-height: 100vh;
-  background: var(--bg-base);
+  background: var(--white);
   display: flex;
   flex-direction: column;
 }
@@ -346,7 +347,7 @@ async function saveEdit() {
 .page-header {
   padding: 0 0 14px;
   margin-bottom: 4px;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--gray2);
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
@@ -357,9 +358,9 @@ async function saveEdit() {
 .page-title {
   font-family: var(--font-display);
   font-size: 38px;
-  font-weight: 600;
-  color: var(--text-primary);
-  letter-spacing: -0.02em;
+  font-weight: 400;
+  color: var(--black);
+  letter-spacing: 0.04em;
   line-height: 1;
   margin: 0;
 }
@@ -387,6 +388,32 @@ async function saveEdit() {
 
 .toolbar-right {
   justify-content: flex-end;
+}
+
+.selection-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  background: var(--gray1);
+  border: 1px solid var(--gray2);
+  border-radius: 2px;
+}
+
+.btn-slide {
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+  background: linear-gradient(to right, var(--accent) 50%, var(--black) 50%) !important;
+  background-size: 200% 100% !important;
+  background-position: 100% 0 !important;
+  transition: background-position 0.35s var(--ease-out), border-color 0.35s var(--ease-out) !important;
+  border-color: var(--black) !important;
+}
+
+.btn-slide:hover {
+  background-position: 0 0 !important;
+  border-color: var(--accent) !important;
 }
 
 .category-row {

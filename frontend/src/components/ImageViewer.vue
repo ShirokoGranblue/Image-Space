@@ -118,7 +118,7 @@ defineExpose({ open, close })
   position: fixed;
   inset: 0;
   z-index: 3000;
-  background: rgba(15, 23, 42, 0.92);
+  background: rgba(10, 10, 10, 0.94);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -136,33 +136,35 @@ defineExpose({ open, close })
   gap: 8px;
   z-index: 3001;
   padding: 8px 12px;
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.7);
+  border-radius: 2px;
+  background: rgba(10, 10, 10, 0.7);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .viewer-toolbar :deep(.el-button) {
-  background: rgba(255, 255, 255, 0.1);
+  background: transparent;
   border: none;
   color: #fff;
   transition: background 0.15s ease;
+  border-radius: 2px;
 }
 .viewer-toolbar :deep(.el-button:hover) {
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.15);
 }
 .viewer-toolbar :deep(.el-button.is-disabled) {
   opacity: 0.3;
 }
 
 .zoom-level {
-  color: rgba(255, 255, 255, 0.8);
+  color: #fff;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 400;
   min-width: 42px;
   text-align: center;
   font-variant-numeric: tabular-nums;
+  font-family: 'DM Sans', sans-serif;
 }
 
 .viewer-stage {
