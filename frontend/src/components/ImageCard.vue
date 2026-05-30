@@ -24,7 +24,7 @@
         popper-class="card-action-dropdown"
         @click.stop="() => {}"
       >
-        <button class="actions-trigger" type="button">
+        <button class="actions-trigger" type="button" @click.stop>
           <span class="dots">···</span>
         </button>
         <template #dropdown>

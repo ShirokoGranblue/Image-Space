@@ -76,7 +76,8 @@ public class ImageRepository {
         vo.setUploadTime(image.getUploadTime());
 
         if (image.getStorageKey() != null) {
-            vo.setImageUrl(storageService.getPresignedUrl("images", image.getStorageKey(), java.time.Duration.ofMinutes(5)));
+            vo.setImageUrl(storageService.getPresignedUrl("images", image.getStorageKey(),
+                    com.picmgmt.image.ImageReadService.presignedExpiry(image.getVisibility())));
         }
         User user = userMapper.selectById(image.getUserId());
         if (user != null) {
