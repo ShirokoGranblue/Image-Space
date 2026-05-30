@@ -55,7 +55,7 @@ public class MinioStorageService implements StorageService {
                             .object(objectKey)
                             .stream(is, bytes.length, -1)
                             .contentType(finalContentType)
-                            .headers(Map.of("Cache-Control", "no-cache, max-age=300"))
+                            .headers(Map.of("Cache-Control", "no-store, must-revalidate"))
                             .build());
 
             log.debug("上传成功: {}/{} ({} bytes)", bucketName(), objectKey, bytes.length);
