@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "storage.type", havingValue = "minio", matchIfMissing = true)
+@ConditionalOnProperty(name = "storage.type", havingValue = "r2", matchIfMissing = true)
 public class MinioStorageService implements StorageService {
 
     private final MinioClient minioClient;
