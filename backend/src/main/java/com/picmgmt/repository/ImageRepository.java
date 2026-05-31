@@ -17,6 +17,8 @@ import org.springframework.stereotype.Repository;
 import java.time.Duration;
 import java.util.Optional;
 
+import static com.picmgmt.util.MediaUrlUtil.withVersion;
+
 @Repository
 @RequiredArgsConstructor
 public class ImageRepository {
@@ -76,9 +78,15 @@ public class ImageRepository {
         vo.setVisibleUsernames(image.getVisibleUsernames());
         vo.setUploadTime(image.getUploadTime());
 
-        if (image.getStorageKey() != null) {
-            vo.setImageUrl(storageService.getPresignedUrl("images", image.getStorageKey(),
-                    com.picmgmt.image.ImageReadService.presignedExpiry(image.getVisibility())));
+        if (image.getStorageKey() != null && !image.getStorageKey().isBlank()) {
+            if ("PUBLIC".equals(image.getVisibility())) {
+                vo.setImageUrl(withVersion("/api/image/download/" + image.getUuid(), image.getStorageKey()));
+            } else {
+                vo.setImageUrl(storageService.getPresignedUrl("images", image.getStorageKey(),
+                        com.picmgmt.image.ImageReadService.presignedExpiry(image.getVisibility())));
+            }
+        } else if (image.getImagePath() != null && image.getImagePath().startsWith("data:image/")) {
+            vo.setImageUrl("/api/image/download/" + image.getUuid());
         }
         User user = userMapper.selectById(image.getUserId());
         if (user != null) {

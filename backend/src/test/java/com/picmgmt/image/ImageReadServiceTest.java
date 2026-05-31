@@ -1,5 +1,6 @@
 package com.picmgmt.image;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.picmgmt.mapper.ImageLikeMapper;
 import com.picmgmt.mapper.ImageMapper;
@@ -12,13 +13,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -86,5 +90,28 @@ class ImageReadServiceTest {
         verify(imageMapper).selectImageVOPage(any(), isNull(), isNull(), isNull(), eq("PUBLIC"),
                 tagFilters.capture(), eq("upload_time"), eq("desc"), eq("random"), eq("seed-1"));
         Assertions.assertEquals(List.of("cute,blue", "avatar"), tagFilters.getValue());
+    }
+
+    @Test
+    void getSquare_shouldReturnVersionedBackendDownloadUrlForPublicStorageImages() {
+        Page<ImageVO> page = new Page<>(1, 30);
+        ImageVO vo = new ImageVO();
+        vo.setId(7L);
+        vo.setUuid("img-public-uuid");
+        vo.setVisibility("PUBLIC");
+        vo.setStorageKey("4/summer.png");
+        page.setRecords(List.of(vo));
+        when(imageMapper.selectImageVOPage(any(), isNull(), isNull(), isNull(), eq("PUBLIC"),
+                isNull(), eq("upload_time"), eq("desc"), eq("random"), eq("square")))
+                .thenReturn(page);
+
+        Page<ImageVO> result;
+        try (MockedStatic<StpUtil> stpMock = org.mockito.Mockito.mockStatic(StpUtil.class)) {
+            stpMock.when(StpUtil::isLogin).thenReturn(false);
+            result = service.getSquare(1, 30, null, null, null, null, null, null);
+        }
+
+        assertEquals("/api/image/download/img-public-uuid?v=3864dd6014f3", result.getRecords().get(0).getImageUrl());
+        verify(storageService, never()).getPresignedUrl(any(), any(), any());
     }
 }

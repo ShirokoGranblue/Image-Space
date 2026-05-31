@@ -27,6 +27,7 @@ import org.springframework.http.CacheControl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -36,6 +37,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -53,6 +55,7 @@ public class UserController {
     private final OAuthService oAuthService;
     private final TurnstileService turnstileService;
     private final MediaUrlUtil mediaUrlUtil;
+    private final StringRedisTemplate redisTemplate;
 
 private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "webp", "gif");
 
@@ -299,7 +302,24 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
         while (url.endsWith("/")) {
             url = url.substring(0, url.length() - 1);
         }
-        return url + "/login?satoken=" + URLEncoder.encode(token, StandardCharsets.UTF_8);
+        String code = UUID.randomUUID().toString();
+        redisTemplate.opsForValue().set("oauth:code:" + code, token, Duration.ofSeconds(60));
+        return url + "/login?oauth_code=" + URLEncoder.encode(code, StandardCharsets.UTF_8);
+    }
+
+    @Operation(summary = "OAuth一次性code换取token")
+    @PostMapping("/oauth/exchange")
+    public Result<Map<String, String>> exchangeOAuthCode(@RequestBody Map<String, String> body) {
+        String code = body.get("code");
+        if (code == null || code.isBlank()) {
+            return Result.error(400, "缺少code参数");
+        }
+        String token = redisTemplate.opsForValue().get("oauth:code:" + code);
+        if (token == null || token.isBlank()) {
+            return Result.error(400, "code已过期或无效");
+        }
+        redisTemplate.delete("oauth:code:" + code);
+        return Result.ok(Map.of("satoken", token));
     }
 
     private String resolveObjectKey(String bucket, String storageKey, String legacyValue) {

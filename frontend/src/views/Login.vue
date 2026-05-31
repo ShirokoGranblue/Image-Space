@@ -119,6 +119,7 @@
 <script setup>
 import { reactive, ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import api from '../api'
 import { login, sendCode, loginByCode, getCaptcha, getGithubAuthUrl, getGoogleAuthUrl } from '../api/user'
 import { getImageList } from '../api/image'
 import { useUserStore } from '../store/user'
@@ -157,11 +158,12 @@ const trackStyle = computed(() => ({
 }))
 
 onMounted(async () => {
-  const token = new URLSearchParams(window.location.search).get('satoken')
-  if (token) {
-    userStore.setToken(token)
+  const oauthCode = new URLSearchParams(window.location.search).get('oauth_code')
+  if (oauthCode) {
     window.history.replaceState({}, '', '/login')
     try {
+      const res = await api.post('/user/oauth/exchange', { code: oauthCode })
+      userStore.setToken(res.data.satoken)
       await userStore.fetchUserInfo()
       ElMessage.success('欢迎回来')
       router.push('/home')

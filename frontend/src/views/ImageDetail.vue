@@ -315,7 +315,7 @@ async function handleAddComment() {
     ElMessage.success('评论成功')
     commentText.value = ''
     cmtFile.value = null
-    const res = await getComments(image.value.id)
+    const res = await getComments(image.value.uuid)
     comments.value = res.data || []
   } catch {} finally {
     sending.value = false
@@ -330,8 +330,8 @@ async function handleToggleLike() {
   liking.value = true
   try {
     const res = image.value.likedByMe
-      ? await unlikeImage(image.value.id)
-      : await likeImage(image.value.id)
+      ? await unlikeImage(image.value.uuid)
+      : await likeImage(image.value.uuid)
     image.value.likeCount = res.data.likeCount
     image.value.likedByMe = res.data.likedByMe
   } catch {} finally {
@@ -403,7 +403,7 @@ async function submitCategory() {
 
 async function saveEdit() {
   try {
-    await updateImage(editForm.id, {
+    await updateImage(image.value.uuid, {
       imageName: editForm.imageName,
       categoryId: editForm.categoryId,
       description: editForm.description,

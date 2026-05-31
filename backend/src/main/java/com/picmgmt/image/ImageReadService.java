@@ -16,8 +16,11 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import java.util.Set;
+
+import static com.picmgmt.util.MediaUrlUtil.withVersion;
 
 @Service
 @RequiredArgsConstructor
@@ -71,8 +74,10 @@ public class ImageReadService {
         Page<ImageVO> result = imageMapper.selectImageVOPage(
                 pageParam, userId, normalizeKeyword(dto.getKeyword()), dto.getCategoryId(), null, null, sortField, sortOrder, "latest", null);
         for (ImageVO vo : result.getRecords()) {
-            if (vo.getStorageKey() != null) {
-                vo.setImageUrl(storageService.getPresignedUrl("images", vo.getStorageKey(), presignedExpiry(vo.getVisibility())));
+            if (vo.getStorageKey() != null && !vo.getStorageKey().isBlank()) {
+                vo.setImageUrl(imageUrlForStorageImage(vo));
+            } else if (vo.getImagePath() != null && vo.getImagePath().startsWith("data:image/")) {
+                vo.setImageUrl("/api/image/download/" + vo.getUuid());
             }
             decorateLikeInfo(vo);
         }
@@ -93,8 +98,10 @@ public class ImageReadService {
                 pageParam, null, normalizeKeyword(keyword), null, "PUBLIC", tagFilters,
                 safeSortField, safeSortOrder, safeSortMode, safeRandomSeed);
         for (ImageVO vo : result.getRecords()) {
-            if (vo.getStorageKey() != null) {
-                vo.setImageUrl(storageService.getPresignedUrl("images", vo.getStorageKey(), PUBLIC_PRESIGNED_EXPIRY));
+            if (vo.getStorageKey() != null && !vo.getStorageKey().isBlank()) {
+                vo.setImageUrl(imageUrlForStorageImage(vo));
+            } else if (vo.getImagePath() != null && vo.getImagePath().startsWith("data:image/")) {
+                vo.setImageUrl("/api/image/download/" + vo.getUuid());
             }
             decorateLikeInfo(vo);
         }
@@ -107,7 +114,11 @@ public class ImageReadService {
         if (!permissionService.canView(image)) {
             throw new BusinessException(ErrorCode.IMAGE_PERMISSION_DENIED);
         }
-        return storageService.download("images", image.getStorageKey());
+        byte[] bytes = downloadFromStorageOrBase64(image);
+        if (bytes == null) {
+            throw new BusinessException(ErrorCode.IMAGE_NOT_FOUND);
+        }
+        return bytes;
     }
 
     public byte[] downloadByUuid(String uuid) {
@@ -116,7 +127,29 @@ public class ImageReadService {
         if (!permissionService.canView(image)) {
             throw new BusinessException(ErrorCode.IMAGE_PERMISSION_DENIED);
         }
-        return storageService.download("images", image.getStorageKey());
+        byte[] bytes = downloadFromStorageOrBase64(image);
+        if (bytes == null) {
+            throw new BusinessException(ErrorCode.IMAGE_NOT_FOUND);
+        }
+        return bytes;
+    }
+
+    private byte[] downloadFromStorageOrBase64(Image image) {
+        if (image.getStorageKey() != null && !image.getStorageKey().isBlank()) {
+            try {
+                return storageService.download("images", image.getStorageKey());
+            } catch (Exception e) {
+                // fall through to Base64 fallback if storage download fails
+            }
+        }
+        String imagePath = image.getImagePath();
+        if (imagePath != null && imagePath.startsWith("data:image/")) {
+            int base64Start = imagePath.indexOf(";base64,");
+            if (base64Start > 0) {
+                return Base64.getDecoder().decode(imagePath.substring(base64Start + 8));
+            }
+        }
+        return null;
     }
 
     public Long resolveImageId(String uuid) {
@@ -148,6 +181,13 @@ public class ImageReadService {
             return 50;
         }
         return limit;
+    }
+
+    private String imageUrlForStorageImage(ImageVO vo) {
+        if ("PUBLIC".equals(vo.getVisibility())) {
+            return withVersion("/api/image/download/" + vo.getUuid(), vo.getStorageKey());
+        }
+        return storageService.getPresignedUrl("images", vo.getStorageKey(), presignedExpiry(vo.getVisibility()));
     }
 
     private void decorateLikeInfo(ImageVO vo) {
