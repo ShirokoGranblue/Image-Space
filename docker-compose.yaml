@@ -1,5 +1,4 @@
-name: picture_management
-
+name: -picture_management
 services:
   mysql:
     image: mysql:8.0
