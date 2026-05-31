@@ -161,28 +161,6 @@ public class ImageWriteService {
         return update(image.getId(), dto);
     }
 
-        if (dto.getImageName() != null) image.setImageName(dto.getImageName());
-        if (dto.getCategoryId() != null) {
-            Category category = categoryMapper.selectById(dto.getCategoryId());
-            if (category == null || !category.getUserId().equals(userId)) {
-                throw new BusinessException(ErrorCode.CATEGORY_NOT_FOUND);
-            }
-            image.setCategoryId(dto.getCategoryId());
-        }
-        if (dto.getDescription() != null) {
-            if (dto.getDescription().length() > MAX_DESCRIPTION_LENGTH) {
-                throw new BusinessException(ErrorCode.IMAGE_DESCRIPTION_TOO_LONG);
-            }
-            image.setDescription(dto.getDescription());
-        }
-        if (dto.getTags() != null) image.setTags(dto.getTags());
-        if (dto.getVisibility() != null) image.setVisibility(dto.getVisibility().trim().toUpperCase());
-        if (dto.getVisibleUsernames() != null) image.setVisibleUsernames(dto.getVisibleUsernames());
-
-        imageRepository.updateById(image);
-        return imageRepository.toVO(image);
-    }
-
     private boolean isValidImageContent(byte[] bytes) {
         if (bytes == null || bytes.length < 4) return false;
         if (bytes[0] == (byte) 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47) return true;
