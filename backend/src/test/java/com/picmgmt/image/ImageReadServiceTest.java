@@ -86,6 +86,7 @@ class ImageReadServiceTest {
 
         service.getSquare(1, 12, null, "cute,blue#avatar", "random", "seed-1", null, null);
 
+        @SuppressWarnings("unchecked")
         ArgumentCaptor<List<String>> tagFilters = ArgumentCaptor.forClass(List.class);
         verify(imageMapper).selectImageVOPage(any(), isNull(), isNull(), isNull(), eq("PUBLIC"),
                 tagFilters.capture(), eq("upload_time"), eq("desc"), eq("random"), eq("seed-1"));

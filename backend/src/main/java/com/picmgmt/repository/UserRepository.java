@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.picmgmt.cache.CacheService;
 import com.picmgmt.entity.User;
 import com.picmgmt.mapper.UserMapper;
-import com.picmgmt.storage.StorageService;
 import com.picmgmt.util.MediaUrlUtil;
 import com.picmgmt.vo.UserVO;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +17,6 @@ import java.util.Optional;
 public class UserRepository {
 
     private final UserMapper userMapper;
-    private final StorageService storageService;
     private final CacheService cacheService;
     private final MediaUrlUtil mediaUrlUtil;
 

@@ -53,7 +53,10 @@ public class CategoryRepository {
 
     public List<Category> listByUserId(Long userId) {
         String key = LIST_KEY_PREFIX + userId;
-        return cacheService.getOrLoad(key, (Class<List<Category>>)(Class<?>)List.class,
+        @SuppressWarnings("unchecked")
+        Class<List<Category>> listClass = (Class<List<Category>>)(Class<?>) List.class;
+
+        return cacheService.getOrLoad(key, listClass,
                 () -> {
                     LambdaQueryWrapper<Category> wrapper = new LambdaQueryWrapper<>();
                     wrapper.eq(Category::getUserId, userId).orderByAsc(Category::getId);
