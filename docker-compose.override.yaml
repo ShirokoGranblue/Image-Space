@@ -1,0 +1,11 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_TURNSTILE_ENABLED: ${VITE_TURNSTILE_ENABLED:-false}
+        VITE_TURNSTILE_SITE_KEY: ${VITE_TURNSTILE_SITE_KEY:-0x4AAAAAADXRE_jtv9_OBFRo}
+  nginx:
+    volumes:
+      - ./deploy/nginx/cloudflare-ips.conf:/etc/nginx/cloudflare-ips.conf:ro
+      - /etc/nginx/ssl:/etc/nginx/ssl:ro
