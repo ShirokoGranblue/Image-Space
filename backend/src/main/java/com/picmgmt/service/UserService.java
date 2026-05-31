@@ -17,7 +17,11 @@ public interface UserService {
 
     User getById(Long id);
 
+    User getByUuid(String uuid);
+
     UserVO getUserVOById(Long id);
+
+    UserVO getUserVOByUuid(String uuid);
 
     UserVO updateProfile(Long userId, String displayName, String email, String phone, String bio);
 

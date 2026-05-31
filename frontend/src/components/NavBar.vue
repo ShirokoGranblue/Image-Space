@@ -85,7 +85,7 @@ function onScroll() {
 }
 
 function goProfile() {
-  router.push(`/profile/${userStore.userInfo?.id || 0}`)
+  router.push(`/profile/${userStore.userInfo?.uuid || 0}`)
 }
 
 async function handleLogout() {

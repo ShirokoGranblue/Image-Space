@@ -13,5 +13,7 @@ public interface CommentService {
 
     List<CommentVO> listByImage(Long imageId);
 
+    List<CommentVO> listByImageUuid(String imageUuid);
+
     Comment getById(Long commentId);
 }

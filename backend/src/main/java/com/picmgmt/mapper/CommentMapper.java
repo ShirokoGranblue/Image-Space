@@ -12,7 +12,7 @@ import java.util.List;
 public interface CommentMapper extends BaseMapper<Comment> {
 
     @Select("""
-        SELECT c.id, c.image_id, c.user_id, c.content, c.image_path, c.create_time, u.username, u.display_name
+        SELECT c.id, c.image_id, c.user_id, c.content, c.image_path, c.create_time, u.username, u.display_name, u.uuid AS user_uuid
         FROM comments c
         LEFT JOIN users u ON c.user_id = u.id
         WHERE c.image_id = #{imageId}

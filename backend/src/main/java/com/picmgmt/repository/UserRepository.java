@@ -36,6 +36,13 @@ public class UserRepository {
                 });
     }
 
+    public Optional<User> findByUuid(String uuid) {
+        User user = userMapper.selectOne(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<User>()
+                        .eq(User::getUuid, uuid));
+        return Optional.ofNullable(user);
+    }
+
     public void updateById(User user) {
         userMapper.updateById(user);
         cacheService.evict(KEY_PREFIX + user.getId());
@@ -44,6 +51,7 @@ public class UserRepository {
     public UserVO toVO(User user) {
         UserVO vo = new UserVO();
         vo.setId(user.getId());
+        vo.setUuid(user.getUuid());
         vo.setUsername(user.getUsername());
         vo.setDisplayName(user.getDisplayName());
         vo.setRole(user.getRole());

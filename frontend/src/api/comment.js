@@ -1,7 +1,7 @@
 import api from './index'
 
-export function getComments(imageId) {
-  return api.get(`/comment/list/${imageId}`)
+export function getComments(imageUuid) {
+  return api.get(`/comment/list/${imageUuid}`)
 }
 
 export function addComment(data) {

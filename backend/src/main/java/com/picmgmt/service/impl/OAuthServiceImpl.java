@@ -142,6 +142,7 @@ public class OAuthServiceImpl implements OAuthService {
         if (userMapper.selectCount(new LambdaQueryWrapper<User>().eq(User::getUsername, username)) > 0) {
             username = username + "_" + UUID.randomUUID().toString().substring(0, 4);
         }
+        user.setUuid(java.util.UUID.randomUUID().toString());
         user.setUsername(username);
         user.setDisplayName(nickname != null ? nickname : oauthUsername);
         user.setPassword(BCrypt.hashpw(UUID.randomUUID().toString(), BCrypt.gensalt()));

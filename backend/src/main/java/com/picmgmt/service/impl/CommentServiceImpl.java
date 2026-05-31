@@ -83,6 +83,13 @@ public class CommentServiceImpl implements CommentService {
         return list;
     }
 
+    @Override
+    public List<CommentVO> listByImageUuid(String imageUuid) {
+        var image = imageRepository.findByUuid(imageUuid)
+                .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
+        return listByImage(image.getId());
+    }
+
     private void decorateLikeInfo(List<CommentVO> list) {
         Long currentUserId = null;
         if (StpUtil.isLogin()) {

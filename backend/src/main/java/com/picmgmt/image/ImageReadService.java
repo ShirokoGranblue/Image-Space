@@ -51,6 +51,17 @@ public class ImageReadService {
         return vo;
     }
 
+    public ImageVO getByUuid(String uuid) {
+        Image image = imageRepository.findByUuid(uuid)
+                .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
+        if (!permissionService.canView(image)) {
+            throw new BusinessException(ErrorCode.IMAGE_PERMISSION_DENIED);
+        }
+        ImageVO vo = imageRepository.toVO(image);
+        decorateLikeInfo(vo);
+        return vo;
+    }
+
     public Page<ImageVO> page(ImageQueryDTO dto) {
         long userId = StpUtil.getLoginIdAsLong();
         String sortField = ALLOWED_SORT_FIELDS.contains(dto.getSortField()) ? dto.getSortField() : "upload_time";
@@ -97,6 +108,21 @@ public class ImageReadService {
             throw new BusinessException(ErrorCode.IMAGE_PERMISSION_DENIED);
         }
         return storageService.download("images", image.getStorageKey());
+    }
+
+    public byte[] downloadByUuid(String uuid) {
+        Image image = imageRepository.findByUuid(uuid)
+                .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
+        if (!permissionService.canView(image)) {
+            throw new BusinessException(ErrorCode.IMAGE_PERMISSION_DENIED);
+        }
+        return storageService.download("images", image.getStorageKey());
+    }
+
+    public Long resolveImageId(String uuid) {
+        Image image = imageRepository.findByUuid(uuid)
+                .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
+        return image.getId();
     }
 
     private List<String> parseTags(String tags) {

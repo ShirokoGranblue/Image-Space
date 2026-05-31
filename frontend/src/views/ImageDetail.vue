@@ -24,7 +24,7 @@
           <div class="meta-bar">
             <div class="meta-item">
               <span class="meta-label"><el-icon><User /></el-icon> 上传者</span>
-              <router-link :to="`/profile/${image.userId}`" class="uploader-link">{{ image.displayName || image.username }}</router-link>
+              <router-link :to="`/profile/${image.userUuid || image.userId}`" class="uploader-link">{{ image.displayName || image.username }}</router-link>
             </div>
             <div class="meta-item">
               <span class="meta-label"><el-icon><FolderOpened /></el-icon> 分类</span>
@@ -165,7 +165,7 @@
             :class="{ 'notification-highlight': highlightedTarget === `comment-${c.id}` }"
           >
             <div class="comment-header">
-              <router-link :to="`/profile/${c.userId}`" class="comment-user">{{ c.displayName || c.username }}</router-link>
+              <router-link :to="`/profile/${c.userUuid || c.userId}`" class="comment-user">{{ c.displayName || c.username }}</router-link>
               <span class="comment-time">{{ formatTime(c.createTime) }}</span>
             </div>
             <p class="comment-content">{{ c.content }}</p>
@@ -275,8 +275,8 @@ onMounted(async () => {
   loading.value = true
   try {
     const [imgRes, cmtRes] = await Promise.all([
-      getImageDetail(route.params.id),
-      getComments(route.params.id)
+      getImageDetail(route.params.uuid),
+      getComments(route.params.uuid)
     ])
     image.value = imgRes.data
     comments.value = cmtRes.data || []
@@ -484,7 +484,7 @@ function highlightFromNotification() {
 
 <style scoped>
 .detail-page { min-height: 100vh; background: var(--bg-base); }
-.page-container { padding: 28px 8px 40px; }
+.page-container { padding: 76px 8px 40px; }
 .back-bar { margin-bottom: var(--space-md); }
 .back-bar :deep(.el-button) { color: var(--text-muted); font-weight: 500; }
 .back-bar :deep(.el-button:hover) { color: var(--accent); }

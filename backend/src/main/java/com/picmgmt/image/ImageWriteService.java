@@ -81,6 +81,7 @@ public class ImageWriteService {
         storageService.upload("images", objectKey, bytes, mimeType);
 
         Image image = new Image();
+        image.setUuid(java.util.UUID.randomUUID().toString());
         image.setUserId(userId);
         image.setCategoryId(categoryId);
         image.setImageName(buildStoredImageName(originalFilename, imageName, ext));
@@ -112,6 +113,17 @@ public class ImageWriteService {
     }
 
     @Transactional
+    public void deleteByUuid(String uuid) {
+        Image image = imageRepository.findByUuid(uuid)
+                .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
+        permissionService.validateOwnershipOrAdmin(image);
+        if (image.getStorageKey() != null) {
+            storageService.delete("images", image.getStorageKey());
+        }
+        imageRepository.deleteById(image.getId());
+    }
+
+    @Transactional
     public ImageVO update(Long imageId, ImageUpdateDTO dto) {
         Image image = imageRepository.findById(imageId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
@@ -119,6 +131,35 @@ public class ImageWriteService {
         permissionService.validateOwnershipOrAdmin(image);
 
         long userId = StpUtil.getLoginIdAsLong();
+
+        if (dto.getImageName() != null) image.setImageName(dto.getImageName());
+        if (dto.getCategoryId() != null) {
+            Category category = categoryMapper.selectById(dto.getCategoryId());
+            if (category == null || !category.getUserId().equals(userId)) {
+                throw new BusinessException(ErrorCode.CATEGORY_NOT_FOUND);
+            }
+            image.setCategoryId(dto.getCategoryId());
+        }
+        if (dto.getDescription() != null) {
+            if (dto.getDescription().length() > MAX_DESCRIPTION_LENGTH) {
+                throw new BusinessException(ErrorCode.IMAGE_DESCRIPTION_TOO_LONG);
+            }
+            image.setDescription(dto.getDescription());
+        }
+        if (dto.getTags() != null) image.setTags(dto.getTags());
+        if (dto.getVisibility() != null) image.setVisibility(dto.getVisibility().trim().toUpperCase());
+        if (dto.getVisibleUsernames() != null) image.setVisibleUsernames(dto.getVisibleUsernames());
+
+        imageRepository.updateById(image);
+        return imageRepository.toVO(image);
+    }
+
+    @Transactional
+    public ImageVO updateByUuid(String uuid, ImageUpdateDTO dto) {
+        Image image = imageRepository.findByUuid(uuid)
+                .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
+        return update(image.getId(), dto);
+    }
 
         if (dto.getImageName() != null) image.setImageName(dto.getImageName());
         if (dto.getCategoryId() != null) {

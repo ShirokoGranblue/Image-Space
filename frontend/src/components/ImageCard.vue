@@ -84,10 +84,8 @@ const imgFailed = ref(false)
 const fallbackTried = ref(false)
 
 const imageSrc = computed(() => {
-  if (imgFailed.value) {
-    if (fallbackTried.value) return ''
-    return getFallbackUrl(props.image)
-  }
+  if (imgFailed.value) return ''
+  if (fallbackTried.value) return getFallbackUrl(props.image)
   return getImageDownloadUrl(props.image)
 })
 
@@ -113,21 +111,17 @@ function onPopHide() {
   hover.value = false
 }
 function handleImgError() {
-  if (fallbackTried.value) {
-    return
-  }
+  if (imgFailed.value) return
   const fallback = getFallbackUrl(props.image)
-  if (fallback && getImageDownloadUrl(props.image) !== fallback) {
+  if (!fallbackTried.value && fallback && getImageDownloadUrl(props.image) !== fallback) {
     fallbackTried.value = true
-    imgFailed.value = false
   } else {
     imgFailed.value = true
-    fallbackTried.value = true
   }
 }
 function goDetail() {
   if (hoverLocked.value) return
-  router.push(`/image/${props.image.id}`)
+  router.push(`/image/${props.image.uuid || props.image.id}`)
 }
 
 </script>

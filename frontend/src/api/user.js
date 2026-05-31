@@ -16,8 +16,8 @@ export function getUserInfo() {
   return api.get('/user/info')
 }
 
-export function getUserProfile(id) {
-  return api.get(`/user/profile/${id}`)
+export function getUserProfile(uuid) {
+  return api.get(`/user/profile/${uuid}`)
 }
 
 export function updateProfile(data) {

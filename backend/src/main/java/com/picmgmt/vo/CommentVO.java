@@ -10,6 +10,7 @@ public class CommentVO {
     private Long id;
     private Long imageId;
     private Long userId;
+    private String userUuid;
     private String username;
     private String displayName;
     private String content;

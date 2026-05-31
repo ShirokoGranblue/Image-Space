@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 public class UserVO {
 
     private Long id;
+    private String uuid;
     private String username;
     private String displayName;
     private String role;

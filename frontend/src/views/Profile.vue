@@ -1154,7 +1154,7 @@ function isGifFile(file) {
 
 onMounted(async () => {
   loading.value = true
-  const profileId = route.params.id || userStore.userInfo?.id
+  const profileId = route.params.uuid || userStore.userInfo?.uuid || userStore.userInfo?.id
   try {
     if (userStore.token && !userStore.userInfo) {
       await userStore.fetchUserInfo()

@@ -9,6 +9,7 @@ USE picture_management;
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    uuid VARCHAR(36) NOT NULL DEFAULT '' UNIQUE,
     username VARCHAR(50) NOT NULL UNIQUE,
     display_name VARCHAR(50),
     password VARCHAR(255) NOT NULL,
@@ -37,10 +38,12 @@ CREATE TABLE IF NOT EXISTS categories (
 -- Images table (image_path stores Base64 Data URL)
 CREATE TABLE IF NOT EXISTS images (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    uuid VARCHAR(36) NOT NULL DEFAULT '' UNIQUE,
     user_id BIGINT NOT NULL,
     category_id BIGINT,
     image_name VARCHAR(255) NOT NULL,
     image_path LONGTEXT NOT NULL,
+    storage_key VARCHAR(500),
     file_size BIGINT NOT NULL DEFAULT 0,
     image_type VARCHAR(20) NOT NULL,
     description TEXT,

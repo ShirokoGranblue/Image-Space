@@ -43,6 +43,13 @@ public class ImageRepository {
                 });
     }
 
+    public Optional<Image> findByUuid(String uuid) {
+        Image image = imageMapper.selectOne(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Image>()
+                        .eq(Image::getUuid, uuid));
+        return Optional.ofNullable(image);
+    }
+
     public void insert(Image image) {
         imageMapper.insert(image);
         cacheService.put(ENTITY_KEY_PREFIX + image.getId(), image, ENTITY_TTL);
@@ -63,6 +70,7 @@ public class ImageRepository {
     public ImageVO toVO(Image image) {
         ImageVO vo = new ImageVO();
         vo.setId(image.getId());
+        vo.setUuid(image.getUuid());
         vo.setUserId(image.getUserId());
         vo.setCategoryId(image.getCategoryId());
         vo.setImageName(image.getImageName());
@@ -83,6 +91,7 @@ public class ImageRepository {
         if (user != null) {
             vo.setUsername(user.getUsername());
             vo.setDisplayName(user.getDisplayName());
+            vo.setUserUuid(user.getUuid());
         }
         if (image.getCategoryId() != null) {
             Category category = categoryMapper.selectById(image.getCategoryId());

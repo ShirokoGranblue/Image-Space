@@ -8,7 +8,9 @@ import java.time.LocalDateTime;
 public class ImageVO {
 
     private Long id;
+    private String uuid;
     private Long userId;
+    private String userUuid;
     private String username;
     private String displayName;
     private Long categoryId;

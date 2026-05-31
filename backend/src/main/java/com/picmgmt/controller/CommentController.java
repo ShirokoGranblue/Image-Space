@@ -81,8 +81,8 @@ public class CommentController {
     }
 
     @Operation(summary = "获取图片评论列表")
-    @GetMapping("/list/{imageId}")
-    public Result<List<CommentVO>> list(@PathVariable Long imageId) {
-        return Result.ok(commentService.listByImage(imageId));
+    @GetMapping("/list/{imageUuid}")
+    public Result<List<CommentVO>> list(@PathVariable String imageUuid) {
+        return Result.ok(commentService.listByImageUuid(imageUuid));
     }
 }

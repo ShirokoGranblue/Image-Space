@@ -13,6 +13,7 @@ public class Image {
 
     @TableId(type = IdType.AUTO)
     private Long id;
+    private String uuid;
     private Long userId;
     private Long categoryId;
     private String imageName;

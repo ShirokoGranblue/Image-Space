@@ -48,18 +48,18 @@ public class ImageController {
     }
 
     @Operation(summary = "删除图片")
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{uuid}")
     @SaCheckPermission("image:delete")
-    public Result<Void> delete(@PathVariable Long id) {
-        imageWriteService.delete(id);
+    public Result<Void> delete(@PathVariable String uuid) {
+        imageWriteService.deleteByUuid(uuid);
         return Result.ok();
     }
 
     @Operation(summary = "更新图片信息")
-    @PutMapping("/{id}")
+    @PutMapping("/{uuid}")
     @SaCheckPermission("image:edit")
-    public Result<ImageVO> update(@PathVariable Long id, @RequestBody @Valid ImageUpdateDTO dto) {
-        return Result.ok(imageWriteService.update(id, dto));
+    public Result<ImageVO> update(@PathVariable String uuid, @RequestBody @Valid ImageUpdateDTO dto) {
+        return Result.ok(imageWriteService.updateByUuid(uuid, dto));
     }
 
     @Operation(summary = "查询当前用户图片列表")
@@ -69,10 +69,10 @@ public class ImageController {
     }
 
     @Operation(summary = "下载图片")
-    @GetMapping("/download/{id}")
-    public ResponseEntity<byte[]> download(@PathVariable Long id) {
-        var vo = imageReadService.getById(id);
-        byte[] bytes = imageReadService.download(id);
+    @GetMapping("/download/{uuid}")
+    public ResponseEntity<byte[]> download(@PathVariable String uuid) {
+        var vo = imageReadService.getByUuid(uuid);
+        byte[] bytes = imageReadService.downloadByUuid(uuid);
         String encodedName = URLEncoder.encode(vo.getImageName(), StandardCharsets.UTF_8)
                 .replace("+", "%20");
         return ResponseEntity.ok()
@@ -82,9 +82,9 @@ public class ImageController {
     }
 
     @Operation(summary = "获取图片详情")
-    @GetMapping("/{id}")
-    public Result<ImageVO> getById(@PathVariable Long id) {
-        return Result.ok(imageReadService.getById(id));
+    @GetMapping("/{uuid}")
+    public Result<ImageVO> getById(@PathVariable String uuid) {
+        return Result.ok(imageReadService.getByUuid(uuid));
     }
 
     @Operation(summary = "图片广场")
@@ -101,14 +101,16 @@ public class ImageController {
     }
 
     @Operation(summary = "点赞图片")
-    @PostMapping("/{id}/like")
-    public Result<LikeStatusVO> like(@PathVariable Long id) {
+    @PostMapping("/{uuid}/like")
+    public Result<LikeStatusVO> like(@PathVariable String uuid) {
+        Long id = imageReadService.resolveImageId(uuid);
         return Result.ok(likeService.like(LikeTarget.IMAGE, id));
     }
 
     @Operation(summary = "取消点赞图片")
-    @DeleteMapping("/{id}/like")
-    public Result<LikeStatusVO> unlike(@PathVariable Long id) {
+    @DeleteMapping("/{uuid}/like")
+    public Result<LikeStatusVO> unlike(@PathVariable String uuid) {
+        Long id = imageReadService.resolveImageId(uuid);
         return Result.ok(likeService.unlike(LikeTarget.IMAGE, id));
     }
 

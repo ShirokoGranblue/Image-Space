@@ -90,9 +90,9 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
     }
 
     @Operation(summary = "获取用户公开信息")
-    @GetMapping("/profile/{id}")
-    public Result<UserVO> profile(@PathVariable Long id) {
-        return Result.ok(userService.getUserVOById(id));
+    @GetMapping("/profile/{uuid}")
+    public Result<UserVO> profile(@PathVariable String uuid) {
+        return Result.ok(userService.getUserVOByUuid(uuid));
     }
 
     @Operation(summary = "更新个人资料")
@@ -131,9 +131,9 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
     }
 
     @Operation(summary = "下载头像")
-    @GetMapping("/avatar/{id}")
-    public ResponseEntity<byte[]> avatar(@PathVariable Long id) {
-        User user = getExistingUser(id);
+    @GetMapping("/avatar/{uuid}")
+    public ResponseEntity<byte[]> avatar(@PathVariable String uuid) {
+        User user = getExistingUserByUuid(uuid);
         String objectKey = resolveObjectKey("avatars", user.getAvatarKey(), user.getAvatar());
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.noStore())
@@ -142,9 +142,9 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
     }
 
     @Operation(summary = "下载背景")
-    @GetMapping("/background/{id}")
-    public ResponseEntity<byte[]> background(@PathVariable Long id) {
-        User user = getExistingUser(id);
+    @GetMapping("/background/{uuid}")
+    public ResponseEntity<byte[]> background(@PathVariable String uuid) {
+        User user = getExistingUserByUuid(uuid);
         String objectKey = resolveObjectKey("backgrounds", user.getBackgroundKey(), user.getBackground());
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.noStore())
@@ -240,6 +240,14 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
 
     private User getExistingUser(Long id) {
         User user = userService.getById(id);
+        if (user == null || (user.getDeleted() != null && user.getDeleted() == 1)) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+        return user;
+    }
+
+    private User getExistingUserByUuid(String uuid) {
+        User user = userService.getByUuid(uuid);
         if (user == null || (user.getDeleted() != null && user.getDeleted() == 1)) {
             throw new BusinessException(ErrorCode.USER_NOT_FOUND);
         }

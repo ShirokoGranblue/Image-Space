@@ -27,12 +27,12 @@ const routes = [
     component: () => import('../views/ImageSquare.vue')
   },
   {
-    path: '/image/:id',
+    path: '/image/:uuid',
     name: 'ImageDetail',
     component: () => import('../views/ImageDetail.vue')
   },
   {
-    path: '/profile/:id',
+    path: '/profile/:uuid',
     name: 'Profile',
     component: () => import('../views/Profile.vue')
   }

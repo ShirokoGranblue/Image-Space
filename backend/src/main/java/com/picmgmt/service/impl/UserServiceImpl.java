@@ -64,6 +64,7 @@ public class UserServiceImpl implements UserService {
             }
         }
         User user = new User();
+        user.setUuid(java.util.UUID.randomUUID().toString());
         user.setUsername(dto.getUsername());
         user.setDisplayName(dto.getUsername());
         user.setPassword(BCrypt.hashpw(dto.getPassword(), BCrypt.gensalt()));
@@ -108,8 +109,23 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public User getByUuid(String uuid) {
+        return userRepository.findByUuid(uuid).orElse(null);
+    }
+
+    @Override
     public UserVO getUserVOById(Long id) {
         User user = userRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        if (user.getDeleted() != null && user.getDeleted() == 1) {
+            throw new BusinessException(ErrorCode.USER_DELETED);
+        }
+        return userRepository.toVO(user);
+    }
+
+    @Override
+    public UserVO getUserVOByUuid(String uuid) {
+        User user = userRepository.findByUuid(uuid)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         if (user.getDeleted() != null && user.getDeleted() == 1) {
             throw new BusinessException(ErrorCode.USER_DELETED);

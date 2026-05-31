@@ -10,30 +10,30 @@ export function getImageList(params) {
   return api.get('/image/list', { params })
 }
 
-export function getImageDetail(id) {
-  return api.get(`/image/${id}`)
+export function getImageDetail(uuid) {
+  return api.get(`/image/${uuid}`)
 }
 
-export function deleteImage(id) {
-  return api.delete(`/image/${id}`)
+export function deleteImage(uuid) {
+  return api.delete(`/image/${uuid}`)
 }
 
-export function updateImage(id, data) {
-  return api.put(`/image/${id}`, data)
+export function updateImage(uuid, data) {
+  return api.put(`/image/${uuid}`, data)
 }
 
-export function downloadImage(id) {
-  return `/api/image/download/${id}`
+export function downloadImage(uuid) {
+  return `/api/image/download/${uuid}`
 }
 
 export function getImageSquare(params) {
   return api.get('/image/square', { params })
 }
 
-export function likeImage(id) {
-  return api.post(`/image/${id}/like`)
+export function likeImage(uuid) {
+  return api.post(`/image/${uuid}/like`)
 }
 
-export function unlikeImage(id) {
-  return api.delete(`/image/${id}/like`)
+export function unlikeImage(uuid) {
+  return api.delete(`/image/${uuid}/like`)
 }

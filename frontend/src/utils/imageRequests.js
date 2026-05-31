@@ -5,7 +5,7 @@ export function getImageDownloadUrl(imageOrId) {
   if (!imageOrId) return ''
   if (typeof imageOrId === 'object') {
     if (imageOrId.imageUrl) return imageOrId.imageUrl
-    return imageOrId.id ? `/api/image/download/${imageOrId.id}` : ''
+    return imageOrId.uuid ? `/api/image/download/${imageOrId.uuid}` : ''
   }
   return `/api/image/download/${imageOrId}`
 }
@@ -13,7 +13,7 @@ export function getImageDownloadUrl(imageOrId) {
 export function getFallbackUrl(imageOrId) {
   if (!imageOrId) return ''
   if (typeof imageOrId === 'object') {
-    return imageOrId.id ? `/api/image/download/${imageOrId.id}` : ''
+    return imageOrId.uuid ? `/api/image/download/${imageOrId.uuid}` : ''
   }
   return `/api/image/download/${imageOrId}`
 }
