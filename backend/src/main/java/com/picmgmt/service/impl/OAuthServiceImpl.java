@@ -10,6 +10,7 @@ import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.picmgmt.cache.BloomFilterService;
 import com.picmgmt.config.GoogleJwtVerifier;
 import com.picmgmt.config.OAuthPooledHttp;
 import com.picmgmt.entity.User;
@@ -52,6 +53,7 @@ public class OAuthServiceImpl implements OAuthService {
     private final UserMapper userMapper;
     private final StorageService storageService;
     private final StringRedisTemplate redisTemplate;
+    private final BloomFilterService bloomFilterService;
 
     @Value("${oauth.github.client-id}")
     private String githubClientId;
@@ -79,10 +81,11 @@ public class OAuthServiceImpl implements OAuthService {
 
     private final GoogleJwtVerifier googleJwtVerifier = new GoogleJwtVerifier();
 
-    public OAuthServiceImpl(UserMapper userMapper, StorageService storageService, StringRedisTemplate redisTemplate) {
+    public OAuthServiceImpl(UserMapper userMapper, StorageService storageService, StringRedisTemplate redisTemplate, BloomFilterService bloomFilterService) {
         this.userMapper = userMapper;
         this.storageService = storageService;
         this.redisTemplate = redisTemplate;
+        this.bloomFilterService = bloomFilterService;
     }
 
     @Override
@@ -149,6 +152,7 @@ public class OAuthServiceImpl implements OAuthService {
         user.setRole("user");
         user.setEmail(email);
         userMapper.insert(user);
+        bloomFilterService.addUser(user.getId());
         bindOAuthUsername(user, provider, oauthUsername);
 
         String avatarKey = downloadAndUploadAvatar(avatarUrl, user.getId());

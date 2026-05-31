@@ -13,6 +13,9 @@ import java.util.List;
 @Mapper
 public interface ImageMapper extends BaseMapper<Image> {
 
+    @Select("SELECT id FROM images")
+    List<Long> selectIds();
+
     @Select("""
         <script>
             SELECT i.*,

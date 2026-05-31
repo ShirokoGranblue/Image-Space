@@ -1,5 +1,6 @@
 package com.picmgmt.repository;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.picmgmt.cache.CacheService;
 import com.picmgmt.entity.User;
 import com.picmgmt.mapper.UserMapper;
@@ -26,19 +27,13 @@ public class UserRepository {
 
     public Optional<User> findById(Long id) {
         String key = KEY_PREFIX + id;
-        return cacheService.get(key, User.class)
-                .or(() -> {
-                    User user = userMapper.selectById(id);
-                    if (user != null) {
-                        cacheService.put(key, user, TTL);
-                    }
-                    return Optional.ofNullable(user);
-                });
+        return Optional.ofNullable(cacheService.getOrLoad(key, User.class,
+                () -> userMapper.selectById(id), TTL));
     }
 
     public Optional<User> findByUuid(String uuid) {
         User user = userMapper.selectOne(
-                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<User>()
+                new LambdaQueryWrapper<User>()
                         .eq(User::getUuid, uuid));
         return Optional.ofNullable(user);
     }

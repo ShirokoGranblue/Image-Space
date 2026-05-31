@@ -1,5 +1,6 @@
 package com.picmgmt.repository;
 
+import com.picmgmt.cache.BloomFilterService;
 import com.picmgmt.cache.CacheService;
 import com.picmgmt.entity.Image;
 import com.picmgmt.mapper.CategoryMapper;
@@ -27,11 +28,12 @@ class ImageRepositoryTest {
     @Mock private CategoryMapper categoryMapper;
     @Mock private StorageService storageService;
     @Mock private CacheService cacheService;
+    @Mock private BloomFilterService bloomFilterService;
 
     @Test
     void toVO_shouldUsePresignedUrlFromStorageService() {
         ImageRepository repository = new ImageRepository(
-                imageMapper, userMapper, categoryMapper, storageService, cacheService);
+                imageMapper, userMapper, categoryMapper, storageService, cacheService, bloomFilterService);
         Image image = new Image();
         image.setId(7L);
         image.setUserId(4L);

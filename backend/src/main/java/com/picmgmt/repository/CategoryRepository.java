@@ -1,6 +1,7 @@
 package com.picmgmt.repository;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.picmgmt.cache.BloomFilterService;
 import com.picmgmt.cache.CacheService;
 import com.picmgmt.entity.Category;
 import com.picmgmt.mapper.CategoryMapper;
@@ -17,6 +18,7 @@ public class CategoryRepository {
 
     private final CategoryMapper categoryMapper;
     private final CacheService cacheService;
+    private final BloomFilterService bloomFilterService;
 
     private static final Duration TTL = Duration.ofMinutes(30);
     private static final String KEY_PREFIX = "category:entity:";
@@ -24,23 +26,20 @@ public class CategoryRepository {
 
     public Optional<Category> findById(Long id) {
         String key = KEY_PREFIX + id;
-        return cacheService.get(key, Category.class)
-                .or(() -> {
-                    Category category = categoryMapper.selectById(id);
-                    if (category != null) cacheService.put(key, category, TTL);
-                    return Optional.ofNullable(category);
-                });
+        return Optional.ofNullable(cacheService.getOrLoad(key, Category.class,
+                () -> categoryMapper.selectById(id), TTL));
     }
 
     public void insert(Category category) {
         categoryMapper.insert(category);
-        cacheService.evictByPattern(LIST_KEY_PREFIX + category.getUserId() + "*");
+        cacheService.evict(LIST_KEY_PREFIX + category.getUserId());
+        bloomFilterService.addCategory(category.getId());
     }
 
     public void updateById(Category category) {
         categoryMapper.updateById(category);
         cacheService.evict(KEY_PREFIX + category.getId());
-        cacheService.evictByPattern(LIST_KEY_PREFIX + category.getUserId() + "*");
+        cacheService.evict(LIST_KEY_PREFIX + category.getUserId());
     }
 
     public void deleteById(Long id) {
@@ -48,7 +47,7 @@ public class CategoryRepository {
         categoryMapper.deleteById(id);
         if (category != null) {
             cacheService.evict(KEY_PREFIX + id);
-            cacheService.evictByPattern(LIST_KEY_PREFIX + category.getUserId() + "*");
+            cacheService.evict(LIST_KEY_PREFIX + category.getUserId());
         }
     }
 

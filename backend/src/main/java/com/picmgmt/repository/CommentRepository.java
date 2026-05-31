@@ -1,6 +1,5 @@
 package com.picmgmt.repository;
 
-import com.picmgmt.cache.CacheService;
 import com.picmgmt.entity.Comment;
 import com.picmgmt.mapper.CommentLikeMapper;
 import com.picmgmt.mapper.CommentMapper;
@@ -18,15 +17,10 @@ public class CommentRepository {
 
     private final CommentMapper commentMapper;
     private final StorageService storageService;
-    private final CacheService cacheService;
     private final CommentLikeMapper commentLikeMapper;
-
-    private static final Duration TTL = Duration.ofMinutes(10);
-    private static final String LIST_KEY_PREFIX = "comment:list:";
 
     public void insert(Comment comment) {
         commentMapper.insert(comment);
-        cacheService.evict(LIST_KEY_PREFIX + comment.getImageId());
     }
 
     public void deleteById(Long commentId) {
@@ -34,7 +28,6 @@ public class CommentRepository {
         commentMapper.deleteById(commentId);
         if (comment != null) {
             commentLikeMapper.deleteByCommentId(commentId);
-            cacheService.evict(LIST_KEY_PREFIX + comment.getImageId());
             if (comment.getImageKey() != null) {
                 storageService.delete("comments", comment.getImageKey());
             }
@@ -42,17 +35,13 @@ public class CommentRepository {
     }
 
     public List<CommentVO> listByImageId(Long imageId) {
-        String key = LIST_KEY_PREFIX + imageId;
-        return cacheService.getOrLoad(key, (Class<List<CommentVO>>)(Class<?>)List.class,
-                () -> {
-                    List<CommentVO> list = commentMapper.selectCommentVOList(imageId);
-                    for (CommentVO vo : list) {
-                        if (vo.getImagePath() != null) {
-                            vo.setImageUrl(storageService.getPresignedUrl("comments", vo.getImagePath(), java.time.Duration.ofMinutes(5)));
-                        }
-                    }
-                    return list;
-                }, TTL);
+        List<CommentVO> list = commentMapper.selectCommentVOList(imageId);
+        for (CommentVO vo : list) {
+            if (vo.getImagePath() != null) {
+                vo.setImageUrl(storageService.getPresignedUrl("comments", vo.getImagePath(), Duration.ofMinutes(5)));
+            }
+        }
+        return list;
     }
 
     public Comment findById(Long id) {

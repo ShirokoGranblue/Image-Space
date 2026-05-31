@@ -37,6 +37,11 @@ public class CaffeineLocalCache {
                 .build();
     }
 
+    public Optional<Object> getRaw(String key) {
+        CacheEntry entry = cache.getIfPresent(key);
+        return entry != null ? Optional.ofNullable(entry.value) : Optional.empty();
+    }
+
     @SuppressWarnings("unchecked")
     public <T> Optional<T> get(String key, Class<T> type) {
         CacheEntry entry = cache.getIfPresent(key);

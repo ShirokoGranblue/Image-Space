@@ -1,6 +1,7 @@
 package com.picmgmt.repository;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.picmgmt.cache.BloomFilterService;
 import com.picmgmt.cache.CacheService;
 import com.picmgmt.entity.Category;
 import com.picmgmt.entity.Image;
@@ -25,27 +26,20 @@ public class ImageRepository {
     private final CategoryMapper categoryMapper;
     private final StorageService storageService;
     private final CacheService cacheService;
+    private final BloomFilterService bloomFilterService;
 
     private static final Duration ENTITY_TTL = Duration.ofMinutes(30);
-    private static final Duration PAGE_TTL = Duration.ofMinutes(5);
     private static final String ENTITY_KEY_PREFIX = "image:entity:";
-    private static final String PAGE_KEY_PREFIX = "image:page:";
 
     public Optional<Image> findById(Long id) {
         String key = ENTITY_KEY_PREFIX + id;
-        return cacheService.get(key, Image.class)
-                .or(() -> {
-                    Image image = imageMapper.selectById(id);
-                    if (image != null) {
-                        cacheService.put(key, image, ENTITY_TTL);
-                    }
-                    return Optional.ofNullable(image);
-                });
+        return Optional.ofNullable(cacheService.getOrLoad(key, Image.class,
+                () -> imageMapper.selectById(id), ENTITY_TTL));
     }
 
     public Optional<Image> findByUuid(String uuid) {
         Image image = imageMapper.selectOne(
-                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Image>()
+                new LambdaQueryWrapper<Image>()
                         .eq(Image::getUuid, uuid));
         return Optional.ofNullable(image);
     }
@@ -53,18 +47,17 @@ public class ImageRepository {
     public void insert(Image image) {
         imageMapper.insert(image);
         cacheService.put(ENTITY_KEY_PREFIX + image.getId(), image, ENTITY_TTL);
+        bloomFilterService.addImage(image.getId());
     }
 
     public void updateById(Image image) {
         imageMapper.updateById(image);
         cacheService.evict(ENTITY_KEY_PREFIX + image.getId());
-        cacheService.evictByPattern(PAGE_KEY_PREFIX + "*");
     }
 
     public void deleteById(Long id) {
         imageMapper.deleteById(id);
         cacheService.evict(ENTITY_KEY_PREFIX + id);
-        cacheService.evictByPattern(PAGE_KEY_PREFIX + "*");
     }
 
     public ImageVO toVO(Image image) {

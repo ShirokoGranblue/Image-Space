@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.picmgmt.auth.UserRole;
 import com.picmgmt.auth.UserRoleMapper;
+import com.picmgmt.cache.BloomFilterService;
 import com.picmgmt.cache.RedisCacheService;
 import com.picmgmt.common.BusinessException;
 import com.picmgmt.common.ErrorCode;
@@ -38,6 +39,7 @@ public class UserServiceImpl implements UserService {
     private final EmailService emailService;
     private final CaptchaService captchaService;
     private final UserRoleMapper userRoleMapper;
+    private final BloomFilterService bloomFilterService;
 
     @Override
     public UserVO register(RegisterDTO dto) {
@@ -76,6 +78,7 @@ public class UserServiceImpl implements UserService {
             user.setPhone(dto.getPhone().trim());
         }
         userMapper.insert(user);
+        bloomFilterService.addUser(user.getId());
         UserRole userRole = new UserRole();
         userRole.setUserId(user.getId());
         userRole.setRoleId(3L);
@@ -279,6 +282,7 @@ public class UserServiceImpl implements UserService {
                 .set(User::getBackground, null)
                 .set(User::getBackgroundKey, null)
                 .set(User::getGithubUsername, null));
+        redisCacheService.evict("user:entity:" + userId);
         StpUtil.logout();
     }
 
@@ -295,6 +299,7 @@ public class UserServiceImpl implements UserService {
         userMapper.update(null, new LambdaUpdateWrapper<User>()
                 .eq(User::getId, userId)
                 .set(User::getPassword, BCrypt.hashpw(newPassword, BCrypt.gensalt())));
+        redisCacheService.evict("user:entity:" + userId);
     }
 
 }

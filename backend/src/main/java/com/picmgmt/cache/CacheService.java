@@ -8,13 +8,13 @@ public interface CacheService {
 
     <T> Optional<T> get(String key, Class<T> type);
 
-    <T> void put(String key, T value, Duration ttl);
+    <T> void put(String key, T value, Duration logicalTtl);
 
     void evict(String key);
 
     void evictByPattern(String pattern);
 
-    <T> T getOrLoad(String key, Class<T> type, Supplier<T> loader, Duration ttl);
+    <T> T getOrLoad(String key, Class<T> type, Supplier<T> loader, Duration logicalTtl);
 
     <T> boolean setIfAbsent(String key, T value, Duration ttl);
 }
