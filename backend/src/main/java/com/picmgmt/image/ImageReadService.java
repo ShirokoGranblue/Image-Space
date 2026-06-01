@@ -1,13 +1,16 @@
 package com.picmgmt.image;
 
 import cn.dev33.satoken.stp.StpUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.picmgmt.common.BusinessException;
 import com.picmgmt.common.ErrorCode;
 import com.picmgmt.dto.ImageQueryDTO;
 import com.picmgmt.entity.Image;
+import com.picmgmt.entity.User;
 import com.picmgmt.mapper.ImageLikeMapper;
 import com.picmgmt.mapper.ImageMapper;
+import com.picmgmt.mapper.UserMapper;
 import com.picmgmt.repository.ImageRepository;
 import com.picmgmt.storage.StorageService;
 import com.picmgmt.vo.ImageVO;
@@ -26,6 +29,7 @@ public class ImageReadService {
     private final ImageRepository imageRepository;
     private final ImageMapper imageMapper;
     private final ImageLikeMapper imageLikeMapper;
+    private final UserMapper userMapper;
     private final ImagePermissionService permissionService;
     private final StorageService storageService;
     private final ImageUrlService imageUrlService;
@@ -41,7 +45,7 @@ public class ImageReadService {
             throw new BusinessException(ErrorCode.IMAGE_PERMISSION_DENIED);
         }
         ImageVO vo = imageRepository.toVO(image);
-        decorateLikeInfo(vo);
+        decorateViewerInfo(vo);
         return vo;
     }
 
@@ -52,7 +56,7 @@ public class ImageReadService {
             throw new BusinessException(ErrorCode.IMAGE_PERMISSION_DENIED);
         }
         ImageVO vo = imageRepository.toVO(image);
-        decorateLikeInfo(vo);
+        decorateViewerInfo(vo);
         return vo;
     }
 
@@ -70,7 +74,7 @@ public class ImageReadService {
             } else if (vo.getImagePath() != null && vo.getImagePath().startsWith("data:image/")) {
                 vo.setImageUrl("/api/image/download/" + vo.getUuid());
             }
-            decorateLikeInfo(vo);
+            decorateViewerInfo(vo);
         }
         return result;
     }
@@ -94,7 +98,41 @@ public class ImageReadService {
             } else if (vo.getImagePath() != null && vo.getImagePath().startsWith("data:image/")) {
                 vo.setImageUrl("/api/image/download/" + vo.getUuid());
             }
-            decorateLikeInfo(vo);
+            decorateViewerInfo(vo);
+        }
+        return result;
+    }
+
+    public Page<ImageVO> getPublicByUserUuid(String userUuid, Integer page, Integer limit, String keyword, String tags,
+                                             String sortMode, String randomSeed, String sortField, String sortOrder) {
+        if (userUuid == null || userUuid.isBlank()) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+        String normalizedUserUuid = userUuid.trim();
+        User user = userMapper.selectOne(new LambdaQueryWrapper<User>().eq(User::getUuid, normalizedUserUuid));
+        if (user == null) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+
+        Page<ImageVO> pageParam = new Page<>(page, normalizeLimit(limit));
+        List<String> tagFilters = parseTags(tags);
+        String safeSortMode = "random".equalsIgnoreCase(sortMode) ? "random" : "latest";
+        String safeSortField = sortField != null && ALLOWED_SQUARE_SORT_FIELDS.contains(sortField) ? sortField : "upload_time";
+        String safeSortOrder = "image_name".equals(safeSortField) || "asc".equalsIgnoreCase(sortOrder) ? "asc" : "desc";
+        String safeRandomSeed = "random".equals(safeSortMode)
+                ? (randomSeed == null || randomSeed.isBlank() ? normalizedUserUuid : randomSeed.trim())
+                : null;
+
+        Page<ImageVO> result = imageMapper.selectImageVOPage(
+                pageParam, user.getId(), normalizeKeyword(keyword), null, "PUBLIC", tagFilters,
+                safeSortField, safeSortOrder, safeSortMode, safeRandomSeed);
+        for (ImageVO vo : result.getRecords()) {
+            if (vo.getStorageKey() != null && !vo.getStorageKey().isBlank()) {
+                vo.setImageUrl(imageUrlForStorageImage(vo));
+            } else if (vo.getImagePath() != null && vo.getImagePath().startsWith("data:image/")) {
+                vo.setImageUrl("/api/image/download/" + vo.getUuid());
+            }
+            decorateViewerInfo(vo);
         }
         return result;
     }
@@ -181,10 +219,11 @@ public class ImageReadService {
         return imageUrlService.getPrivateImageUrl(vo.getStorageKey());
     }
 
-    private void decorateLikeInfo(ImageVO vo) {
+    private void decorateViewerInfo(ImageVO vo) {
         if (vo == null || vo.getId() == null) {
             return;
         }
+        vo.setEditableByMe(permissionService.canEdit(vo.getUserId()));
         Long count = imageLikeMapper.countByImageId(vo.getId());
         vo.setLikeCount(count == null ? 0L : count);
         if (StpUtil.isLogin()) {

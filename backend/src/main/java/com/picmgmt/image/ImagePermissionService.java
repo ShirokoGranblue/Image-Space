@@ -39,4 +39,10 @@ public class ImagePermissionService {
             throw new BusinessException(ErrorCode.IMAGE_PERMISSION_DENIED);
         }
     }
+
+    public boolean canEdit(Long ownerUserId) {
+        if (!StpUtil.isLogin()) return false;
+        long userId = StpUtil.getLoginIdAsLong();
+        return ownerUserId != null && (ownerUserId.equals(userId) || StpUtil.hasRole("admin"));
+    }
 }

@@ -2,8 +2,10 @@ package com.picmgmt.image;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.picmgmt.entity.User;
 import com.picmgmt.mapper.ImageLikeMapper;
 import com.picmgmt.mapper.ImageMapper;
+import com.picmgmt.mapper.UserMapper;
 import com.picmgmt.repository.ImageRepository;
 import com.picmgmt.storage.StorageService;
 import com.picmgmt.vo.ImageVO;
@@ -20,6 +22,7 @@ import java.util.List;
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -33,6 +36,7 @@ class ImageReadServiceTest {
     @Mock private ImageRepository imageRepository;
     @Mock private ImageMapper imageMapper;
     @Mock private ImageLikeMapper imageLikeMapper;
+    @Mock private UserMapper userMapper;
     @Mock private ImagePermissionService permissionService;
     @Mock private StorageService storageService;
     @Mock private ImageUrlService imageUrlService;
@@ -41,7 +45,7 @@ class ImageReadServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ImageReadService(imageRepository, imageMapper, imageLikeMapper, permissionService, storageService, imageUrlService);
+        service = new ImageReadService(imageRepository, imageMapper, imageLikeMapper, userMapper, permissionService, storageService, imageUrlService);
     }
 
     @Test
@@ -121,5 +125,45 @@ class ImageReadServiceTest {
         assertEquals(cdnUrl, result.getRecords().get(0).getImageUrl());
         verify(imageUrlService).getPublicImageUrl(eq("4/summer.png"), any(LocalDateTime.class));
         verify(storageService, never()).getPresignedUrl(any(), any(), any());
+    }
+
+    @Test
+    void getSquare_shouldMarkOtherUsersImagesNotEditable() {
+        Page<ImageVO> page = new Page<>(1, 30);
+        ImageVO vo = new ImageVO();
+        vo.setId(7L);
+        vo.setUserId(42L);
+        vo.setUuid("img-public-uuid");
+        vo.setVisibility("PUBLIC");
+        page.setRecords(List.of(vo));
+        when(imageMapper.selectImageVOPage(any(), isNull(), isNull(), isNull(), eq("PUBLIC"),
+                isNull(), eq("upload_time"), eq("desc"), eq("random"), eq("square")))
+                .thenReturn(page);
+        when(permissionService.canEdit(42L)).thenReturn(false);
+
+        Page<ImageVO> result;
+        try (MockedStatic<StpUtil> stpMock = org.mockito.Mockito.mockStatic(StpUtil.class)) {
+            stpMock.when(StpUtil::isLogin).thenReturn(true);
+            stpMock.when(StpUtil::getLoginIdAsLong).thenReturn(99L);
+            result = service.getSquare(1, 30, null, null, null, null, null, null);
+        }
+
+        assertFalse(result.getRecords().get(0).getEditableByMe());
+    }
+
+    @Test
+    void getPublicByUserUuid_shouldFilterToThatUsersPublicImages() {
+        User owner = new User();
+        owner.setId(42L);
+        owner.setUuid("owner-uuid");
+        when(userMapper.selectOne(any())).thenReturn(owner);
+        when(imageMapper.selectImageVOPage(any(), eq(42L), isNull(), isNull(), eq("PUBLIC"),
+                isNull(), eq("upload_time"), eq("desc"), eq("latest"), isNull()))
+                .thenReturn(new Page<ImageVO>(1, 30));
+
+        service.getPublicByUserUuid("owner-uuid", 1, 30, null, null, "latest", null, null, null);
+
+        verify(imageMapper).selectImageVOPage(any(), eq(42L), isNull(), isNull(), eq("PUBLIC"),
+                isNull(), eq("upload_time"), eq("desc"), eq("latest"), isNull());
     }
 }

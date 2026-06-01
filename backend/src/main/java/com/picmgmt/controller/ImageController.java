@@ -72,6 +72,20 @@ public class ImageController {
         return Result.ok(imageReadService.page(dto));
     }
 
+    @Operation(summary = "查询用户公开图片列表")
+    @GetMapping("/user/{userUuid}")
+    public Result<Page<ImageVO>> userPublicImages(@PathVariable String userUuid,
+                                                  @RequestParam(defaultValue = "1") Integer page,
+                                                  @RequestParam(defaultValue = "50") Integer limit,
+                                                  @RequestParam(required = false) String keyword,
+                                                  @RequestParam(required = false) String tags,
+                                                  @RequestParam(defaultValue = "latest") String sortMode,
+                                                  @RequestParam(required = false) String randomSeed,
+                                                  @RequestParam(required = false) String sortField,
+                                                  @RequestParam(required = false) String sortOrder) {
+        return Result.ok(imageReadService.getPublicByUserUuid(userUuid, page, limit, keyword, tags, sortMode, randomSeed, sortField, sortOrder));
+    }
+
     @Operation(summary = "下载图片")
     @GetMapping("/download/{uuid}")
     public ResponseEntity<byte[]> download(@PathVariable String uuid) {

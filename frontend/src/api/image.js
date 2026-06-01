@@ -18,6 +18,13 @@ export function getImageList(params) {
   return api.get('/image/list', { params })
 }
 
+export function getUserPublicImages(userUuid, params) {
+  if (typeof userUuid !== 'string' || !userUuid.trim()) {
+    throw new Error('User UUID is required')
+  }
+  return api.get(`/image/user/${userUuid.trim()}`, { params })
+}
+
 export function getImageDetail(uuid) {
   return api.get(`/image/${requireImageUuid(uuid)}`)
 }

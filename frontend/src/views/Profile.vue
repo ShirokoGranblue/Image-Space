@@ -295,7 +295,7 @@ import ImageCard from '../components/ImageCard.vue'
 import TagInput from '../components/TagInput.vue'
 import { useUserStore } from '../store/user'
 import { getUserProfile, updateProfile, uploadAvatar, uploadBackground, checkField, deleteAccount } from '../api/user'
-import { getImageList, deleteImage, updateImage } from '../api/image'
+import { getImageList, getUserPublicImages, deleteImage, updateImage } from '../api/image'
 import { getCategoryList, createCategory } from '../api/category'
 import { DEFAULT_IMAGE_PAGE_SIZE, IMAGE_PAGE_SIZES, buildImageListParams } from '../utils/imageRequests'
 
@@ -1152,28 +1152,41 @@ function isGifFile(file) {
   return !!file && (file.type === 'image/gif' || /\.gif$/i.test(file.name || ''))
 }
 
-onMounted(async () => {
+onMounted(loadProfile)
+
+watch(() => route.params.uuid, () => {
+  loadProfile()
+})
+
+async function loadProfile() {
   loading.value = true
-  const profileId = route.params.uuid || userStore.userInfo?.uuid || userStore.userInfo?.id
   try {
     if (userStore.token && !userStore.userInfo) {
       await userStore.fetchUserInfo()
     }
+    const profileId = route.params.uuid || userStore.userInfo?.uuid || userStore.userInfo?.id
+    workPage.value = 1
+    selectedWorkUuids.value = []
+    works.value = []
+    editing.value = false
     const res = await getUserProfile(profileId)
     user.value = res.data
     fetchWorks()
     if (isOwner.value) fetchCategories()
   } catch {} finally { loading.value = false }
-})
+}
 
 async function fetchWorks() {
   try {
-    const res = await getImageList(buildImageListParams({
+    const params = buildImageListParams({
       page: workPage.value,
       limit: workLimit.value,
       sortField: 'upload_time',
       sortOrder: 'desc'
-    }))
+    })
+    const res = isOwner.value
+      ? await getImageList(params)
+      : await getUserPublicImages(user.value.uuid || route.params.uuid, params)
     works.value = res.data.records || []; workTotal.value = res.data.total || 0
     selectedWorkUuids.value = selectedWorkUuids.value.filter(uuid => works.value.some(img => img.uuid === uuid))
   } catch {}

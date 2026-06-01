@@ -10,7 +10,7 @@ vi.mock('../api/index', () => ({
 }))
 
 import api from '../api/index'
-import { deleteImage, getImageSquare, likeImage, unlikeImage, updateImage } from '../api/image'
+import { deleteImage, getImageSquare, getUserPublicImages, likeImage, unlikeImage, updateImage } from '../api/image'
 
 describe('image api', () => {
   beforeEach(() => {
@@ -48,6 +48,14 @@ describe('image api', () => {
     getImageSquare(params)
 
     expect(api.get).toHaveBeenCalledWith('/image/square', { params })
+  })
+
+  it('loads public images for a viewed profile user', () => {
+    const params = { page: 1, limit: 30, sortField: 'upload_time', sortOrder: 'desc' }
+
+    getUserPublicImages('user-uuid', params)
+
+    expect(api.get).toHaveBeenCalledWith('/image/user/user-uuid', { params })
   })
 
   it('calls image like endpoints', () => {

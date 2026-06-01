@@ -210,7 +210,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, nextTick, onMounted } from 'vue'
+import { ref, reactive, computed, nextTick, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import NavBar from '../components/NavBar.vue'
@@ -237,8 +237,6 @@ const sending = ref(false)
 const downloading = ref(false)
 const liking = ref(false)
 const highlightedTarget = ref('')
-const isOwner = computed(() => currentUserId.value && currentUserId.value === image.value.userId)
-
 const editVisible = ref(false)
 const categoryDialogVisible = ref(false)
 const newCategoryName = ref('')
@@ -268,12 +266,22 @@ const tagList = computed(() => {
 })
 
 const currentUserId = computed(() => userStore.userInfo?.id)
-const canEdit = computed(() => isOwner.value || userStore.userInfo?.role === 'admin')
+const canEdit = computed(() => image.value.editableByMe === true)
 const detailImageSrc = computed(() => getImageDownloadUrl(image.value))
 
-onMounted(async () => {
+onMounted(loadImageDetail)
+
+watch(() => route.params.uuid, () => {
+  loadImageDetail()
+})
+
+async function loadImageDetail() {
   loading.value = true
   try {
+    image.value = {}
+    comments.value = []
+    editVisible.value = false
+    viewerSrc.value = ''
     const [imgRes, cmtRes] = await Promise.all([
       getImageDetail(route.params.uuid),
       getComments(route.params.uuid)
@@ -286,7 +294,7 @@ onMounted(async () => {
   } catch {} finally {
     loading.value = false
   }
-})
+}
 
 function insertEmoji(emoji) {
   commentText.value += emoji
