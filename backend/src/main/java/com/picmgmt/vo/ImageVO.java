@@ -25,6 +25,7 @@ public class ImageVO {
     private String tags;
     private String visibility;
     private String visibleUsernames;
+    private Boolean ownedByMe;
     private Boolean editableByMe;
     private Long likeCount;
     private Boolean likedByMe;

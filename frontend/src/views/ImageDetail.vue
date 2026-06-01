@@ -266,7 +266,7 @@ const tagList = computed(() => {
 })
 
 const currentUserId = computed(() => userStore.userInfo?.id)
-const canEdit = computed(() => image.value.editableByMe === true)
+const canEdit = computed(() => image.value.ownedByMe === true)
 const detailImageSrc = computed(() => getImageDownloadUrl(image.value))
 
 onMounted(loadImageDetail)

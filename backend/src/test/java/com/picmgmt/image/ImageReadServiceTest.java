@@ -139,6 +139,7 @@ class ImageReadServiceTest {
         when(imageMapper.selectImageVOPage(any(), isNull(), isNull(), isNull(), eq("PUBLIC"),
                 isNull(), eq("upload_time"), eq("desc"), eq("random"), eq("square")))
                 .thenReturn(page);
+        when(permissionService.isOwner(42L)).thenReturn(false);
         when(permissionService.canEdit(42L)).thenReturn(false);
 
         Page<ImageVO> result;
@@ -149,6 +150,33 @@ class ImageReadServiceTest {
         }
 
         assertFalse(result.getRecords().get(0).getEditableByMe());
+        assertFalse(result.getRecords().get(0).getOwnedByMe());
+    }
+
+    @Test
+    void getSquare_shouldKeepOwnershipSeparateFromAdminEditPermission() {
+        Page<ImageVO> page = new Page<>(1, 30);
+        ImageVO vo = new ImageVO();
+        vo.setId(7L);
+        vo.setUserId(42L);
+        vo.setUuid("img-public-uuid");
+        vo.setVisibility("PUBLIC");
+        page.setRecords(List.of(vo));
+        when(imageMapper.selectImageVOPage(any(), isNull(), isNull(), isNull(), eq("PUBLIC"),
+                isNull(), eq("upload_time"), eq("desc"), eq("random"), eq("square")))
+                .thenReturn(page);
+        when(permissionService.isOwner(42L)).thenReturn(false);
+        when(permissionService.canEdit(42L)).thenReturn(true);
+
+        Page<ImageVO> result;
+        try (MockedStatic<StpUtil> stpMock = org.mockito.Mockito.mockStatic(StpUtil.class)) {
+            stpMock.when(StpUtil::isLogin).thenReturn(true);
+            stpMock.when(StpUtil::getLoginIdAsLong).thenReturn(99L);
+            result = service.getSquare(1, 30, null, null, null, null, null, null);
+        }
+
+        assertFalse(result.getRecords().get(0).getOwnedByMe());
+        Assertions.assertTrue(result.getRecords().get(0).getEditableByMe());
     }
 
     @Test

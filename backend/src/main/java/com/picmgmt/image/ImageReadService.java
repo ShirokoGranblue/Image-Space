@@ -223,6 +223,7 @@ public class ImageReadService {
         if (vo == null || vo.getId() == null) {
             return;
         }
+        vo.setOwnedByMe(permissionService.isOwner(vo.getUserId()));
         vo.setEditableByMe(permissionService.canEdit(vo.getUserId()));
         Long count = imageLikeMapper.countByImageId(vo.getId());
         vo.setLikeCount(count == null ? 0L : count);

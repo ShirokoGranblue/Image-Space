@@ -40,9 +40,14 @@ public class ImagePermissionService {
         }
     }
 
-    public boolean canEdit(Long ownerUserId) {
+    public boolean isOwner(Long ownerUserId) {
         if (!StpUtil.isLogin()) return false;
         long userId = StpUtil.getLoginIdAsLong();
-        return ownerUserId != null && (ownerUserId.equals(userId) || StpUtil.hasRole("admin"));
+        return ownerUserId != null && ownerUserId.equals(userId);
+    }
+
+    public boolean canEdit(Long ownerUserId) {
+        if (!StpUtil.isLogin()) return false;
+        return isOwner(ownerUserId) || StpUtil.hasRole("admin");
     }
 }
