@@ -14,6 +14,7 @@ public class NotificationVO {
     private String actorName;
     private String actorAvatarUrl;
     private Long imageId;
+    private String imageUuid;
     private String imageName;
     private String imageStorageKey;
     private String imagePreviewUrl;

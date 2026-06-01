@@ -87,7 +87,7 @@
       </div>
 
       <el-dialog v-model="editVisible" title="编辑" width="480px">
-        <el-form :model="editForm" label-width="86px" v-if="editForm.id">
+        <el-form :model="editForm" label-width="86px" v-if="editForm.uuid">
           <el-form-item label="图片名称">
             <el-input v-model="editForm.imageName" />
           </el-form-item>
@@ -245,7 +245,7 @@ const newCategoryName = ref('')
 const creatingCategory = ref(false)
 const categories = ref([])
 const editForm = reactive({
-  id: null,
+  uuid: '',
   imageName: '',
   categoryId: null,
   tags: '',
@@ -362,7 +362,7 @@ async function handleToggleCommentLike(c) {
 }
 
 function openEditDialog() {
-  editForm.id = image.value.id
+  editForm.uuid = image.value.uuid
   editForm.imageName = image.value.imageName
   editForm.categoryId = image.value.categoryId
   editForm.description = image.value.description || ''
@@ -402,8 +402,9 @@ async function submitCategory() {
 }
 
 async function saveEdit() {
+  if (!editForm.uuid) return
   try {
-    const res = await updateImage(image.value.uuid, {
+    const res = await updateImage(editForm.uuid, {
       imageName: editForm.imageName,
       categoryId: editForm.categoryId,
       description: editForm.description,

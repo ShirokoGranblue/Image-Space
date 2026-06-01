@@ -18,7 +18,7 @@ public interface NotificationMapper extends BaseMapper<Notification> {
     @Select("""
         <script>
         SELECT n.id, n.type, n.recipient_user_id, n.actor_user_id,
-               n.image_id, i.image_name, i.storage_key AS image_storage_key,
+               n.image_id, i.uuid AS image_uuid, i.image_name, i.storage_key AS image_storage_key,
                n.comment_id, n.content_preview, n.read_flag AS `read`, n.create_time
         FROM notifications n
         LEFT JOIN images i ON n.image_id = i.id

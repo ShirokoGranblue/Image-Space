@@ -11,7 +11,7 @@
         type="button"
         :aria-pressed="String(selected)"
         :title="selected ? '取消选择' : '选择图片'"
-        @click.stop="emit('toggle-select', image.uuid || image.id)"
+        @click.stop="toggleSelect"
       >
         <span class="select-mark"></span>
       </button>
@@ -119,9 +119,14 @@ function handleImgError() {
     imgFailed.value = true
   }
 }
+function toggleSelect() {
+  if (!props.image.uuid) return
+  emit('toggle-select', props.image.uuid)
+}
 function goDetail() {
   if (hoverLocked.value) return
-  router.push(`/image/${props.image.uuid || props.image.id}`)
+  if (!props.image.uuid) return
+  router.push(`/image/${props.image.uuid}`)
 }
 
 </script>

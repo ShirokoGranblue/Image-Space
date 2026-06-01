@@ -6,6 +6,7 @@ import ImageCard from '../components/ImageCard.vue'
 
 const mockImage = {
   id: 1,
+  uuid: '400a1e49-6990-489e-b4a8-35eb0a02d056',
   imageName: 'test-image.jpg',
   imagePath: 'data:image/png;base64,xxxx',
   fileSize: 102400,
@@ -78,7 +79,7 @@ describe('ImageCard', () => {
 
       await wrapper.find('.select-toggle').trigger('click')
 
-      expect(wrapper.emitted('toggle-select')).toEqual([[mockImage.id]])
+      expect(wrapper.emitted('toggle-select')).toEqual([[mockImage.uuid]])
     })
 
     it('marks the card selected when selected prop is true', () => {

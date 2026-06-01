@@ -122,7 +122,7 @@ describe('Router guard logic', () => {
       expect(router.currentRoute.value.path).toBe('/square')
     })
 
-    it('allows /image/:id when no token', async () => {
+    it('allows /image/:uuid when no token', async () => {
       const router = createTestRouter()
 
       router.beforeEach((to, _from, next) => {
@@ -130,10 +130,10 @@ describe('Router guard logic', () => {
         result ? next(result) : next()
       })
 
-      await router.push('/image/42')
+      await router.push('/image/400a1e49-6990-489e-b4a8-35eb0a02d056')
       await router.isReady()
 
-      expect(router.currentRoute.value.path).toBe('/image/42')
+      expect(router.currentRoute.value.path).toBe('/image/400a1e49-6990-489e-b4a8-35eb0a02d056')
     })
   })
 })

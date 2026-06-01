@@ -91,6 +91,7 @@ class NotificationServiceImplTest {
         vo.setId(9L);
         vo.setActorUserId(2L);
         vo.setImageId(7L);
+        vo.setImageUuid("400a1e49-6990-489e-b4a8-35eb0a02d056");
         vo.setImageStorageKey("1/summer.jpg");
         page.setRecords(java.util.List.of(vo));
         when(notificationMapper.selectNotificationVOPage(any(), eq(1L), eq(false))).thenReturn(page);
@@ -113,7 +114,7 @@ class NotificationServiceImplTest {
         assertEquals("Alice", resultVo.getActorName());
         assertEquals(expectedAvatarUrl, resultVo.getActorAvatarUrl());
         assertEquals(expectedPreviewUrl, resultVo.getImagePreviewUrl());
-        assertEquals("/image/7?notificationId=9", resultVo.getTargetUrl());
+        assertEquals("/image/400a1e49-6990-489e-b4a8-35eb0a02d056?notificationId=9", resultVo.getTargetUrl());
         verify(imageUrlService).getPrivateImageUrl(eq("1/summer.jpg"));
     }
 }

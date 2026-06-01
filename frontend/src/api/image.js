@@ -1,5 +1,13 @@
 import api from './index'
 
+function requireImageUuid(value) {
+  const uuid = typeof value === 'object' ? value?.uuid : value
+  if (typeof uuid !== 'string' || !uuid.trim() || /^\d+$/.test(uuid.trim())) {
+    throw new Error('Image UUID is required')
+  }
+  return uuid.trim()
+}
+
 export function uploadImage(formData) {
   return api.post('/image/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
@@ -11,19 +19,19 @@ export function getImageList(params) {
 }
 
 export function getImageDetail(uuid) {
-  return api.get(`/image/${uuid}`)
+  return api.get(`/image/${requireImageUuid(uuid)}`)
 }
 
 export function deleteImage(uuid) {
-  return api.delete(`/image/${uuid}`)
+  return api.delete(`/image/${requireImageUuid(uuid)}`)
 }
 
 export function updateImage(uuid, data) {
-  return api.put(`/image/${uuid}`, data)
+  return api.put(`/image/${requireImageUuid(uuid)}`, data)
 }
 
 export function downloadImage(uuid) {
-  return `/api/image/download/${uuid}`
+  return `/api/image/download/${requireImageUuid(uuid)}`
 }
 
 export function getImageSquare(params) {
@@ -31,9 +39,9 @@ export function getImageSquare(params) {
 }
 
 export function likeImage(uuid) {
-  return api.post(`/image/${uuid}/like`)
+  return api.post(`/image/${requireImageUuid(uuid)}/like`)
 }
 
 export function unlikeImage(uuid) {
-  return api.delete(`/image/${uuid}/like`)
+  return api.delete(`/image/${requireImageUuid(uuid)}/like`)
 }

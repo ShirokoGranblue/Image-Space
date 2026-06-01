@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('../api/index', () => ({
   default: {
@@ -10,15 +10,27 @@ vi.mock('../api/index', () => ({
 }))
 
 import api from '../api/index'
-import { getImageSquare, likeImage, unlikeImage, updateImage } from '../api/image'
+import { deleteImage, getImageSquare, likeImage, unlikeImage, updateImage } from '../api/image'
 
 describe('image api', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('sends update payload as JSON body', () => {
     const payload = { imageName: 'new name.jpg', tags: 'cat,blue', visibility: 'PUBLIC' }
+    const uuid = '400a1e49-6990-489e-b4a8-35eb0a02d056'
 
-    updateImage(7, payload)
+    updateImage(uuid, payload)
 
-    expect(api.put).toHaveBeenCalledWith('/image/7', payload)
+    expect(api.put).toHaveBeenCalledWith(`/image/${uuid}`, payload)
+  })
+
+  it('rejects numeric image ids for mutation routes', () => {
+    expect(() => updateImage(7, {})).toThrow('Image UUID is required')
+    expect(() => deleteImage('7')).toThrow('Image UUID is required')
+    expect(api.put).not.toHaveBeenCalled()
+    expect(api.delete).not.toHaveBeenCalled()
   })
 
   it('passes square filters as query params object', () => {
@@ -39,10 +51,12 @@ describe('image api', () => {
   })
 
   it('calls image like endpoints', () => {
-    likeImage(7)
-    unlikeImage(7)
+    const uuid = '400a1e49-6990-489e-b4a8-35eb0a02d056'
 
-    expect(api.post).toHaveBeenCalledWith('/image/7/like')
-    expect(api.delete).toHaveBeenCalledWith('/image/7/like')
+    likeImage(uuid)
+    unlikeImage(uuid)
+
+    expect(api.post).toHaveBeenCalledWith(`/image/${uuid}/like`)
+    expect(api.delete).toHaveBeenCalledWith(`/image/${uuid}/like`)
   })
 })

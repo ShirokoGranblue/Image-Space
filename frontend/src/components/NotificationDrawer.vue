@@ -119,7 +119,10 @@ async function openNotification(item) {
     }
     close()
     await nextTick()
-    router.push(item.targetUrl || `/image/${item.imageUuid || item.imageId}`)
+    const target = item.targetUrl || (item.imageUuid ? `/image/${item.imageUuid}` : '')
+    if (target) {
+      router.push(target)
+    }
   } catch {}
 }
 

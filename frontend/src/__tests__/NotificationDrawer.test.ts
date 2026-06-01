@@ -16,13 +16,14 @@ vi.mock('../api/notification', () => ({
           type: 'COMMENT',
           actorName: 'Alice',
           imageName: 'summer.jpg',
-          imagePreviewUrl: '/api/image/download/1',
+          imagePreviewUrl: '/api/image/download/400a1e49-6990-489e-b4a8-35eb0a02d056',
           imageId: 1,
+          imageUuid: '400a1e49-6990-489e-b4a8-35eb0a02d056',
           commentId: 9,
           contentPreview: 'nice pic',
           read: false,
           createTime: '2026-05-26T10:00:00',
-          targetUrl: '/image/1?notificationId=1&commentId=9&highlight=comment',
+          targetUrl: '/image/400a1e49-6990-489e-b4a8-35eb0a02d056?notificationId=1&commentId=9&highlight=comment',
         },
       ],
       total: 1,
@@ -94,6 +95,6 @@ describe('NotificationDrawer', () => {
     await flushPromises()
 
     expect(markNotificationRead).toHaveBeenCalledWith(1)
-    expect(mockPush).toHaveBeenCalledWith('/image/1?notificationId=1&commentId=9&highlight=comment')
+    expect(mockPush).toHaveBeenCalledWith('/image/400a1e49-6990-489e-b4a8-35eb0a02d056?notificationId=1&commentId=9&highlight=comment')
   })
 })

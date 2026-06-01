@@ -10,15 +10,17 @@ import {
 
 describe('image request helpers', () => {
   it('uses backend download endpoint for image rendering', () => {
-    expect(getImageDownloadUrl(9)).toBe('/api/image/download/9')
+    expect(getImageDownloadUrl('400a1e49-6990-489e-b4a8-35eb0a02d056')).toBe('/api/image/download/400a1e49-6990-489e-b4a8-35eb0a02d056')
+    expect(getImageDownloadUrl(9)).toBe('')
     expect(getImageDownloadUrl(null)).toBe('')
   })
 
   it('prefers backend-provided versioned image urls when available', () => {
     expect(getImageDownloadUrl({
       id: 9,
-      imageUrl: '/api/image/download/9?v=b031160aee8f',
-    })).toBe('/api/image/download/9?v=b031160aee8f')
+      uuid: '400a1e49-6990-489e-b4a8-35eb0a02d056',
+      imageUrl: '/api/image/download/400a1e49-6990-489e-b4a8-35eb0a02d056?v=b031160aee8f',
+    })).toBe('/api/image/download/400a1e49-6990-489e-b4a8-35eb0a02d056?v=b031160aee8f')
   })
 
   it('sorts personal images by name ascending', () => {

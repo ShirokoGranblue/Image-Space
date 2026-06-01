@@ -7,7 +7,9 @@ export function getImageDownloadUrl(imageOrId) {
     if (imageOrId.imageUrl) return imageOrId.imageUrl
     return imageOrId.uuid ? `/api/image/download/${imageOrId.uuid}` : ''
   }
-  return `/api/image/download/${imageOrId}`
+  return typeof imageOrId === 'string' && !/^\d+$/.test(imageOrId)
+    ? `/api/image/download/${imageOrId}`
+    : ''
 }
 
 export function getFallbackUrl(imageOrId) {
@@ -15,7 +17,9 @@ export function getFallbackUrl(imageOrId) {
   if (typeof imageOrId === 'object') {
     return imageOrId.uuid ? `/api/image/download/${imageOrId.uuid}` : ''
   }
-  return `/api/image/download/${imageOrId}`
+  return typeof imageOrId === 'string' && !/^\d+$/.test(imageOrId)
+    ? `/api/image/download/${imageOrId}`
+    : ''
 }
 
 export function buildImageListParams(query) {

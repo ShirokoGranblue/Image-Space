@@ -151,14 +151,17 @@ public class NotificationServiceImpl implements NotificationService {
         }
         if (vo.getImageStorageKey() != null && !vo.getImageStorageKey().isBlank()) {
             vo.setImagePreviewUrl(imageUrlService.getPrivateImageUrl(vo.getImageStorageKey()));
-        } else if (vo.getImageId() != null) {
-            vo.setImagePreviewUrl("/api/image/download/" + vo.getImageId());
+        } else if (vo.getImageUuid() != null && !vo.getImageUuid().isBlank()) {
+            vo.setImagePreviewUrl("/api/image/download/" + vo.getImageUuid());
         }
         vo.setTargetUrl(buildTargetUrl(vo));
     }
 
     private String buildTargetUrl(NotificationVO vo) {
-        StringBuilder url = new StringBuilder("/image/").append(vo.getImageId())
+        if (vo.getImageUuid() == null || vo.getImageUuid().isBlank()) {
+            return "";
+        }
+        StringBuilder url = new StringBuilder("/image/").append(vo.getImageUuid())
                 .append("?notificationId=").append(vo.getId());
         if (vo.getCommentId() != null) {
             url.append("&commentId=").append(vo.getCommentId());
