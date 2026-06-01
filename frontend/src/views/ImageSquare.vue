@@ -59,7 +59,7 @@
         <p>暂时没有内容</p>
       </div>
 
-      <div v-else class="reveal">
+      <div v-else class="reveal visible">
         <div class="card-grid">
           <div v-for="(img, idx) in images" :key="img.id" class="stagger-item" :style="{ animationDelay: `${idx * 0.06}s` }">
             <ImageCard :image="img" :show-actions="false" @delete="handleDeleteImage" />
