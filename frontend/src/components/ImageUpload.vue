@@ -122,7 +122,7 @@ const form = reactive({
   categoryId: null,
   description: '',
   tags: '',
-  visibility: 'PRIVATE',
+  visibility: 'PUBLIC',
   visibleUsernames: ''
 })
 
@@ -246,7 +246,7 @@ function resetForm() {
   form.categoryId = null
   form.description = ''
   form.tags = ''
-  form.visibility = 'PRIVATE'
+  form.visibility = 'PUBLIC'
   form.visibleUsernames = ''
 }
 

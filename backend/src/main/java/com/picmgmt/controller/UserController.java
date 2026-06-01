@@ -12,6 +12,7 @@ import com.picmgmt.dto.LoginDTO;
 import com.picmgmt.dto.RegisterDTO;
 import com.picmgmt.dto.SendCodeDTO;
 import com.picmgmt.entity.User;
+import com.picmgmt.image.ImageUrlService;
 import com.picmgmt.service.CaptchaService;
 import com.picmgmt.service.OAuthService;
 import com.picmgmt.service.TurnstileService;
@@ -115,7 +116,7 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
         if (!ALLOWED_EXT.contains(ext)) throw new IllegalArgumentException("仅支持图片格式");
         String objectKey = "avatars/" + UUID.randomUUID() + "." + ext;
         String mimeType = "image/" + (ext.equals("jpg") ? "jpeg" : ext);
-        storageService.upload("avatars", objectKey, file.getBytes(), mimeType);
+        storageService.upload("avatars", objectKey, file.getBytes(), mimeType, ImageUrlService.PUBLIC_CACHE_CONTROL);
         userService.updateAvatar(userId, objectKey);
         return Result.ok(mediaUrlUtil.userMediaUrl(objectKey));
     }
@@ -128,7 +129,7 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
         if (!ALLOWED_EXT.contains(ext)) throw new IllegalArgumentException("仅支持图片格式");
         String objectKey = "backgrounds/" + UUID.randomUUID() + "." + ext;
         String mimeType = "image/" + (ext.equals("jpg") ? "jpeg" : ext);
-        storageService.upload("backgrounds", objectKey, file.getBytes(), mimeType);
+        storageService.upload("backgrounds", objectKey, file.getBytes(), mimeType, ImageUrlService.PUBLIC_CACHE_CONTROL);
         userService.updateBackground(userId, objectKey);
         return Result.ok(mediaUrlUtil.userMediaUrl(objectKey));
     }

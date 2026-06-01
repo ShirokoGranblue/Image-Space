@@ -8,6 +8,7 @@ import com.picmgmt.entity.Comment;
 import com.picmgmt.entity.Image;
 import com.picmgmt.entity.Notification;
 import com.picmgmt.entity.User;
+import com.picmgmt.image.ImageUrlService;
 import com.picmgmt.mapper.NotificationMapper;
 import com.picmgmt.mapper.UserMapper;
 import com.picmgmt.service.NotificationService;
@@ -31,6 +32,7 @@ public class NotificationServiceImpl implements NotificationService {
     private final UserMapper userMapper;
     private final StorageService storageService;
     private final MediaUrlUtil mediaUrlUtil;
+    private final ImageUrlService imageUrlService;
 
     @Override
     @Transactional
@@ -148,7 +150,7 @@ public class NotificationServiceImpl implements NotificationService {
             vo.setActorName("已注销用户");
         }
         if (vo.getImageStorageKey() != null && !vo.getImageStorageKey().isBlank()) {
-            vo.setImagePreviewUrl(storageService.getPresignedUrl("images", vo.getImageStorageKey(), java.time.Duration.ofMinutes(5)));
+            vo.setImagePreviewUrl(imageUrlService.getPrivateImageUrl(vo.getImageStorageKey()));
         } else if (vo.getImageId() != null) {
             vo.setImagePreviewUrl("/api/image/download/" + vo.getImageId());
         }

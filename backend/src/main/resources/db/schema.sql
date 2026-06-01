@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS images (
     image_type VARCHAR(20) NOT NULL,
     description TEXT,
     tags VARCHAR(500),
-    visibility VARCHAR(20) NOT NULL DEFAULT 'PRIVATE',
+    visibility VARCHAR(20) NOT NULL DEFAULT 'PUBLIC',
     visible_usernames VARCHAR(500),
     upload_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_user_id (user_id),

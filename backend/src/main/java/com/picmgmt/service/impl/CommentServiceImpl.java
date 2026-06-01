@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.picmgmt.common.BusinessException;
 import com.picmgmt.common.ErrorCode;
 import com.picmgmt.entity.Comment;
+import com.picmgmt.image.ImagePermissionService;
 import com.picmgmt.mapper.CommentLikeMapper;
 import com.picmgmt.repository.CommentRepository;
 import com.picmgmt.repository.ImageRepository;
@@ -23,6 +24,7 @@ public class CommentServiceImpl implements CommentService {
     private final ImageRepository imageRepository;
     private final NotificationService notificationService;
     private final CommentLikeMapper commentLikeMapper;
+    private final ImagePermissionService imagePermissionService;
 
     @Override
     public Comment add(Long imageId, String content, String imagePath) {
@@ -31,6 +33,9 @@ public class CommentServiceImpl implements CommentService {
         }
         var image = imageRepository.findById(imageId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
+        if (!imagePermissionService.canView(image)) {
+            throw new BusinessException(ErrorCode.IMAGE_PERMISSION_DENIED);
+        }
 
         long actorUserId = StpUtil.getLoginIdAsLong();
         Comment comment = new Comment();
@@ -87,6 +92,9 @@ public class CommentServiceImpl implements CommentService {
     public List<CommentVO> listByImageUuid(String imageUuid) {
         var image = imageRepository.findByUuid(imageUuid)
                 .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
+        if (!imagePermissionService.canView(image)) {
+            throw new BusinessException(ErrorCode.IMAGE_PERMISSION_DENIED);
+        }
         return listByImage(image.getId());
     }
 

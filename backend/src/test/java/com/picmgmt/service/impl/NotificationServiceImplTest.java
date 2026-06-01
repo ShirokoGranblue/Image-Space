@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.picmgmt.entity.Image;
 import com.picmgmt.entity.Notification;
 import com.picmgmt.entity.User;
+import com.picmgmt.image.ImageUrlService;
 import com.picmgmt.mapper.NotificationMapper;
 import com.picmgmt.mapper.UserMapper;
 import com.picmgmt.storage.StorageService;
@@ -19,8 +20,6 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Duration;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -32,13 +31,14 @@ class NotificationServiceImplTest {
     @Mock private UserMapper userMapper;
     @Mock private StorageService storageService;
     @Mock private MediaUrlUtil mediaUrlUtil;
+    @Mock private ImageUrlService imageUrlService;
 
     private NotificationServiceImpl service;
     private MockedStatic<StpUtil> stpMock;
 
     @BeforeEach
     void setUp() {
-        service = new NotificationServiceImpl(notificationMapper, userMapper, storageService, mediaUrlUtil);
+        service = new NotificationServiceImpl(notificationMapper, userMapper, storageService, mediaUrlUtil, imageUrlService);
         stpMock = mockStatic(StpUtil.class);
     }
 
@@ -102,9 +102,9 @@ class NotificationServiceImplTest {
         when(userMapper.selectById(2L)).thenReturn(actor);
 
         String expectedAvatarUrl = "https://cdn.image-space.app/2/avatar.png?v=e3be9a8665ae";
-        String expectedPreviewUrl = "https://cdn.image-space.app/images/1/summer.jpg?X-Amz-Expires=300&sig=xyz";
+        String expectedPreviewUrl = "https://cdn.image-space.app/images/1/summer.jpg?auth=abc&expires=1893456000";
         when(mediaUrlUtil.userMediaUrl("2/avatar.png")).thenReturn(expectedAvatarUrl);
-        when(storageService.getPresignedUrl(eq("images"), eq("1/summer.jpg"), any(Duration.class)))
+        when(imageUrlService.getPrivateImageUrl(eq("1/summer.jpg")))
                 .thenReturn(expectedPreviewUrl);
 
         Page<NotificationVO> result = service.listMine(1, 20, false);
@@ -114,6 +114,6 @@ class NotificationServiceImplTest {
         assertEquals(expectedAvatarUrl, resultVo.getActorAvatarUrl());
         assertEquals(expectedPreviewUrl, resultVo.getImagePreviewUrl());
         assertEquals("/image/7?notificationId=9", resultVo.getTargetUrl());
-        verify(storageService).getPresignedUrl(eq("images"), eq("1/summer.jpg"), any(Duration.class));
+        verify(imageUrlService).getPrivateImageUrl(eq("1/summer.jpg"));
     }
 }

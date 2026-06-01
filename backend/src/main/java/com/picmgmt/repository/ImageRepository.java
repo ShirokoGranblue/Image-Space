@@ -6,6 +6,7 @@ import com.picmgmt.cache.CacheService;
 import com.picmgmt.entity.Category;
 import com.picmgmt.entity.Image;
 import com.picmgmt.entity.User;
+import com.picmgmt.image.ImageUrlService;
 import com.picmgmt.mapper.CategoryMapper;
 import com.picmgmt.mapper.ImageMapper;
 import com.picmgmt.mapper.UserMapper;
@@ -17,8 +18,6 @@ import org.springframework.stereotype.Repository;
 import java.time.Duration;
 import java.util.Optional;
 
-import static com.picmgmt.util.MediaUrlUtil.withVersion;
-
 @Repository
 @RequiredArgsConstructor
 public class ImageRepository {
@@ -29,6 +28,7 @@ public class ImageRepository {
     private final StorageService storageService;
     private final CacheService cacheService;
     private final BloomFilterService bloomFilterService;
+    private final ImageUrlService imageUrlService;
 
     private static final Duration ENTITY_TTL = Duration.ofMinutes(30);
     private static final String ENTITY_KEY_PREFIX = "image:entity:";
@@ -80,10 +80,9 @@ public class ImageRepository {
 
         if (image.getStorageKey() != null && !image.getStorageKey().isBlank()) {
             if ("PUBLIC".equals(image.getVisibility())) {
-                vo.setImageUrl(withVersion("/api/image/download/" + image.getUuid(), image.getStorageKey()));
+                vo.setImageUrl(imageUrlService.getPublicImageUrl(image.getStorageKey(), image.getUploadTime()));
             } else {
-                vo.setImageUrl(storageService.getPresignedUrl("images", image.getStorageKey(),
-                        com.picmgmt.image.ImageReadService.presignedExpiry(image.getVisibility())));
+                vo.setImageUrl(imageUrlService.getPrivateImageUrl(image.getStorageKey()));
             }
         } else if (image.getImagePath() != null && image.getImagePath().startsWith("data:image/")) {
             vo.setImageUrl("/api/image/download/" + image.getUuid());

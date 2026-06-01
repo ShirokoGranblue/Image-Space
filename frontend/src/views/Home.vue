@@ -17,13 +17,13 @@
               >
                 全选本页
               </el-checkbox>
-              <el-button v-if="selectedImageIds.length > 0" @click="clearSelection">取消选择</el-button>
+              <el-button v-if="selectedImageUuids.length > 0" @click="clearSelection">取消选择</el-button>
               <el-button
-                v-if="selectedImageIds.length > 0"
+                v-if="selectedImageUuids.length > 0"
                 type="danger"
                 @click="handleBatchDelete"
               >
-                删除选中 {{ selectedImageIds.length }}
+                删除选中 {{ selectedImageUuids.length }}
               </el-button>
             </div>
             <el-select
@@ -75,8 +75,8 @@
             :image="img"
             :show-actions="true"
             :selectable="true"
-            :selected="selectedImageIds.includes(img.id)"
-            @delete="handleDelete"
+            :selected="selectedImageUuids.includes(img.uuid)"
+          @delete="handleDelete"
             @edit="handleEdit"
             @toggle-select="toggleImageSelection"
           />
@@ -99,7 +99,7 @@
     <ImageUpload ref="uploadRef" @uploaded="handleUploaded" />
 
     <el-dialog v-model="editVisible" title="编辑图片信息" width="480px">
-      <el-form :model="editForm" label-width="86px" v-if="editForm.id">
+      <el-form :model="editForm" label-width="86px" v-if="editForm.uuid">
         <el-form-item label="图片名称">
           <el-input v-model="editForm.imageName" />
         </el-form-item>
@@ -174,18 +174,18 @@ const editVisible = ref(false)
 const categoryDialogVisible = ref(false)
 const newCategoryName = ref('')
 const creatingCategory = ref(false)
-const selectedImageIds = ref([])
-const visibleImageIds = computed(() => images.value.map(img => img.id))
-const allVisibleSelected = computed(() => visibleImageIds.value.length > 0 && visibleImageIds.value.every(id => selectedImageIds.value.includes(id)))
-const partiallySelected = computed(() => selectedImageIds.value.length > 0 && !allVisibleSelected.value)
+const selectedImageUuids = ref([])
+const visibleImageUuids = computed(() => images.value.map(img => img.uuid))
+const allVisibleSelected = computed(() => visibleImageUuids.value.length > 0 && visibleImageUuids.value.every(uuid => selectedImageUuids.value.includes(uuid)))
+const partiallySelected = computed(() => selectedImageUuids.value.length > 0 && !allVisibleSelected.value)
 
 const editForm = reactive({
-  id: null,
+  uuid: null,
   imageName: '',
   categoryId: null,
   tags: '',
   description: '',
-  visibility: 'PRIVATE',
+  visibility: 'PUBLIC',
   visibleUsernames: ''
 })
 
@@ -209,7 +209,7 @@ async function fetchList() {
     const res = await getImageList(buildImageListParams(query))
     images.value = res.data.records || []
     total.value = res.data.total || 0
-    selectedImageIds.value = selectedImageIds.value.filter(id => images.value.some(img => img.id === id))
+    selectedImageUuids.value = selectedImageUuids.value.filter(uuid => images.value.some(img => img.uuid === uuid))
   } catch {} finally {
     loading.value = false
   }
@@ -262,60 +262,60 @@ async function submitCategory() {
   }
 }
 
-function toggleImageSelection(id) {
-  selectedImageIds.value = selectedImageIds.value.includes(id)
-    ? selectedImageIds.value.filter(item => item !== id)
-    : [...selectedImageIds.value, id]
+function toggleImageSelection(uuid) {
+  selectedImageUuids.value = selectedImageUuids.value.includes(uuid)
+    ? selectedImageUuids.value.filter(item => item !== uuid)
+    : [...selectedImageUuids.value, uuid]
 }
 
 function toggleSelectAll(checked) {
-  selectedImageIds.value = checked ? [...visibleImageIds.value] : []
+  selectedImageUuids.value = checked ? [...visibleImageUuids.value] : []
 }
 
 function clearSelection() {
-  selectedImageIds.value = []
+  selectedImageUuids.value = []
 }
 
 async function handleBatchDelete() {
-  const ids = [...selectedImageIds.value]
-  if (ids.length === 0) return
+  const uuids = [...selectedImageUuids.value]
+  if (uuids.length === 0) return
   try {
     await ElMessageBox.confirm(
-      `确定删除选中的 ${ids.length} 张图片吗？`,
+      `确定删除选中的 ${uuids.length} 张图片吗？`,
       '批量删除图片',
       { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' }
     )
   } catch { return }
   try {
-    await Promise.all(ids.map(id => deleteImage(id)))
-    ElMessage.success(`已删除 ${ids.length} 张图片`)
-    selectedImageIds.value = []
+    await Promise.all(uuids.map(uuid => deleteImage(uuid)))
+    ElMessage.success(`已删除 ${uuids.length} 张图片`)
+    selectedImageUuids.value = []
     fetchList()
   } catch {}
 }
 
-async function handleDelete(id) {
+async function handleDelete(img) {
   try {
-    await deleteImage(id)
+    await deleteImage(img.uuid)
     ElMessage.success('删除成功')
     fetchList()
   } catch {}
 }
 
 function handleEdit(img) {
-  editForm.id = img.id
+  editForm.uuid = img.uuid
   editForm.imageName = img.imageName
   editForm.categoryId = img.categoryId
   editForm.description = img.description || ''
   editForm.tags = img.tags || ''
-  editForm.visibility = img.visibility || 'PRIVATE'
+  editForm.visibility = img.visibility || 'PUBLIC'
   editForm.visibleUsernames = img.visibleUsernames || ''
   editVisible.value = true
 }
 
 async function saveEdit() {
   try {
-    await updateImage(editForm.id, {
+    await updateImage(editForm.uuid, {
       imageName: editForm.imageName,
       categoryId: editForm.categoryId,
       description: editForm.description,

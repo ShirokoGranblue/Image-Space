@@ -17,6 +17,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
                             .notMatch("/user/login", "/user/register",
                                     "/doc.html", "/v3/api-docs/**", "/swagger-ui/**",
                                     "/image/square", "/user/profile/**",
+                                    "/image/media/authorize",
                                     "/image/download/**",
                                     "/user/check-field",
                                     "/user/send-code", "/user/login-by-code",

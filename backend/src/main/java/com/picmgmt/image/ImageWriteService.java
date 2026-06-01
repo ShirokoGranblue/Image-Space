@@ -28,6 +28,7 @@ public class ImageWriteService {
     private final StorageService storageService;
     private final CategoryMapper categoryMapper;
     private final ImagePermissionService permissionService;
+    private final ImageUrlService imageUrlService;
 
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp", "gif");
     private static final int MAX_DESCRIPTION_LENGTH = 500;
@@ -78,7 +79,10 @@ public class ImageWriteService {
             case "gif" -> "image/gif";
             default -> "application/octet-stream";
         };
-        storageService.upload("images", objectKey, bytes, mimeType);
+
+        String resolvedVisibility = resolveVisibility(visibility);
+        String cacheControl = ImageUrlService.cacheControlForVisibility(resolvedVisibility);
+        storageService.upload("images", objectKey, bytes, mimeType, cacheControl);
 
         Image image = new Image();
         image.setUuid(java.util.UUID.randomUUID().toString());
@@ -90,8 +94,7 @@ public class ImageWriteService {
         image.setImageType(ext.toUpperCase());
         image.setDescription(description);
         image.setTags(tags);
-        image.setVisibility(visibility != null && visibility.matches("(?i)PUBLIC|PRIVATE|SPECIFIED")
-                ? visibility.trim().toUpperCase() : "PRIVATE");
+        image.setVisibility(resolvedVisibility);
         image.setVisibleUsernames(visibleUsernames);
         image.setUploadTime(LocalDateTime.now());
         imageRepository.insert(image);
@@ -147,8 +150,21 @@ public class ImageWriteService {
             image.setDescription(dto.getDescription());
         }
         if (dto.getTags() != null) image.setTags(dto.getTags());
-        if (dto.getVisibility() != null) image.setVisibility(dto.getVisibility().trim().toUpperCase());
+        if (dto.getVisibility() != null) {
+            String newVisibility = resolveVisibility(dto.getVisibility());
+            if (!newVisibility.equals(image.getVisibility())) {
+                // 权限变更：清 Redis 缓存 + 更新 R2 对象 Cache-Control 和 public 标记
+                imageUrlService.evictUrlCache(image.getStorageKey());
+                boolean isPublic = "PUBLIC".equals(newVisibility);
+                storageService.updateObjectMetadata("images", image.getStorageKey(),
+                        ImageUrlService.cacheControlForVisibility(newVisibility), isPublic);
+            }
+            image.setVisibility(newVisibility);
+        }
         if (dto.getVisibleUsernames() != null) image.setVisibleUsernames(dto.getVisibleUsernames());
+
+        // 更新 uploadTime 使 ?v= token 变化，CDN 缓存自动失效
+        image.setUploadTime(LocalDateTime.now());
 
         imageRepository.updateById(image);
         return imageRepository.toVO(image);
@@ -170,6 +186,17 @@ public class ImageWriteService {
         if (bytes.length >= 12 && bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46
                 && bytes[8] == 0x57 && bytes[9] == 0x45 && bytes[10] == 0x42 && bytes[11] == 0x50) return true;
         return false;
+    }
+
+    private String resolveVisibility(String visibility) {
+        if (visibility == null || visibility.isBlank()) {
+            return "PUBLIC";
+        }
+        String normalized = visibility.trim().toUpperCase();
+        if (!normalized.matches("PUBLIC|PRIVATE|SPECIFIED")) {
+            throw new BusinessException(ErrorCode.IMAGE_VISIBILITY_INVALID);
+        }
+        return normalized;
     }
 
     private String buildStoredImageName(String originalFilename, String imageName, String ext) {

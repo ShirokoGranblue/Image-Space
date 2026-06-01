@@ -22,6 +22,11 @@ public class LocalStorageService implements StorageService {
 
     @Override
     public String upload(String bucket, String objectKey, byte[] bytes, String contentType) {
+        return upload(bucket, objectKey, bytes, contentType, null);
+    }
+
+    @Override
+    public String upload(String bucket, String objectKey, byte[] bytes, String contentType, String cacheControl) {
         try {
             Path targetPath = Paths.get(basePath, bucket, objectKey);
             Files.createDirectories(targetPath.getParent());
@@ -71,5 +76,10 @@ public class LocalStorageService implements StorageService {
         } catch (IOException e) {
             return null;
         }
+    }
+
+    @Override
+    public void updateObjectMetadata(String bucket, String objectKey, String cacheControl, boolean isPublic) {
+        // 本地存储不支持自定义元数据，忽略
     }
 }

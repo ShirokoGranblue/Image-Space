@@ -358,7 +358,7 @@ const imageEditForm = reactive({
   categoryId: null,
   tags: '',
   description: '',
-  visibility: 'PRIVATE',
+  visibility: 'PUBLIC',
   visibleUsernames: ''
 })
 
@@ -1239,7 +1239,7 @@ function handleWorkEdit(img) {
   imageEditForm.categoryId = img.categoryId
   imageEditForm.description = img.description || ''
   imageEditForm.tags = img.tags || ''
-  imageEditForm.visibility = img.visibility || 'PRIVATE'
+  imageEditForm.visibility = img.visibility || 'PUBLIC'
   imageEditForm.visibleUsernames = img.visibleUsernames || ''
   imageEditVisible.value = true
   if (categories.value.length === 0) fetchCategories()

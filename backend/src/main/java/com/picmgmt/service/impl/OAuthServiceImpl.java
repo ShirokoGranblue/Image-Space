@@ -14,6 +14,7 @@ import com.picmgmt.cache.BloomFilterService;
 import com.picmgmt.config.GoogleJwtVerifier;
 import com.picmgmt.config.OAuthPooledHttp;
 import com.picmgmt.entity.User;
+import com.picmgmt.image.ImageUrlService;
 import com.picmgmt.mapper.UserMapper;
 import com.picmgmt.service.OAuthService;
 import com.picmgmt.storage.StorageService;
@@ -183,7 +184,7 @@ public class OAuthServiceImpl implements OAuthService {
             if (ext == null || ext.length() > 5) ext = "png";
             String objectKey = "avatars/oauth_" + userId + "." + ext;
             String mimeType = "image/" + (ext.equals("jpg") ? "jpeg" : ext);
-            storageService.upload("avatars", objectKey, bytes, mimeType);
+            storageService.upload("avatars", objectKey, bytes, mimeType, ImageUrlService.PUBLIC_CACHE_CONTROL);
             return objectKey;
         } catch (Exception e) {
             log.warn("Failed to download avatar for user {}: {}", userId, e.getMessage());

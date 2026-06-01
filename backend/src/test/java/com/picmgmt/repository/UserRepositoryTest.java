@@ -3,7 +3,6 @@ package com.picmgmt.repository;
 import com.picmgmt.cache.CacheService;
 import com.picmgmt.entity.User;
 import com.picmgmt.mapper.UserMapper;
-import com.picmgmt.storage.StorageService;
 import com.picmgmt.util.MediaUrlUtil;
 import com.picmgmt.vo.UserVO;
 import org.junit.jupiter.api.Test;
@@ -12,20 +11,18 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UserRepositoryTest {
 
     @Mock private UserMapper userMapper;
-    @Mock private StorageService storageService;
     @Mock private CacheService cacheService;
     @Mock private MediaUrlUtil mediaUrlUtil;
 
     @Test
     void toVO_shouldExposeAvatarAndBackgroundThroughCdnUrlsWithVersion() {
-        UserRepository repository = new UserRepository(userMapper, storageService, cacheService, mediaUrlUtil);
+        UserRepository repository = new UserRepository(userMapper, cacheService, mediaUrlUtil);
         User user = new User();
         user.setId(4L);
         user.setUsername("alice");
@@ -43,6 +40,5 @@ class UserRepositoryTest {
         assertEquals(expectedAvatarUrl, vo.getAvatar());
         assertEquals(expectedBackgroundUrl, vo.getBackgroundUrl());
         assertEquals(expectedBackgroundUrl, vo.getBackground());
-        verifyNoInteractions(storageService);
     }
 }

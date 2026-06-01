@@ -5,6 +5,7 @@ import com.picmgmt.common.BusinessException;
 import com.picmgmt.entity.Comment;
 import com.picmgmt.entity.Image;
 import com.picmgmt.mapper.CommentLikeMapper;
+import com.picmgmt.image.ImagePermissionService;
 import com.picmgmt.repository.CommentRepository;
 import com.picmgmt.repository.ImageRepository;
 import com.picmgmt.service.NotificationService;
@@ -30,13 +31,14 @@ class CommentServiceImplTest {
     @Mock private ImageRepository imageRepository;
     @Mock private NotificationService notificationService;
     @Mock private CommentLikeMapper commentLikeMapper;
+    @Mock private ImagePermissionService imagePermissionService;
 
     private CommentServiceImpl service;
     private MockedStatic<StpUtil> stpMock;
 
     @BeforeEach
     void setUp() {
-        service = new CommentServiceImpl(commentRepository, imageRepository, notificationService, commentLikeMapper);
+        service = new CommentServiceImpl(commentRepository, imageRepository, notificationService, commentLikeMapper, imagePermissionService);
         stpMock = mockStatic(StpUtil.class);
     }
 
@@ -84,6 +86,7 @@ class CommentServiceImplTest {
         Image image = new Image();
         image.setId(1L);
         when(imageRepository.findById(1L)).thenReturn(Optional.of(image));
+        when(imagePermissionService.canView(image)).thenReturn(true);
         doNothing().when(commentRepository).insert(any(Comment.class));
 
         Comment result = service.add(1L, "nice pic", null);
@@ -103,6 +106,7 @@ class CommentServiceImplTest {
         image.setUserId(1L);
         image.setImageName("summer.jpg");
         when(imageRepository.findById(1L)).thenReturn(Optional.of(image));
+        when(imagePermissionService.canView(image)).thenReturn(true);
         doAnswer(invocation -> {
             Comment comment = invocation.getArgument(0, Comment.class);
             comment.setId(10L);
@@ -123,6 +127,7 @@ class CommentServiceImplTest {
         image.setUserId(1L);
         image.setImageName("summer.jpg");
         when(imageRepository.findById(1L)).thenReturn(Optional.of(image));
+        when(imagePermissionService.canView(image)).thenReturn(true);
 
         service.add(1L, "self note", null);
 

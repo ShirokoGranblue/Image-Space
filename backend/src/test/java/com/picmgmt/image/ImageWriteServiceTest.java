@@ -28,13 +28,14 @@ class ImageWriteServiceTest {
     @Mock private StorageService storageService;
     @Mock private CategoryMapper categoryMapper;
     @Mock private ImagePermissionService permissionService;
+    @Mock private ImageUrlService imageUrlService;
 
     private ImageWriteService service;
     private MockedStatic<StpUtil> stpMock;
 
     @BeforeEach
     void setUp() {
-        service = new ImageWriteService(imageRepository, storageService, categoryMapper, permissionService);
+        service = new ImageWriteService(imageRepository, storageService, categoryMapper, permissionService, imageUrlService);
         stpMock = mockStatic(StpUtil.class);
     }
 
@@ -46,7 +47,8 @@ class ImageWriteServiceTest {
     @Test
     void upload_shouldUseCustomNameBodyAndKeepOriginalExtension() {
         stpMock.when(StpUtil::getLoginIdAsLong).thenReturn(4L);
-        when(storageService.upload(eq("images"), any(String.class), any(byte[].class), eq("image/jpeg")))
+        when(storageService.upload(eq("images"), any(String.class), any(byte[].class), eq("image/jpeg"),
+                eq(ImageUrlService.PUBLIC_CACHE_CONTROL)))
                 .thenReturn("4/test.jpg");
         doAnswer(invocation -> {
             var image = invocation.getArgument(0, com.picmgmt.entity.Image.class);
@@ -72,7 +74,8 @@ class ImageWriteServiceTest {
     @Test
     void upload_shouldAcceptGifAndUseGifMimeType() {
         stpMock.when(StpUtil::getLoginIdAsLong).thenReturn(4L);
-        when(storageService.upload(eq("images"), any(String.class), any(byte[].class), eq("image/gif")))
+        when(storageService.upload(eq("images"), any(String.class), any(byte[].class), eq("image/gif"),
+                eq(ImageUrlService.PUBLIC_CACHE_CONTROL)))
                 .thenReturn("4/test.gif");
         doAnswer(invocation -> {
             var image = invocation.getArgument(0, com.picmgmt.entity.Image.class);
@@ -95,5 +98,32 @@ class ImageWriteServiceTest {
 
         assertEquals("loop.gif", result.getImageName());
         assertEquals("GIF", result.getImageType());
+    }
+
+    @Test
+    void upload_shouldDefaultToPublicWhenVisibilityIsOmitted() {
+        stpMock.when(StpUtil::getLoginIdAsLong).thenReturn(4L);
+        when(storageService.upload(eq("images"), any(String.class), any(byte[].class), eq("image/png"),
+                eq(ImageUrlService.PUBLIC_CACHE_CONTROL)))
+                .thenReturn("images/test.png");
+        doAnswer(invocation -> {
+            var image = invocation.getArgument(0, com.picmgmt.entity.Image.class);
+            ImageVO vo = new ImageVO();
+            vo.setVisibility(image.getVisibility());
+            return vo;
+        }).when(imageRepository).toVO(any());
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "public.png",
+                "image/png",
+                new byte[] {(byte) 0x89, 0x50, 0x4E, 0x47}
+        );
+
+        ImageVO result = service.upload(
+                file, null, null, null, null, null, null
+        );
+
+        assertEquals("PUBLIC", result.getVisibility());
     }
 }

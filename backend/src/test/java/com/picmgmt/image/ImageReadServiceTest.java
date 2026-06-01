@@ -17,6 +17,7 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -34,12 +35,13 @@ class ImageReadServiceTest {
     @Mock private ImageLikeMapper imageLikeMapper;
     @Mock private ImagePermissionService permissionService;
     @Mock private StorageService storageService;
+    @Mock private ImageUrlService imageUrlService;
 
     private ImageReadService service;
 
     @BeforeEach
     void setUp() {
-        service = new ImageReadService(imageRepository, imageMapper, imageLikeMapper, permissionService, storageService);
+        service = new ImageReadService(imageRepository, imageMapper, imageLikeMapper, permissionService, storageService, imageUrlService);
     }
 
     @Test
@@ -94,17 +96,21 @@ class ImageReadServiceTest {
     }
 
     @Test
-    void getSquare_shouldReturnVersionedBackendDownloadUrlForPublicStorageImages() {
+    void getSquare_shouldReturnDirectCdnUrlForPublicStorageImages() {
         Page<ImageVO> page = new Page<>(1, 30);
         ImageVO vo = new ImageVO();
         vo.setId(7L);
         vo.setUuid("img-public-uuid");
         vo.setVisibility("PUBLIC");
         vo.setStorageKey("4/summer.png");
+        vo.setUploadTime(LocalDateTime.of(2026, 6, 1, 12, 0, 0));
         page.setRecords(List.of(vo));
         when(imageMapper.selectImageVOPage(any(), isNull(), isNull(), isNull(), eq("PUBLIC"),
                 isNull(), eq("upload_time"), eq("desc"), eq("random"), eq("square")))
                 .thenReturn(page);
+
+        String cdnUrl = "https://cdn.image-space.app/4/summer.png?v=6813f5a73c3c";
+        when(imageUrlService.getPublicImageUrl(eq("4/summer.png"), any(LocalDateTime.class))).thenReturn(cdnUrl);
 
         Page<ImageVO> result;
         try (MockedStatic<StpUtil> stpMock = org.mockito.Mockito.mockStatic(StpUtil.class)) {
@@ -112,7 +118,8 @@ class ImageReadServiceTest {
             result = service.getSquare(1, 30, null, null, null, null, null, null);
         }
 
-        assertEquals("/api/image/download/img-public-uuid?v=3864dd6014f3", result.getRecords().get(0).getImageUrl());
+        assertEquals(cdnUrl, result.getRecords().get(0).getImageUrl());
+        verify(imageUrlService).getPublicImageUrl(eq("4/summer.png"), any(LocalDateTime.class));
         verify(storageService, never()).getPresignedUrl(any(), any(), any());
     }
 }

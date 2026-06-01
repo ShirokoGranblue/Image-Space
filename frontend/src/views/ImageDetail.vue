@@ -250,7 +250,7 @@ const editForm = reactive({
   categoryId: null,
   tags: '',
   description: '',
-  visibility: 'PRIVATE',
+  visibility: 'PUBLIC',
   visibleUsernames: ''
 })
 
@@ -367,7 +367,7 @@ function openEditDialog() {
   editForm.categoryId = image.value.categoryId
   editForm.description = image.value.description || ''
   editForm.tags = image.value.tags || ''
-  editForm.visibility = image.value.visibility || 'PRIVATE'
+  editForm.visibility = image.value.visibility || 'PUBLIC'
   editForm.visibleUsernames = image.value.visibleUsernames || ''
   fetchCategories()
   editVisible.value = true
@@ -403,7 +403,7 @@ async function submitCategory() {
 
 async function saveEdit() {
   try {
-    await updateImage(image.value.uuid, {
+    const res = await updateImage(image.value.uuid, {
       imageName: editForm.imageName,
       categoryId: editForm.categoryId,
       description: editForm.description,
@@ -413,13 +413,16 @@ async function saveEdit() {
     })
     ElMessage.success('更新成功')
     editVisible.value = false
-    image.value.imageName = editForm.imageName
-    image.value.categoryId = editForm.categoryId
-    image.value.description = editForm.description
-    image.value.tags = editForm.tags
-    image.value.visibility = editForm.visibility
-    image.value.visibleUsernames = editForm.visibility === 'SPECIFIED' ? editForm.visibleUsernames : ''
-    image.value.categoryName = categories.value.find(c => c.id === editForm.categoryId)?.categoryName
+    const updated = res.data
+    image.value.imageName = updated.imageName
+    image.value.categoryId = updated.categoryId
+    image.value.description = updated.description
+    image.value.tags = updated.tags
+    image.value.visibility = updated.visibility
+    image.value.visibleUsernames = updated.visibleUsernames || ''
+    image.value.imageUrl = updated.imageUrl
+    image.value.categoryName = updated.categoryName
+    viewerSrc.value = getImageDownloadUrl(updated)
   } catch {
     ElMessage.error('更新失败，请重试')
   }

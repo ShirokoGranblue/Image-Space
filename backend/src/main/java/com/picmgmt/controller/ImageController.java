@@ -6,6 +6,7 @@ import com.picmgmt.common.Result;
 import com.picmgmt.dto.ImageQueryDTO;
 import com.picmgmt.image.ImageReadService;
 import com.picmgmt.image.ImageUpdateDTO;
+import com.picmgmt.image.ImageUrlService;
 import com.picmgmt.image.ImageWriteService;
 import com.picmgmt.like.LikeTarget;
 import com.picmgmt.service.LikeService;
@@ -15,6 +16,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 
 @Tag(name = "图片模块")
 @RestController
@@ -33,6 +36,7 @@ public class ImageController {
     private final ImageWriteService imageWriteService;
     private final ImageReadService imageReadService;
     private final LikeService likeService;
+    private final ImageUrlService imageUrlService;
 
     @Operation(summary = "上传图片")
     @PostMapping("/upload")
@@ -75,10 +79,28 @@ public class ImageController {
         byte[] bytes = imageReadService.downloadByUuid(uuid);
         String encodedName = URLEncoder.encode(vo.getImageName(), StandardCharsets.UTF_8)
                 .replace("+", "%20");
+
+        CacheControl cacheControl = "PUBLIC".equals(vo.getVisibility())
+                ? CacheControl.maxAge(7, TimeUnit.DAYS).cachePublic()
+                : CacheControl.noStore();
+
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedName)
                 .contentType(mediaType(vo.getImageType()))
+                .cacheControl(cacheControl)
                 .body(bytes);
+    }
+
+    @Operation(summary = "Worker 私有媒体鉴权")
+    @GetMapping("/media/authorize")
+    public ResponseEntity<Void> authorizeMedia(@RequestParam("key") String storageKey,
+                                               @RequestParam("token") String token) {
+        boolean allowed = imageUrlService.authorizePrivateAccess(storageKey, token);
+        CacheControl cacheControl = CacheControl.noStore();
+        if (!allowed) {
+            return ResponseEntity.status(403).cacheControl(cacheControl).build();
+        }
+        return ResponseEntity.noContent().cacheControl(cacheControl).build();
     }
 
     @Operation(summary = "获取图片详情")

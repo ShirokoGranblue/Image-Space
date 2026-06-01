@@ -11,7 +11,7 @@
         type="button"
         :aria-pressed="String(selected)"
         :title="selected ? '取消选择' : '选择图片'"
-        @click.stop="emit('toggle-select', image.id)"
+        @click.stop="emit('toggle-select', image.uuid || image.id)"
       >
         <span class="select-mark"></span>
       </button>

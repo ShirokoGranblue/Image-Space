@@ -14,13 +14,10 @@ import com.picmgmt.vo.ImageVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Set;
-
-import static com.picmgmt.util.MediaUrlUtil.withVersion;
 
 @Service
 @RequiredArgsConstructor
@@ -31,17 +28,11 @@ public class ImageReadService {
     private final ImageLikeMapper imageLikeMapper;
     private final ImagePermissionService permissionService;
     private final StorageService storageService;
+    private final ImageUrlService imageUrlService;
 
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("upload_time", "image_name", "file_size");
     private static final Set<String> ALLOWED_SQUARE_SORT_FIELDS = Set.of("upload_time", "file_size", "image_name");
     private static final Set<Integer> ALLOWED_PAGE_SIZES = Set.of(30, 50, 100);
-
-    static final Duration PUBLIC_PRESIGNED_EXPIRY = Duration.ofHours(24);
-    static final Duration PRIVATE_PRESIGNED_EXPIRY = Duration.ofMinutes(5);
-
-    public static Duration presignedExpiry(String visibility) {
-        return "PUBLIC".equals(visibility) ? PUBLIC_PRESIGNED_EXPIRY : PRIVATE_PRESIGNED_EXPIRY;
-    }
 
     public ImageVO getById(Long id) {
         Image image = imageRepository.findById(id)
@@ -185,9 +176,9 @@ public class ImageReadService {
 
     private String imageUrlForStorageImage(ImageVO vo) {
         if ("PUBLIC".equals(vo.getVisibility())) {
-            return withVersion("/api/image/download/" + vo.getUuid(), vo.getStorageKey());
+            return imageUrlService.getPublicImageUrl(vo.getStorageKey(), vo.getUploadTime());
         }
-        return storageService.getPresignedUrl("images", vo.getStorageKey(), presignedExpiry(vo.getVisibility()));
+        return imageUrlService.getPrivateImageUrl(vo.getStorageKey());
     }
 
     private void decorateLikeInfo(ImageVO vo) {
