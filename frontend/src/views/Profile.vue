@@ -76,13 +76,13 @@
             >
               全选本页
             </el-checkbox>
-            <el-button v-if="selectedWorkIds.length > 0" @click="clearWorkSelection">取消选择</el-button>
+            <el-button v-if="selectedWorkUuids.length > 0" @click="clearWorkSelection">取消选择</el-button>
             <el-button
-              v-if="selectedWorkIds.length > 0"
+              v-if="selectedWorkUuids.length > 0"
               type="danger"
               @click="handleBatchWorkDelete"
             >
-              删除选中 {{ selectedWorkIds.length }}
+              删除选中 {{ selectedWorkUuids.length }}
             </el-button>
           </div>
         </div>
@@ -90,11 +90,11 @@
         <div v-else class="card-grid">
           <ImageCard
             v-for="img in works"
-            :key="img.id"
+            :key="img.uuid || img.id"
             :image="img"
             :show-actions="isOwner"
             :selectable="isOwner"
-            :selected="selectedWorkIds.includes(img.id)"
+            :selected="selectedWorkUuids.includes(img.uuid)"
             @delete="handleWorkDelete"
             @edit="handleWorkEdit"
             @toggle-select="toggleWorkSelection"
@@ -231,7 +231,7 @@
     </el-dialog>
 
     <el-dialog v-model="imageEditVisible" title="编辑图片信息" width="480px">
-      <el-form :model="imageEditForm" label-width="86px" v-if="imageEditForm.id">
+      <el-form :model="imageEditForm" label-width="86px" v-if="imageEditForm.uuid">
         <el-form-item label="图片名称">
           <el-input v-model="imageEditForm.imageName" />
         </el-form-item>
@@ -342,18 +342,18 @@ const isOwner = computed(() => !!(userStore.userInfo?.id && user.value.id && use
 const avatarVersion = ref(0)
 const backgroundVersion = ref(0)
 const categories = ref([])
-const selectedWorkIds = ref([])
+const selectedWorkUuids = ref([])
 const imageEditVisible = ref(false)
 const workCategoryDialogVisible = ref(false)
 const newWorkCategoryName = ref('')
 const creatingWorkCategory = ref(false)
-const workImageIds = computed(() => works.value.map(img => img.id))
-const allWorksSelected = computed(() => workImageIds.value.length > 0 && workImageIds.value.every(id => selectedWorkIds.value.includes(id)))
-const partiallyWorksSelected = computed(() => selectedWorkIds.value.length > 0 && !allWorksSelected.value)
+const workImageUuids = computed(() => works.value.map(img => img.uuid).filter(Boolean))
+const allWorksSelected = computed(() => workImageUuids.value.length > 0 && workImageUuids.value.every(uuid => selectedWorkUuids.value.includes(uuid)))
+const partiallyWorksSelected = computed(() => selectedWorkUuids.value.length > 0 && !allWorksSelected.value)
 
 const form = reactive({ displayName: '', email: '', phone: '', bio: '' })
 const imageEditForm = reactive({
-  id: null,
+  uuid: '',
   imageName: '',
   categoryId: null,
   tags: '',
@@ -1175,7 +1175,7 @@ async function fetchWorks() {
       sortOrder: 'desc'
     }))
     works.value = res.data.records || []; workTotal.value = res.data.total || 0
-    selectedWorkIds.value = selectedWorkIds.value.filter(id => works.value.some(img => img.id === id))
+    selectedWorkUuids.value = selectedWorkUuids.value.filter(uuid => works.value.some(img => img.uuid === uuid))
   } catch {}
 }
 
@@ -1192,49 +1192,52 @@ function onWorkPageSizeChange(size) {
   fetchWorks()
 }
 
-function toggleWorkSelection(id) {
-  selectedWorkIds.value = selectedWorkIds.value.includes(id)
-    ? selectedWorkIds.value.filter(item => item !== id)
-    : [...selectedWorkIds.value, id]
+function toggleWorkSelection(uuid) {
+  if (!uuid) return
+  selectedWorkUuids.value = selectedWorkUuids.value.includes(uuid)
+    ? selectedWorkUuids.value.filter(item => item !== uuid)
+    : [...selectedWorkUuids.value, uuid]
 }
 
 function toggleSelectAllWorks(checked) {
-  selectedWorkIds.value = checked ? [...workImageIds.value] : []
+  selectedWorkUuids.value = checked ? [...workImageUuids.value] : []
 }
 
 function clearWorkSelection() {
-  selectedWorkIds.value = []
+  selectedWorkUuids.value = []
 }
 
 async function handleBatchWorkDelete() {
-  const ids = [...selectedWorkIds.value]
-  if (ids.length === 0) return
+  const uuids = [...selectedWorkUuids.value]
+  if (uuids.length === 0) return
   try {
     await ElMessageBox.confirm(
-      `确定删除选中的 ${ids.length} 张图片吗？`,
+      `确定删除选中的 ${uuids.length} 张图片吗？`,
       '批量删除图片',
       { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' }
     )
   } catch { return }
   try {
-    await Promise.all(ids.map(id => deleteImage(id)))
-    ElMessage.success(`已删除 ${ids.length} 张图片`)
-    selectedWorkIds.value = []
+    await Promise.all(uuids.map(uuid => deleteImage(uuid)))
+    ElMessage.success(`已删除 ${uuids.length} 张图片`)
+    selectedWorkUuids.value = []
     fetchWorks()
   } catch {}
 }
 
-async function handleWorkDelete(id) {
+async function handleWorkDelete(image) {
+  const uuid = typeof image === 'object' ? image?.uuid : image
+  if (!uuid) return
   try {
-    await deleteImage(id)
-    selectedWorkIds.value = selectedWorkIds.value.filter(item => item !== id)
+    await deleteImage(uuid)
+    selectedWorkUuids.value = selectedWorkUuids.value.filter(item => item !== uuid)
     ElMessage.success('删除成功')
     fetchWorks()
   } catch {}
 }
 
 function handleWorkEdit(img) {
-  imageEditForm.id = img.id
+  imageEditForm.uuid = img.uuid
   imageEditForm.imageName = img.imageName
   imageEditForm.categoryId = img.categoryId
   imageEditForm.description = img.description || ''
@@ -1246,8 +1249,9 @@ function handleWorkEdit(img) {
 }
 
 async function saveWorkEdit() {
+  if (!imageEditForm.uuid) return
   try {
-    await updateImage(imageEditForm.id, {
+    await updateImage(imageEditForm.uuid, {
       imageName: imageEditForm.imageName,
       categoryId: imageEditForm.categoryId,
       description: imageEditForm.description,

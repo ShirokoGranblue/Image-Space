@@ -147,11 +147,13 @@ function onPageSizeChange(size) {
   fetchList()
 }
 
-async function handleDeleteImage(id) {
+async function handleDeleteImage(image) {
+  const uuid = typeof image === 'object' ? image?.uuid : image
+  if (!uuid) return
   try {
-    await deleteImage(id)
+    await deleteImage(uuid)
     ElMessage.success('已删除损坏图片')
-    images.value = images.value.filter(img => img.id !== id)
+    images.value = images.value.filter(img => img.uuid !== uuid)
     total.value = Math.max(0, total.value - 1)
   } catch {}
 }
