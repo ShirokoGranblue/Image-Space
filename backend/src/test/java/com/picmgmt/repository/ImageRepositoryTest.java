@@ -14,8 +14,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -43,16 +41,17 @@ class ImageRepositoryTest {
         image.setUuid("img-public-uuid");
         image.setUserId(4L);
         image.setVisibility("PUBLIC");
-        image.setStorageKey("4/summer.png");
-        image.setUploadTime(LocalDateTime.of(2026, 6, 1, 12, 0, 0));
+        image.setStorageKey("images/4/summer.png");
+        image.setMediaVersion(3L);
 
-        String cdnUrl = "https://cdn.image-space.app/4/summer.png?v=6813f5a73c3c";
-        when(imageUrlService.getPublicImageUrl(eq("4/summer.png"), any(LocalDateTime.class))).thenReturn(cdnUrl);
+        String cdnUrl = "https://cdn.image-space.app/public/images/4/summer.png?v=3";
+        when(imageUrlService.getPublicImageUrl("images/4/summer.png", 3L)).thenReturn(cdnUrl);
 
         ImageVO vo = repository.toVO(image);
 
         assertEquals(cdnUrl, vo.getImageUrl());
-        verify(imageUrlService).getPublicImageUrl(eq("4/summer.png"), any(LocalDateTime.class));
+        assertEquals(cdnUrl, vo.getPublicUrl());
+        verify(imageUrlService).getPublicImageUrl("images/4/summer.png", 3L);
         verify(imageUrlService, never()).getPrivateImageUrl(any());
     }
 
@@ -65,14 +64,15 @@ class ImageRepositoryTest {
         image.setUuid("img-private-uuid");
         image.setUserId(4L);
         image.setVisibility("PRIVATE");
-        image.setStorageKey("4/summer.png");
+        image.setStorageKey("images/4/summer.png");
 
-        String privateUrl = "https://cdn.image-space.app/4/summer.png?auth=abc&expires=1893456000";
-        when(imageUrlService.getPrivateImageUrl("4/summer.png")).thenReturn(privateUrl);
+        String privateUrl = "https://cdn.image-space.app/private/images/4/summer.png?auth=abc&expires=1893456000";
+        when(imageUrlService.getPrivateImageUrl("images/4/summer.png")).thenReturn(privateUrl);
 
         ImageVO vo = repository.toVO(image);
 
         assertEquals(privateUrl, vo.getImageUrl());
-        verify(imageUrlService).getPrivateImageUrl("4/summer.png");
+        assertEquals(privateUrl, vo.getPrivateUrl());
+        verify(imageUrlService).getPrivateImageUrl("images/4/summer.png");
     }
 }

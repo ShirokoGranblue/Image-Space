@@ -23,8 +23,9 @@
     }
   ],
   "vars": {
-    "BACKEND_AUTH_URL": "https://image-space.app/api/image/media/authorize",
-    "ALLOWED_REFERERS": "image-space.app,*.image-space.app"
+    "BACKEND_META_URL": "https://image-space.app/api/internal/media/meta",
+    "BACKEND_AUTHORIZE_URL": "https://image-space.app/api/internal/media/authorize",
+    "MEDIA_META_TTL_SECONDS": "300"
   },
 	/**
 	 * Smart Placement

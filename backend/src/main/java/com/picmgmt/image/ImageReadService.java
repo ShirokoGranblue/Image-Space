@@ -214,9 +214,13 @@ public class ImageReadService {
 
     private String imageUrlForStorageImage(ImageVO vo) {
         if ("PUBLIC".equals(vo.getVisibility())) {
-            return imageUrlService.getPublicImageUrl(vo.getStorageKey(), vo.getUploadTime());
+            String publicUrl = imageUrlService.getPublicImageUrl(vo.getStorageKey(), vo.getMediaVersion());
+            vo.setPublicUrl(publicUrl);
+            return publicUrl;
         }
-        return imageUrlService.getPrivateImageUrl(vo.getStorageKey());
+        String privateUrl = imageUrlService.getPrivateImageUrl(vo.getStorageKey());
+        vo.setPrivateUrl(privateUrl);
+        return privateUrl;
     }
 
     private void decorateViewerInfo(ImageVO vo) {

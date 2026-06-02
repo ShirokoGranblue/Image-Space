@@ -18,6 +18,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
                                     "/doc.html", "/v3/api-docs/**", "/swagger-ui/**",
                                     "/image/square", "/image/user/**", "/user/profile/**",
                                     "/image/media/authorize",
+                                    "/internal/media/**",
                                     "/image/download/**",
                                     "/user/check-field",
                                     "/user/send-code", "/user/login-by-code",

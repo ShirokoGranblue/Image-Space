@@ -3,26 +3,18 @@ package com.picmgmt.image;
 import com.picmgmt.cache.CacheService;
 import com.picmgmt.util.MediaUrlUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
-import static com.picmgmt.util.MediaUrlUtil.withVersion;
-
-/**
- * 统一的图片 URL 生成服务。
- * <p>
- * 策略：
- * <ul>
- *   <li><b>公开图片</b>：直接 CDN URL（无签名），依赖 CDN 缓存 + Referer 防盗链</li>
- *   <li><b>私有/指定图片</b>：短签名 presigned URL + Redis 缓存（30s 签名，25s Redis TTL）</li>
- * </ul>
- */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ImageUrlService {
@@ -30,59 +22,44 @@ public class ImageUrlService {
     private final CacheService cacheService;
     private final MediaUrlUtil mediaUrlUtil;
 
-    /** 私有/指定图片访问 token 有效期：30 秒 */
     public static final Duration PRIVATE_ACCESS_EXPIRY = Duration.ofSeconds(30);
+
+    public static final String PUBLIC_CACHE_CONTROL = "public, max-age=31536000, immutable";
+    public static final String PRIVATE_CACHE_CONTROL = "no-store";
 
     private static final String URL_KEY_PREFIX = "media:url:";
     private static final String TOKEN_KEY_PREFIX = "media:token:";
+    private static final String TOKEN_INDEX_KEY_PREFIX = "media:token:index:";
     private static final String TOKEN_QUERY_PARAM = "auth";
-
-    /** 私有图 URL Redis TTL：比访问 token 短 5 秒 */
     private static final Duration PRIVATE_URL_CACHE_TTL = PRIVATE_ACCESS_EXPIRY.minus(Duration.ofSeconds(5));
 
-    /** 公开图片 R2/CDN Cache-Control 头 */
-    public static final String PUBLIC_CACHE_CONTROL = "public, max-age=0, s-maxage=604800, must-revalidate";
-
-    /** 私有图片 R2/Worker Cache-Control 头 */
-    public static final String PRIVATE_CACHE_CONTROL = "private, no-store";
-
-    // ── 公开图片：直接 CDN URL，无签名，无 Redis 缓存 ──
-
-    /**
-     * 获取公开图片的 CDN 直链。
-     * <p>
-     * URL 带 version token（基于 storageKey + uploadTime + visibility），
-     * 权限变更时 uploadTime 变化 → token 变化 → CDN 缓存自动失效。
-     */
-    public String getPublicImageUrl(String storageKey, LocalDateTime uploadTime) {
-        String cdnUrl = mediaUrlUtil.getPublicUrl() + "/" + storageKey.replaceAll("^/", "");
-        String timePart = uploadTime != null ? uploadTime.toString() : "";
-        return withVersion(cdnUrl, storageKey + timePart + ":PUBLIC");
+    public String getPublicImageUrl(String storageKey, Long mediaVersion) {
+        String normalizedKey = normalizeKey(storageKey);
+        if (normalizedKey.isBlank()) {
+            return null;
+        }
+        long version = normalizeVersion(mediaVersion);
+        return mediaUrlUtil.getPublicUrl() + "/public/" + normalizedKey + "?v=" + version;
     }
 
-    // ── 私有图片：后端授权 token + Redis 缓存 ──
-
-    /**
-     * 获取带 Redis 缓存的 Worker 私有访问 URL（仅私有/指定图片使用）。
-     * <p>
-     * 缓存 key = media:url:{storageKey}，TTL 25 秒（访问 token 30 秒）。
-     */
     public String getPrivateImageUrl(String storageKey) {
-        String cacheKey = urlCacheKey(storageKey);
+        String normalizedKey = normalizeKey(storageKey);
+        if (normalizedKey.isBlank()) {
+            return null;
+        }
+
+        String cacheKey = urlCacheKey(normalizedKey);
         Optional<String> cached = cacheService.get(cacheKey, String.class);
         if (cached.isPresent() && privateUrlStillUsable(cached.get())) {
             return cached.get();
         }
         cached.ifPresent(ignored -> cacheService.evict(cacheKey));
 
-        String url = createPrivateImageUrl(storageKey);
+        String url = createPrivateImageUrl(normalizedKey);
         cacheService.put(cacheKey, url, PRIVATE_URL_CACHE_TTL);
         return url;
     }
 
-    /**
-     * Worker 回调后端鉴权时校验短期访问 token。
-     */
     public boolean authorizePrivateAccess(String storageKey, String token) {
         if (storageKey == null || storageKey.isBlank() || token == null || token.isBlank()) {
             return false;
@@ -115,34 +92,53 @@ public class ImageUrlService {
         return normalizeKey(storageKey).equals(normalizeKey(parts[0]));
     }
 
-    // ── 缓存管理 ──
-
-    /**
-     * 清除指定 storageKey 的 URL 缓存（权限变更时调用）。
-     */
-    public void evictUrlCache(String storageKey) {
-        if (storageKey != null && !storageKey.isBlank()) {
-            cacheService.evict(urlCacheKey(storageKey));
-        }
-    }
-
-    /**
-     * 根据可见性返回对应的 R2 Cache-Control 值。
-     */
-    public static String cacheControlForVisibility(String visibility) {
-        return "PUBLIC".equals(visibility) ? PUBLIC_CACHE_CONTROL : PRIVATE_CACHE_CONTROL;
-    }
-
-    private String createPrivateImageUrl(String storageKey) {
+    public void evictPrivateAccess(String storageKey) {
         String normalizedKey = normalizeKey(storageKey);
+        if (normalizedKey.isBlank()) {
+            return;
+        }
+
+        cacheService.evict(urlCacheKey(normalizedKey));
+        String indexKey = tokenIndexKey(normalizedKey);
+        Optional<String> indexedTokens = cacheService.get(indexKey, String.class);
+        indexedTokens.ifPresent(tokens -> {
+            for (String token : tokens.split("\\n")) {
+                if (!token.isBlank()) {
+                    cacheService.evict(tokenCacheKey(token.trim()));
+                }
+            }
+        });
+        cacheService.evict(indexKey);
+    }
+
+    public static String cacheControlForVisibility(String visibility) {
+        return "PUBLIC".equalsIgnoreCase(visibility) ? PUBLIC_CACHE_CONTROL : PRIVATE_CACHE_CONTROL;
+    }
+
+    private String createPrivateImageUrl(String normalizedKey) {
         long expiresAt = Instant.now().plus(PRIVATE_ACCESS_EXPIRY).getEpochSecond();
         String token = UUID.randomUUID().toString().replace("-", "");
         cacheService.put(tokenCacheKey(token), normalizedKey + "\n" + expiresAt, PRIVATE_ACCESS_EXPIRY);
+        indexToken(normalizedKey, token);
 
-        String url = mediaUrlUtil.getPublicUrl() + "/" + normalizedKey
+        return mediaUrlUtil.getPublicUrl() + "/private/" + normalizedKey
                 + "?" + TOKEN_QUERY_PARAM + "=" + token
                 + "&expires=" + expiresAt;
-        return withVersion(url, normalizedKey + expiresAt + ":PRIVATE");
+    }
+
+    private void indexToken(String normalizedKey, String token) {
+        String indexKey = tokenIndexKey(normalizedKey);
+        Set<String> tokens = new LinkedHashSet<>();
+        cacheService.get(indexKey, String.class)
+                .ifPresent(existing -> {
+                    for (String value : existing.split("\\n")) {
+                        if (!value.isBlank()) {
+                            tokens.add(value.trim());
+                        }
+                    }
+                });
+        tokens.add(token);
+        cacheService.put(indexKey, String.join("\n", tokens), PRIVATE_ACCESS_EXPIRY);
     }
 
     private boolean privateUrlStillUsable(String url) {
@@ -165,6 +161,10 @@ public class ImageUrlService {
         }
     }
 
+    private long normalizeVersion(Long mediaVersion) {
+        return mediaVersion == null || mediaVersion < 1 ? 1 : mediaVersion;
+    }
+
     private String normalizeKey(String storageKey) {
         return storageKey == null ? "" : storageKey.replaceAll("^/+", "");
     }
@@ -175,5 +175,9 @@ public class ImageUrlService {
 
     private String tokenCacheKey(String token) {
         return TOKEN_KEY_PREFIX + token;
+    }
+
+    private String tokenIndexKey(String storageKey) {
+        return TOKEN_INDEX_KEY_PREFIX + normalizeKey(storageKey);
     }
 }

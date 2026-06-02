@@ -103,7 +103,7 @@
               <img
                 v-for="img in galleryImages"
                 :key="`${copy}-${img.id}`"
-                :src="img.imageUrl"
+                :src="getImageDownloadUrl(img)"
                 :alt="img.imageName"
                 class="gallery-img"
                 loading="lazy"
@@ -125,6 +125,7 @@ import { getImageList } from '../api/image'
 import { useUserStore } from '../store/user'
 import { ElMessage } from 'element-plus'
 import TurnstileWidget from '../components/TurnstileWidget.vue'
+import { getImageDownloadUrl } from '../utils/imageRequests'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -173,7 +174,7 @@ onMounted(async () => {
   fetchCaptcha()
   try {
     const res = await getImageList({ page: 1, limit: 30, visibility: 'PUBLIC' })
-    galleryImages.value = (res.data?.records || []).filter(img => img.imageUrl)
+    galleryImages.value = (res.data?.records || []).filter(img => getImageDownloadUrl(img))
   } catch {}
 })
 

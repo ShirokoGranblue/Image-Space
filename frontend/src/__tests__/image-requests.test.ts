@@ -23,6 +23,24 @@ describe('image request helpers', () => {
     })).toBe('/api/image/download/400a1e49-6990-489e-b4a8-35eb0a02d056?v=b031160aee8f')
   })
 
+  it('prefers publicUrl for public image rendering', () => {
+    expect(getImageDownloadUrl({
+      uuid: '400a1e49-6990-489e-b4a8-35eb0a02d056',
+      visibility: 'PUBLIC',
+      publicUrl: 'https://cdn.image-space.app/public/images/a.png?v=2',
+      imageUrl: '/api/image/download/400a1e49-6990-489e-b4a8-35eb0a02d056',
+    })).toBe('https://cdn.image-space.app/public/images/a.png?v=2')
+  })
+
+  it('prefers privateUrl for private image rendering', () => {
+    expect(getImageDownloadUrl({
+      uuid: '400a1e49-6990-489e-b4a8-35eb0a02d056',
+      visibility: 'PRIVATE',
+      privateUrl: 'https://cdn.image-space.app/private/images/a.png?auth=abc&expires=1893456000',
+      imageUrl: '/api/image/download/400a1e49-6990-489e-b4a8-35eb0a02d056',
+    })).toBe('https://cdn.image-space.app/private/images/a.png?auth=abc&expires=1893456000')
+  })
+
   it('sorts personal images by name ascending', () => {
     expect(buildImageListParams({
       page: 1,

@@ -92,7 +92,7 @@ class NotificationServiceImplTest {
         vo.setActorUserId(2L);
         vo.setImageId(7L);
         vo.setImageUuid("400a1e49-6990-489e-b4a8-35eb0a02d056");
-        vo.setImageStorageKey("1/summer.jpg");
+        vo.setImageStorageKey("images/1/summer.jpg");
         page.setRecords(java.util.List.of(vo));
         when(notificationMapper.selectNotificationVOPage(any(), eq(1L), eq(false))).thenReturn(page);
         User actor = new User();
@@ -103,9 +103,9 @@ class NotificationServiceImplTest {
         when(userMapper.selectById(2L)).thenReturn(actor);
 
         String expectedAvatarUrl = "https://cdn.image-space.app/2/avatar.png?v=e3be9a8665ae";
-        String expectedPreviewUrl = "https://cdn.image-space.app/images/1/summer.jpg?auth=abc&expires=1893456000";
+        String expectedPreviewUrl = "https://cdn.image-space.app/private/images/1/summer.jpg?auth=abc&expires=1893456000";
         when(mediaUrlUtil.userMediaUrl("2/avatar.png")).thenReturn(expectedAvatarUrl);
-        when(imageUrlService.getPrivateImageUrl(eq("1/summer.jpg")))
+        when(imageUrlService.getPrivateImageUrl(eq("images/1/summer.jpg")))
                 .thenReturn(expectedPreviewUrl);
 
         Page<NotificationVO> result = service.listMine(1, 20, false);
@@ -115,6 +115,6 @@ class NotificationServiceImplTest {
         assertEquals(expectedAvatarUrl, resultVo.getActorAvatarUrl());
         assertEquals(expectedPreviewUrl, resultVo.getImagePreviewUrl());
         assertEquals("/image/400a1e49-6990-489e-b4a8-35eb0a02d056?notificationId=9", resultVo.getTargetUrl());
-        verify(imageUrlService).getPrivateImageUrl(eq("1/summer.jpg"));
+        verify(imageUrlService).getPrivateImageUrl(eq("images/1/summer.jpg"));
     }
 }

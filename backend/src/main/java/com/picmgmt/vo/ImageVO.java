@@ -18,12 +18,15 @@ public class ImageVO {
     private String imageName;
     private String imagePath;
     private String imageUrl;
+    private String publicUrl;
+    private String privateUrl;
     private String storageKey;
     private Long fileSize;
     private String imageType;
     private String description;
     private String tags;
     private String visibility;
+    private Long mediaVersion;
     private String visibleUsernames;
     private Boolean ownedByMe;
     private Boolean editableByMe;

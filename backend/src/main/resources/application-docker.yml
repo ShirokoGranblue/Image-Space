@@ -36,6 +36,18 @@ storage:
     bucket-name: ${R2_BUCKET_NAME}
     public-url: ${R2_PUBLIC_URL:https://cdn.image-space.app}
 
+media:
+  internal:
+    token: ${INTERNAL_MEDIA_TOKEN:}
+  meta-cache:
+    upstash-url: ${UPSTASH_REDIS_REST_URL:}
+    upstash-token: ${UPSTASH_REDIS_REST_TOKEN:}
+
+cloudflare:
+  zone-id: ${CLOUDFLARE_ZONE_ID:}
+  api-token: ${CLOUDFLARE_API_TOKEN:}
+  purge-url: ${CLOUDFLARE_PURGE_URL:https://api.cloudflare.com/client/v4/zones/%s/purge_cache}
+
 app:
   public-base-url: ${APP_PUBLIC_BASE_URL:https://image-space.app}
   frontend-base-url: ${APP_FRONTEND_BASE_URL:https://image-space.app}

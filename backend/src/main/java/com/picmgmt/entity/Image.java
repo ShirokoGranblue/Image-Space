@@ -24,6 +24,7 @@ public class Image {
     private String description;
     private String tags;
     private String visibility;
+    private Long mediaVersion;
     private String visibleUsernames;
     private LocalDateTime uploadTime;
 }

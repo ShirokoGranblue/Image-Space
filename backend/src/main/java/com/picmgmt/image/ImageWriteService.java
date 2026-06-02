@@ -29,6 +29,8 @@ public class ImageWriteService {
     private final CategoryMapper categoryMapper;
     private final ImagePermissionService permissionService;
     private final ImageUrlService imageUrlService;
+    private final MediaMetaCacheService mediaMetaCacheService;
+    private final CloudflareCachePurgeService cloudflareCachePurgeService;
 
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp", "gif");
     private static final int MAX_DESCRIPTION_LENGTH = 500;
@@ -36,11 +38,11 @@ public class ImageWriteService {
     @Transactional
     public ImageVO upload(MultipartFile file, Long categoryId, String description,
                           String tags, String visibility, String visibleUsernames, String imageName) {
-        if (file.isEmpty()) throw new BusinessException(ErrorCode.BAD_REQUEST, "文件不能为空");
+        if (file.isEmpty()) throw new BusinessException(ErrorCode.BAD_REQUEST, "File cannot be empty");
 
         String originalFilename = file.getOriginalFilename();
         if (originalFilename == null || originalFilename.isBlank()) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "文件名无效");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "Invalid file name");
         }
 
         String ext = FileUtil.extName(originalFilename).toLowerCase();
@@ -95,6 +97,7 @@ public class ImageWriteService {
         image.setDescription(description);
         image.setTags(tags);
         image.setVisibility(resolvedVisibility);
+        image.setMediaVersion(1L);
         image.setVisibleUsernames(visibleUsernames);
         image.setUploadTime(LocalDateTime.now());
         imageRepository.insert(image);
@@ -113,6 +116,8 @@ public class ImageWriteService {
             storageService.delete("images", image.getStorageKey());
         }
         imageRepository.deleteById(imageId);
+        evictMediaState(image);
+        purgePublicUrlIfNeeded(image);
     }
 
     @Transactional
@@ -124,6 +129,8 @@ public class ImageWriteService {
             storageService.delete("images", image.getStorageKey());
         }
         imageRepository.deleteById(image.getId());
+        evictMediaState(image);
+        purgePublicUrlIfNeeded(image);
     }
 
     @Transactional
@@ -150,23 +157,50 @@ public class ImageWriteService {
             image.setDescription(dto.getDescription());
         }
         if (dto.getTags() != null) image.setTags(dto.getTags());
+
+        String oldVisibility = image.getVisibility();
+        Long oldMediaVersion = normalizeMediaVersion(image.getMediaVersion());
+        String oldPublicUrl = "PUBLIC".equals(oldVisibility)
+                ? imageUrlService.getPublicImageUrl(image.getStorageKey(), oldMediaVersion)
+                : null;
+        boolean visibilityChanged = false;
+        boolean publicnessChanged = false;
+
         if (dto.getVisibility() != null) {
             String newVisibility = resolveVisibility(dto.getVisibility());
             if (!newVisibility.equals(image.getVisibility())) {
-                // 权限变更：清 Redis 缓存 + 更新 R2 对象 Cache-Control 和 public 标记
-                imageUrlService.evictUrlCache(image.getStorageKey());
-                boolean isPublic = "PUBLIC".equals(newVisibility);
-                storageService.updateObjectMetadata("images", image.getStorageKey(),
-                        ImageUrlService.cacheControlForVisibility(newVisibility), isPublic);
+                visibilityChanged = true;
+                publicnessChanged = "PUBLIC".equals(oldVisibility) != "PUBLIC".equals(newVisibility);
+                if (!"PUBLIC".equals(oldVisibility) && "PUBLIC".equals(newVisibility)) {
+                    image.setMediaVersion(oldMediaVersion + 1);
+                }
             }
             image.setVisibility(newVisibility);
         }
-        if (dto.getVisibleUsernames() != null) image.setVisibleUsernames(dto.getVisibleUsernames());
 
-        // 更新 uploadTime 使 ?v= token 变化，CDN 缓存自动失效
+        boolean visibleUsersChanged = false;
+        if (dto.getVisibleUsernames() != null) {
+            visibleUsersChanged = !dto.getVisibleUsernames().equals(image.getVisibleUsernames());
+            image.setVisibleUsernames(dto.getVisibleUsernames());
+        }
+
         image.setUploadTime(LocalDateTime.now());
 
         imageRepository.updateById(image);
+        if (visibilityChanged || visibleUsersChanged) {
+            imageUrlService.evictPrivateAccess(image.getStorageKey());
+        }
+        if (visibilityChanged) {
+            mediaMetaCacheService.evict(image.getStorageKey());
+        }
+        if (publicnessChanged && image.getStorageKey() != null && !image.getStorageKey().isBlank()) {
+            boolean isPublic = "PUBLIC".equals(image.getVisibility());
+            storageService.updateObjectMetadata("images", image.getStorageKey(),
+                    ImageUrlService.cacheControlForVisibility(image.getVisibility()), isPublic);
+            if (!isPublic && oldPublicUrl != null) {
+                cloudflareCachePurgeService.purgeFile(oldPublicUrl);
+            }
+        }
         return imageRepository.toVO(image);
     }
 
@@ -208,5 +242,27 @@ public class ImageWriteService {
             body = fallbackBody;
         }
         return body + "." + ext;
+    }
+
+    private void evictMediaState(Image image) {
+        if (image == null || image.getStorageKey() == null || image.getStorageKey().isBlank()) {
+            return;
+        }
+        imageUrlService.evictPrivateAccess(image.getStorageKey());
+        mediaMetaCacheService.evict(image.getStorageKey());
+    }
+
+    private void purgePublicUrlIfNeeded(Image image) {
+        if (image == null || image.getStorageKey() == null || image.getStorageKey().isBlank()
+                || !"PUBLIC".equals(image.getVisibility())) {
+            return;
+        }
+        cloudflareCachePurgeService.purgeFile(
+                imageUrlService.getPublicImageUrl(image.getStorageKey(), normalizeMediaVersion(image.getMediaVersion()))
+        );
+    }
+
+    private Long normalizeMediaVersion(Long mediaVersion) {
+        return mediaVersion == null || mediaVersion < 1 ? 1L : mediaVersion;
     }
 }

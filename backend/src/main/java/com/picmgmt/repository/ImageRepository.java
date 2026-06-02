@@ -75,14 +75,19 @@ public class ImageRepository {
         vo.setDescription(image.getDescription());
         vo.setTags(image.getTags());
         vo.setVisibility(image.getVisibility());
+        vo.setMediaVersion(image.getMediaVersion());
         vo.setVisibleUsernames(image.getVisibleUsernames());
         vo.setUploadTime(image.getUploadTime());
 
         if (image.getStorageKey() != null && !image.getStorageKey().isBlank()) {
             if ("PUBLIC".equals(image.getVisibility())) {
-                vo.setImageUrl(imageUrlService.getPublicImageUrl(image.getStorageKey(), image.getUploadTime()));
+                String publicUrl = imageUrlService.getPublicImageUrl(image.getStorageKey(), image.getMediaVersion());
+                vo.setPublicUrl(publicUrl);
+                vo.setImageUrl(publicUrl);
             } else {
-                vo.setImageUrl(imageUrlService.getPrivateImageUrl(image.getStorageKey()));
+                String privateUrl = imageUrlService.getPrivateImageUrl(image.getStorageKey());
+                vo.setPrivateUrl(privateUrl);
+                vo.setImageUrl(privateUrl);
             }
         } else if (image.getImagePath() != null && image.getImagePath().startsWith("data:image/")) {
             vo.setImageUrl("/api/image/download/" + image.getUuid());

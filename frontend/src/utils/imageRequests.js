@@ -4,6 +4,10 @@ export const DEFAULT_IMAGE_PAGE_SIZE = 50
 export function getImageDownloadUrl(imageOrId) {
   if (!imageOrId) return ''
   if (typeof imageOrId === 'object') {
+    if (imageOrId.visibility === 'PUBLIC' && imageOrId.publicUrl) return imageOrId.publicUrl
+    if (imageOrId.visibility !== 'PUBLIC' && imageOrId.privateUrl) return imageOrId.privateUrl
+    if (imageOrId.publicUrl) return imageOrId.publicUrl
+    if (imageOrId.privateUrl) return imageOrId.privateUrl
     if (imageOrId.imageUrl) return imageOrId.imageUrl
     return imageOrId.uuid ? `/api/image/download/${imageOrId.uuid}` : ''
   }

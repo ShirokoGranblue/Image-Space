@@ -430,6 +430,9 @@ async function saveEdit() {
     image.value.visibility = updated.visibility
     image.value.visibleUsernames = updated.visibleUsernames || ''
     image.value.imageUrl = updated.imageUrl
+    image.value.publicUrl = updated.publicUrl
+    image.value.privateUrl = updated.privateUrl
+    image.value.mediaVersion = updated.mediaVersion
     image.value.categoryName = updated.categoryName
     viewerSrc.value = getImageDownloadUrl(updated)
   } catch {

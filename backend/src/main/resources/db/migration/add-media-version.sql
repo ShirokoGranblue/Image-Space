@@ -1,0 +1,1 @@
+ALTER TABLE images ADD COLUMN media_version BIGINT NOT NULL DEFAULT 1 AFTER visibility;

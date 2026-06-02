@@ -61,7 +61,7 @@ public interface ImageMapper extends BaseMapper<Image> {
         <script>
             SELECT i.id, i.uuid, i.user_id, i.category_id, i.image_name, i.image_path, i.storage_key,
                    i.file_size, i.image_type, i.description, i.tags,
-                   i.visibility, i.visible_usernames, i.upload_time,
+                   i.visibility, i.media_version, i.visible_usernames, i.upload_time,
                    u.uuid as user_uuid,
                    CASE WHEN u.deleted = 1 THEN '已注销用户' ELSE u.username END as username,
                    CASE WHEN u.deleted = 1 THEN '已注销用户' ELSE u.display_name END as display_name,

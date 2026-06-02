@@ -1,10 +1,10 @@
 package com.picmgmt.repository;
 
 import com.picmgmt.entity.Comment;
-import com.picmgmt.image.ImageUrlService;
 import com.picmgmt.mapper.CommentLikeMapper;
 import com.picmgmt.mapper.CommentMapper;
 import com.picmgmt.storage.StorageService;
+import com.picmgmt.util.MediaUrlUtil;
 import com.picmgmt.vo.CommentVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -18,7 +18,7 @@ public class CommentRepository {
     private final CommentMapper commentMapper;
     private final StorageService storageService;
     private final CommentLikeMapper commentLikeMapper;
-    private final ImageUrlService imageUrlService;
+    private final MediaUrlUtil mediaUrlUtil;
 
     public void insert(Comment comment) {
         commentMapper.insert(comment);
@@ -39,7 +39,7 @@ public class CommentRepository {
         List<CommentVO> list = commentMapper.selectCommentVOList(imageId);
         for (CommentVO vo : list) {
             if (vo.getImagePath() != null) {
-                vo.setImageUrl(imageUrlService.getPrivateImageUrl(vo.getImagePath()));
+                vo.setImageUrl(mediaUrlUtil.userMediaUrl(vo.getImagePath()));
             }
         }
         return list;

@@ -22,10 +22,17 @@ public class ImagePermissionService {
         if (!StpUtil.isLogin()) return false;
 
         long userId = StpUtil.getLoginIdAsLong();
-        if (image.getUserId().equals(userId) || StpUtil.hasRole("admin")) return true;
+        return canViewAsUser(image, userId, StpUtil.hasRole("admin"));
+    }
+
+    public boolean canViewAsUser(Image image, Long viewerUserId, boolean admin) {
+        if (image == null) return false;
+        if ("PUBLIC".equals(image.getVisibility())) return true;
+        if (viewerUserId == null) return false;
+        if (image.getUserId().equals(viewerUserId) || admin) return true;
         if (!"SPECIFIED".equals(image.getVisibility())) return false;
 
-        User viewer = userMapper.selectById(userId);
+        User viewer = userMapper.selectById(viewerUserId);
         if (viewer == null || image.getVisibleUsernames() == null) return false;
 
         return Arrays.stream(image.getVisibleUsernames().split(","))

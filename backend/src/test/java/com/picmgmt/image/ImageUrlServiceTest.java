@@ -14,6 +14,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -27,19 +28,21 @@ class ImageUrlServiceTest {
     @Test
     void getPrivateImageUrl_shouldIssueBackendAuthorizedWorkerUrl() {
         when(cacheService.get("media:url:images/a.png", String.class)).thenReturn(Optional.empty());
+        when(cacheService.get("media:token:index:images/a.png", String.class)).thenReturn(Optional.empty());
         when(mediaUrlUtil.getPublicUrl()).thenReturn("https://cdn.image-space.app");
         ImageUrlService service = new ImageUrlService(cacheService, mediaUrlUtil);
 
         String url = service.getPrivateImageUrl("/images/a.png");
 
-        assertTrue(url.startsWith("https://cdn.image-space.app/images/a.png?auth="));
+        assertTrue(url.startsWith("https://cdn.image-space.app/private/images/a.png?auth="));
         assertTrue(url.contains("&expires="));
-        assertTrue(url.contains("&v="));
+        assertFalse(url.contains("&v="));
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<String> valueCaptor = ArgumentCaptor.forClass(String.class);
         verify(cacheService).put(eq("media:url:images/a.png"), valueCaptor.capture(), eq(ImageUrlService.PRIVATE_ACCESS_EXPIRY.minusSeconds(5)));
         assertEquals(url, valueCaptor.getValue());
+        verify(cacheService).put(eq("media:token:index:images/a.png"), any(String.class), eq(ImageUrlService.PRIVATE_ACCESS_EXPIRY));
     }
 
     @Test

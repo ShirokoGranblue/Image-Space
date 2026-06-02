@@ -19,7 +19,6 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
-import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -106,15 +105,15 @@ class ImageReadServiceTest {
         vo.setId(7L);
         vo.setUuid("img-public-uuid");
         vo.setVisibility("PUBLIC");
-        vo.setStorageKey("4/summer.png");
-        vo.setUploadTime(LocalDateTime.of(2026, 6, 1, 12, 0, 0));
+        vo.setStorageKey("images/4/summer.png");
+        vo.setMediaVersion(5L);
         page.setRecords(List.of(vo));
         when(imageMapper.selectImageVOPage(any(), isNull(), isNull(), isNull(), eq("PUBLIC"),
                 isNull(), eq("upload_time"), eq("desc"), eq("random"), eq("square")))
                 .thenReturn(page);
 
-        String cdnUrl = "https://cdn.image-space.app/4/summer.png?v=6813f5a73c3c";
-        when(imageUrlService.getPublicImageUrl(eq("4/summer.png"), any(LocalDateTime.class))).thenReturn(cdnUrl);
+        String cdnUrl = "https://cdn.image-space.app/public/images/4/summer.png?v=5";
+        when(imageUrlService.getPublicImageUrl("images/4/summer.png", 5L)).thenReturn(cdnUrl);
 
         Page<ImageVO> result;
         try (MockedStatic<StpUtil> stpMock = org.mockito.Mockito.mockStatic(StpUtil.class)) {
@@ -123,7 +122,8 @@ class ImageReadServiceTest {
         }
 
         assertEquals(cdnUrl, result.getRecords().get(0).getImageUrl());
-        verify(imageUrlService).getPublicImageUrl(eq("4/summer.png"), any(LocalDateTime.class));
+        assertEquals(cdnUrl, result.getRecords().get(0).getPublicUrl());
+        verify(imageUrlService).getPublicImageUrl("images/4/summer.png", 5L);
         verify(storageService, never()).getPresignedUrl(any(), any(), any());
     }
 
