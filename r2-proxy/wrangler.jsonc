@@ -7,6 +7,12 @@
 	"name": "r2-proxy",
 	"main": "src/index.js",
 	"compatibility_date": "2026-06-01",
+	"routes": [
+		{
+			"pattern": "cdn.image-space.app/*",
+			"zone_name": "image-space.app"
+		}
+	],
 	"observability": {
 		"enabled": true
 	},
