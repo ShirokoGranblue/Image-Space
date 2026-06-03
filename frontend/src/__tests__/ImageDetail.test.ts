@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
-import { reactive } from 'vue'
+import { nextTick, reactive } from 'vue'
 
 import ImageDetail from '../views/ImageDetail.vue'
 import { getImageDetail } from '../api/image'
@@ -15,6 +15,19 @@ const userStore = reactive({
   token: 'token',
   userInfo: { id: 99, uuid: 'viewer-uuid', role: 'admin' },
 })
+const pollingMocks = vi.hoisted(() => ({
+  options: [] as any[],
+  useResourcePolling: vi.fn((options: any) => {
+    pollingMocks.options.push(options)
+    return {
+      isPolling: { value: false },
+      isChecking: { value: false },
+      start: vi.fn(),
+      stop: vi.fn(),
+      checkNow: vi.fn(),
+    }
+  }),
+}))
 
 vi.mock('vue-router', () => ({
   createRouter: vi.fn(() => ({
@@ -37,6 +50,11 @@ vi.mock('../api/image', () => ({
   updateImage: vi.fn(),
 }))
 
+vi.mock('../api/resource', () => ({
+  getImageResourceStatus: vi.fn(),
+  refreshImageAccessUrl: vi.fn(),
+}))
+
 vi.mock('../api/comment', () => ({
   getComments: vi.fn(),
   addComment: vi.fn(),
@@ -49,6 +67,15 @@ vi.mock('../api/comment', () => ({
 vi.mock('../api/category', () => ({
   getCategoryList: vi.fn(),
   createCategory: vi.fn(),
+}))
+
+vi.mock('../composables/useResourcePolling', () => ({
+  POLLING_INTERVALS: {
+    processing: 4000,
+    detail: 15000,
+    review: 8000,
+  },
+  useResourcePolling: pollingMocks.useResourcePolling,
 }))
 
 function imageDetail(overrides = {}) {
@@ -114,6 +141,8 @@ describe('ImageDetail edit entry', () => {
     userStore.token = 'token'
     userStore.userInfo = { id: 99, uuid: 'viewer-uuid', role: 'admin' }
     vi.mocked(getComments).mockResolvedValue({ data: [] })
+    pollingMocks.options.length = 0
+    pollingMocks.useResourcePolling.mockClear()
   })
 
   it('hides the edit menu for another user image even when editableByMe is true', async () => {
@@ -133,5 +162,41 @@ describe('ImageDetail edit entry', () => {
     await flushPromises()
 
     expect(wrapper.find('.more-actions').exists()).toBe(true)
+  })
+
+  it('updates the displayed image URL from the resource polling access-url callback', async () => {
+    vi.mocked(getImageDetail).mockResolvedValue({ data: imageDetail({
+      visibility: 'PRIVATE',
+      privateUrl: 'https://cdn.image-space.app/private/images/a.png?auth=old&expires=1893456000&v=1',
+    }) })
+
+    const wrapper = mountDetail()
+    await flushPromises()
+
+    pollingMocks.options[0].onAccessUrl(
+      {
+        url: 'https://cdn.image-space.app/private/images/a.png?auth=new&expires=1893456030&v=2',
+        expire: 1893456030,
+        version: 2,
+        visibility: 'PRIVATE',
+      },
+      { version: 2, visibility: 'PRIVATE', status: 'READY' },
+    )
+    await nextTick()
+
+    expect(wrapper.find('.detail-image img').attributes('src')).toBe('https://cdn.image-space.app/private/images/a.png?auth=new&expires=1893456030&v=2')
+  })
+
+  it('disables the resource display when polling reports deletion', async () => {
+    vi.mocked(getImageDetail).mockResolvedValue({ data: imageDetail({ ownedByMe: true }) })
+
+    const wrapper = mountDetail()
+    await flushPromises()
+
+    pollingMocks.options[0].onDeleted({ deleted: true })
+    await nextTick()
+
+    expect(wrapper.find('.detail-layout').exists()).toBe(false)
+    expect(wrapper.text()).toContain('图片已删除或不可用')
   })
 })

@@ -1,6 +1,11 @@
 export const IMAGE_PAGE_SIZES = [30, 50, 100]
 export const DEFAULT_IMAGE_PAGE_SIZE = 50
 
+export {
+  isAccessUrlExpiring,
+  parseAccessUrlMetadata,
+} from './resourceAccess'
+
 export function getImageDownloadUrl(imageOrId) {
   if (!imageOrId) return ''
   if (typeof imageOrId === 'object') {

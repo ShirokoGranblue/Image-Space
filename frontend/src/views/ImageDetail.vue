@@ -8,8 +8,8 @@
         </el-button>
       </div>
 
-      <div class="detail-layout" v-if="image.id">
-        <div class="detail-image" @click="viewerRef.open()" @mouseenter="imgHover = true" @mouseleave="imgHover = false">
+      <div class="detail-layout" v-if="image.id && !image.deleted">
+        <div class="detail-image" @click="openMainViewer" @mouseenter="imgHover = true" @mouseleave="imgHover = false">
           <img :src="detailImageSrc" :alt="image.imageName" :class="{ zoomed: imgHover }" />
           <transition name="fade">
             <div class="img-hover-overlay" v-if="imgHover">
@@ -67,7 +67,7 @@
               {{ image.likedByMe ? '已点赞' : '点赞' }}
             </el-button>
             <span class="like-count-text">{{ image.likeCount || 0 }} 次点赞</span>
-            <el-button type="primary" class="download-btn" @click="handleDownload" :loading="downloading">
+            <el-button type="primary" class="download-btn" @click="handleDownload" :loading="downloading" :disabled="image.deleted">
               <el-icon><Download /></el-icon> 下载图片
             </el-button>
             <el-dropdown v-if="canEdit" trigger="click" class="more-actions">
@@ -134,7 +134,11 @@
         </template>
       </el-dialog>
 
-      <div class="comments-section" v-if="image.id">
+      <div class="empty-state" v-if="image.deleted">
+        <p>图片已删除或不可用</p>
+      </div>
+
+      <div class="comments-section" v-if="image.id && !image.deleted">
         <h3>评论区</h3>
 
         <div class="comment-input">
@@ -217,12 +221,16 @@ import NavBar from '../components/NavBar.vue'
 import ImageViewer from '../components/ImageViewer.vue'
 import TagInput from '../components/TagInput.vue'
 import { getImageDetail, likeImage, unlikeImage, updateImage } from '../api/image'
+import { getImageResourceStatus, refreshImageAccessUrl } from '../api/resource'
 import { getComments, addComment, deleteComment, uploadCommentImage, likeComment, unlikeComment } from '../api/comment'
 import { getCategoryList, createCategory } from '../api/category'
 import { useUserStore } from '../store/user'
 import { formatSize, formatTime } from '../utils/format'
 import { getImageDownloadUrl } from '../utils/imageRequests'
+import { applyImageAccessUrl, applyImageStatus, imageToPollingResource } from '../utils/resourceAdapters'
+import { isAccessUrlExpiring, parseAccessUrlMetadata } from '../utils/resourceAccess'
 import { hasSpecifiedUsers } from '../utils/visibility'
+import { POLLING_INTERVALS, useResourcePolling } from '../composables/useResourcePolling'
 
 const route = useRoute()
 const userStore = useUserStore()
@@ -269,6 +277,74 @@ const tagList = computed(() => {
 const currentUserId = computed(() => userStore.userInfo?.id)
 const canEdit = computed(() => image.value.ownedByMe === true)
 const detailImageSrc = computed(() => getImageDownloadUrl(image.value))
+const detailPollingResource = computed(() => imageToPollingResource(image.value))
+const commentsPollingResource = computed(() => {
+  if (!image.value.uuid) return null
+  const imageComments = comments.value.filter(c => c.imageUrl)
+  if (imageComments.length === 0) return null
+  const watched = imageComments.find(c => isAccessUrlExpiring(c.imageUrl)) || imageComments[0]
+  return {
+    id: `comments:${image.value.uuid}`,
+    url: watched.imageUrl,
+    version: imageComments.map(c => `${c.id}:${parseAccessUrlMetadata(c.imageUrl).version || c.imageUrl}`).join('|'),
+    visibility: 'PUBLIC',
+    status: 'READY',
+  }
+})
+
+useResourcePolling({
+  resource: detailPollingResource,
+  intervalMs: POLLING_INTERVALS.detail,
+  enabled: computed(() => Boolean(image.value.uuid && !image.value.deleted)),
+  getStatus: async () => {
+    const res = await getImageResourceStatus(image.value.uuid)
+    return res.data
+  },
+  getAccessUrl: async () => {
+    const res = await refreshImageAccessUrl(image.value.uuid)
+    return res.data
+  },
+  onStatusChange: (status) => {
+    applyImageStatus(image.value, status)
+  },
+  onAccessUrl: (access, status) => {
+    const previousUrl = detailImageSrc.value
+    applyImageAccessUrl(image.value, access, status)
+    const nextUrl = detailImageSrc.value
+    if (!viewerSrc.value || viewerSrc.value === previousUrl) {
+      viewerSrc.value = nextUrl
+    }
+  },
+  onDeleted: () => {
+    image.value.deleted = true
+    viewerSrc.value = ''
+    ElMessage.warning('图片已删除或不可用')
+  },
+})
+
+useResourcePolling({
+  resource: commentsPollingResource,
+  intervalMs: POLLING_INTERVALS.detail,
+  enabled: computed(() => Boolean(image.value.uuid && comments.value.some(c => c.imageUrl))),
+  immediate: false,
+  getStatus: async (resource) => ({
+    id: resource.id,
+    version: commentsPollingResource.value?.version || null,
+    visibility: 'PUBLIC',
+    status: 'READY',
+    deleted: false,
+  }),
+  getAccessUrl: async () => {
+    const res = await getComments(image.value.uuid)
+    comments.value = res.data || []
+    return {
+      url: commentsPollingResource.value?.url || '',
+      version: commentsPollingResource.value?.version || null,
+      visibility: 'PUBLIC',
+      status: 'READY',
+    }
+  },
+})
 
 onMounted(loadImageDetail)
 
@@ -295,6 +371,11 @@ async function loadImageDetail() {
   } catch {} finally {
     loading.value = false
   }
+}
+
+function openMainViewer() {
+  viewerSrc.value = detailImageSrc.value
+  viewerRef.value.open()
 }
 
 function insertEmoji(emoji) {

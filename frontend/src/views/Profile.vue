@@ -296,9 +296,12 @@ import TagInput from '../components/TagInput.vue'
 import { useUserStore } from '../store/user'
 import { getUserProfile, updateProfile, uploadAvatar, uploadBackground, checkField, deleteAccount } from '../api/user'
 import { getImageList, getUserPublicImages, deleteImage, updateImage } from '../api/image'
+import { getUserMediaResourceStatus, refreshUserMediaAccessUrl } from '../api/resource'
 import { getCategoryList, createCategory } from '../api/category'
 import { DEFAULT_IMAGE_PAGE_SIZE, IMAGE_PAGE_SIZES, buildImageListParams } from '../utils/imageRequests'
+import { userMediaToPollingResource } from '../utils/resourceAdapters'
 import { hasSpecifiedUsers } from '../utils/visibility'
+import { POLLING_INTERVALS, useResourcePolling } from '../composables/useResourcePolling'
 
 // IndexedDB utility for caching original images (Data URLs can be >5MB)
 const dbPromise = new Promise((resolve, reject) => {
@@ -340,8 +343,6 @@ const loading = ref(false)
 const editing = ref(false)
 const saving = ref(false)
 const isOwner = computed(() => !!(userStore.userInfo?.id && user.value.id && userStore.userInfo.id === user.value.id))
-const avatarVersion = ref(0)
-const backgroundVersion = ref(0)
 const categories = ref([])
 const selectedWorkUuids = ref([])
 const imageEditVisible = ref(false)
@@ -369,14 +370,6 @@ function canonicalMediaUrl(url) {
   return url.split('#')[0].split('?')[0]
 }
 
-function mediaUrlWithVersion(url, version) {
-  if (!url || typeof url !== 'string') return url
-  if (!version || url.startsWith('data:') || url.startsWith('blob:') || url.startsWith('#') || url.startsWith('rgb')) {
-    return url
-  }
-  return `${url}${url.includes('?') ? '&' : '?'}v=${version}`
-}
-
 function isSameMediaUrl(a, b) {
   const left = canonicalMediaUrl(a)
   const right = canonicalMediaUrl(b)
@@ -391,8 +384,63 @@ function currentBackgroundUrl() {
   return user.value.backgroundUrl || user.value.background || ''
 }
 
-const avatarDisplayUrl = computed(() => mediaUrlWithVersion(currentAvatarUrl(), avatarVersion.value))
-const backgroundDisplayUrl = computed(() => mediaUrlWithVersion(currentBackgroundUrl(), backgroundVersion.value))
+const avatarDisplayUrl = computed(() => currentAvatarUrl())
+const backgroundDisplayUrl = computed(() => currentBackgroundUrl())
+const avatarPollingResource = computed(() => userMediaToPollingResource(user.value, 'avatar'))
+const backgroundPollingResource = computed(() => userMediaToPollingResource(user.value, 'background'))
+
+useResourcePolling({
+  resource: avatarPollingResource,
+  intervalMs: POLLING_INTERVALS.detail,
+  enabled: computed(() => Boolean(user.value.uuid && currentAvatarUrl())),
+  getStatus: async () => {
+    const res = await getUserMediaResourceStatus(user.value.uuid, 'avatar')
+    return res.data
+  },
+  getAccessUrl: async () => {
+    const res = await refreshUserMediaAccessUrl(user.value.uuid, 'avatar')
+    return res.data
+  },
+  onAccessUrl: (access) => {
+    applyUserMediaAccessUrl('avatar', access.url)
+  },
+})
+
+useResourcePolling({
+  resource: backgroundPollingResource,
+  intervalMs: POLLING_INTERVALS.detail,
+  enabled: computed(() => Boolean(user.value.uuid && currentBackgroundUrl())),
+  getStatus: async () => {
+    const res = await getUserMediaResourceStatus(user.value.uuid, 'background')
+    return res.data
+  },
+  getAccessUrl: async () => {
+    const res = await refreshUserMediaAccessUrl(user.value.uuid, 'background')
+    return res.data
+  },
+  onAccessUrl: (access) => {
+    applyUserMediaAccessUrl('background', access.url)
+  },
+})
+
+function applyUserMediaAccessUrl(kind, url) {
+  if (!url) return
+  if (kind === 'avatar') {
+    user.value.avatar = url
+    user.value.avatarUrl = url
+    if (userStore.userInfo && userStore.userInfo.uuid === user.value.uuid) {
+      userStore.userInfo.avatar = url
+      userStore.userInfo.avatarUrl = url
+    }
+    return
+  }
+  user.value.background = url
+  user.value.backgroundUrl = url
+  if (userStore.userInfo && userStore.userInfo.uuid === user.value.uuid) {
+    userStore.userInfo.background = url
+    userStore.userInfo.backgroundUrl = url
+  }
+}
 
 const bannerStyle = computed(() => {
   const bg = backgroundDisplayUrl.value
@@ -753,12 +801,11 @@ async function saveBackground() {
     const res = await uploadBackground(fd)
     const bgPath = typeof res.data === 'string' ? res.data : res.data?.background
     if (!bgPath) throw new Error('背景上传失败')
-    backgroundVersion.value = Date.now()
     user.value.background = bgPath
     user.value.backgroundUrl = bgPath
     if (userStore.userInfo) {
       userStore.userInfo.background = bgPath
-      userStore.userInfo.backgroundUrl = mediaUrlWithVersion(bgPath, backgroundVersion.value)
+      userStore.userInfo.backgroundUrl = bgPath
     }
     if (originalSource) writeCachedBgOriginal(bgPath, originalSource)
     ElMessage.success('背景已更新'); bgDialogVisible.value = false
@@ -1105,12 +1152,11 @@ async function confirmAvatar() {
     const res = await uploadAvatar(fd)
     const avatarPath = typeof res.data === 'string' ? res.data : res.data?.avatar
     if (!avatarPath) throw new Error('头像上传失败')
-    avatarVersion.value = Date.now()
     user.value.avatar = avatarPath
     user.value.avatarUrl = avatarPath
     if (userStore.userInfo) {
       userStore.userInfo.avatar = avatarPath
-      userStore.userInfo.avatarUrl = mediaUrlWithVersion(avatarPath, avatarVersion.value)
+      userStore.userInfo.avatarUrl = avatarPath
     }
     if (originalSource) writeCachedAvatarOriginal(avatarPath, originalSource)
     ElMessage.success('头像已更新'); avatarDialogVisible.value = false

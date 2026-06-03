@@ -162,9 +162,13 @@ import ImageCard from '../components/ImageCard.vue'
 import ImageUpload from '../components/ImageUpload.vue'
 import TagInput from '../components/TagInput.vue'
 import { getImageList, deleteImage, updateImage } from '../api/image'
+import { getImageResourceStatus, refreshImageAccessUrl } from '../api/resource'
 import { getCategoryList, createCategory } from '../api/category'
 import { DEFAULT_IMAGE_PAGE_SIZE, IMAGE_PAGE_SIZES, buildImageListParams } from '../utils/imageRequests'
+import { applyImageAccessUrl, applyImageStatus, imageToPollingResource } from '../utils/resourceAdapters'
+import { isAccessUrlExpiring } from '../utils/resourceAccess'
 import { hasSpecifiedUsers } from '../utils/visibility'
+import { POLLING_INTERVALS, useResourcePolling } from '../composables/useResourcePolling'
 
 const uploadRef = ref(null)
 const images = ref([])
@@ -176,9 +180,17 @@ const categoryDialogVisible = ref(false)
 const newCategoryName = ref('')
 const creatingCategory = ref(false)
 const selectedImageUuids = ref([])
+const recentUploadResources = ref([])
 const visibleImageUuids = computed(() => images.value.map(img => img.uuid))
 const allVisibleSelected = computed(() => visibleImageUuids.value.length > 0 && visibleImageUuids.value.every(uuid => selectedImageUuids.value.includes(uuid)))
 const partiallySelected = computed(() => selectedImageUuids.value.length > 0 && !allVisibleSelected.value)
+const recentUploadPollingResource = computed(() => {
+  const active = recentUploadResources.value.filter(img => img?.uuid && !img.deleted)
+  const next = active.find(img => img.status === 'PROCESSING')
+    || active.find(img => isAccessUrlExpiring(imageToPollingResource(img)?.url))
+    || active[0]
+  return imageToPollingResource(next)
+})
 
 const editForm = reactive({
   uuid: null,
@@ -202,6 +214,34 @@ const query = reactive({
 onMounted(() => {
   fetchList()
   fetchCategories()
+})
+
+useResourcePolling({
+  resource: recentUploadPollingResource,
+  intervalMs: POLLING_INTERVALS.processing,
+  enabled: computed(() => recentUploadResources.value.some(img => img?.uuid && !img.deleted)),
+  getStatus: async (resource) => {
+    const res = await getImageResourceStatus(resource.uuid)
+    return res.data
+  },
+  getAccessUrl: async (_status, resource) => {
+    const res = await refreshImageAccessUrl(resource.uuid)
+    return res.data
+  },
+  onStatusChange: (status) => {
+    updatePolledImage(status.uuid, image => applyImageStatus(image, status))
+    if (status.deleted) {
+      removePolledImage(status.uuid)
+    }
+  },
+  onAccessUrl: (access, status) => {
+    const source = access.source || status.source
+    const uuid = source?.uuid || status.uuid
+    updatePolledImage(uuid, image => applyImageAccessUrl(image, access, status))
+  },
+  onDeleted: (status) => {
+    removePolledImage(status.uuid)
+  },
 })
 
 async function fetchList() {
@@ -234,7 +274,10 @@ async function fetchCategories() {
   } catch {}
 }
 
-async function handleUploaded() {
+async function handleUploaded(uploadedImages = []) {
+  if (Array.isArray(uploadedImages) && uploadedImages.length > 0) {
+    recentUploadResources.value = uploadedImages.filter(img => img?.uuid)
+  }
   await Promise.all([fetchCategories(), fetchList()])
 }
 
@@ -301,6 +344,22 @@ async function handleDelete(img) {
     ElMessage.success('删除成功')
     fetchList()
   } catch {}
+}
+
+function updatePolledImage(uuid, apply) {
+  if (!uuid) return
+  const image = images.value.find(img => img.uuid === uuid)
+  if (image) apply(image)
+  const recent = recentUploadResources.value.find(img => img.uuid === uuid)
+  if (recent) apply(recent)
+}
+
+function removePolledImage(uuid) {
+  if (!uuid) return
+  recentUploadResources.value = recentUploadResources.value.filter(img => img.uuid !== uuid)
+  images.value = images.value.filter(img => img.uuid !== uuid)
+  selectedImageUuids.value = selectedImageUuids.value.filter(item => item !== uuid)
+  total.value = Math.max(0, total.value - 1)
 }
 
 function handleEdit(img) {
