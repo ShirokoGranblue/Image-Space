@@ -40,6 +40,24 @@ public class MediaUrlUtil {
         return withVersion(url, storageKey);
     }
 
+    public String userAvatarUrl(String userUuid, String storageKey) {
+        return userMediaEndpoint("avatar", userUuid, storageKey);
+    }
+
+    public String userBackgroundUrl(String userUuid, String storageKey) {
+        return userMediaEndpoint("background", userUuid, storageKey);
+    }
+
+    private String userMediaEndpoint(String kind, String userUuid, String storageKey) {
+        if (storageKey == null || storageKey.isBlank()) {
+            return null;
+        }
+        if (userUuid == null || userUuid.isBlank()) {
+            return userMediaUrl(storageKey);
+        }
+        return withVersion("/api/user/" + kind + "/" + userUuid.trim(), storageKey);
+    }
+
     private static String versionToken(String value) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");

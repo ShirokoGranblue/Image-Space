@@ -54,10 +54,10 @@ public class UserRepository {
         vo.setCreateTime(user.getCreateTime());
 
         String avatarUrl = user.getAvatarKey() != null
-                ? mediaUrlUtil.userMediaUrl(user.getAvatarKey())
+                ? mediaUrlUtil.userAvatarUrl(user.getUuid(), user.getAvatarKey())
                 : user.getAvatar();
         String backgroundUrl = user.getBackgroundKey() != null
-                ? mediaUrlUtil.userMediaUrl(user.getBackgroundKey())
+                ? mediaUrlUtil.userBackgroundUrl(user.getUuid(), user.getBackgroundKey())
                 : user.getBackground();
         vo.setAvatar(avatarUrl);
         vo.setAvatarUrl(avatarUrl);

@@ -97,14 +97,15 @@ class NotificationServiceImplTest {
         when(notificationMapper.selectNotificationVOPage(any(), eq(1L), eq(false))).thenReturn(page);
         User actor = new User();
         actor.setId(2L);
+        actor.setUuid("actor-uuid");
         actor.setUsername("alice");
         actor.setDisplayName("Alice");
         actor.setAvatarKey("2/avatar.png");
         when(userMapper.selectById(2L)).thenReturn(actor);
 
-        String expectedAvatarUrl = "https://cdn.image-space.app/2/avatar.png?v=e3be9a8665ae";
+        String expectedAvatarUrl = "/api/user/avatar/actor-uuid?v=e3be9a8665ae";
         String expectedPreviewUrl = "https://cdn.image-space.app/private/images/1/summer.jpg?auth=abc&expires=1893456000";
-        when(mediaUrlUtil.userMediaUrl("2/avatar.png")).thenReturn(expectedAvatarUrl);
+        when(mediaUrlUtil.userAvatarUrl("actor-uuid", "2/avatar.png")).thenReturn(expectedAvatarUrl);
         when(imageUrlService.getPrivateImageUrl(eq("images/1/summer.jpg")))
                 .thenReturn(expectedPreviewUrl);
 

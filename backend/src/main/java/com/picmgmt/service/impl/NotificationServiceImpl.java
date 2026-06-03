@@ -142,7 +142,7 @@ public class NotificationServiceImpl implements NotificationService {
             String displayName = actor.getDisplayName();
             vo.setActorName(displayName != null && !displayName.isBlank() ? displayName : actor.getUsername());
             if (actor.getAvatarKey() != null && !actor.getAvatarKey().isBlank()) {
-                vo.setActorAvatarUrl(mediaUrlUtil.userMediaUrl(actor.getAvatarKey()));
+                vo.setActorAvatarUrl(mediaUrlUtil.userAvatarUrl(actor.getUuid(), actor.getAvatarKey()));
             } else if (actor.getAvatar() != null && !actor.getAvatar().isBlank()) {
                 vo.setActorAvatarUrl(actor.getAvatar());
             }

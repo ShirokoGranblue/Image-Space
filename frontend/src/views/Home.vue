@@ -83,18 +83,22 @@
         </div>
       </div>
 
+    </div>
+
+    <Teleport to="body">
       <div class="pagination-wrap" v-if="total > 0">
         <el-pagination
           v-model:current-page="query.page"
           :page-size="query.limit"
           :page-sizes="IMAGE_PAGE_SIZES"
           :total="total"
+          :disabled="loading"
           layout="total, sizes, prev, pager, next"
           @size-change="onPageSizeChange"
           @current-change="fetchList"
         />
       </div>
-    </div>
+    </Teleport>
 
     <ImageUpload ref="uploadRef" @uploaded="handleUploaded" />
 
@@ -406,6 +410,7 @@ async function saveEdit() {
   flex: 1;
   display: flex;
   flex-direction: column;
+  padding-bottom: 112px;
 }
 
 .page-header {
@@ -494,11 +499,26 @@ async function saveEdit() {
 }
 
 .pagination-wrap {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
   display: flex;
   justify-content: center;
-  padding: 28px 0 var(--space-lg);
-  margin-top: auto;
+  padding: 12px 24px calc(12px + env(safe-area-inset-bottom));
+  margin-top: 0;
+  border-top: 1px solid var(--gray2);
+  background: rgba(250, 250, 250, 0.94);
+  backdrop-filter: blur(12px);
   flex-shrink: 0;
+}
+
+.pagination-wrap :deep(.el-pagination) {
+  max-width: min(100%, 1280px);
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
 }
 
 .skeleton-grid {
@@ -518,7 +538,7 @@ async function saveEdit() {
 }
 
 @media (max-width: 768px) {
-  .page-container { padding: 20px 8px; }
+  .page-container { padding: 20px 8px 148px; }
   .page-header { padding: 0 0 16px; }
   .page-title { font-size: 26px; }
   .toolbar { flex-direction: column; align-items: stretch; }
@@ -528,6 +548,14 @@ async function saveEdit() {
   .category-row {
     width: 100% !important;
     grid-template-columns: 1fr;
+  }
+  .pagination-wrap {
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  }
+  .pagination-wrap :deep(.el-pagination) {
+    --el-pagination-button-width: 28px;
+    --el-pagination-button-height: 28px;
+    font-size: 12px;
   }
 }
 </style>

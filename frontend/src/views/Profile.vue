@@ -100,19 +100,23 @@
             @toggle-select="toggleWorkSelection"
           />
         </div>
-        <div class="pagination-wrap" v-if="workTotal > 0">
-          <el-pagination
-            v-model:current-page="workPage"
-            :page-size="workLimit"
-            :page-sizes="IMAGE_PAGE_SIZES"
-            :total="workTotal"
-            layout="total, sizes, prev, pager, next"
-            @size-change="onWorkPageSizeChange"
-            @current-change="fetchWorks"
-          />
-        </div>
       </div>
     </div>
+
+    <Teleport to="body">
+      <div class="pagination-wrap" v-if="workTotal > 0">
+        <el-pagination
+          v-model:current-page="workPage"
+          :page-size="workLimit"
+          :page-sizes="IMAGE_PAGE_SIZES"
+          :total="workTotal"
+          :disabled="loading"
+          layout="total, sizes, prev, pager, next"
+          @size-change="onWorkPageSizeChange"
+          @current-change="fetchWorks"
+        />
+      </div>
+    </Teleport>
 
     <!-- Background editor dialog -->
     <el-dialog v-model="bgDialogVisible" title="编辑个人背景" width="860px" class="profile-dialog bg-dialog">
@@ -1420,7 +1424,7 @@ async function saveProfile() {
 .page-container {
   max-width: 1040px;
   margin: 0 auto;
-  padding: 76px var(--space-lg) 56px;
+  padding: 76px var(--space-lg) 112px;
 }
 
 /* ── Banner ── */
@@ -1650,9 +1654,24 @@ async function saveProfile() {
 }
 
 .pagination-wrap {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
   display: flex;
   justify-content: center;
-  padding: var(--space-xl) 0 var(--space-sm);
+  padding: 12px 24px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--gray2);
+  background: rgba(250, 250, 250, 0.94);
+  backdrop-filter: blur(12px);
+}
+
+.pagination-wrap :deep(.el-pagination) {
+  max-width: min(100%, 1040px);
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
 }
 
 .upload-hint {
@@ -1990,7 +2009,7 @@ async function saveProfile() {
 
 /* ── Responsive ── */
 @media (max-width: 720px) {
-  .page-container { padding: 16px var(--space-md) 32px; }
+  .page-container { padding: 16px var(--space-md) 148px; }
   .profile-banner { height: 218px; }
   .profile-header { padding: 0 20px 24px; margin-top: -120px; }
   .profile-header::before { top: 120px; }
@@ -2003,5 +2022,13 @@ async function saveProfile() {
   .background-editor-layout { grid-template-columns: 1fr; }
   .profile-mini-card { margin: 0 auto; }
   .preview-label { margin: 0; }
+  .pagination-wrap {
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  }
+  .pagination-wrap :deep(.el-pagination) {
+    --el-pagination-button-width: 28px;
+    --el-pagination-button-height: 28px;
+    font-size: 12px;
+  }
 }
 </style>

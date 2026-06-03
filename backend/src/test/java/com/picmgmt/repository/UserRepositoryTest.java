@@ -21,18 +21,19 @@ class UserRepositoryTest {
     @Mock private MediaUrlUtil mediaUrlUtil;
 
     @Test
-    void toVO_shouldExposeAvatarAndBackgroundThroughCdnUrlsWithVersion() {
+    void toVO_shouldExposeAvatarAndBackgroundThroughBackendEndpointsWithVersion() {
         UserRepository repository = new UserRepository(userMapper, cacheService, mediaUrlUtil);
         User user = new User();
         user.setId(4L);
+        user.setUuid("user-uuid");
         user.setUsername("alice");
         user.setAvatarKey("4/avatar.png");
         user.setBackgroundKey("4/background.jpg");
 
-        String expectedAvatarUrl = "https://cdn.image-space.app/4/avatar.png?v=867e55914ef4";
-        String expectedBackgroundUrl = "https://cdn.image-space.app/4/background.jpg?v=326f74a30ecc";
-        when(mediaUrlUtil.userMediaUrl("4/avatar.png")).thenReturn(expectedAvatarUrl);
-        when(mediaUrlUtil.userMediaUrl("4/background.jpg")).thenReturn(expectedBackgroundUrl);
+        String expectedAvatarUrl = "/api/user/avatar/user-uuid?v=867e55914ef4";
+        String expectedBackgroundUrl = "/api/user/background/user-uuid?v=326f74a30ecc";
+        when(mediaUrlUtil.userAvatarUrl("user-uuid", "4/avatar.png")).thenReturn(expectedAvatarUrl);
+        when(mediaUrlUtil.userBackgroundUrl("user-uuid", "4/background.jpg")).thenReturn(expectedBackgroundUrl);
 
         UserVO vo = repository.toVO(user);
 

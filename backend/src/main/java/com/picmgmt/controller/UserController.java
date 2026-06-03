@@ -18,7 +18,6 @@ import com.picmgmt.service.OAuthService;
 import com.picmgmt.service.TurnstileService;
 import com.picmgmt.service.UserService;
 import com.picmgmt.storage.StorageService;
-import com.picmgmt.util.MediaUrlUtil;
 import com.picmgmt.vo.UserVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -55,7 +54,6 @@ public class UserController {
     private final CaptchaService captchaService;
     private final OAuthService oAuthService;
     private final TurnstileService turnstileService;
-    private final MediaUrlUtil mediaUrlUtil;
     private final StringRedisTemplate redisTemplate;
 
 private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "webp", "gif");
@@ -118,7 +116,7 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
         String mimeType = "image/" + (ext.equals("jpg") ? "jpeg" : ext);
         storageService.upload("avatars", objectKey, file.getBytes(), mimeType, ImageUrlService.PUBLIC_CACHE_CONTROL);
         userService.updateAvatar(userId, objectKey);
-        return Result.ok(mediaUrlUtil.userMediaUrl(objectKey));
+        return Result.ok(userService.getUserVOById(userId).getAvatarUrl());
     }
 
     @Operation(summary = "上传背景")
@@ -131,7 +129,7 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
         String mimeType = "image/" + (ext.equals("jpg") ? "jpeg" : ext);
         storageService.upload("backgrounds", objectKey, file.getBytes(), mimeType, ImageUrlService.PUBLIC_CACHE_CONTROL);
         userService.updateBackground(userId, objectKey);
-        return Result.ok(mediaUrlUtil.userMediaUrl(objectKey));
+        return Result.ok(userService.getUserVOById(userId).getBackgroundUrl());
     }
 
     @Operation(summary = "下载头像")
