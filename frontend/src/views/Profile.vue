@@ -298,6 +298,7 @@ import { getUserProfile, updateProfile, uploadAvatar, uploadBackground, checkFie
 import { getImageList, getUserPublicImages, deleteImage, updateImage } from '../api/image'
 import { getCategoryList, createCategory } from '../api/category'
 import { DEFAULT_IMAGE_PAGE_SIZE, IMAGE_PAGE_SIZES, buildImageListParams } from '../utils/imageRequests'
+import { hasSpecifiedUsers } from '../utils/visibility'
 
 // IndexedDB utility for caching original images (Data URLs can be >5MB)
 const dbPromise = new Promise((resolve, reject) => {
@@ -1263,6 +1264,10 @@ function handleWorkEdit(img) {
 
 async function saveWorkEdit() {
   if (!imageEditForm.uuid) return
+  if (imageEditForm.visibility === 'SPECIFIED' && !hasSpecifiedUsers(imageEditForm.visibleUsernames)) {
+    ElMessage.warning('请先填写指定用户')
+    return
+  }
   try {
     await updateImage(imageEditForm.uuid, {
       imageName: imageEditForm.imageName,

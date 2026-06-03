@@ -104,6 +104,7 @@ import { ref, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
 import { uploadImage } from '../api/image'
 import { getCategoryList, createCategory } from '../api/category'
+import { hasSpecifiedUsers } from '../utils/visibility'
 import TagInput from './TagInput.vue'
 
 const visible = ref(false)
@@ -208,6 +209,10 @@ function getUploadName(file) {
 async function handleUpload() {
   if (fileList.value.length === 0) {
     ElMessage.warning('请选择图片')
+    return
+  }
+  if (form.visibility === 'SPECIFIED' && !hasSpecifiedUsers(form.visibleUsernames)) {
+    ElMessage.warning('请先填写指定用户')
     return
   }
   uploading.value = true

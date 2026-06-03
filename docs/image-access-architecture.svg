@@ -1,0 +1,203 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1250" viewBox="0 0 1800 1250">
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#314056"/>
+    </marker>
+    <marker id="arrowRed" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#b42318"/>
+    </marker>
+    <style>
+      .bg { fill: #f7f9fc; }
+      .title { font: 700 38px "Microsoft YaHei", "SimHei", Arial, sans-serif; fill: #111827; }
+      .subtitle { font: 400 18px "Microsoft YaHei", "SimHei", Arial, sans-serif; fill: #586174; }
+      .lane-title { font: 700 22px "Microsoft YaHei", "SimHei", Arial, sans-serif; fill: #243044; }
+      .box-title { font: 700 20px "Microsoft YaHei", "SimHei", Arial, sans-serif; fill: #111827; }
+      .box-text { font: 400 16px "Microsoft YaHei", "SimHei", Arial, sans-serif; fill: #334155; }
+      .small { font: 400 14px "Microsoft YaHei", "SimHei", Arial, sans-serif; fill: #526071; }
+      .tiny { font: 400 13px "Microsoft YaHei", "SimHei", Arial, sans-serif; fill: #667085; }
+      .ok { fill: #05603a; font-weight: 700; }
+      .bad { fill: #b42318; font-weight: 700; }
+      .muted { fill: #667085; }
+      .lane { fill: #ffffff; stroke: #d9e2f1; stroke-width: 2; rx: 24; }
+      .frontend { fill: #ecfdf3; stroke: #86cb9c; stroke-width: 2; rx: 18; }
+      .edge { fill: #eff6ff; stroke: #78a8f5; stroke-width: 2; rx: 18; }
+      .backend { fill: #fff7ed; stroke: #f3a96a; stroke-width: 2; rx: 18; }
+      .store { fill: #f5f3ff; stroke: #a78bfa; stroke-width: 2; rx: 18; }
+      .risk { fill: #fff1f2; stroke: #fb7185; stroke-width: 2; rx: 18; }
+      .cache { fill: #f0fdfa; stroke: #2dd4bf; stroke-width: 2; rx: 18; }
+      .flow { fill: none; stroke: #314056; stroke-width: 2.4; marker-end: url(#arrow); }
+      .flow-dashed { fill: none; stroke: #314056; stroke-width: 2.2; stroke-dasharray: 8 8; marker-end: url(#arrow); }
+      .flow-red { fill: none; stroke: #b42318; stroke-width: 2.4; marker-end: url(#arrowRed); }
+      .section-label { font: 700 18px "Microsoft YaHei", "SimHei", Arial, sans-serif; fill: #1d2939; }
+      .pill { fill: #ffffff; stroke: #cfd8e6; stroke-width: 1.5; rx: 18; }
+      .pill-text { font: 700 15px "Microsoft YaHei", "SimHei", Arial, sans-serif; fill: #344054; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1800" height="1250"/>
+  <text class="title" x="64" y="62">图片访问架构：权限变化与缓存策略</text>
+  <text class="subtitle" x="64" y="96">主图库 images/*：公开图走 Worker 校验后可缓存，私有图必须鉴权且不缓存，权限变化时清理 Redis、短 token 和 Cloudflare 缓存。</text>
+
+  <rect class="lane" x="42" y="135" width="410" height="660"/>
+  <text class="lane-title" x="72" y="178">浏览器与前端</text>
+
+  <rect class="lane" x="488" y="135" width="470" height="660"/>
+  <text class="lane-title" x="520" y="178">Cloudflare 边缘层</text>
+
+  <rect class="lane" x="994" y="135" width="360" height="660"/>
+  <text class="lane-title" x="1024" y="178">后端服务</text>
+
+  <rect class="lane" x="1390" y="135" width="365" height="660"/>
+  <text class="lane-title" x="1420" y="178">数据与对象存储</text>
+
+  <rect class="frontend" x="75" y="220" width="320" height="128"/>
+  <text class="box-title" x="102" y="256">用户浏览器</text>
+  <text class="box-text" x="102" y="288">页面加载 Vue 前端</text>
+  <text class="box-text" x="102" y="316">图片地址来自后端返回字段</text>
+
+  <rect class="frontend" x="75" y="410" width="320" height="174"/>
+  <text class="box-title" x="102" y="446">Vue 组件</text>
+  <text class="box-text" x="102" y="478">ImageCard / ImageDetail</text>
+  <text class="box-text" x="102" y="508">优先使用 publicUrl / privateUrl</text>
+  <text class="box-text" x="102" y="538">兼容 imageUrl</text>
+  <text class="small" x="102" y="562">仅加载失败才 fallback 到下载接口</text>
+
+  <rect class="backend" x="75" y="640" width="320" height="96"/>
+  <text class="box-title" x="102" y="676">业务 API</text>
+  <text class="box-text" x="102" y="708">/api/image/list / detail / update</text>
+
+  <rect class="edge" x="530" y="214" width="370" height="110"/>
+  <text class="box-title" x="558" y="250">CDN 主机名</text>
+  <text class="box-text" x="558" y="282">cdn.image-space.app/* 全量进 Worker</text>
+  <text class="small" x="558" y="306">旧根路径 /images/* 直接 404</text>
+
+  <rect class="edge" x="530" y="368" width="370" height="158"/>
+  <text class="box-title" x="558" y="404">Worker 严格路由</text>
+  <text class="box-text" x="558" y="436">/public/{storageKey}</text>
+  <text class="box-text" x="558" y="466">/private/{storageKey}</text>
+  <text class="small" x="558" y="496">storageKey 必须是 images/*</text>
+
+  <rect class="cache" x="530" y="590" width="370" height="144"/>
+  <text class="box-title" x="558" y="626">Worker Cache</text>
+  <text class="box-text" x="558" y="658">只缓存公开图完整 URL</text>
+  <text class="box-text" x="558" y="688">HIT 时不查 Redis / 后端 / R2</text>
+  <text class="small" x="558" y="716">key 包含 ?v=mediaVersion</text>
+
+  <rect class="backend" x="1026" y="220" width="292" height="148"/>
+  <text class="box-title" x="1052" y="256">ImageReadService</text>
+  <text class="box-text" x="1052" y="288">生成 ImageVO</text>
+  <text class="box-text" x="1052" y="318">publicUrl / privateUrl</text>
+  <text class="small" x="1052" y="344">imageUrl 保持兼容</text>
+
+  <rect class="backend" x="1026" y="426" width="292" height="154"/>
+  <text class="box-title" x="1052" y="462">内部媒体接口</text>
+  <text class="box-text" x="1052" y="494">/api/internal/media/meta</text>
+  <text class="box-text" x="1052" y="524">/api/internal/media/authorize</text>
+  <text class="small" x="1052" y="552">必须带 X-Internal-Token</text>
+
+  <rect class="backend" x="1026" y="642" width="292" height="96"/>
+  <text class="box-title" x="1052" y="678">ImageWriteService</text>
+  <text class="box-text" x="1052" y="710">处理 visibility 变化副作用</text>
+
+  <rect class="store" x="1422" y="204" width="288" height="122"/>
+  <text class="box-title" x="1450" y="240">MySQL images</text>
+  <text class="box-text" x="1450" y="272">visibility / ownerId</text>
+  <text class="box-text" x="1450" y="302">storageKey / media_version</text>
+
+  <rect class="store" x="1422" y="386" width="288" height="150"/>
+  <text class="box-title" x="1450" y="422">Upstash Redis</text>
+  <text class="box-text" x="1450" y="454">media:meta:{storageKey}</text>
+  <text class="box-text" x="1450" y="484">TTL 默认 300 秒</text>
+  <text class="small" x="1450" y="512">Worker miss 时再查后端</text>
+
+  <rect class="store" x="1422" y="594" width="288" height="148"/>
+  <text class="box-title" x="1450" y="630">R2 私有桶</text>
+  <text class="box-text" x="1450" y="662">真实对象：images/*</text>
+  <text class="box-text" x="1450" y="692">不允许直连 public bucket</text>
+  <text class="small" x="1450" y="720">由 Worker 读取并返回</text>
+
+  <path class="flow" d="M395 284 C455 284 468 268 530 268"/>
+  <text class="small" x="418" y="256">请求页面</text>
+
+  <path class="flow" d="M395 496 C455 496 468 448 530 448"/>
+  <text class="small" x="418" y="432">图片 URL</text>
+
+  <path class="flow" d="M900 445 C958 445 970 494 1026 494"/>
+  <text class="small" x="900" y="424">MISS 或私有鉴权</text>
+
+  <path class="flow" d="M1318 494 C1370 494 1378 462 1422 462"/>
+  <text class="small" x="1340" y="444">读/写 meta</text>
+
+  <path class="flow" d="M1318 292 C1370 292 1378 266 1422 266"/>
+  <text class="small" x="1332" y="250">查询图片记录</text>
+
+  <path class="flow" d="M900 668 C1120 668 1210 668 1422 668"/>
+  <text class="small" x="976" y="646">校验通过后读取对象</text>
+
+  <path class="flow" d="M1422 704 C1160 780 790 792 395 520"/>
+  <text class="small" x="890" y="768">返回图片响应</text>
+
+  <path class="flow-dashed" d="M715 526 C715 548 715 568 715 590"/>
+  <text class="tiny" x="733" y="560">public 先查缓存</text>
+
+  <path class="flow-dashed" d="M715 590 C705 552 704 520 715 526"/>
+  <text class="tiny" x="552" y="566">HIT 直接返回</text>
+
+  <path class="flow-red" d="M900 270 C940 250 980 242 1026 248"/>
+  <text class="small bad" x="916" y="238">旧 /images/* 拒绝</text>
+
+  <rect class="pill" x="100" y="764" width="255" height="38"/>
+  <text class="pill-text" x="125" y="789">公开：可 CDN 缓存</text>
+  <rect class="pill" x="565" y="764" width="310" height="38"/>
+  <text class="pill-text" x="590" y="789">私有：必须鉴权，不缓存</text>
+  <rect class="pill" x="1038" y="764" width="270" height="38"/>
+  <text class="pill-text" x="1062" y="789">内部接口：Worker 专用</text>
+  <rect class="pill" x="1442" y="764" width="248" height="38"/>
+  <text class="pill-text" x="1466" y="789">R2：无公共直连</text>
+
+  <rect class="lane" x="42" y="845" width="1713" height="335"/>
+  <text class="lane-title" x="72" y="888">权限变化链路与缓存失效</text>
+
+  <rect class="risk" x="84" y="930" width="300" height="176"/>
+  <text class="box-title" x="112" y="966">公开 转 私有 / 指定用户</text>
+  <text class="box-text" x="112" y="1000">1. 更新 MySQL visibility</text>
+  <text class="box-text" x="112" y="1030">2. 删除 media:meta:{storageKey}</text>
+  <text class="box-text" x="112" y="1060">3. 删除 private token 索引</text>
+  <text class="box-text" x="112" y="1084">4. 精确 purge 旧 publicUrl</text>
+
+  <rect class="risk" x="438" y="930" width="300" height="176"/>
+  <text class="box-title" x="466" y="966">旧公开 URL</text>
+  <text class="box-text" x="466" y="1000">路径保持原样访问</text>
+  <text class="box-text" x="466" y="1030">/public/images/*?v=old</text>
+  <text class="box-text bad" x="466" y="1062">返回 404 + no-store</text>
+
+  <rect class="backend" x="792" y="930" width="300" height="176"/>
+  <text class="box-title" x="820" y="966">私有 转 公开</text>
+  <text class="box-text" x="820" y="1000">1. 更新 visibility=PUBLIC</text>
+  <text class="box-text" x="820" y="1030">2. media_version + 1</text>
+  <text class="box-text" x="820" y="1060">3. 删除 meta 与 token</text>
+  <text class="box-text" x="820" y="1084">4. 返回新的 publicUrl</text>
+
+  <rect class="cache" x="1146" y="930" width="300" height="176"/>
+  <text class="box-title" x="1174" y="966">新公开 URL</text>
+  <text class="box-text" x="1174" y="1000">/public/images/*?v=new</text>
+  <text class="box-text ok" x="1174" y="1032">200 + immutable</text>
+  <text class="box-text" x="1174" y="1064">后续命中 Worker Cache</text>
+
+  <rect class="store" x="1500" y="930" width="210" height="176"/>
+  <text class="box-title" x="1526" y="966">验证点</text>
+  <text class="box-text" x="1526" y="1000">旧 URL：404</text>
+  <text class="box-text" x="1526" y="1030">私有无 token：403</text>
+  <text class="box-text" x="1526" y="1060">新 URL：200</text>
+  <text class="box-text" x="1526" y="1090">缓存头正确</text>
+
+  <path class="flow-red" d="M384 1010 C402 1010 420 1010 438 1010"/>
+  <path class="flow" d="M738 1010 C758 1010 772 1010 792 1010"/>
+  <path class="flow" d="M1092 1010 C1112 1010 1126 1010 1146 1010"/>
+  <path class="flow" d="M1446 1010 C1466 1010 1480 1010 1500 1010"/>
+
+  <text class="section-label" x="84" y="1142">缓存策略总结：</text>
+  <text class="box-text" x="218" y="1142">公开图响应写入 Worker Cache，Cache-Control 为 public, max-age=31536000, immutable；私有图和错误响应均为 no-store。</text>
+  <text class="section-label" x="84" y="1172">安全边界：</text>
+  <text class="box-text" x="188" y="1172">旧公开 URL 不拼 token、不签名；权限变私有后必须 404；R2 不再通过公共 bucket/custom domain 直连。</text>
+</svg>

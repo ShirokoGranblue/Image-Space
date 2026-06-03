@@ -222,6 +222,7 @@ import { getCategoryList, createCategory } from '../api/category'
 import { useUserStore } from '../store/user'
 import { formatSize, formatTime } from '../utils/format'
 import { getImageDownloadUrl } from '../utils/imageRequests'
+import { hasSpecifiedUsers } from '../utils/visibility'
 
 const route = useRoute()
 const userStore = useUserStore()
@@ -411,6 +412,10 @@ async function submitCategory() {
 
 async function saveEdit() {
   if (!editForm.uuid) return
+  if (editForm.visibility === 'SPECIFIED' && !hasSpecifiedUsers(editForm.visibleUsernames)) {
+    ElMessage.warning('请先填写指定用户')
+    return
+  }
   try {
     const res = await updateImage(editForm.uuid, {
       imageName: editForm.imageName,

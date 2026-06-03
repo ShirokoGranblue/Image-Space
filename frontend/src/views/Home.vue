@@ -164,6 +164,7 @@ import TagInput from '../components/TagInput.vue'
 import { getImageList, deleteImage, updateImage } from '../api/image'
 import { getCategoryList, createCategory } from '../api/category'
 import { DEFAULT_IMAGE_PAGE_SIZE, IMAGE_PAGE_SIZES, buildImageListParams } from '../utils/imageRequests'
+import { hasSpecifiedUsers } from '../utils/visibility'
 
 const uploadRef = ref(null)
 const images = ref([])
@@ -314,6 +315,10 @@ function handleEdit(img) {
 }
 
 async function saveEdit() {
+  if (editForm.visibility === 'SPECIFIED' && !hasSpecifiedUsers(editForm.visibleUsernames)) {
+    ElMessage.warning('请先填写指定用户')
+    return
+  }
   try {
     await updateImage(editForm.uuid, {
       imageName: editForm.imageName,

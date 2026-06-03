@@ -17,8 +17,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +36,8 @@ public class ImageWriteService {
 
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp", "gif");
     private static final int MAX_DESCRIPTION_LENGTH = 500;
+    private static final String SPECIFIED_USERS_REQUIRED_MESSAGE =
+            "SPECIFIED visibility requires at least one username";
 
     @Transactional
     public ImageVO upload(MultipartFile file, Long categoryId, String description,
@@ -83,6 +87,8 @@ public class ImageWriteService {
         };
 
         String resolvedVisibility = resolveVisibility(visibility);
+        String normalizedVisibleUsernames = normalizeVisibleUsernames(visibleUsernames);
+        validateSpecifiedUsers(resolvedVisibility, normalizedVisibleUsernames);
         String cacheControl = ImageUrlService.cacheControlForVisibility(resolvedVisibility);
         storageService.upload("images", objectKey, bytes, mimeType, cacheControl);
 
@@ -98,7 +104,7 @@ public class ImageWriteService {
         image.setTags(tags);
         image.setVisibility(resolvedVisibility);
         image.setMediaVersion(1L);
-        image.setVisibleUsernames(visibleUsernames);
+        image.setVisibleUsernames("SPECIFIED".equals(resolvedVisibility) ? normalizedVisibleUsernames : null);
         image.setUploadTime(LocalDateTime.now());
         imageRepository.insert(image);
 
@@ -165,9 +171,19 @@ public class ImageWriteService {
                 : null;
         boolean visibilityChanged = false;
         boolean publicnessChanged = false;
+        String newVisibility = image.getVisibility();
+        String providedVisibleUsernames = dto.getVisibleUsernames() == null
+                ? ""
+                : normalizeVisibleUsernames(dto.getVisibleUsernames());
+        String normalizedVisibleUsernames = dto.getVisibleUsernames() == null
+                ? image.getVisibleUsernames()
+                : providedVisibleUsernames;
 
         if (dto.getVisibility() != null) {
-            String newVisibility = resolveVisibility(dto.getVisibility());
+            newVisibility = resolveVisibility(dto.getVisibility());
+            if ("SPECIFIED".equals(newVisibility) && !"SPECIFIED".equals(image.getVisibility())) {
+                validateSpecifiedUsers(newVisibility, providedVisibleUsernames);
+            }
             if (!newVisibility.equals(image.getVisibility())) {
                 visibilityChanged = true;
                 publicnessChanged = "PUBLIC".equals(oldVisibility) != "PUBLIC".equals(newVisibility);
@@ -177,11 +193,12 @@ public class ImageWriteService {
             }
             image.setVisibility(newVisibility);
         }
+        validateSpecifiedUsers(newVisibility, normalizedVisibleUsernames);
 
         boolean visibleUsersChanged = false;
         if (dto.getVisibleUsernames() != null) {
-            visibleUsersChanged = !dto.getVisibleUsernames().equals(image.getVisibleUsernames());
-            image.setVisibleUsernames(dto.getVisibleUsernames());
+            visibleUsersChanged = !normalizedVisibleUsernames.equals(image.getVisibleUsernames());
+            image.setVisibleUsernames(normalizedVisibleUsernames);
         }
 
         image.setUploadTime(LocalDateTime.now());
@@ -231,6 +248,23 @@ public class ImageWriteService {
             throw new BusinessException(ErrorCode.IMAGE_VISIBILITY_INVALID);
         }
         return normalized;
+    }
+
+    private String normalizeVisibleUsernames(String visibleUsernames) {
+        if (visibleUsernames == null) {
+            return "";
+        }
+        return Arrays.stream(visibleUsernames.split("[,\\s]+"))
+                .map(String::trim)
+                .filter(username -> !username.isBlank())
+                .distinct()
+                .collect(Collectors.joining(","));
+    }
+
+    private void validateSpecifiedUsers(String visibility, String visibleUsernames) {
+        if ("SPECIFIED".equals(visibility) && (visibleUsernames == null || visibleUsernames.isBlank())) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, SPECIFIED_USERS_REQUIRED_MESSAGE);
+        }
     }
 
     private String buildStoredImageName(String originalFilename, String imageName, String ext) {

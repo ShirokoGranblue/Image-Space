@@ -38,7 +38,7 @@ storage:
 
 media:
   internal:
-    token: ${INTERNAL_MEDIA_TOKEN:}
+    token: ${BACKEND_INTERNAL_TOKEN:}
   meta-cache:
     upstash-url: ${UPSTASH_REDIS_REST_URL:}
     upstash-token: ${UPSTASH_REDIS_REST_TOKEN:}

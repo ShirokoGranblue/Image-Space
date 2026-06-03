@@ -1,6 +1,8 @@
 package com.picmgmt.image;
 
 import cn.dev33.satoken.stp.StpUtil;
+import com.picmgmt.common.BusinessException;
+import com.picmgmt.common.ErrorCode;
 import com.picmgmt.mapper.CategoryMapper;
 import com.picmgmt.repository.ImageRepository;
 import com.picmgmt.storage.StorageService;
@@ -16,6 +18,7 @@ import org.springframework.mock.web.MockMultipartFile;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -141,6 +144,31 @@ class ImageWriteServiceTest {
     }
 
     @Test
+    void upload_shouldRejectSpecifiedVisibilityWithoutUsers() {
+        stpMock.when(StpUtil::getLoginIdAsLong).thenReturn(4L);
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "specified.png",
+                "image/png",
+                new byte[] {(byte) 0x89, 0x50, 0x4E, 0x47}
+        );
+
+        BusinessException ex = assertThrows(BusinessException.class, () ->
+                service.upload(file, null, null, null, "SPECIFIED", " ,  ", null)
+        );
+
+        assertEquals(ErrorCode.BAD_REQUEST, ex.getErrorCode());
+        verify(storageService, never()).upload(
+                any(String.class),
+                any(String.class),
+                any(byte[].class),
+                any(String.class),
+                any(String.class)
+        );
+        verify(imageRepository, never()).insert(any());
+    }
+
+    @Test
     void update_shouldIncrementVersionAndClearPrivateAccessWhenPrivateBecomesPublic() {
         stpMock.when(StpUtil::getLoginIdAsLong).thenReturn(4L);
         var image = image("PRIVATE", 2L);
@@ -203,6 +231,63 @@ class ImageWriteServiceTest {
                 false
         );
         verify(cloudflareCachePurgeService).purgeFile("https://cdn.image-space.app/public/images/a.png?v=5");
+    }
+
+    @Test
+    void update_shouldRejectChangingToSpecifiedWithoutProvidedUsers() {
+        stpMock.when(StpUtil::getLoginIdAsLong).thenReturn(4L);
+        var image = image("PRIVATE", 2L);
+        image.setVisibleUsernames("old-user");
+        when(imageRepository.findById(7L)).thenReturn(java.util.Optional.of(image));
+
+        ImageUpdateDTO dto = new ImageUpdateDTO();
+        dto.setVisibility("SPECIFIED");
+
+        BusinessException ex = assertThrows(BusinessException.class, () -> service.update(7L, dto));
+
+        assertEquals(ErrorCode.BAD_REQUEST, ex.getErrorCode());
+        verify(imageRepository, never()).updateById(any());
+        verify(imageUrlService, never()).evictPrivateAccess(any());
+    }
+
+    @Test
+    void update_shouldRejectClearingUsersWhileSpecified() {
+        stpMock.when(StpUtil::getLoginIdAsLong).thenReturn(4L);
+        var image = image("SPECIFIED", 2L);
+        image.setVisibleUsernames("alice");
+        when(imageRepository.findById(7L)).thenReturn(java.util.Optional.of(image));
+
+        ImageUpdateDTO dto = new ImageUpdateDTO();
+        dto.setVisibleUsernames(" , ");
+
+        BusinessException ex = assertThrows(BusinessException.class, () -> service.update(7L, dto));
+
+        assertEquals(ErrorCode.BAD_REQUEST, ex.getErrorCode());
+        verify(imageRepository, never()).updateById(any());
+        verify(imageUrlService, never()).evictPrivateAccess(any());
+    }
+
+    @Test
+    void update_shouldNormalizeProvidedSpecifiedUsers() {
+        stpMock.when(StpUtil::getLoginIdAsLong).thenReturn(4L);
+        var image = image("PRIVATE", 2L);
+        when(imageRepository.findById(7L)).thenReturn(java.util.Optional.of(image));
+        doAnswer(invocation -> {
+            var updated = invocation.getArgument(0, com.picmgmt.entity.Image.class);
+            ImageVO vo = new ImageVO();
+            vo.setVisibility(updated.getVisibility());
+            vo.setVisibleUsernames(updated.getVisibleUsernames());
+            return vo;
+        }).when(imageRepository).toVO(any());
+
+        ImageUpdateDTO dto = new ImageUpdateDTO();
+        dto.setVisibility("SPECIFIED");
+        dto.setVisibleUsernames("alice bob,alice");
+
+        ImageVO result = service.update(7L, dto);
+
+        assertEquals("SPECIFIED", result.getVisibility());
+        assertEquals("alice,bob", result.getVisibleUsernames());
     }
 
     private com.picmgmt.entity.Image image(String visibility, Long mediaVersion) {

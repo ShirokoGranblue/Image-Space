@@ -59,27 +59,29 @@
         <p>暂时没有内容</p>
       </div>
 
-      <div v-else class="reveal visible">
+      <div v-else class="reveal visible square-results">
         <div class="card-grid">
           <div v-for="(img, idx) in images" :key="img.id" class="stagger-item" :style="{ animationDelay: `${idx * 0.06}s` }">
             <ImageCard :image="img" :show-actions="false" @delete="handleDeleteImage" />
           </div>
         </div>
-
-        <div class="pagination-wrap" v-if="total > 0">
-          <el-pagination
-            v-model:current-page="query.page"
-            :page-size="query.limit"
-            :page-sizes="IMAGE_PAGE_SIZES"
-            :total="total"
-            layout="total, sizes, prev, pager, next"
-            @size-change="onPageSizeChange"
-            @current-change="fetchList"
-          />
-        </div>
       </div>
 
     </div>
+    <Teleport to="body">
+      <div class="pagination-wrap" v-if="total > 0">
+        <el-pagination
+          v-model:current-page="query.page"
+          :page-size="query.limit"
+          :page-sizes="IMAGE_PAGE_SIZES"
+          :total="total"
+          :disabled="loading"
+          layout="total, sizes, prev, pager, next"
+          @size-change="onPageSizeChange"
+          @current-change="fetchList"
+        />
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -171,6 +173,7 @@ async function handleDeleteImage(image) {
   flex: 1;
   display: flex;
   flex-direction: column;
+  padding-bottom: 112px;
 }
 
 .page-header {
@@ -214,14 +217,30 @@ async function handleDeleteImage(image) {
 .square-tags { width: 260px; }
 .square-sort { width: 120px; }
 
+.square-results,
 .card-grid { flex: 1; }
 
 .pagination-wrap {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
   display: flex;
   justify-content: center;
-  padding: 28px 0 var(--space-lg);
-  margin-top: auto;
+  padding: 12px 24px calc(12px + env(safe-area-inset-bottom));
+  margin-top: 0;
+  border-top: 1px solid var(--gray2);
+  background: rgba(250, 250, 250, 0.94);
+  backdrop-filter: blur(12px);
   flex-shrink: 0;
+}
+
+.pagination-wrap :deep(.el-pagination) {
+  max-width: min(100%, 1280px);
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
 }
 
 .skeleton-grid {
@@ -241,11 +260,20 @@ async function handleDeleteImage(image) {
 }
 
 @media (max-width: 768px) {
+  .page-container { padding-bottom: 148px; }
   .page-header { flex-direction: column; align-items: stretch; }
   .page-title { font-size: 26px; }
   .square-toolbar { justify-content: stretch; }
   .square-search,
   .square-tags,
   .square-sort { width: 100%; }
+  .pagination-wrap {
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  }
+  .pagination-wrap :deep(.el-pagination) {
+    --el-pagination-button-width: 28px;
+    --el-pagination-button-height: 28px;
+    font-size: 12px;
+  }
 }
 </style>
