@@ -1,6 +1,7 @@
 package com.picmgmt.controller;
 
 import cn.hutool.core.io.FileUtil;
+import com.picmgmt.annotation.Audit;
 import com.picmgmt.common.Result;
 import com.picmgmt.entity.Comment;
 import com.picmgmt.service.CommentService;
@@ -68,6 +69,7 @@ public class CommentController {
 
     @Operation(summary = "添加评论")
     @PostMapping
+    @Audit(action = "COMMENT_ADD", module = "COMMENT", targetType = "comment")
     public Result<Comment> add(@RequestBody Map<String, String> body) {
         return Result.ok(commentService.add(
                 Long.valueOf(body.get("imageId")), body.get("content"), body.get("imagePath")));
@@ -75,6 +77,7 @@ public class CommentController {
 
     @Operation(summary = "删除评论")
     @DeleteMapping("/{id}")
+    @Audit(action = "COMMENT_DELETE", module = "COMMENT", targetType = "comment")
     public Result<Void> delete(@PathVariable Long id) {
         commentService.delete(id);
         return Result.ok();

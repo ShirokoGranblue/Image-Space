@@ -2,6 +2,7 @@ package com.picmgmt.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.picmgmt.annotation.Audit;
 import com.picmgmt.common.Result;
 import com.picmgmt.dto.ImageQueryDTO;
 import com.picmgmt.image.ImageReadService;
@@ -41,6 +42,7 @@ public class ImageController {
     @Operation(summary = "上传图片")
     @PostMapping("/upload")
     @SaCheckPermission("image:upload")
+    @Audit(action = "IMAGE_UPLOAD", module = "IMAGE", targetType = "image")
     public Result<ImageVO> upload(@RequestParam("file") MultipartFile file,
                                    @RequestParam(required = false) Long categoryId,
                                    @RequestParam(required = false) String imageName,
@@ -54,6 +56,7 @@ public class ImageController {
     @Operation(summary = "删除图片")
     @DeleteMapping("/{uuid}")
     @SaCheckPermission("image:delete")
+    @Audit(action = "IMAGE_DELETE", module = "IMAGE", targetType = "image")
     public Result<Void> delete(@PathVariable String uuid) {
         imageWriteService.deleteByUuid(uuid);
         return Result.ok();
@@ -62,6 +65,7 @@ public class ImageController {
     @Operation(summary = "更新图片信息")
     @PutMapping("/{uuid}")
     @SaCheckPermission("image:edit")
+    @Audit(action = "IMAGE_UPDATE", module = "IMAGE", targetType = "image")
     public Result<ImageVO> update(@PathVariable String uuid, @RequestBody @Valid ImageUpdateDTO dto) {
         return Result.ok(imageWriteService.updateByUuid(uuid, dto));
     }
@@ -138,6 +142,7 @@ public class ImageController {
 
     @Operation(summary = "点赞图片")
     @PostMapping("/{uuid}/like")
+    @Audit(action = "IMAGE_LIKE", module = "IMAGE", targetType = "image")
     public Result<LikeStatusVO> like(@PathVariable String uuid) {
         Long id = imageReadService.resolveImageId(uuid);
         return Result.ok(likeService.like(LikeTarget.IMAGE, id));
@@ -145,6 +150,7 @@ public class ImageController {
 
     @Operation(summary = "取消点赞图片")
     @DeleteMapping("/{uuid}/like")
+    @Audit(action = "IMAGE_UNLIKE", module = "IMAGE", targetType = "image")
     public Result<LikeStatusVO> unlike(@PathVariable String uuid) {
         Long id = imageReadService.resolveImageId(uuid);
         return Result.ok(likeService.unlike(LikeTarget.IMAGE, id));

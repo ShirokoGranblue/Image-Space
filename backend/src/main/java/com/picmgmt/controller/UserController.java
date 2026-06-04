@@ -4,6 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.io.FileUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.picmgmt.annotation.Audit;
 import com.picmgmt.common.BusinessException;
 import com.picmgmt.common.ErrorCode;
 import com.picmgmt.common.Result;
@@ -66,6 +67,7 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
 
     @Operation(summary = "用户注册")
     @PostMapping("/register")
+    @Audit(action = "USER_REGISTER", module = "USER", targetType = "user")
     public Result<UserVO> register(@Valid @RequestBody RegisterDTO dto, HttpServletRequest request) {
         turnstileService.verify(dto.getTurnstileToken(), clientIp(request));
         return Result.ok(userService.register(dto));
@@ -73,6 +75,7 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
 
     @Operation(summary = "用户登录")
     @PostMapping("/login")
+    @Audit(action = "USER_LOGIN", module = "USER", targetType = "user")
     public Result<String> login(@Valid @RequestBody LoginDTO dto, HttpServletRequest request) {
         turnstileService.verify(dto.getTurnstileToken(), clientIp(request));
         return Result.ok(userService.login(dto));
@@ -80,6 +83,7 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
 
     @Operation(summary = "用户退出")
     @PostMapping("/logout")
+    @Audit(action = "USER_LOGOUT", module = "USER", targetType = "user")
     public Result<Void> logout() {
         userService.logout();
         return Result.ok();

@@ -1,5 +1,6 @@
 package com.picmgmt.controller;
 
+import com.picmgmt.annotation.Audit;
 import com.picmgmt.common.Result;
 import com.picmgmt.like.LikeTarget;
 import com.picmgmt.service.LikeService;
@@ -19,12 +20,14 @@ public class CommentLikeController {
 
     @Operation(summary = "点赞评论")
     @PostMapping("/{id}/like")
+    @Audit(action = "COMMENT_LIKE", module = "COMMENT", targetType = "comment")
     public Result<LikeStatusVO> like(@PathVariable Long id) {
         return Result.ok(likeService.like(LikeTarget.COMMENT, id));
     }
 
     @Operation(summary = "取消点赞评论")
     @DeleteMapping("/{id}/like")
+    @Audit(action = "COMMENT_UNLIKE", module = "COMMENT", targetType = "comment")
     public Result<LikeStatusVO> unlike(@PathVariable Long id) {
         return Result.ok(likeService.unlike(LikeTarget.COMMENT, id));
     }

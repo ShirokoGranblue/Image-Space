@@ -1,5 +1,6 @@
 package com.picmgmt.controller;
 
+import com.picmgmt.annotation.Audit;
 import com.picmgmt.common.Result;
 import com.picmgmt.entity.Category;
 import com.picmgmt.service.CategoryService;
@@ -21,12 +22,14 @@ public class CategoryController {
 
     @Operation(summary = "创建分类")
     @PostMapping
+    @Audit(action = "CATEGORY_CREATE", module = "CATEGORY", targetType = "category")
     public Result<Category> create(@RequestBody Map<String, String> body) {
         return Result.ok(categoryService.create(body.get("categoryName")));
     }
 
     @Operation(summary = "删除分类")
     @DeleteMapping("/{id}")
+    @Audit(action = "CATEGORY_DELETE", module = "CATEGORY", targetType = "category")
     public Result<Void> delete(@PathVariable Long id) {
         categoryService.delete(id);
         return Result.ok();
@@ -34,6 +37,7 @@ public class CategoryController {
 
     @Operation(summary = "修改分类名称")
     @PutMapping("/{id}")
+    @Audit(action = "CATEGORY_UPDATE", module = "CATEGORY", targetType = "category")
     public Result<Category> update(@PathVariable Long id, @RequestBody Map<String, String> body) {
         return Result.ok(categoryService.update(id, body.get("categoryName")));
     }
