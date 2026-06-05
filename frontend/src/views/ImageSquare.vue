@@ -5,7 +5,7 @@
       <header class="page-header reveal">
         <div>
           <h1 class="page-title">Square</h1>
-          <p class="page-desc">浏览公开作品，用轻量筛选发现同风格创作。</p>
+          <p class="page-desc">浏览发现各种风格创作</p>
         </div>
         <div class="square-toolbar">
           <el-input

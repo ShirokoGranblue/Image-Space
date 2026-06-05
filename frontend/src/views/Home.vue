@@ -5,7 +5,7 @@
       <header class="page-header">
         <div>
           <h1 class="page-title">Images</h1>
-          <p class="page-desc">管理你的图片、分类和公开范围。</p>
+          <p class="page-desc">管理你的图片、分类和公开范围</p>
         </div>
         <div class="toolbar">
           <div class="toolbar-left">
@@ -79,7 +79,7 @@
 
       <div v-else-if="displayedImages.length === 0" class="empty-state">
         <el-icon><PictureFilled /></el-icon>
-        <p>还没有图片，点击上方按钮上传</p>
+        <p>上传图片</p>
       </div>
 
       <div v-else class="card-grid">

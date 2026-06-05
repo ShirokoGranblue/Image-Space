@@ -2,16 +2,16 @@
   <div class="auth-page">
     <section class="auth-shell">
       <div class="auth-hero">
-        <div class="auth-kicker">Blue gallery / Light interface</div>
+        <div class="auth-kicker">Imagine,and make it real</div>
         <h1 class="auth-title">
-          IMAGE SPACE
+          IMAGESPACE
         </h1>
-        <p class="auth-desc">轻量图片空间，专注上传、管理和浏览你的作品。</p>
+        <p class="auth-desc">a lightweight image storage, focused on uploading, managing, and browsing your images.</p>
       </div>
 
       <section class="auth-card" :class="{ 'is-register': authMode === 'register' }">
         <router-link to="/home" class="auth-logo">IMAGE SPACE</router-link>
-        <p class="auth-card-subtitle">{{ authMode === 'login' ? '进入你的图库与图片广场。' : '创建账号后即可上传和管理作品。' }}</p>
+        <p class="auth-card-subtitle">{{ authMode === 'login' ? '进入图库与作品集' : '创建账号后即可上传和管理图片' }}</p>
 
         <template v-if="authMode === 'login'">
           <div class="auth-tabs" role="tablist" aria-label="登录方式">

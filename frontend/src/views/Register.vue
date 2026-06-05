@@ -17,10 +17,10 @@
             <el-input v-model="form.confirmPassword" type="password" placeholder="再次输入密码" size="large"
               @keyup.enter="handleRegister" show-password />
           </el-form-item>
-          <el-form-item label="邮箱（选填）">
+          <el-form-item label="邮箱（可选）">
             <el-input v-model="form.email" placeholder="your@email.com" size="large" />
           </el-form-item>
-          <el-form-item label="手机号（选填）">
+          <el-form-item label="手机号（可选）">
             <el-input v-model="form.phone" placeholder="选填" maxlength="20" size="large" />
           </el-form-item>
           <TurnstileWidget
