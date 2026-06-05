@@ -9,111 +9,157 @@
         <p class="auth-desc">轻量图片空间，专注上传、管理和浏览你的作品。</p>
       </div>
 
-      <section class="auth-card">
+      <section class="auth-card" :class="{ 'is-register': authMode === 'register' }">
         <router-link to="/home" class="auth-logo">IMAGE SPACE</router-link>
-        <p class="auth-card-subtitle">进入你的图库与图片广场。</p>
+        <p class="auth-card-subtitle">{{ authMode === 'login' ? '进入你的图库与图片广场。' : '创建账号后即可上传和管理作品。' }}</p>
 
-        <div class="auth-tabs" role="tablist" aria-label="登录方式">
-          <button
-            type="button"
-            class="auth-tab"
-            :class="{ active: loginMode === 'password' }"
-            @click="setLoginMode('password')"
-          >
-            密码登录
-          </button>
-          <button
-            type="button"
-            class="auth-tab"
-            :class="{ active: loginMode === 'email' }"
-            @click="setLoginMode('email')"
-          >
-            邮箱登录
-          </button>
-        </div>
+        <template v-if="authMode === 'login'">
+          <div class="auth-tabs" role="tablist" aria-label="登录方式">
+            <button
+              type="button"
+              class="auth-tab"
+              :class="{ active: loginMode === 'password' }"
+              @click="setLoginMode('password')"
+            >
+              密码登录
+            </button>
+            <button
+              type="button"
+              class="auth-tab"
+              :class="{ active: loginMode === 'email' }"
+              @click="setLoginMode('email')"
+            >
+              邮箱登录
+            </button>
+          </div>
 
-        <el-form
-          v-if="loginMode === 'password'"
-          :model="form"
-          :rules="rules"
-          ref="formRef"
-          label-position="top"
-          class="auth-form"
-          @submit.prevent="handleLogin"
-        >
-          <el-form-item label="用户名" prop="username">
-            <el-input v-model="form.username" placeholder="输入用户名" size="large" />
-          </el-form-item>
-          <el-form-item label="密码" prop="password">
-            <el-input v-model="form.password" type="password" placeholder="输入密码" size="large" show-password @keyup.enter="handleLogin" />
-          </el-form-item>
-          <TurnstileWidget
-            ref="turnstileRef"
-            @verified="turnstileToken = $event"
-            @expired="turnstileToken = ''"
-            @error="turnstileToken = ''"
-          />
-          <el-form-item>
-            <el-button type="primary" size="large" class="auth-submit" @click="handleLogin" :loading="loading">
-              登录
-            </el-button>
-          </el-form-item>
-        </el-form>
+          <el-form
+            v-if="loginMode === 'password'"
+            :model="form"
+            :rules="rules"
+            ref="formRef"
+            label-position="top"
+            class="auth-form"
+            @submit.prevent="handleLogin"
+          >
+            <el-form-item label="用户名" prop="username">
+              <el-input v-model="form.username" placeholder="输入用户名" size="large" />
+            </el-form-item>
+            <el-form-item label="密码" prop="password">
+              <el-input v-model="form.password" type="password" placeholder="输入密码" size="large" show-password @keyup.enter="handleLogin" />
+            </el-form-item>
+            <TurnstileWidget
+              ref="turnstileRef"
+              @verified="turnstileToken = $event"
+              @expired="turnstileToken = ''"
+              @error="turnstileToken = ''"
+            />
+            <el-form-item>
+              <el-button type="primary" size="large" class="auth-submit" @click="handleLogin" :loading="loading">
+                登录
+              </el-button>
+            </el-form-item>
+          </el-form>
+
+          <el-form
+            v-else
+            :model="emailForm"
+            :rules="emailRules"
+            ref="emailFormRef"
+            label-position="top"
+            class="auth-form"
+            @submit.prevent="handleEmailLogin"
+          >
+            <el-form-item label="邮箱" prop="email">
+              <el-input v-model="emailForm.email" placeholder="输入邮箱" size="large" />
+            </el-form-item>
+            <el-form-item label="图形验证码" prop="captchaCode">
+              <div class="captcha-row">
+                <el-input v-model="emailForm.captchaCode" placeholder="输入图形验证码" size="large" @keyup.enter="handleSendCode" />
+                <button class="captcha-image" type="button" @click="loadCaptcha" :disabled="captchaLoading">
+                  <img v-if="captchaImage" :src="captchaImage" alt="图形验证码" />
+                  <span v-else>{{ captchaLoading ? '加载中' : '刷新' }}</span>
+                </button>
+              </div>
+            </el-form-item>
+            <el-form-item label="邮箱验证码" prop="code">
+              <div class="code-row">
+                <el-input v-model="emailForm.code" placeholder="输入邮箱验证码" size="large" @keyup.enter="handleEmailLogin" />
+                <el-button class="send-code-btn" @click="handleSendCode" :loading="sendCodeLoading" :disabled="countdown > 0">
+                  {{ countdown > 0 ? `${countdown}s` : '发送验证码' }}
+                </el-button>
+              </div>
+            </el-form-item>
+            <TurnstileWidget
+              ref="turnstileRef"
+              @verified="turnstileToken = $event"
+              @expired="turnstileToken = ''"
+              @error="turnstileToken = ''"
+            />
+            <el-form-item>
+              <el-button type="primary" size="large" class="auth-submit" @click="handleEmailLogin" :loading="codeLoginLoading">
+                邮箱登录
+              </el-button>
+            </el-form-item>
+          </el-form>
+
+          <div class="auth-oauth">
+            <button class="oauth-btn github" @click="handleGithubLogin" :disabled="githubLoading">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+              GitHub
+            </button>
+            <button class="oauth-btn google" @click="handleGoogleLogin" :disabled="googleLoading">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+              Google
+            </button>
+          </div>
+        </template>
 
         <el-form
           v-else
-          :model="emailForm"
-          :rules="emailRules"
-          ref="emailFormRef"
+          :model="registerForm"
+          :rules="registerRules"
+          ref="registerFormRef"
           label-position="top"
-          class="auth-form"
-          @submit.prevent="handleEmailLogin"
+          class="auth-form register-form"
+          @submit.prevent="handleRegister"
         >
-          <el-form-item label="邮箱" prop="email">
-            <el-input v-model="emailForm.email" placeholder="输入邮箱" size="large" />
+          <el-form-item class="full-field" label="用户名" prop="username">
+            <el-input v-model="registerForm.username" placeholder="你的唯一用户名" size="large" />
           </el-form-item>
-          <el-form-item label="图形验证码" prop="captchaCode">
-            <div class="captcha-row">
-              <el-input v-model="emailForm.captchaCode" placeholder="输入图形验证码" size="large" @keyup.enter="handleSendCode" />
-              <button class="captcha-image" type="button" @click="loadCaptcha" :disabled="captchaLoading">
-                <img v-if="captchaImage" :src="captchaImage" alt="图形验证码" />
-                <span v-else>{{ captchaLoading ? '加载中' : '刷新' }}</span>
-              </button>
-            </div>
+          <el-form-item label="密码" prop="password">
+            <el-input v-model="registerForm.password" type="password" placeholder="至少 6 位密码" size="large" show-password />
           </el-form-item>
-          <el-form-item label="邮箱验证码" prop="code">
-            <div class="code-row">
-              <el-input v-model="emailForm.code" placeholder="输入邮箱验证码" size="large" @keyup.enter="handleEmailLogin" />
-              <el-button class="send-code-btn" @click="handleSendCode" :loading="sendCodeLoading" :disabled="countdown > 0">
-                {{ countdown > 0 ? `${countdown}s` : '发送验证码' }}
-              </el-button>
-            </div>
+          <el-form-item label="确认密码" prop="confirmPassword">
+            <el-input v-model="registerForm.confirmPassword" type="password" placeholder="再次输入密码" size="large" show-password @keyup.enter="handleRegister" />
+          </el-form-item>
+          <el-form-item label="邮箱（选填）">
+            <el-input v-model="registerForm.email" placeholder="your@email.com" size="large" />
+          </el-form-item>
+          <el-form-item label="手机号（选填）">
+            <el-input v-model="registerForm.phone" placeholder="选填" maxlength="20" size="large" />
           </el-form-item>
           <TurnstileWidget
+            class="register-turnstile full-field"
             ref="turnstileRef"
             @verified="turnstileToken = $event"
             @expired="turnstileToken = ''"
             @error="turnstileToken = ''"
           />
-          <el-form-item>
-            <el-button type="primary" size="large" class="auth-submit" @click="handleEmailLogin" :loading="codeLoginLoading">
-              邮箱登录
+          <el-form-item class="full-field compact-submit">
+            <el-button type="primary" size="large" class="auth-submit" @click="handleRegister" :loading="registerLoading">
+              创建账号
             </el-button>
           </el-form-item>
         </el-form>
 
-        <div class="auth-oauth">
-          <button class="oauth-btn github" @click="handleGithubLogin" :disabled="githubLoading">
-            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-            GitHub
-          </button>
-          <button class="oauth-btn google" @click="handleGoogleLogin" :disabled="googleLoading">
-            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-            Google
-          </button>
-        </div>
         <p class="auth-footer">
-          还没有账号？<router-link to="/register">创建账号</router-link>
+          <template v-if="authMode === 'login'">
+            还没有账号？<button type="button" class="auth-inline-link" @click="setAuthMode('register')">创建账号</button>
+          </template>
+          <template v-else>
+            已有账号？<button type="button" class="auth-inline-link" @click="setAuthMode('login')">返回登录</button>
+          </template>
         </p>
       </section>
     </section>
@@ -124,7 +170,7 @@
 import { reactive, ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../api'
-import { login, sendCode, loginByCode, getCaptcha, getGithubAuthUrl, getGoogleAuthUrl } from '../api/user'
+import { login, register, sendCode, loginByCode, getCaptcha, getGithubAuthUrl, getGoogleAuthUrl } from '../api/user'
 import { useUserStore } from '../store/user'
 import { ElMessage } from 'element-plus'
 import TurnstileWidget from '../components/TurnstileWidget.vue'
@@ -133,8 +179,11 @@ const router = useRouter()
 const userStore = useUserStore()
 const formRef = ref(null)
 const emailFormRef = ref(null)
+const registerFormRef = ref(null)
+const authMode = ref('login')
 const loginMode = ref('password')
 const loading = ref(false)
+const registerLoading = ref(false)
 const codeLoginLoading = ref(false)
 const sendCodeLoading = ref(false)
 const captchaLoading = ref(false)
@@ -148,6 +197,21 @@ let countdownTimer = null
 
 const form = reactive({ username: '', password: '' })
 const emailForm = reactive({ email: '', code: '', captchaId: '', captchaCode: '' })
+const registerForm = reactive({
+  username: '',
+  password: '',
+  confirmPassword: '',
+  email: '',
+  phone: ''
+})
+
+const validateConfirmPassword = (_rule, value, callback) => {
+  if (value !== registerForm.password) {
+    callback(new Error('两次密码不一致'))
+  } else {
+    callback()
+  }
+}
 
 const rules = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
@@ -161,6 +225,21 @@ const emailRules = {
   ],
   captchaCode: [{ required: true, message: '请输入图形验证码', trigger: 'blur' }],
   code: [{ required: true, message: '请输入邮箱验证码', trigger: 'blur' }]
+}
+
+const registerRules = {
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 2, max: 50, message: '用户名长度为 2-50 个字符', trigger: 'blur' }
+  ],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, message: '密码长度不能少于 6 位', trigger: 'blur' }
+  ],
+  confirmPassword: [
+    { required: true, message: '请确认密码', trigger: 'blur' },
+    { validator: validateConfirmPassword, trigger: 'blur' }
+  ]
 }
 
 onMounted(async () => {
@@ -182,6 +261,11 @@ onUnmounted(() => {
   if (countdownTimer) window.clearInterval(countdownTimer)
 })
 
+function setAuthMode(mode) {
+  authMode.value = mode
+  resetTurnstile()
+}
+
 async function setLoginMode(mode) {
   loginMode.value = mode
   resetTurnstile()
@@ -201,6 +285,24 @@ async function handleLogin() {
     ElMessage.success('欢迎回来')
     router.push('/home')
   } catch {} finally { resetTurnstile(); loading.value = false }
+}
+
+async function handleRegister() {
+  const valid = await registerFormRef.value.validate().catch(() => false)
+  if (!valid) return
+  const token = getTurnstileToken()
+  if (!token) { ElMessage.warning('请完成人机验证'); return }
+  registerLoading.value = true
+  try {
+    await register({ ...registerForm, turnstileToken: token })
+    ElMessage.success('注册成功，请登录')
+    setAuthMode('login')
+    loginMode.value = 'password'
+    form.username = registerForm.username
+  } catch {} finally {
+    resetTurnstile()
+    registerLoading.value = false
+  }
 }
 
 async function loadCaptcha() {
@@ -349,6 +451,10 @@ function resetTurnstile() { turnstileToken.value = ''; turnstileRef.value?.reset
   backdrop-filter: blur(12px);
 }
 
+.auth-card.is-register {
+  padding: 28px 32px 24px;
+}
+
 .auth-logo {
   display: inline-block;
   font-family: var(--font-display);
@@ -368,6 +474,10 @@ function resetTurnstile() { turnstileToken.value = ''; turnstileRef.value?.reset
   color: var(--gray3);
   font-size: 13px;
   font-weight: 300;
+}
+
+.auth-card.is-register .auth-card-subtitle {
+  margin-bottom: 16px;
 }
 
 .auth-tabs {
@@ -410,6 +520,25 @@ function resetTurnstile() { turnstileToken.value = ''; turnstileRef.value?.reset
 
 .auth-form :deep(.el-form-item) {
   margin-bottom: 18px;
+}
+
+.register-form :deep(.el-form-item) {
+  margin-bottom: 12px;
+}
+
+.register-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 12px;
+}
+
+.register-form :deep(.full-field),
+.register-form .register-turnstile {
+  grid-column: 1 / -1;
+}
+
+.register-form :deep(.compact-submit) {
+  margin-bottom: 0;
 }
 
 .auth-form :deep(.el-form-item__label) {
@@ -527,13 +656,19 @@ function resetTurnstile() { turnstileToken.value = ''; turnstileRef.value?.reset
   font-weight: 300;
 }
 
-.auth-footer a {
+.auth-inline-link {
+  border: 0;
+  background: transparent;
+  padding: 0;
   color: var(--accent);
+  font-family: var(--font-body);
+  font-size: 13px;
   font-weight: 400;
   text-decoration: none;
+  cursor: pointer;
 }
 
-.auth-footer a:hover {
+.auth-inline-link:hover {
   opacity: 0.72;
 }
 
