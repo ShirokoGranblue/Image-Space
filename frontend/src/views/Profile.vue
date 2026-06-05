@@ -24,7 +24,9 @@
           <div class="profile-name-row">
             <h2>{{ user.displayName || user.username }}</h2>
             <el-dropdown v-if="isOwner" trigger="click">
-              <span class="dropdown-trigger">···</span>
+              <button class="dropdown-trigger" type="button" aria-label="更多操作">
+                <el-icon><MoreFilled /></el-icon>
+              </button>
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item @click="startEdit">编辑资料</el-dropdown-item>
@@ -1594,27 +1596,42 @@ async function saveProfile() {
   letter-spacing: 0;
 }
 
-/* ··· dropdown trigger */
+/* Profile action menu */
 .dropdown-trigger {
-  display: inline-flex;
+  display: inline-grid;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  flex: 0 0 36px;
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  padding: 0;
   border: 1px solid var(--gray2);
-  border-radius: 12px;
+  border-radius: 14px;
+  background: #fff;
   cursor: pointer;
   font-size: 18px;
   line-height: 1;
-  letter-spacing: 2px;
   color: var(--gray3);
-  transition: all 0.2s;
+  transition: transform 0.16s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
   user-select: none;
+  overflow: hidden;
 }
 
 .dropdown-trigger:hover {
-  border-color: var(--gray4);
-  color: var(--black);
+  border-color: #b8cfe0;
+  background: #f8fbfe;
+  color: var(--accent);
+}
+
+.dropdown-trigger:active {
+  transform: scale(0.98);
+}
+
+.dropdown-trigger .el-icon {
+  display: block;
+  width: 18px;
+  height: 18px;
 }
 
 .bio {
