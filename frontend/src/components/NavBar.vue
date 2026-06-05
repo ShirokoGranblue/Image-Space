@@ -2,7 +2,7 @@
   <header class="navbar" ref="navbarEl">
     <div class="navbar-inner">
       <router-link to="/home" class="logo" aria-label="Image Space 首页">
-        <span class="logo-mark">IS</span>
+        <img class="logo-mark" :src="logoIcon" alt="" aria-hidden="true" />
         <span>IMAGE SPACE</span>
       </router-link>
 
@@ -71,6 +71,7 @@ import { useUserStore } from '../store/user'
 import { logout } from '../api/user'
 import { ElMessage } from 'element-plus'
 import NotificationBell from './NotificationBell.vue'
+import logoIcon from '../logo/60060cf8-de2e-4faf-8818-668b5132988b.png'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -168,14 +169,8 @@ async function handleLogout() {
 .logo-mark {
   width: 30px;
   height: 30px;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  color: #fff;
-  font-size: 11px;
-  letter-spacing: 0.04em;
+  display: block;
+  object-fit: contain;
 }
 
 .nav-links {

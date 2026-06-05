@@ -10,7 +10,7 @@
       </div>
 
       <section class="auth-card" :class="{ 'is-register': authMode === 'register' }">
-        <router-link to="/home" class="auth-logo">IMAGE SPACE</router-link>
+        <router-link to="/home" class="auth-logo">IMAGESPACE</router-link>
         <p class="auth-card-subtitle">{{ authMode === 'login' ? '进入图库与作品集' : '创建账号后即可上传和管理图片' }}</p>
 
         <template v-if="authMode === 'login'">
