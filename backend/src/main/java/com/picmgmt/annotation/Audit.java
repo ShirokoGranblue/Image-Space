@@ -14,4 +14,8 @@ public @interface Audit {
     String module();
 
     String targetType();
+
+    String targetIdParam() default "";
+
+    String targetIdResult() default "";
 }

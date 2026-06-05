@@ -22,7 +22,7 @@ public class CategoryController {
 
     @Operation(summary = "创建分类")
     @PostMapping
-    @Audit(action = "CATEGORY_CREATE", module = "CATEGORY", targetType = "category")
+    @Audit(action = "CATEGORY_CREATE", module = "CATEGORY", targetType = "category", targetIdResult = "id")
     public Result<Category> create(@RequestBody Map<String, String> body) {
         return Result.ok(categoryService.create(body.get("categoryName")));
     }

@@ -56,11 +56,19 @@
           </el-form>
         </div>
 
-        <div class="profile-meta" v-if="!editing && (user.email || user.phone || user.bio)">
+        <div class="profile-meta" v-if="!editing && (user.email || user.phone || user.bio || joinedAt)">
           <p v-if="user.bio" class="bio">{{ user.bio }}</p>
           <div class="contact">
             <span v-if="user.email"><el-icon><Message /></el-icon> {{ user.email }}</span>
             <span v-if="user.phone"><el-icon><Phone /></el-icon> {{ user.phone }}</span>
+            <span v-if="joinedAt"><el-icon><Calendar /></el-icon> {{ joinedAt }}</span>
+          </div>
+        </div>
+
+        <div class="profile-stats" v-if="!editing">
+          <div class="stat-item" v-for="item in profileStats" :key="item.label">
+            <strong>{{ item.value }}</strong>
+            <span>{{ item.label }}</span>
           </div>
         </div>
       </div>
@@ -97,6 +105,7 @@
             :selected="selectedWorkUuids.includes(img.uuid)"
             @delete="handleWorkDelete"
             @edit="handleWorkEdit"
+            @copy="copyWorkLink"
             @toggle-select="toggleWorkSelection"
           />
         </div>
@@ -302,7 +311,7 @@ import { getUserProfile, updateProfile, uploadAvatar, uploadBackground, checkFie
 import { getImageList, getUserPublicImages, deleteImage, updateImage } from '../api/image'
 import { getUserMediaResourceStatus, refreshUserMediaAccessUrl } from '../api/resource'
 import { getCategoryList, createCategory } from '../api/category'
-import { DEFAULT_IMAGE_PAGE_SIZE, IMAGE_PAGE_SIZES, buildImageListParams } from '../utils/imageRequests'
+import { DEFAULT_IMAGE_PAGE_SIZE, IMAGE_PAGE_SIZES, buildImageListParams, getImageDownloadUrl } from '../utils/imageRequests'
 import { userMediaToPollingResource } from '../utils/resourceAdapters'
 import { hasSpecifiedUsers } from '../utils/visibility'
 import { POLLING_INTERVALS, useResourcePolling } from '../composables/useResourcePolling'
@@ -356,6 +365,13 @@ const creatingWorkCategory = ref(false)
 const workImageUuids = computed(() => works.value.map(img => img.uuid).filter(Boolean))
 const allWorksSelected = computed(() => workImageUuids.value.length > 0 && workImageUuids.value.every(uuid => selectedWorkUuids.value.includes(uuid)))
 const partiallyWorksSelected = computed(() => selectedWorkUuids.value.length > 0 && !allWorksSelected.value)
+const joinedAt = computed(() => formatProfileDate(user.value.createTime || user.value.createdAt || user.value.joinTime || user.value.registerTime))
+const profileStats = computed(() => [
+  { label: '作品', value: workTotal.value || works.value.length },
+  { label: '获赞', value: works.value.reduce((sum, img) => sum + Number(img.likeCount || 0), 0) },
+  { label: '公开', value: works.value.filter(img => img.visibility === 'PUBLIC').length },
+  { label: '分类', value: new Set(works.value.map(img => img.categoryName).filter(Boolean)).size }
+])
 
 const form = reactive({ displayName: '', email: '', phone: '', bio: '' })
 const imageEditForm = reactive({
@@ -367,6 +383,13 @@ const imageEditForm = reactive({
   visibility: 'PUBLIC',
   visibleUsernames: ''
 })
+
+function formatProfileDate(value) {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10)
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
 
 function canonicalMediaUrl(url) {
   if (!url || typeof url !== 'string') return ''
@@ -448,7 +471,7 @@ function applyUserMediaAccessUrl(kind, url) {
 
 const bannerStyle = computed(() => {
   const bg = backgroundDisplayUrl.value
-  if (!bg) return { background: '#1a1a1a' }
+  if (!bg) return { background: 'linear-gradient(135deg, #03192f 0%, #06213c 58%, #1d5d9b 100%)' }
   if (bg.startsWith('#') || bg.startsWith('rgb')) return { backgroundColor: bg }
   return { backgroundImage: `url(${bg})`, backgroundSize: '100% auto', backgroundPosition: 'top' }
 })
@@ -1300,6 +1323,20 @@ async function handleWorkDelete(image) {
   } catch {}
 }
 
+async function copyWorkLink(img) {
+  const url = getImageDownloadUrl(img)
+  if (!url) {
+    ElMessage.warning('暂无可复制链接')
+    return
+  }
+  try {
+    await navigator.clipboard.writeText(new URL(url, window.location.origin).href)
+    ElMessage.success('链接已复制')
+  } catch {
+    ElMessage.warning('当前浏览器不支持自动复制')
+  }
+}
+
 function handleWorkEdit(img) {
   imageEditForm.uuid = img.uuid
   imageEditForm.imageName = img.imageName
@@ -1419,6 +1456,7 @@ async function saveProfile() {
 <style scoped>
 .profile-page {
   min-height: 100vh;
+  background: var(--gray1);
 }
 
 .page-container {
@@ -1430,11 +1468,11 @@ async function saveProfile() {
 /* ── Banner ── */
 .profile-banner {
   height: 220px;
-  border-radius: 0;
+  border-radius: 24px 24px 0 0;
   background-size: cover;
   background-position: center;
   position: relative;
-  border: 1px solid var(--gray2);
+  border: 1px solid rgba(229, 224, 212, 0.9);
   overflow: hidden;
 }
 
@@ -1443,7 +1481,9 @@ async function saveProfile() {
   position: absolute;
   inset: 0;
   z-index: 1;
-  background: linear-gradient(180deg, transparent 40%, rgba(10, 10, 10, 0.65) 100%);
+  background:
+    radial-gradient(circle at 82% 10%, rgba(255, 255, 255, 0.12), transparent 30%),
+    linear-gradient(180deg, rgba(3, 25, 47, 0.08) 0%, rgba(3, 25, 47, 0.36) 100%);
   pointer-events: none;
 }
 
@@ -1469,8 +1509,8 @@ async function saveProfile() {
   background: rgba(10, 10, 10, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: #fff;
-  border-radius: 2px;
-  font-weight: 500;
+  border-radius: 14px;
+  font-weight: 300;
   transition: background 0.2s;
 }
 
@@ -1493,9 +1533,11 @@ async function saveProfile() {
   top: 120px;
   bottom: 0;
   z-index: 0;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid var(--gray2);
+  background: rgba(255, 253, 248, 0.96);
+  border: 1px solid rgba(229, 224, 212, 0.9);
   border-top: 0;
+  border-radius: 0 0 24px 24px;
+  box-shadow: 0 18px 45px rgba(30, 41, 59, 0.08);
 }
 
 .profile-header > * {
@@ -1511,7 +1553,7 @@ async function saveProfile() {
 
 .avatar {
   border: 4px solid #fff;
-  box-shadow: 0 8px 24px rgba(10, 10, 10, 0.12);
+  box-shadow: 0 12px 26px rgba(3, 25, 47, 0.13);
   border-radius: 50%;
 }
 
@@ -1545,11 +1587,11 @@ async function saveProfile() {
 
 .profile-name-row h2 {
   font-family: var(--font-display);
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 400;
   margin: 0;
-  color: var(--black);
-  letter-spacing: 0.02em;
+  color: var(--nav-blue);
+  letter-spacing: 0;
 }
 
 /* ··· dropdown trigger */
@@ -1560,7 +1602,7 @@ async function saveProfile() {
   width: 32px;
   height: 32px;
   border: 1px solid var(--gray2);
-  border-radius: 2px;
+  border-radius: 12px;
   cursor: pointer;
   font-size: 18px;
   line-height: 1;
@@ -1587,6 +1629,7 @@ async function saveProfile() {
   gap: var(--space-lg);
   color: var(--gray3);
   font-size: 13px;
+  flex-wrap: wrap;
 }
 
 .contact .el-icon {
@@ -1598,9 +1641,46 @@ async function saveProfile() {
   margin-top: var(--space-md);
 }
 
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.stat-item {
+  min-width: 0;
+  padding: 14px 12px;
+  border: 1px solid var(--gray2);
+  border-radius: 18px;
+  background: var(--gray1);
+  text-align: center;
+}
+
+.stat-item strong {
+  display: block;
+  color: var(--nav-blue);
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.1;
+}
+
+.stat-item span {
+  display: block;
+  margin-top: 5px;
+  color: var(--gray3);
+  font-size: 12px;
+  font-weight: 300;
+}
+
 /* ── Works ── */
 .user-works {
   margin-top: 36px;
+  padding: 24px;
+  border: 1px solid rgba(229, 224, 212, 0.9);
+  border-radius: 24px;
+  background: rgba(255, 253, 248, 0.74);
 }
 
 .works-heading {
@@ -1616,11 +1696,11 @@ async function saveProfile() {
 
 .works-heading h3 {
   font-family: var(--font-display);
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 400;
-  color: var(--black);
+  color: var(--nav-blue);
   margin: 0;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
 }
 
 .works-actions {
@@ -1630,8 +1710,8 @@ async function saveProfile() {
   flex-wrap: wrap;
   padding: 4px 10px;
   border: 1px solid var(--gray2);
-  border-radius: 2px;
-  background: var(--gray1);
+  border-radius: 14px;
+  background: #fff;
 }
 
 .category-row {
@@ -1644,7 +1724,7 @@ async function saveProfile() {
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-  gap: 18px;
+  gap: 16px;
 }
 
 .empty-state {
@@ -1663,7 +1743,7 @@ async function saveProfile() {
   justify-content: center;
   padding: 12px 24px calc(12px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--gray2);
-  background: rgba(250, 250, 250, 0.94);
+  background: rgba(245, 244, 237, 0.94);
   backdrop-filter: blur(12px);
 }
 
@@ -2013,6 +2093,7 @@ async function saveProfile() {
   .profile-banner { height: 218px; }
   .profile-header { padding: 0 20px 24px; margin-top: -120px; }
   .profile-header::before { top: 120px; }
+  .profile-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .avatar-wrap { margin-top: 0; }
   .works-heading { align-items: flex-start; }
   .works-actions { width: 100%; }

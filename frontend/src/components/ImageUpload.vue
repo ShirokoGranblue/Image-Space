@@ -78,6 +78,13 @@
         <el-input v-model="form.visibleUsernames" placeholder="输入用户名，多个用户用逗号或空格分隔" />
       </el-form-item>
     </el-form>
+    <el-progress
+      v-if="uploading"
+      :percentage="uploadProgress"
+      :stroke-width="8"
+      :show-text="false"
+      class="upload-progress"
+    />
     <template #footer>
       <el-button @click="visible = false">取消</el-button>
       <el-button type="primary" @click="handleUpload" :loading="uploading">
@@ -116,6 +123,7 @@ const fileNames = reactive({})
 const categoryDialogVisible = ref(false)
 const newCategoryName = ref('')
 const creatingCategory = ref(false)
+const uploadProgress = ref(0)
 
 const emit = defineEmits(['uploaded'])
 
@@ -216,10 +224,11 @@ async function handleUpload() {
     return
   }
   uploading.value = true
+  uploadProgress.value = 0
   let success = 0
   let errors = []
   const uploadedImages = []
-  for (const file of fileList.value) {
+  for (const [index, file] of fileList.value.entries()) {
     try {
       const fd = new FormData()
       fd.append('file', file.raw)
@@ -236,6 +245,7 @@ async function handleUpload() {
     } catch (e) {
       errors.push(file.name + ': ' + (e?.response?.data?.message || e?.message || '上传失败'))
     }
+    uploadProgress.value = Math.round(((index + 1) / fileList.value.length) * 100)
   }
   uploading.value = false
   if (errors.length) {
@@ -255,6 +265,7 @@ function resetForm() {
   form.tags = ''
   form.visibility = 'PUBLIC'
   form.visibleUsernames = ''
+  uploadProgress.value = 0
 }
 
 defineExpose({ open })
@@ -266,7 +277,7 @@ defineExpose({ open })
 }
 
 .upload-dialog :deep(.el-dialog) {
-  border-radius: 2px;
+  border-radius: 20px;
 }
 
 .upload-area {
@@ -280,13 +291,13 @@ defineExpose({ open })
   padding: 36px 18px;
   background: var(--gray1);
   border: 2px dashed var(--gray2);
-  border-radius: 2px;
+  border-radius: 18px;
   transition: border-color 0.2s ease, background 0.2s ease;
 }
 
 .upload-area :deep(.el-upload-dragger:hover) {
   border-color: var(--accent);
-  background: var(--gray1);
+  background: var(--blue-soft);
 }
 
 .upload-icon {
@@ -297,7 +308,7 @@ defineExpose({ open })
 
 .upload-text {
   color: var(--gray3);
-  font-family: 'DM Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-family: var(--font-body);
   font-size: 14px;
   font-weight: 400;
 }
@@ -309,7 +320,7 @@ defineExpose({ open })
 
 .upload-tip {
   color: var(--gray3);
-  font-family: 'DM Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-family: var(--font-body);
   font-size: 12px;
   margin-top: 4px;
 }
@@ -358,9 +369,23 @@ defineExpose({ open })
   display: grid;
   gap: 10px;
   padding: 10px;
-  border-radius: 2px;
+  border-radius: 16px;
   background: var(--bg-elevated);
   border: 1px solid var(--border-subtle);
+}
+
+.upload-progress {
+  margin: 6px 0 2px;
+}
+
+.upload-progress :deep(.el-progress-bar__outer) {
+  background: #ebe5d8;
+  border-radius: 999px;
+}
+
+.upload-progress :deep(.el-progress-bar__inner) {
+  background: var(--accent);
+  border-radius: 999px;
 }
 
 .rename-row {

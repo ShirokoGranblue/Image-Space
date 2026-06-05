@@ -147,6 +147,10 @@
                             <goal>add-test-source</goal>
                         </goals>
                         <configuration>
+                            <!--
+                                Required in this Windows Maven environment: testCompile otherwise drops
+                                target/classes from javac's classpath and tests cannot import main classes.
+                            -->
                             <sources>
                                 <source>src/main/java</source>
                             </sources>

@@ -1,8 +1,18 @@
 <template>
-  <article class="image-card" :class="{ selected }" tabindex="0" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave"
-    @focus="onFocus" @blur="onBlur" @click="goDetail"
-    @keydown.enter.prevent="goDetail" @keydown.space.prevent="goDetail"
-    role="button" :aria-label="`查看图片: ${image.imageName}`">
+  <article
+    class="image-card"
+    :class="[`variant-${variant}`, { selected }]"
+    tabindex="0"
+    @mouseenter="hover = true"
+    @mouseleave="hover = false"
+    @focus="hover = true"
+    @blur="hover = false"
+    @click="goDetail"
+    @keydown.enter.prevent="goDetail"
+    @keydown.space.prevent="goDetail"
+    role="button"
+    :aria-label="`查看图片: ${image.imageName}`"
+  >
     <div class="card-frame">
       <button
         v-if="selectable"
@@ -15,25 +25,7 @@
       >
         <span class="select-mark"></span>
       </button>
-      <el-dropdown
-        v-if="showActions"
-        class="card-actions"
-        trigger="click"
-        @command="(cmd) => emit(cmd, image)"
-        @visible-change="(v) => v ? onPopShow() : onPopHide()"
-        popper-class="card-action-dropdown"
-        @click.stop="() => {}"
-      >
-        <button class="actions-trigger" type="button" @click.stop>
-          <span class="dots">···</span>
-        </button>
-        <template #dropdown>
-          <el-dropdown-menu>
-            <el-dropdown-item command="edit">编辑</el-dropdown-item>
-            <el-dropdown-item command="delete">删除</el-dropdown-item>
-          </el-dropdown-menu>
-        </template>
-      </el-dropdown>
+
       <img
         v-if="!imgFailed"
         :src="imageSrc"
@@ -46,48 +38,71 @@
       <div v-else class="img-fallback">
         <el-icon :size="40"><PictureFilled /></el-icon>
       </div>
-      <div class="card-border"></div>
+
+      <transition name="overlay-fade">
+        <div class="card-overlay" v-if="hover && !imgFailed">
+          <button class="icon-action" type="button" title="查看" @click.stop="goDetail">
+            <el-icon><View /></el-icon>
+          </button>
+          <button v-if="variant === 'square'" class="icon-action" type="button" title="喜欢" @click.stop="emit('like', image)">
+            <el-icon><Star /></el-icon>
+          </button>
+          <button v-if="variant === 'square'" class="icon-action" type="button" title="收藏" @click.stop="emit('favorite', image)">
+            <el-icon><Collection /></el-icon>
+          </button>
+          <button v-if="showActions" class="icon-action" type="button" title="复制链接" @click.stop="emit('copy', image)">
+            <el-icon><Link /></el-icon>
+          </button>
+          <button v-if="showActions" class="icon-action danger" type="button" title="删除" @click.stop="emit('delete', image)">
+            <el-icon><Delete /></el-icon>
+          </button>
+        </div>
+      </transition>
     </div>
-    <transition name="reveal">
-      <div class="card-overlay" v-if="hover && !imgFailed">
-        <div class="badge-stack">
-          <span class="category-badge" v-if="image.categoryName">{{ image.categoryName }}</span>
-          <span class="visibility-badge" v-if="showActions">{{ visibilityLabel }}</span>
-        </div>
-        <div class="card-info">
-          <p class="img-name">{{ image.imageName }}</p>
-          <p class="img-tags" v-if="image.tags">{{ image.tags }}</p>
-        </div>
+
+    <div class="card-body">
+      <p class="img-name" :title="image.imageName">{{ image.imageName }}</p>
+      <div class="meta-row">
+        <span class="category-badge" v-if="image.categoryName">{{ image.categoryName }}</span>
+        <span class="category-badge muted" v-else>未分类</span>
+        <span v-if="variant === 'square'" class="meta-text">{{ authorName }}</span>
+        <span v-else class="visibility-badge">{{ visibilityLabel }}</span>
       </div>
-    </transition>
+      <div v-if="variant === 'square'" class="square-foot">
+        <span class="meta-text">{{ tagsText || '无标签' }}</span>
+        <span class="like-text">
+          <el-icon><StarFilled /></el-icon>
+          {{ likeCount }}
+        </span>
+      </div>
+    </div>
   </article>
 </template>
 
 <script setup>
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { getImageDownloadUrl, getFallbackUrl } from '../utils/imageRequests'
+import { getImageDownloadUrl } from '../utils/imageRequests'
 
 const props = defineProps({
   image: { type: Object, required: true },
   showActions: { type: Boolean, default: false },
   selectable: { type: Boolean, default: false },
-  selected: { type: Boolean, default: false }
+  selected: { type: Boolean, default: false },
+  variant: { type: String, default: 'collection' },
+  openMode: { type: String, default: 'route' }
 })
 
-const emit = defineEmits(['edit', 'delete', 'removed', 'toggle-select'])
+const emit = defineEmits(['edit', 'delete', 'removed', 'toggle-select', 'view', 'copy', 'like', 'favorite'])
 
 const router = useRouter()
 const hover = ref(false)
-const hoverLocked = ref(false)
 const imgFailed = ref(false)
-const fallbackTried = ref(false)
 
-const imageSrc = computed(() => {
-  if (imgFailed.value) return ''
-  if (fallbackTried.value) return getFallbackUrl(props.image)
-  return getImageDownloadUrl(props.image)
-})
+const imageSrc = computed(() => imgFailed.value ? '' : getImageDownloadUrl(props.image))
+const authorName = computed(() => props.image.displayName || props.image.username || 'Unknown')
+const likeCount = computed(() => Number(props.image.likeCount || 0))
+const tagsText = computed(() => String(props.image.tags || '').split('#').map(tag => tag.trim()).filter(Boolean).join(' / '))
 
 const visibilityLabel = computed(() => {
   if (props.image.visibility === 'PUBLIC') return '公开'
@@ -95,350 +110,250 @@ const visibilityLabel = computed(() => {
   return '仅自己'
 })
 
-function onMouseEnter() { hover.value = true }
-function onMouseLeave() {
-  if (!hoverLocked.value) hover.value = false
-}
-function onFocus() {
-  if (!hoverLocked.value) hover.value = true
-}
-function onBlur() {
-  if (!hoverLocked.value) hover.value = false
-}
-function onPopShow() { hoverLocked.value = true }
-function onPopHide() {
-  hoverLocked.value = false
-  hover.value = false
-}
 function handleImgError() {
-  if (imgFailed.value) return
-  const fallback = getFallbackUrl(props.image)
-  if (!fallbackTried.value && fallback && getImageDownloadUrl(props.image) !== fallback) {
-    fallbackTried.value = true
-  } else {
-    imgFailed.value = true
-  }
+  imgFailed.value = true
 }
+
 function toggleSelect() {
   if (!props.image.uuid) return
   emit('toggle-select', props.image.uuid)
 }
+
 function goDetail() {
-  if (hoverLocked.value) return
   if (!props.image.uuid) return
+  emit('view', props.image)
+  if (props.openMode === 'emit') return
   router.push(`/image/${props.image.uuid}`)
 }
-
 </script>
 
 <style scoped>
 .image-card {
   position: relative;
+  min-width: 0;
   cursor: pointer;
-  aspect-ratio: 1;
-  border-radius: 2px;
+  border-radius: 18px;
   overflow: hidden;
-  background: var(--bg-elevated);
+  background: #fbfdff;
   border: 1px solid var(--gray2);
-  transition: transform 0.35s var(--ease-out), border-color 0.3s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  animation: fadeUp 0.34s var(--ease-out);
 }
 
-/* Orange bottom bar on hover */
-.image-card::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 0;
-  height: 3px;
-  background: var(--accent);
-  z-index: 5;
-  transition: width 0.35s var(--ease-out);
-}
-
-.image-card:hover {
+.image-card:hover,
+.image-card:focus-visible {
   transform: translateY(-4px);
-  border-color: var(--black);
-}
-
-.image-card:hover::after {
-  width: 100%;
+  border-color: #bfd6e8;
+  box-shadow: 0 18px 32px rgba(30, 41, 59, 0.08);
 }
 
 .image-card:active {
-  transform: translateY(-2px);
+  transform: translateY(-2px) scale(0.99);
 }
 
-/* Selected state */
 .image-card.selected {
   border-color: var(--accent);
-  border-width: 2px;
+  box-shadow: 0 0 0 3px rgba(29, 93, 155, 0.12);
 }
 
-.image-card.selected:hover {
-  border-color: var(--accent);
-}
-
-/* --- Card frame --- */
 .card-frame {
-  width: 100%;
-  height: 100%;
   position: relative;
+  aspect-ratio: 4 / 3;
   overflow: hidden;
+  background: #e8f1fa;
 }
 
-/* --- Selection toggle (top-right, show on hover) --- */
-.select-toggle,
-.card-actions {
-  position: absolute;
-  top: var(--space-sm);
-  z-index: 4;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+.variant-square .card-frame {
+  aspect-ratio: 1 / 1;
 }
 
-.select-toggle {
-  right: calc(var(--space-sm) + 36px);
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.65);
-  background: rgba(10, 10, 10, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transform: translateY(-4px) scale(0.92);
-}
-
-.select-toggle:hover {
-  transform: scale(1.08);
-  background: var(--text-primary);
-  border-color: #fff;
-}
-
-.select-toggle.checked {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0) scale(1);
-  background: var(--accent);
-  border-color: var(--accent);
-  box-shadow: none;
-}
-
-.select-mark {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 2px solid #fff;
-  position: relative;
-}
-.select-toggle.checked .select-mark {
-  border: 0;
-}
-.select-toggle.checked .select-mark::after {
-  content: '';
-  position: absolute;
-  left: 3px;
-  top: 0;
-  width: 6px;
-  height: 10px;
-  border-right: 2px solid #fff;
-  border-bottom: 2px solid #fff;
-  transform: rotate(42deg);
-}
-
-.image-card:hover .select-toggle,
-.image-card:focus-within .select-toggle {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0) scale(1);
-}
-
-/* --- "···" dropdown (top-right, show on hover) --- */
-.card-actions {
-  right: var(--space-sm);
-  transform: translateY(-4px);
-  line-height: 0;
-}
-
-.image-card:hover .card-actions,
-.image-card:focus-within .card-actions {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0);
-}
-
-.actions-trigger {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.65);
-  background: rgba(10, 10, 10, 0.45);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 16px;
-  line-height: 1;
-  letter-spacing: 1px;
-  transition: background 0.18s ease, border-color 0.18s ease;
-}
-
-.actions-trigger:hover {
-  background: var(--accent);
-  border-color: var(--accent);
-}
-
-.dots {
-  position: relative;
-  top: -2px;
-}
-
-/* --- Image --- */
 .card-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.45s var(--ease-out), filter 0.35s ease;
+  display: block;
+  transition: transform 0.42s var(--ease-out), filter 0.24s ease;
 }
 
 .card-img.zoomed {
-  transform: scale(1.06);
-  filter: brightness(0.58) saturate(1.05);
+  transform: scale(1.045);
+  filter: saturate(1.03);
 }
 
-/* Fallback when image fails */
 .img-fallback {
   width: 100%;
   height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-  background: var(--bg-elevated);
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  background: linear-gradient(135deg, #e8f1fa, #f7f5ed);
 }
 
-/* --- Border overlay --- */
-.card-border {
-  position: absolute;
-  inset: 0;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 2px;
-  pointer-events: none;
-  transition: border-color 0.3s ease;
-}
-.image-card:hover .card-border {
-  border-color: rgba(0, 0, 0, 0.15);
-}
-
-/* --- Overlay (info on hover) --- */
 .card-overlay {
   position: absolute;
   inset: 0;
   display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding: 14px;
-  background: linear-gradient(
-    180deg,
-    rgba(10, 10, 10, 0.02) 0%,
-    rgba(10, 10, 10, 0.15) 46%,
-    rgba(10, 10, 10, 0.72) 100%
-  );
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(3, 25, 47, 0.42);
 }
 
-/* --- Badges --- */
-.badge-stack {
+.icon-action {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  display: inline-grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform 0.16s ease, background 0.18s ease, border-color 0.18s ease;
+}
+
+.icon-action:hover {
+  background: rgba(255, 255, 255, 0.26);
+  border-color: rgba(255, 255, 255, 0.42);
+}
+
+.icon-action:active {
+  transform: scale(0.96);
+}
+
+.icon-action.danger:hover {
+  background: rgba(214, 80, 80, 0.9);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.select-toggle {
   position: absolute;
-  top: var(--space-sm);
-  left: var(--space-sm);
-  right: var(--space-sm);
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+  top: 10px;
+  left: 10px;
   z-index: 3;
-  pointer-events: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  background: rgba(3, 25, 47, 0.34);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.18s ease, transform 0.18s ease, background 0.18s ease;
 }
 
-.category-badge {
-  font-size: 11px;
-  padding: 4px 9px;
-  border-radius: 2px;
-  font-weight: 500;
-  font-family: var(--font-body);
-  background: var(--white);
-  color: var(--black);
-  border: 1px solid var(--gray2);
+.image-card:hover .select-toggle,
+.image-card:focus-within .select-toggle,
+.select-toggle.checked {
+  opacity: 1;
+  transform: translateY(0);
 }
 
-.visibility-badge {
-  font-size: 11px;
-  padding: 4px 9px;
-  border-radius: 2px;
-  font-weight: 500;
-  font-family: var(--font-body);
+.select-toggle.checked {
   background: var(--accent);
-  color: var(--white);
+  border-color: var(--accent);
 }
 
-/* --- Info text --- */
-.card-info {
-  width: 100%;
+.select-mark {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+}
+
+.select-toggle.checked .select-mark {
+  width: 8px;
+  height: 13px;
+  border-radius: 0;
+  border: 0;
+  border-right: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: rotate(42deg) translate(-1px, -1px);
+}
+
+.card-body {
+  padding: 13px 14px 14px;
 }
 
 .img-name {
-  font-family: var(--font-display);
-  font-size: 16px;
+  color: var(--black);
+  font-size: 14px;
   font-weight: 400;
-  color: #fff;
+  line-height: 1.35;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-bottom: 2px;
-  text-shadow: 0 1px 10px rgba(10, 10, 10, 0.28);
 }
 
-.img-tags {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.65);
+.meta-row,
+.square-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  min-width: 0;
+}
+
+.category-badge,
+.visibility-badge {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 70%;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 300;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-family: var(--font-body);
 }
 
-/* --- Reveal transitions --- */
-.reveal-enter-active { transition: opacity 0.25s var(--ease-out); }
-.reveal-enter-from { opacity: 0; }
-.reveal-leave-active { transition: opacity 0.12s ease; }
-.reveal-leave-to { opacity: 0; }
-</style>
+.category-badge {
+  color: var(--accent);
+  background: var(--blue-soft);
+}
 
-<style>
-/* Dropdown menu — teleported, so unscoped */
-.card-action-dropdown {
-  min-width: 100px;
-  border-radius: 2px !important;
-  border: 1px solid var(--gray2) !important;
-  box-shadow: var(--shadow-dialog) !important;
-  padding: 4px 0;
+.category-badge.muted {
+  color: var(--gray3);
+  background: #f2f0e8;
 }
-.card-action-dropdown .el-dropdown-menu__item {
-  font-family: var(--font-body);
-  font-size: 13px;
-  color: var(--black);
-  padding: 6px 16px;
-  line-height: 1.6;
+
+.visibility-badge {
+  flex-shrink: 0;
+  color: #6d5fb8;
+  background: #eeeaf8;
 }
-.card-action-dropdown .el-dropdown-menu__item:hover {
-  background: var(--gray1);
-  color: var(--black);
+
+.meta-text,
+.like-text {
+  min-width: 0;
+  color: var(--gray3);
+  font-size: 12px;
+  font-weight: 300;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.card-action-dropdown .el-dropdown-menu__item:not(.is-disabled):focus {
-  background: var(--gray1);
-  color: var(--black);
+
+.like-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  color: var(--gray4);
+}
+
+.overlay-fade-enter-active,
+.overlay-fade-leave-active {
+  transition: opacity 0.18s ease;
+}
+.overlay-fade-enter-from,
+.overlay-fade-leave-to {
+  opacity: 0;
 }
 </style>

@@ -7,6 +7,7 @@ import com.picmgmt.common.BusinessException;
 import com.picmgmt.common.ErrorCode;
 import com.picmgmt.common.Result;
 import com.picmgmt.entity.AuditLog;
+import com.picmgmt.entity.Comment;
 import com.picmgmt.entity.User;
 import com.picmgmt.mapper.AuditLogMapper;
 import com.picmgmt.mapper.UserMapper;
@@ -36,6 +37,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -162,11 +164,74 @@ class AuditAspectTest {
         assertFalse(params.contains("file-content"));
     }
 
+    @Test
+    void around_shouldUseConfiguredResultTargetIdForCommentCreate() throws Throwable {
+        Map<String, String> body = new LinkedHashMap<>();
+        body.put("imageId", "100");
+        body.put("content", "hello");
+        Audit audit = stubJoinPoint("auditedCommentAdd", body);
+        Comment comment = new Comment();
+        comment.setId(42L);
+        comment.setImageId(100L);
+        when(joinPoint.proceed()).thenReturn(Result.ok(comment));
+
+        try (MockedStatic<StpUtil> stpMock = mockStatic(StpUtil.class)) {
+            stpMock.when(StpUtil::isLogin).thenReturn(false);
+            aspect.around(joinPoint, audit);
+        }
+
+        AuditLog log = capturedLog();
+        assertEquals("COMMENT_ADD", log.getAction());
+        assertEquals("comment", log.getTargetType());
+        assertEquals("42", log.getTargetId());
+        assertTrue(log.getRequestParams().contains("\"imageId\":\"100\""));
+    }
+
+    @Test
+    void around_shouldNotUseRequestImageIdWhenConfiguredResultTargetFails() throws Throwable {
+        Map<String, String> body = new LinkedHashMap<>();
+        body.put("imageId", "100");
+        Audit audit = stubJoinPoint("auditedCommentAdd", body);
+        when(joinPoint.proceed()).thenThrow(new BusinessException(ErrorCode.COMMENT_EMPTY));
+
+        try (MockedStatic<StpUtil> stpMock = mockStatic(StpUtil.class)) {
+            stpMock.when(StpUtil::isLogin).thenReturn(false);
+            assertThrows(BusinessException.class, () -> aspect.around(joinPoint, audit));
+        }
+
+        AuditLog log = capturedLog();
+        assertEquals("COMMENT_ADD", log.getAction());
+        assertNull(log.getTargetId());
+        assertEquals("FAIL", log.getResult());
+        assertTrue(log.getRequestParams().contains("\"imageId\":\"100\""));
+    }
+
+    @Test
+    void around_shouldTreatNonSuccessResultAsFailureAndFilterCode() throws Throwable {
+        Map<String, String> body = new LinkedHashMap<>();
+        body.put("code", "oauth-code");
+        Audit audit = stubJoinPoint("auditedOAuthExchange", body);
+        when(joinPoint.proceed()).thenReturn(Result.error(400, "code expired"));
+
+        try (MockedStatic<StpUtil> stpMock = mockStatic(StpUtil.class)) {
+            stpMock.when(StpUtil::isLogin).thenReturn(false);
+            aspect.around(joinPoint, audit);
+        }
+
+        AuditLog log = capturedLog();
+        assertEquals("FAIL", log.getResult());
+        assertEquals("code expired", log.getErrorMessage());
+        assertTrue(log.getRequestParams().contains("[FILTERED]"));
+        assertFalse(log.getRequestParams().contains("oauth-code"));
+    }
+
     private Audit stubJoinPoint(String methodName, Object... args) throws NoSuchMethodException {
         Method method = switch (methodName) {
             case "auditedImageUpdate" -> DummyController.class.getDeclaredMethod(
                     methodName, String.class, Map.class, MultipartFile.class);
             case "auditedCommentDelete" -> DummyController.class.getDeclaredMethod(methodName, Long.class);
+            case "auditedCommentAdd", "auditedOAuthExchange" ->
+                    DummyController.class.getDeclaredMethod(methodName, Map.class);
             default -> throw new IllegalArgumentException(methodName);
         };
         when(joinPoint.getSignature()).thenReturn(signature);
@@ -180,6 +245,7 @@ class AuditAspectTest {
         return switch (methodName) {
             case "auditedImageUpdate" -> new String[] {"uuid", "body", "file"};
             case "auditedCommentDelete" -> new String[] {"id"};
+            case "auditedCommentAdd", "auditedOAuthExchange" -> new String[] {"body"};
             default -> new String[0];
         };
     }
@@ -199,6 +265,14 @@ class AuditAspectTest {
 
         @Audit(action = "COMMENT_DELETE", module = "COMMENT", targetType = "comment")
         void auditedCommentDelete(@PathVariable("id") Long id) {
+        }
+
+        @Audit(action = "COMMENT_ADD", module = "COMMENT", targetType = "comment", targetIdResult = "id")
+        void auditedCommentAdd(@RequestBody Map<String, String> body) {
+        }
+
+        @Audit(action = "USER_OAUTH_EXCHANGE", module = "USER", targetType = "user")
+        void auditedOAuthExchange(@RequestBody Map<String, String> body) {
         }
     }
 }

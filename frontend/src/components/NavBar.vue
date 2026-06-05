@@ -1,28 +1,36 @@
 <template>
   <header class="navbar" ref="navbarEl">
     <div class="navbar-inner">
-      <div class="navbar-left">
-        <router-link to="/home" class="logo" aria-label="ImageSpace 首页">IMAGESPACE</router-link>
-      </div>
+      <router-link to="/home" class="logo" aria-label="Image Space 首页">
+        <span class="logo-mark">IS</span>
+        <span>IMAGE SPACE</span>
+      </router-link>
+
+      <nav class="nav-links" role="navigation" aria-label="主导航">
+        <router-link to="/square" class="nav-link" :class="{ active: $route.path === '/square' }">
+          Square
+        </router-link>
+        <router-link to="/home" class="nav-link" :class="{ active: $route.path === '/home' }">
+          Images
+        </router-link>
+        <router-link v-if="token" :to="profilePath" class="nav-link" :class="{ active: $route.path.startsWith('/profile') }">
+          Profile
+        </router-link>
+      </nav>
 
       <div class="navbar-right">
-        <nav class="nav-links" role="navigation" aria-label="主导航">
-          <router-link to="/home" class="nav-link" :class="{ active: $route.path === '/home' }">
-            Images
-          </router-link>
-          <router-link to="/square" class="nav-link" :class="{ active: $route.path === '/square' }">
-            Square
-          </router-link>
-        </nav>
+        <button v-if="token" class="upload-nav-btn" type="button" @click="goUpload">
+          <el-icon><Plus /></el-icon>
+          <span>Upload</span>
+        </button>
 
         <div class="user-section" v-if="token">
           <NotificationBell :active="!!token" />
-          <el-avatar :size="32" :src="userInfo?.avatarUrl || userInfo?.avatar" class="nav-avatar" @click="goProfile" />
-          <span class="username" @click="goProfile" :title="userInfo?.displayName || userInfo?.username">
-            {{ userInfo?.displayName || userInfo?.username || '' }}
-          </span>
+          <button class="avatar-button" type="button" @click="goProfile" :title="userInfo?.displayName || userInfo?.username">
+            <el-avatar :size="32" :src="userInfo?.avatarUrl || userInfo?.avatar" class="nav-avatar" />
+          </button>
+          <button class="logout-btn" type="button" @click="handleLogout">Exit</button>
         </div>
-        <button v-if="token" class="logout-btn" @click="handleLogout" aria-label="退出登录">Exit</button>
 
         <button class="mobile-toggle" @click="mobileOpen = !mobileOpen" :aria-expanded="mobileOpen" aria-label="菜单">
           <span class="hamburger-line" :class="{ open: mobileOpen }"></span>
@@ -33,18 +41,23 @@
     <transition name="slide-down">
       <div class="mobile-drawer" v-if="mobileOpen">
         <nav class="mobile-nav">
-          <router-link to="/home" class="mobile-nav-item" :class="{ active: $route.path === '/home' }" @click="mobileOpen = false">
-            Images
-          </router-link>
           <router-link to="/square" class="mobile-nav-item" :class="{ active: $route.path === '/square' }" @click="mobileOpen = false">
             Square
           </router-link>
+          <router-link to="/home" class="mobile-nav-item" :class="{ active: $route.path === '/home' }" @click="mobileOpen = false">
+            Images
+          </router-link>
+          <router-link v-if="token" :to="profilePath" class="mobile-nav-item" :class="{ active: $route.path.startsWith('/profile') }" @click="mobileOpen = false">
+            Profile
+          </router-link>
         </nav>
-        <div class="mobile-user" v-if="token">
+        <div class="mobile-actions" v-if="token">
+          <button class="upload-nav-btn" type="button" @click="goUpload">
+            <el-icon><Plus /></el-icon>
+            <span>Upload</span>
+          </button>
           <NotificationBell :active="!!token" />
-          <el-avatar :size="28" :src="userInfo?.avatarUrl || userInfo?.avatar" />
-          <span>{{ userInfo?.displayName || userInfo?.username }}</span>
-          <button class="logout-btn" @click="handleLogout">Exit</button>
+          <button class="logout-btn" type="button" @click="handleLogout">Exit</button>
         </div>
       </div>
     </transition>
@@ -64,6 +77,7 @@ const userStore = useUserStore()
 
 const token = computed(() => userStore.token)
 const userInfo = computed(() => userStore.userInfo)
+const profilePath = computed(() => `/profile/${userInfo.value?.uuid || 0}`)
 const mobileOpen = ref(false)
 const navbarEl = ref(null)
 
@@ -80,12 +94,18 @@ onUnmounted(() => {
 
 function onScroll() {
   if (navbarEl.value) {
-    navbarEl.value.classList.toggle('scrolled', window.scrollY > 60)
+    navbarEl.value.classList.toggle('scrolled', window.scrollY > 40)
   }
 }
 
 function goProfile() {
-  router.push(`/profile/${userStore.userInfo?.uuid || 0}`)
+  mobileOpen.value = false
+  router.push(profilePath.value)
+}
+
+function goUpload() {
+  mobileOpen.value = false
+  router.push({ path: '/home', query: { upload: '1' } })
 }
 
 async function handleLogout() {
@@ -102,118 +122,194 @@ async function handleLogout() {
 <style scoped>
 .navbar {
   position: fixed;
-  top: 0; left: 0; right: 0;
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: 100;
-  padding: 1.2rem 2.5rem;
-  border-bottom: 1px solid transparent;
-  transition: all 0.4s ease;
-  background: rgba(250,250,250,0);
+  padding: 10px 24px;
+  background: var(--nav-blue);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 30px rgba(3, 25, 47, 0.12);
+  transition: box-shadow 0.2s ease, background 0.2s ease;
 }
+
 .navbar.scrolled {
-  background: rgba(250,250,250,0.92);
-  border-color: var(--gray2);
-  backdrop-filter: blur(12px);
+  background: rgba(3, 25, 47, 0.98);
+  box-shadow: 0 14px 34px rgba(3, 25, 47, 0.16);
 }
 
 .navbar-inner {
-  max-width: 1280px;
+  width: min(100%, 1280px);
+  height: 36px;
   margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 18px;
 }
 
 .logo {
-  font-family: var(--font-display);
-  font-size: 1.6rem;
-  letter-spacing: 0.05em;
-  color: var(--black);
-  text-decoration: none;
-  transition: opacity 0.2s;
-}
-.logo:hover { opacity: 0.6; }
-
-.navbar-right {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 20px;
+  gap: 10px;
+  flex-shrink: 0;
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+}
+
+.logo:hover {
+  opacity: 0.9;
+}
+
+.logo-mark {
+  width: 30px;
+  height: 30px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-size: 11px;
+  letter-spacing: 0.04em;
 }
 
 .nav-links {
-  display: flex;
-  gap: 2rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .nav-link {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--gray3);
+  min-width: 76px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  color: #cfe1ed;
+  font-size: 13px;
+  font-weight: 300;
+  text-align: center;
   text-decoration: none;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  transition: color 0.2s;
-  padding: 0;
-}
-.nav-link:hover,
-.nav-link.active {
-  color: var(--black);
+  transition: color 0.18s ease, background 0.18s ease;
 }
 
-.user-section {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
+.nav-link:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  opacity: 1;
 }
-.nav-avatar { flex-shrink: 0; cursor: pointer; }
-.username {
+
+.nav-link.active {
+  color: var(--nav-blue);
+  background: #fffdf8;
+}
+
+.navbar-right,
+.user-section {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.upload-nav-btn,
+.logout-btn,
+.avatar-button {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-radius: 14px;
+  height: 34px;
+  padding: 0 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: var(--font-body);
   font-size: 13px;
-  font-weight: 500;
-  color: var(--gray4);
-  max-width: 100px;
+  font-weight: 300;
+  cursor: pointer;
+  transition: transform 0.16s ease, background 0.18s ease, border-color 0.18s ease;
+}
+
+.upload-nav-btn:hover,
+.logout-btn:hover,
+.avatar-button:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.upload-nav-btn:active,
+.logout-btn:active,
+.avatar-button:active {
+  transform: scale(0.98);
+}
+
+.avatar-button {
+  width: 36px;
+  padding: 0;
+  border-radius: 50%;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.nav-avatar {
+  border: 1px solid rgba(255, 255, 255, 0.24);
+}
+
+.navbar :deep(.notification-bell) {
+  color: #cfe1ed;
+  border-radius: 12px;
+}
+
+.navbar :deep(.notification-bell:hover) {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .logout-btn {
-  font-size: 0.75rem;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--gray3);
-  background: none;
-  border: 1px solid var(--gray2);
-  padding: 0.45rem 1rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-family: var(--font-body);
+  color: #d9e7f2;
 }
-.logout-btn:hover { color: var(--danger); border-color: var(--danger); }
 
-/* Mobile */
 .mobile-toggle {
   display: none;
-  background: none;
-  border: none;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
   cursor: pointer;
-  padding: 4px;
+  padding: 0;
 }
 
 .hamburger-line,
 .hamburger-line::before,
 .hamburger-line::after {
   display: block;
-  width: 20px; height: 2px;
-  background: var(--black);
-  transition: all 0.25s var(--ease-out);
+  width: 18px;
+  height: 2px;
+  background: #fff;
+  border-radius: 999px;
+  transition: all 0.22s var(--ease-out);
 }
-.hamburger-line { position: relative; }
+
+.hamburger-line {
+  position: relative;
+  margin: auto;
+}
+
 .hamburger-line::before,
 .hamburger-line::after {
   content: '';
-  position: absolute; left: 0;
+  position: absolute;
+  left: 0;
 }
+
 .hamburger-line::before { top: -6px; }
 .hamburger-line::after { top: 6px; }
 .hamburger-line.open { background: transparent; }
@@ -221,52 +317,76 @@ async function handleLogout() {
 .hamburger-line.open::after { top: 0; transform: rotate(-45deg); }
 
 .mobile-drawer {
-  position: absolute;
-  top: 100%; left: 0; right: 0;
-  background: var(--white);
-  border-bottom: 1px solid var(--gray2);
-  padding: 12px 24px 20px;
-  z-index: 99;
-}
-
-.mobile-nav {
-  display: flex; flex-direction: column; gap: 2px;
-}
-.mobile-nav-item {
-  display: flex; align-items: center;
+  width: min(100%, 1280px);
+  margin: 10px auto 0;
   padding: 12px;
-  text-decoration: none;
-  color: var(--gray4);
-  font-family: var(--font-display);
-  font-size: 18px;
-  letter-spacing: 0.04em;
-  transition: color 0.15s;
+  background: var(--nav-blue-soft);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
 }
-.mobile-nav-item:hover,
-.mobile-nav-item.active { color: var(--black); }
 
-.mobile-user {
-  display: flex; align-items: center; gap: 8px;
-  padding: 12px 0 0; margin-top: 8px;
-  border-top: 1px solid var(--gray2);
+.mobile-nav,
+.mobile-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
-.mobile-user span { flex: 1; font-size: 13px; font-weight: 500; color: var(--black); }
+
+.mobile-actions {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mobile-nav-item {
+  flex: 1 1 110px;
+  padding: 10px 12px;
+  color: #cfe1ed;
+  border-radius: 12px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 300;
+}
+
+.mobile-nav-item.active,
+.mobile-nav-item:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  opacity: 1;
+}
 
 .slide-down-enter-active,
-.slide-down-leave-active { transition: all 0.2s var(--ease-out); }
+.slide-down-leave-active {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
 .slide-down-enter-from,
-.slide-down-leave-to { opacity: 0; transform: translateY(-8px); }
+.slide-down-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
 
-@media (max-width: 768px) {
-  .navbar { padding: 1rem 1.5rem; }
-  .nav-links { display: none; }
-  .user-section { display: none; }
-  .logout-btn { display: none; }
-  .mobile-toggle { display: flex; align-items: center; justify-content: center; width: 32px; height: 28px; }
+@media (max-width: 860px) {
+  .navbar {
+    padding: 10px 14px;
+  }
+  .navbar-inner {
+    gap: 10px;
+  }
+  .nav-links,
+  .user-section,
+  .navbar-right > .upload-nav-btn {
+    display: none;
+  }
+  .mobile-toggle {
+    display: grid;
+    place-items: center;
+  }
 }
 
 @media (max-width: 480px) {
-  .navbar { padding: 0.8rem 1rem; }
-  .logo { font-size: 1.3rem; }
+  .logo span:last-child {
+    font-size: 12px;
+  }
 }
 </style>

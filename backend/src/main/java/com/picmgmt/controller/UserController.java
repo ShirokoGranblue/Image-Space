@@ -67,7 +67,7 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
 
     @Operation(summary = "用户注册")
     @PostMapping("/register")
-    @Audit(action = "USER_REGISTER", module = "USER", targetType = "user")
+    @Audit(action = "USER_REGISTER", module = "USER", targetType = "user", targetIdResult = "id")
     public Result<UserVO> register(@Valid @RequestBody RegisterDTO dto, HttpServletRequest request) {
         turnstileService.verify(dto.getTurnstileToken(), clientIp(request));
         return Result.ok(userService.register(dto));
@@ -103,6 +103,7 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
 
     @Operation(summary = "更新个人资料")
     @PutMapping("/profile")
+    @Audit(action = "USER_PROFILE_UPDATE", module = "USER", targetType = "user")
     public Result<UserVO> updateProfile(@RequestBody Map<String, String> body) {
         long userId = StpUtil.getLoginIdAsLong();
         return Result.ok(userService.updateProfile(userId,
@@ -112,6 +113,7 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
 
     @Operation(summary = "上传头像")
     @PostMapping("/avatar")
+    @Audit(action = "USER_AVATAR_UPLOAD", module = "USER", targetType = "user")
     public Result<String> uploadAvatar(@RequestParam("file") MultipartFile file) throws IOException {
         long userId = StpUtil.getLoginIdAsLong();
         String ext = FileUtil.extName(file.getOriginalFilename()).toLowerCase();
@@ -125,6 +127,7 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
 
     @Operation(summary = "上传背景")
     @PostMapping("/background")
+    @Audit(action = "USER_BACKGROUND_UPLOAD", module = "USER", targetType = "user")
     public Result<String> uploadBackground(@RequestParam("file") MultipartFile file) throws IOException {
         long userId = StpUtil.getLoginIdAsLong();
         String ext = FileUtil.extName(file.getOriginalFilename()).toLowerCase();
@@ -216,6 +219,7 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
 
     @Operation(summary = "发送邮箱验证码")
     @PostMapping("/send-code")
+    @Audit(action = "USER_SEND_CODE", module = "USER", targetType = "user")
     public Result<Void> sendCode(@Valid @RequestBody SendCodeDTO dto, HttpServletRequest request) {
         turnstileService.verify(dto.getTurnstileToken(), clientIp(request));
         userService.sendCode(dto.getEmail().trim(), dto.getCaptchaId(), dto.getCaptchaCode());
@@ -224,6 +228,7 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
 
     @Operation(summary = "邮箱验证码登录")
     @PostMapping("/login-by-code")
+    @Audit(action = "USER_CODE_LOGIN", module = "USER", targetType = "user")
     public Result<String> loginByCode(@Valid @RequestBody CodeLoginDTO dto, HttpServletRequest request) {
         turnstileService.verify(dto.getTurnstileToken(), clientIp(request));
         return Result.ok(userService.loginByCode(dto));
@@ -231,6 +236,7 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
 
     @Operation(summary = "修改密码")
     @PutMapping("/password")
+    @Audit(action = "USER_PASSWORD_CHANGE", module = "USER", targetType = "user")
     public Result<Void> changePassword(@RequestBody Map<String, String> body) {
         userService.changePassword(StpUtil.getLoginIdAsLong(),
                 body.get("oldPassword"), body.get("newPassword"));
@@ -239,6 +245,7 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
 
     @Operation(summary = "注销账号")
     @DeleteMapping("/account")
+    @Audit(action = "USER_ACCOUNT_DELETE", module = "USER", targetType = "user")
     public Result<Void> deleteAccount() {
         userService.deleteAccount(StpUtil.getLoginIdAsLong());
         return Result.ok();
@@ -312,6 +319,7 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
 
     @Operation(summary = "OAuth一次性code换取token")
     @PostMapping("/oauth/exchange")
+    @Audit(action = "USER_OAUTH_EXCHANGE", module = "USER", targetType = "user")
     public Result<Map<String, String>> exchangeOAuthCode(@RequestBody Map<String, String> body) {
         String code = body.get("code");
         if (code == null || code.isBlank()) {

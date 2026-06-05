@@ -99,20 +99,80 @@ public class AuditAspect {
         logEntry.setAction(truncate(audit.action(), ACTION_MAX_LENGTH));
         logEntry.setModule(truncate(audit.module(), MODULE_MAX_LENGTH));
         logEntry.setTargetType(truncate(audit.targetType(), TARGET_TYPE_MAX_LENGTH));
-        logEntry.setTargetId(truncate(firstNonBlank(
-                findTargetId(requestParams),
-                findResultValue(result, "uuid"),
-                findResultValue(result, "id")
-        ), TARGET_ID_MAX_LENGTH));
+        logEntry.setTargetId(truncate(resolveTargetId(audit, requestParams, user, result), TARGET_ID_MAX_LENGTH));
         logEntry.setMethod(truncate(request == null ? null : request.getMethod(), METHOD_MAX_LENGTH));
         logEntry.setPath(truncate(request == null ? null : request.getRequestURI(), PATH_MAX_LENGTH));
         logEntry.setIp(truncate(clientIp(request), IP_MAX_LENGTH));
         logEntry.setUserAgent(truncate(request == null ? null : request.getHeader("User-Agent"), USER_AGENT_MAX_LENGTH));
         logEntry.setRequestParams(toJson(requestParams));
-        logEntry.setResult(error == null ? "SUCCESS" : "FAIL");
-        logEntry.setErrorMessage(error == null ? null : truncate(error.getMessage(), ERROR_MESSAGE_MAX_LENGTH));
+        logEntry.setResult(auditResult(result, error));
+        logEntry.setErrorMessage(auditErrorMessage(result, error));
         logEntry.setCreateTime(LocalDateTime.now());
         return logEntry;
+    }
+
+    private String resolveTargetId(Audit audit, Map<String, Object> requestParams, UserSnapshot user, Object result) {
+        String explicitResult = findConfiguredResultValue(result, audit.targetIdResult());
+        String explicitParam = findConfiguredParamValue(requestParams, audit.targetIdParam());
+        if (hasConfiguredTarget(audit)) {
+            return firstNonBlank(explicitResult, explicitParam, userTargetId(audit, user));
+        }
+        return firstNonBlank(
+                findTargetId(requestParams),
+                findResultValue(result, "uuid"),
+                findResultValue(result, "id"),
+                userTargetId(audit, user)
+        );
+    }
+
+    private boolean hasConfiguredTarget(Audit audit) {
+        return (audit.targetIdResult() != null && !audit.targetIdResult().isBlank())
+                || (audit.targetIdParam() != null && !audit.targetIdParam().isBlank());
+    }
+
+    private String findConfiguredResultValue(Object result, String key) {
+        if (key == null || key.isBlank()) {
+            return null;
+        }
+        return findResultValue(result, key);
+    }
+
+    private String findConfiguredParamValue(Map<String, Object> requestParams, String key) {
+        if (key == null || key.isBlank()) {
+            return null;
+        }
+        String value = findStringValue(requestParams, key);
+        if (value == null || value.isBlank() || FILTERED.equals(value)) {
+            return null;
+        }
+        return value;
+    }
+
+    private String userTargetId(Audit audit, UserSnapshot user) {
+        if ("user".equalsIgnoreCase(audit.targetType()) && user.hasUser()) {
+            return String.valueOf(user.userId());
+        }
+        return null;
+    }
+
+    private String auditResult(Object result, Throwable error) {
+        if (error != null) {
+            return "FAIL";
+        }
+        if (result instanceof Result<?> apiResult && apiResult.getCode() != 200) {
+            return "FAIL";
+        }
+        return "SUCCESS";
+    }
+
+    private String auditErrorMessage(Object result, Throwable error) {
+        if (error != null) {
+            return truncate(error.getMessage(), ERROR_MESSAGE_MAX_LENGTH);
+        }
+        if (result instanceof Result<?> apiResult && apiResult.getCode() != 200) {
+            return truncate(apiResult.getMessage(), ERROR_MESSAGE_MAX_LENGTH);
+        }
+        return null;
     }
 
     private Map<String, Object> collectRequestParams(ProceedingJoinPoint joinPoint) {

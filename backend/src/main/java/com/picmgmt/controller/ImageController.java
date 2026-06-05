@@ -42,7 +42,7 @@ public class ImageController {
     @Operation(summary = "上传图片")
     @PostMapping("/upload")
     @SaCheckPermission("image:upload")
-    @Audit(action = "IMAGE_UPLOAD", module = "IMAGE", targetType = "image")
+    @Audit(action = "IMAGE_UPLOAD", module = "IMAGE", targetType = "image", targetIdResult = "uuid")
     public Result<ImageVO> upload(@RequestParam("file") MultipartFile file,
                                    @RequestParam(required = false) Long categoryId,
                                    @RequestParam(required = false) String imageName,

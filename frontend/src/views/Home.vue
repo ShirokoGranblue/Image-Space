@@ -3,13 +3,44 @@
     <NavBar />
     <div class="page-container">
       <header class="page-header">
-        <h1 class="page-title">Collections</h1>
+        <div>
+          <h1 class="page-title">Images</h1>
+          <p class="page-desc">管理你的图片、分类和公开范围。</p>
+        </div>
         <div class="toolbar">
           <div class="toolbar-left">
-            <el-button type="primary" class="btn-slide" @click="uploadRef.open()">
-              <el-icon><Plus /></el-icon> 上传图片
-            </el-button>
-            <div class="selection-actions" v-if="images.length > 0">
+            <el-input
+              v-model="query.keyword"
+              placeholder="搜索图片名称"
+              clearable
+              @clear="onFilterChange"
+              @keyup.enter="onFilterChange"
+              class="toolbar-search"
+            >
+              <template #prefix>
+                <el-icon><Search /></el-icon>
+              </template>
+            </el-input>
+            <el-select
+              v-model="query.categoryId"
+              placeholder="分类筛选"
+              clearable
+              @change="onFilterChange"
+              class="toolbar-select"
+            >
+              <el-option v-for="cat in categories" :key="cat.id" :label="cat.categoryName" :value="cat.id" />
+            </el-select>
+            <el-select
+              v-model="query.visibility"
+              placeholder="公开/私有"
+              clearable
+              class="toolbar-select"
+            >
+              <el-option label="公开" value="PUBLIC" />
+              <el-option label="私有" value="PRIVATE" />
+              <el-option label="指定用户" value="SPECIFIED" />
+            </el-select>
+            <div class="selection-actions" v-if="displayedImages.length > 0">
               <el-checkbox
                 :model-value="allVisibleSelected"
                 :indeterminate="partiallySelected"
@@ -17,43 +48,25 @@
               >
                 全选本页
               </el-checkbox>
-              <el-button v-if="selectedImageUuids.length > 0" @click="clearSelection">取消选择</el-button>
-              <el-button
-                v-if="selectedImageUuids.length > 0"
-                type="danger"
-                @click="handleBatchDelete"
-              >
-                删除选中 {{ selectedImageUuids.length }}
-              </el-button>
             </div>
-            <el-select
-              v-model="query.categoryId"
-              placeholder="按分类筛选"
-              clearable
-              @change="onFilterChange"
-              style="width: 160px"
-            >
-              <el-option v-for="cat in categories" :key="cat.id" :label="cat.categoryName" :value="cat.id" />
-            </el-select>
           </div>
           <div class="toolbar-right">
-            <el-input
-              v-model="query.keyword"
-              placeholder="搜索图片名称"
-              clearable
-              @clear="onFilterChange"
-              @keyup.enter="onFilterChange"
-              style="width: 220px"
-            >
-              <template #prefix>
-                <el-icon><Search /></el-icon>
-              </template>
-            </el-input>
             <el-select v-model="query.sortField" @change="onFilterChange" style="width: 120px">
               <el-option label="按时间" value="upload_time" />
               <el-option label="按名称" value="image_name" />
               <el-option label="按大小" value="file_size" />
             </el-select>
+            <el-button v-if="selectedImageUuids.length > 0" @click="clearSelection">取消选择</el-button>
+            <el-button
+              v-if="selectedImageUuids.length > 0"
+              type="danger"
+              @click="handleBatchDelete"
+            >
+              删除选中 {{ selectedImageUuids.length }}
+            </el-button>
+            <el-button type="primary" class="btn-slide" @click="uploadRef.open()">
+              <el-icon><Plus /></el-icon> 上传图片
+            </el-button>
           </div>
         </div>
       </header>
@@ -64,20 +77,20 @@
         </div>
       </div>
 
-      <div v-else-if="images.length === 0" class="empty-state">
+      <div v-else-if="displayedImages.length === 0" class="empty-state">
         <el-icon><PictureFilled /></el-icon>
         <p>还没有图片，点击上方按钮上传</p>
       </div>
 
       <div v-else class="card-grid">
-        <div v-for="(img, idx) in images" :key="img.id" class="stagger-item" :style="{ animationDelay: `${idx * 0.06}s` }">
+        <div v-for="(img, idx) in displayedImages" :key="img.id" class="stagger-item" :style="{ animationDelay: `${idx * 0.06}s` }">
           <ImageCard
             :image="img"
             :show-actions="true"
             :selectable="true"
             :selected="selectedImageUuids.includes(img.uuid)"
-          @delete="handleDelete"
-            @edit="handleEdit"
+            @delete="handleDelete"
+            @copy="copyImageLink"
             @toggle-select="toggleImageSelection"
           />
         </div>
@@ -159,7 +172,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import NavBar from '../components/NavBar.vue'
 import ImageCard from '../components/ImageCard.vue'
@@ -168,13 +182,15 @@ import TagInput from '../components/TagInput.vue'
 import { getImageList, deleteImage, updateImage } from '../api/image'
 import { getImageResourceStatus, refreshImageAccessUrl } from '../api/resource'
 import { getCategoryList, createCategory } from '../api/category'
-import { DEFAULT_IMAGE_PAGE_SIZE, IMAGE_PAGE_SIZES, buildImageListParams } from '../utils/imageRequests'
+import { DEFAULT_IMAGE_PAGE_SIZE, IMAGE_PAGE_SIZES, buildImageListParams, getImageDownloadUrl } from '../utils/imageRequests'
 import { applyImageAccessUrl, applyImageStatus, imageToPollingResource } from '../utils/resourceAdapters'
 import { isAccessUrlExpiring } from '../utils/resourceAccess'
 import { hasSpecifiedUsers } from '../utils/visibility'
 import { POLLING_INTERVALS, useResourcePolling } from '../composables/useResourcePolling'
 
 const uploadRef = ref(null)
+const route = useRoute()
+const router = useRouter()
 const images = ref([])
 const categories = ref([])
 const total = ref(0)
@@ -185,7 +201,11 @@ const newCategoryName = ref('')
 const creatingCategory = ref(false)
 const selectedImageUuids = ref([])
 const recentUploadResources = ref([])
-const visibleImageUuids = computed(() => images.value.map(img => img.uuid))
+const displayedImages = computed(() => {
+  if (!query.visibility) return images.value
+  return images.value.filter(img => img.visibility === query.visibility)
+})
+const visibleImageUuids = computed(() => displayedImages.value.map(img => img.uuid))
 const allVisibleSelected = computed(() => visibleImageUuids.value.length > 0 && visibleImageUuids.value.every(uuid => selectedImageUuids.value.includes(uuid)))
 const partiallySelected = computed(() => selectedImageUuids.value.length > 0 && !allVisibleSelected.value)
 const recentUploadPollingResource = computed(() => {
@@ -211,6 +231,7 @@ const query = reactive({
   limit: DEFAULT_IMAGE_PAGE_SIZE,
   keyword: '',
   categoryId: null,
+  visibility: '',
   sortField: 'upload_time',
   sortOrder: 'desc'
 })
@@ -218,6 +239,11 @@ const query = reactive({
 onMounted(() => {
   fetchList()
   fetchCategories()
+  openUploadFromRoute()
+})
+
+watch(() => route.query.upload, () => {
+  openUploadFromRoute()
 })
 
 useResourcePolling({
@@ -251,13 +277,29 @@ useResourcePolling({
 async function fetchList() {
   loading.value = true
   try {
-    const res = await getImageList(buildImageListParams(query))
+    const res = await getImageList(buildImageListParams({
+      page: query.page,
+      limit: query.limit,
+      keyword: query.keyword,
+      categoryId: query.categoryId,
+      sortField: query.sortField,
+      sortOrder: query.sortOrder
+    }))
     images.value = res.data.records || []
     total.value = res.data.total || 0
-    selectedImageUuids.value = selectedImageUuids.value.filter(uuid => images.value.some(img => img.uuid === uuid))
+    selectedImageUuids.value = selectedImageUuids.value.filter(uuid => displayedImages.value.some(img => img.uuid === uuid))
   } catch {} finally {
     loading.value = false
   }
+}
+
+async function openUploadFromRoute() {
+  if (route.query.upload !== '1') return
+  await nextTick()
+  uploadRef.value?.open?.()
+  const nextQuery = { ...route.query }
+  delete nextQuery.upload
+  router.replace({ path: '/home', query: nextQuery })
 }
 
 function onFilterChange() {
@@ -377,6 +419,20 @@ function handleEdit(img) {
   editVisible.value = true
 }
 
+async function copyImageLink(img) {
+  const url = getImageDownloadUrl(img)
+  if (!url) {
+    ElMessage.warning('暂无可复制链接')
+    return
+  }
+  try {
+    await navigator.clipboard.writeText(new URL(url, window.location.origin).href)
+    ElMessage.success('链接已复制')
+  } catch {
+    ElMessage.warning('当前浏览器不支持自动复制')
+  }
+}
+
 async function saveEdit() {
   if (editForm.visibility === 'SPECIFIED' && !hasSpecifiedUsers(editForm.visibleUsernames)) {
     ElMessage.warning('请先填写指定用户')
@@ -401,7 +457,7 @@ async function saveEdit() {
 <style scoped>
 .home-page {
   min-height: 100vh;
-  background: var(--white);
+  background: var(--gray1);
   display: flex;
   flex-direction: column;
 }
@@ -414,24 +470,33 @@ async function saveEdit() {
 }
 
 .page-header {
-  padding: 0 0 14px;
-  margin-bottom: 4px;
-  border-bottom: 1px solid var(--gray2);
+  padding: 22px;
+  margin-bottom: 8px;
+  border: 1px solid rgba(229, 224, 212, 0.9);
+  border-radius: 24px;
+  background: rgba(255, 253, 248, 0.72);
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 18px;
 }
 
 .page-title {
   font-family: var(--font-display);
-  font-size: 38px;
+  font-size: 30px;
   font-weight: 400;
-  color: var(--black);
-  letter-spacing: 0.04em;
-  line-height: 1;
+  color: var(--nav-blue);
+  letter-spacing: 0;
+  line-height: 1.1;
   margin: 0;
+}
+
+.page-desc {
+  margin: 8px 0 0;
+  color: var(--gray3);
+  font-size: 13px;
+  font-weight: 300;
 }
 
 .toolbar {
@@ -439,7 +504,7 @@ async function saveEdit() {
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
   flex: 1;
 }
 
@@ -459,30 +524,37 @@ async function saveEdit() {
   justify-content: flex-end;
 }
 
+.toolbar-search {
+  width: 220px;
+}
+
+.toolbar-select {
+  width: 150px;
+}
+
 .selection-actions {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 10px;
-  background: var(--gray1);
+  min-height: 36px;
+  padding: 0 12px;
+  background: #fff;
   border: 1px solid var(--gray2);
-  border-radius: 2px;
+  border-radius: 14px;
 }
 
 .btn-slide {
   position: relative;
   overflow: hidden;
   z-index: 1;
-  background: linear-gradient(to right, var(--accent) 50%, var(--black) 50%) !important;
-  background-size: 200% 100% !important;
-  background-position: 100% 0 !important;
-  transition: background-position 0.35s var(--ease-out), border-color 0.35s var(--ease-out) !important;
-  border-color: var(--black) !important;
+  background: var(--nav-blue) !important;
+  border-color: var(--nav-blue) !important;
+  transition: transform 0.16s ease, background 0.18s ease, border-color 0.18s ease !important;
 }
 
 .btn-slide:hover {
-  background-position: 0 0 !important;
   border-color: var(--accent) !important;
+  background: var(--accent) !important;
 }
 
 .category-row {
@@ -509,7 +581,7 @@ async function saveEdit() {
   padding: 12px 24px calc(12px + env(safe-area-inset-bottom));
   margin-top: 0;
   border-top: 1px solid var(--gray2);
-  background: rgba(250, 250, 250, 0.94);
+  background: rgba(245, 244, 237, 0.94);
   backdrop-filter: blur(12px);
   flex-shrink: 0;
 }
@@ -539,12 +611,13 @@ async function saveEdit() {
 
 @media (max-width: 768px) {
   .page-container { padding: 20px 8px 148px; }
-  .page-header { padding: 0 0 16px; }
+  .page-header { padding: 18px; }
   .page-title { font-size: 26px; }
   .toolbar { flex-direction: column; align-items: stretch; }
   .toolbar-left, .toolbar-right { flex-wrap: wrap; }
-  .toolbar-right :deep(.el-input),
-  .toolbar-left :deep(.el-select),
+  .toolbar-search,
+  .toolbar-select,
+  .toolbar-right :deep(.el-select),
   .category-row {
     width: 100% !important;
     grid-template-columns: 1fr;

@@ -35,6 +35,7 @@ public class CommentController {
 
     @Operation(summary = "上传评论图片")
     @PostMapping("/upload-image")
+    @Audit(action = "COMMENT_IMAGE_UPLOAD", module = "COMMENT", targetType = "commentImage")
     public Result<String> uploadImage(@RequestParam("file") MultipartFile file) throws IOException {
         if (file.isEmpty()) throw new IllegalArgumentException("文件不能为空");
         String ext = FileUtil.extName(file.getOriginalFilename()).toLowerCase();
@@ -69,7 +70,7 @@ public class CommentController {
 
     @Operation(summary = "添加评论")
     @PostMapping
-    @Audit(action = "COMMENT_ADD", module = "COMMENT", targetType = "comment")
+    @Audit(action = "COMMENT_ADD", module = "COMMENT", targetType = "comment", targetIdResult = "id")
     public Result<Comment> add(@RequestBody Map<String, String> body) {
         return Result.ok(commentService.add(
                 Long.valueOf(body.get("imageId")), body.get("content"), body.get("imagePath")));
