@@ -65,7 +65,7 @@ oauth:
   microsoft:
     client-id: ${MICROSOFT_CLIENT_ID}
     client-secret: ${MICROSOFT_CLIENT_SECRET}
-    redirect-uri: ${MICROSOFT_REDIRECT_URI:https://image-space.app/oauth/microsoft/callback}
+    redirect-uri: ${MICROSOFT_REDIRECT_URI:https://image-space.app/api/user/oauth/microsoft/callback}
     tenant: common
     scope: openid profile email User.Read
     frontend-success-url: ${FRONTEND_MICROSOFT_LOGIN_SUCCESS_URL:}

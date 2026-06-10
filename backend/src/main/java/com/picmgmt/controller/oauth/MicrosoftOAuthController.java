@@ -40,7 +40,7 @@ import java.util.UUID;
 @Tag(name = "Microsoft OAuth2")
 @Slf4j
 @RestController
-@RequestMapping("/oauth/microsoft")
+@RequestMapping("/user/oauth/microsoft")
 @RequiredArgsConstructor
 public class MicrosoftOAuthController {
 

@@ -21,8 +21,8 @@
    - **重定向 URI**:
      - 平台: **Web**
      - URI:
-       - 开发环境: `http://localhost:8088/oauth/microsoft/callback`
-       - 生产环境: `https://你的域名/oauth/microsoft/callback`
+       - 开发环境: `http://localhost:8088/user/oauth/microsoft/callback`
+       - 生产环境: `https://你的域名/api/user/oauth/microsoft/callback`
 
 3. 点击 **注册**
 
@@ -53,7 +53,7 @@
 # Microsoft OAuth2
 MICROSOFT_CLIENT_ID=你的应用程序ID
 MICROSOFT_CLIENT_SECRET=你的客户端密码
-MICROSOFT_REDIRECT_URI=https://你的域名/oauth/microsoft/callback
+MICROSOFT_REDIRECT_URI=https://你的域名/api/user/oauth/microsoft/callback
 
 # 前端回调地址（可选，不配置则自动检测）
 FRONTEND_MICROSOFT_LOGIN_SUCCESS_URL=
@@ -80,13 +80,13 @@ environment:
 ```
 前端点击 "Microsoft 登录"
     ↓
-后端 /oauth/microsoft/login（生成 state，存 Redis）
+后端 /user/oauth/microsoft/login（生成 state，存 Redis）
     ↓
 重定向到 Microsoft 授权页面
     ↓
 用户登录并授权
     ↓
-Microsoft 回调 /oauth/microsoft/callback（携带 code + state）
+Microsoft 回调 /user/oauth/microsoft/callback（携带 code + state）
     ↓
 后端校验 state（防 CSRF）
     ↓
@@ -166,7 +166,7 @@ CREATE TABLE user_oauth_account (
 A: 确保 Azure Portal 中配置的 redirect URI 与 `.env` 中的 `MICROSOFT_REDIRECT_URI` 完全一致，包括协议和端口。
 
 ### Q: Microsoft 登录按钮点击没反应？
-A: 检查浏览器控制台是否有错误，确认后端服务正常运行，且 `/oauth/microsoft/login` 路径已被正确路由。
+A: 检查浏览器控制台是否有错误，确认后端服务正常运行，且 `/user/oauth/microsoft/login` 路径已被正确路由。
 
 ### Q: 登录后提示 "登录失败"？
 A: 检查后端日志，可能是 token 交换失败或用户信息获取失败。确认 `MICROSOFT_CLIENT_ID` 和 `MICROSOFT_CLIENT_SECRET` 配置正确。

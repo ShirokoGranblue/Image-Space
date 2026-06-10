@@ -479,7 +479,7 @@ function handleMicrosoftLogin() {
   try {
     // 传递当前 origin 作为 baseUrl，用于回调后重定向回来
     const baseUrl = encodeURIComponent(window.location.origin)
-    window.location.href = `/api/oauth/microsoft/login?baseUrl=${baseUrl}`
+    window.location.href = `/api/user/oauth/microsoft/login?baseUrl=${baseUrl}`
   } finally {
     // 页面即将跳转，不需要重置 loading 状态
     setTimeout(() => { microsoftLoading.value = false }, 3000)
