@@ -106,6 +106,10 @@
               <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" style="margin-right: 4px;"><path fill="#EA4335" d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114A5.56 5.56 0 0 1 8.35 13c0-3.076 2.488-5.571 5.557-5.571 1.48 0 2.81.579 3.8 1.527l3.056-3.056C18.847 2.057 16.518 1 13.907 1 7.855 1 2.923 5.932 2.923 12s4.932 11 10.984 11c6.305 0 10.485-4.429 10.485-10.667 0-.742-.067-1.428-.19-2.048H12.24Z"/></svg>
               Google
             </button>
+            <button class="oauth-btn" @click="handleMicrosoftLogin" :disabled="microsoftLoading">
+              <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" style="margin-right: 4px;"><path fill="#F25022" d="M11.4 2H2v9.4h9.4V2z"/><path fill="#7FBA00" d="M22 2h-9.4v9.4H22V2z"/><path fill="#00A4EF" d="M11.4 12.6H2V22h9.4v-9.4z"/><path fill="#FFB900" d="M22 12.6h-9.4V22H22v-9.4z"/></svg>
+              Microsoft
+            </button>
           </div>
         </template>
 
@@ -199,6 +203,7 @@ const sendCodeLoading = ref(false)
 const captchaLoading = ref(false)
 const githubLoading = ref(false)
 const googleLoading = ref(false)
+const microsoftLoading = ref(false)
 const turnstileRef = ref(null)
 const turnstileToken = ref('')
 const captchaImage = ref('')
@@ -279,9 +284,30 @@ function startVisAnimation() {
 onMounted(async () => {
   initVisCells()
   startVisAnimation()
-  const oauthCode = new URLSearchParams(window.location.search).get('oauth_code')
-  if (oauthCode) {
+  const params = new URLSearchParams(window.location.search)
+  const oauthCode = params.get('oauth_code')
+  const oauthError = params.get('oauthError')
+
+  // 清理 URL 参数
+  if (oauthCode || oauthError) {
     window.history.replaceState({}, '', '/login')
+  }
+
+  // 处理 OAuth 错误
+  if (oauthError) {
+    const errorMessages = {
+      'oauth_error': 'Microsoft 登录失败',
+      'missing_code': '授权码缺失',
+      'missing_state': '安全验证缺失',
+      'state_invalid': '安全验证已过期',
+      'login_failed': '登录失败，请重试'
+    }
+    ElMessage.error(errorMessages[oauthError] || '登录失败，请重试')
+    return
+  }
+
+  // 处理 OAuth 成功（通过一次性 code 换取 token）
+  if (oauthCode) {
     try {
       const res = await api.post('/user/oauth/exchange', { code: oauthCode })
       userStore.setToken(res.data.satoken)
@@ -411,6 +437,7 @@ function startCountdown() {
 const ALLOWED_OAUTH_DOMAINS = [
   'github.com',
   'accounts.google.com',
+  'login.microsoftonline.com',
 ]
 
 function isSafeOAuthUrl(url) {
@@ -440,6 +467,23 @@ async function handleGoogleLogin() {
     if (!isSafeOAuthUrl(url)) { ElMessage.error('OAuth 地址无效'); return }
     window.location.href = url
   } catch {} finally { googleLoading.value = false }
+}
+
+/**
+ * Microsoft OAuth2 登录
+ * 直接跳转到后端 /oauth/microsoft/login，后端会重定向到 Microsoft 授权页面
+ * 注意：生产环境推荐后端使用 HttpOnly Cookie 传递 token，避免 token 暴露在 URL 中
+ */
+function handleMicrosoftLogin() {
+  microsoftLoading.value = true
+  try {
+    // 传递当前 origin 作为 baseUrl，用于回调后重定向回来
+    const baseUrl = encodeURIComponent(window.location.origin)
+    window.location.href = `/api/oauth/microsoft/login?baseUrl=${baseUrl}`
+  } finally {
+    // 页面即将跳转，不需要重置 loading 状态
+    setTimeout(() => { microsoftLoading.value = false }, 3000)
+  }
 }
 
 function getTurnstileToken() { return turnstileRef.value?.getToken?.() || turnstileToken.value }
@@ -562,7 +606,7 @@ function resetTurnstile() { turnstileToken.value = ''; turnstileRef.value?.reset
 
 .oauth-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 8px;
 }
 
