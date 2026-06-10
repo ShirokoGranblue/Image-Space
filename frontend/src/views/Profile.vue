@@ -3,6 +3,15 @@
     <NavBar />
     <div class="page-container" v-loading="loading">
       <div class="profile-banner" :style="bannerStyle">
+        <div class="banner-grid" v-if="!backgroundDisplayUrl">
+          <div
+            v-for="(cell, i) in bannerCells"
+            :key="i"
+            class="banner-cell"
+            :style="{ background: cell }"
+          ></div>
+        </div>
+        <div class="banner-overlay"></div>
         <div class="banner-edit" v-if="isOwner">
           <el-button size="small" @click="openBackgroundEditor">
             <el-icon><Edit /></el-icon> 编辑背景
@@ -58,19 +67,31 @@
           </el-form>
         </div>
 
-        <div class="profile-meta" v-if="!editing && (user.email || user.phone || user.bio || joinedAt)">
+        <div class="profile-meta" v-if="showProfileMeta">
           <p v-if="user.bio" class="bio">{{ user.bio }}</p>
-          <div class="contact">
+          <div class="contact" v-if="isOwner && (user.email || user.phone)">
             <span v-if="user.email"><el-icon><Message /></el-icon> {{ user.email }}</span>
             <span v-if="user.phone"><el-icon><Phone /></el-icon> {{ user.phone }}</span>
-            <span v-if="joinedAt"><el-icon><Calendar /></el-icon> {{ joinedAt }}</span>
           </div>
+          <span v-if="joinedAt"><el-icon><Calendar /></el-icon> {{ joinedAt }}</span>
         </div>
 
         <div class="profile-stats" v-if="!editing">
-          <div class="stat-item" v-for="item in profileStats" :key="item.label">
-            <strong>{{ item.value }}</strong>
-            <span>{{ item.label }}</span>
+          <div class="stat-item">
+            <strong class="stat-num">{{ animStats.works }}</strong>
+            <span class="stat-label">作品</span>
+          </div>
+          <div class="stat-item">
+            <strong class="stat-num">{{ animStats.likes }}</strong>
+            <span class="stat-label">获赞</span>
+          </div>
+          <div class="stat-item">
+            <strong class="stat-num">{{ animStats.followers }}</strong>
+            <span class="stat-label">关注者</span>
+          </div>
+          <div class="stat-item">
+            <strong class="stat-num">{{ animStats.favorites }}</strong>
+            <span class="stat-label">收藏</span>
           </div>
         </div>
       </div>
@@ -368,12 +389,51 @@ const workImageUuids = computed(() => works.value.map(img => img.uuid).filter(Bo
 const allWorksSelected = computed(() => workImageUuids.value.length > 0 && workImageUuids.value.every(uuid => selectedWorkUuids.value.includes(uuid)))
 const partiallyWorksSelected = computed(() => selectedWorkUuids.value.length > 0 && !allWorksSelected.value)
 const joinedAt = computed(() => formatProfileDate(user.value.createTime || user.value.createdAt || user.value.joinTime || user.value.registerTime))
-const profileStats = computed(() => [
-  { label: '作品', value: workTotal.value || works.value.length },
-  { label: '获赞', value: works.value.reduce((sum, img) => sum + Number(img.likeCount || 0), 0) },
-  { label: '公开', value: works.value.filter(img => img.visibility === 'PUBLIC').length },
-  { label: '分类', value: new Set(works.value.map(img => img.categoryName).filter(Boolean)).size }
-])
+
+const showProfileMeta = computed(() => {
+  if (editing.value) return false
+  const hasContactInfo = isOwner.value && (user.value.email || user.value.phone)
+  return hasContactInfo || user.value.bio || joinedAt.value
+})
+
+const BLUE_TONES = ['#042C53', '#0C447C', '#185FA5', '#378ADD', '#85B7EB']
+const PAPER_TONES = ['#F7F3E8', '#EDE8D8', '#E2DBC8', '#D8D0BA', '#D0C7AB']
+const bannerCells = ref([])
+const animStats = reactive({
+  works: 0,
+  likes: 0,
+  followers: 8,
+  favorites: 17
+})
+
+function initBannerCells() {
+  const combined = [...BLUE_TONES, ...PAPER_TONES]
+  const cells = []
+  for (let i = 0; i < 15; i++) {
+    cells.push(combined[Math.floor(Math.random() * combined.length)])
+  }
+  bannerCells.value = cells
+}
+
+function animateCounts() {
+  const targets = {
+    works: workTotal.value || works.value.length || 0,
+    likes: works.value.reduce((sum, img) => sum + Number(img.likeCount || 0), 0),
+    followers: 8,
+    favorites: 17
+  }
+
+  Object.keys(targets).forEach(key => {
+    const target = targets[key]
+    animStats[key] = 0
+    if (target === 0) return
+    const step = Math.ceil(target / 30)
+    const t = setInterval(() => {
+      animStats[key] = Math.min(animStats[key] + step, target)
+      if (animStats[key] >= target) clearInterval(t)
+    }, 40)
+  })
+}
 
 const form = reactive({ displayName: '', email: '', phone: '', bio: '' })
 const imageEditForm = reactive({
@@ -1228,9 +1288,13 @@ function isGifFile(file) {
   return !!file && (file.type === 'image/gif' || /\.gif$/i.test(file.name || ''))
 }
 
-onMounted(loadProfile)
+onMounted(() => {
+  initBannerCells()
+  loadProfile()
+})
 
 watch(() => route.params.uuid, () => {
+  initBannerCells()
   loadProfile()
 })
 
@@ -1265,6 +1329,8 @@ async function fetchWorks() {
       : await getUserPublicImages(user.value.uuid || route.params.uuid, params)
     works.value = res.data.records || []; workTotal.value = res.data.total || 0
     selectedWorkUuids.value = selectedWorkUuids.value.filter(uuid => works.value.some(img => img.uuid === uuid))
+    
+    animateCounts()
   } catch {}
 }
 
@@ -1437,8 +1503,7 @@ async function handleDeleteAccount() {
   } catch { return }
   try {
     await deleteAccount()
-    localStorage.removeItem('satoken')
-    userStore.userInfo = null
+    userStore.clearToken()
     ElMessage.success('账号已注销')
     router.push('/login')
   } catch {}
@@ -1458,7 +1523,7 @@ async function saveProfile() {
 <style scoped>
 .profile-page {
   min-height: 100vh;
-  background: var(--gray1);
+  background: var(--paper);
 }
 
 .page-container {
@@ -1469,24 +1534,38 @@ async function saveProfile() {
 
 /* ── Banner ── */
 .profile-banner {
-  height: 220px;
-  border-radius: 24px 24px 0 0;
+  height: 180px;
+  background: var(--ink);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  border-radius: 12px 12px 0 0;
+  border: 0.5px solid var(--paper3);
+  border-bottom: none;
   background-size: cover;
   background-position: center;
-  position: relative;
-  border: 1px solid rgba(229, 224, 212, 0.9);
-  overflow: hidden;
 }
 
-.profile-banner::after {
-  content: '';
+.banner-grid {
   position: absolute;
   inset: 0;
-  z-index: 1;
-  background:
-    radial-gradient(circle at 82% 10%, rgba(255, 255, 255, 0.12), transparent 30%),
-    linear-gradient(180deg, rgba(3, 25, 47, 0.08) 0%, rgba(3, 25, 47, 0.36) 100%);
-  pointer-events: none;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 2px;
+  padding: 2px;
+  opacity: .7;
+}
+
+.banner-cell {
+  border-radius: 4px;
+}
+
+.banner-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(4, 44, 83, .9) 0%, transparent 60%);
 }
 
 .banner-edit {
@@ -1522,9 +1601,13 @@ async function saveProfile() {
 
 /* ── Profile Header ── */
 .profile-header {
-  padding: 0 32px 28px;
-  margin-top: -120px;
   position: relative;
+  z-index: 2;
+  padding: 0 24px 20px;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-top: -60px;
 }
 
 .profile-header::before {
@@ -1532,203 +1615,195 @@ async function saveProfile() {
   position: absolute;
   left: 0;
   right: 0;
-  top: 120px;
+  top: 60px;
   bottom: 0;
-  z-index: 0;
-  background: rgba(255, 253, 248, 0.96);
-  border: 1px solid rgba(229, 224, 212, 0.9);
+  z-index: -1;
+  background: var(--paper);
+  border: 0.5px solid var(--paper3);
   border-top: 0;
-  border-radius: 0 0 24px 24px;
-  box-shadow: 0 18px 45px rgba(30, 41, 59, 0.08);
-}
-
-.profile-header > * {
-  position: relative;
-  z-index: 1;
+  border-radius: 0 0 12px 12px;
 }
 
 .avatar-wrap {
   position: relative;
   display: inline-block;
-  margin-top: 0;
+  align-self: flex-start;
 }
 
 .avatar {
-  border: 4px solid #fff;
-  box-shadow: 0 12px 26px rgba(3, 25, 47, 0.13);
+  width: 72px !important;
+  height: 72px !important;
   border-radius: 50%;
+  background: var(--ink3);
+  border: 3px solid var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
 .avatar-upload {
   position: absolute;
-  bottom: 2px;
-  right: -2px;
+  bottom: 0;
+  right: 0;
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
 }
 
 .avatar-upload :deep(.el-button) {
-  background: var(--accent);
-  border: 2px solid var(--white);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--gold2);
   color: #fff;
-  width: 34px;
-  height: 34px;
-  transition: transform 0.2s, background 0.2s;
-}
-
-.avatar-upload :deep(.el-button:hover) {
-  background: var(--accent-hover);
-  transform: scale(1.08);
+  border: 2px solid var(--paper);
+  font-size: 10px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .profile-name-row {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
-  margin-top: 18px;
-  flex-wrap: wrap;
+  justify-content: space-between;
+  margin-top: 14px;
+  width: 100%;
 }
 
 .profile-name-row h2 {
-  font-family: var(--font-display);
-  font-size: 24px;
+  font-family: 'Playfair Display', serif;
+  font-size: 18px;
+  color: var(--ink);
   font-weight: 400;
   margin: 0;
-  color: var(--nav-blue);
-  letter-spacing: 0;
 }
 
-/* Profile action menu */
 .dropdown-trigger {
   display: inline-grid;
   align-items: center;
   justify-content: center;
-  flex: 0 0 36px;
-  width: 36px;
-  min-width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   padding: 0;
-  border: 1px solid var(--gray2);
-  border-radius: 14px;
-  background: #fff;
+  border: 0.5px solid rgba(255, 255, 255, .3);
+  border-radius: 7px;
+  background: var(--ink3);
   cursor: pointer;
-  font-size: 18px;
-  line-height: 1;
-  color: var(--gray3);
-  transition: transform 0.16s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
-  user-select: none;
-  overflow: hidden;
+  font-size: 14px;
+  color: #fff;
+  transition: background .15s;
 }
 
 .dropdown-trigger:hover {
-  border-color: #b8cfe0;
-  background: #f8fbfe;
-  color: var(--accent);
-}
-
-.dropdown-trigger:active {
-  transform: scale(0.98);
-}
-
-.dropdown-trigger .el-icon {
-  display: block;
-  width: 18px;
-  height: 18px;
+  background: var(--ink4);
 }
 
 .bio {
-  color: var(--gray4);
-  margin-bottom: var(--space-sm);
-  line-height: 1.7;
-  font-size: 14px;
+  font-size: 12px;
+  color: var(--ink6);
+  margin-top: 3px;
 }
 
 .contact {
   display: flex;
-  gap: var(--space-lg);
-  color: var(--gray3);
-  font-size: 13px;
+  gap: 14px;
+  margin-top: 6px;
   flex-wrap: wrap;
 }
 
-.contact .el-icon {
-  margin-right: 4px;
-  vertical-align: middle;
+.profile-meta {
+  font-size: 11px;
+  color: var(--ink3);
+  margin-top: 8px;
 }
 
-.profile-edit {
-  margin-top: var(--space-md);
+.profile-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 14px;
 }
 
 .profile-stats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 20px;
+  display: flex;
+  gap: 0;
+  border-bottom: 0.5px solid var(--paper3);
+  background: var(--paper2);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 16px;
 }
 
 .stat-item {
-  min-width: 0;
-  padding: 14px 12px;
-  border: 1px solid var(--gray2);
-  border-radius: 18px;
-  background: var(--gray1);
+  flex: 1;
+  padding: 14px;
   text-align: center;
+  border-right: 0.5px solid var(--paper3);
+  background: transparent;
+  border-radius: 0;
 }
 
-.stat-item strong {
+.stat-item:last-child {
+  border-right: none;
+}
+
+.stat-num {
   display: block;
-  color: var(--nav-blue);
-  font-family: var(--font-display);
-  font-size: 22px;
+  font-family: 'Playfair Display', serif;
+  font-size: 20px;
+  color: var(--ink);
   font-weight: 400;
-  line-height: 1.1;
 }
 
-.stat-item span {
+.stat-label {
   display: block;
-  margin-top: 5px;
-  color: var(--gray3);
-  font-size: 12px;
-  font-weight: 300;
+  font-size: 10px;
+  color: var(--ink3);
+  margin-top: 2px;
+  letter-spacing: .05em;
 }
 
 /* ── Works ── */
 .user-works {
-  margin-top: 36px;
-  padding: 24px;
-  border: 1px solid rgba(229, 224, 212, 0.9);
-  border-radius: 24px;
-  background: rgba(255, 253, 248, 0.74);
+  margin-top: 24px;
+  padding: 0;
+  background: transparent;
+  border: none;
 }
 
 .works-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-md);
-  margin-bottom: var(--space-md);
-  flex-wrap: wrap;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--gray2);
+  margin-bottom: 14px;
+  padding-bottom: 6px;
+  border-bottom: 0.5px solid var(--paper3);
 }
 
 .works-heading h3 {
-  font-family: var(--font-display);
-  font-size: 24px;
+  font-family: 'Playfair Display', serif;
+  font-size: 16px;
+  color: var(--ink);
   font-weight: 400;
-  color: var(--nav-blue);
   margin: 0;
-  letter-spacing: 0;
 }
 
 .works-actions {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
-  padding: 4px 10px;
-  border: 1px solid var(--gray2);
-  border-radius: 14px;
-  background: #fff;
+  font-size: 11px;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.works-actions :deep(.el-checkbox__label) {
+  font-size: 11px;
+  color: var(--ink2);
 }
 
 .category-row {
@@ -1740,14 +1815,14 @@ async function saveProfile() {
 
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
 }
 
 .empty-state {
   text-align: center;
-  color: var(--gray3);
-  padding: var(--space-2xl) 0;
+  color: var(--ink3);
+  padding: var(--space-lg) 0;
 }
 
 .pagination-wrap {
@@ -1755,13 +1830,14 @@ async function saveProfile() {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 90;
+  z-index: 150;
   display: flex;
   justify-content: center;
-  padding: 12px 24px calc(12px + env(safe-area-inset-bottom));
-  border-top: 1px solid var(--gray2);
-  background: rgba(245, 244, 237, 0.94);
-  backdrop-filter: blur(12px);
+  padding: 14px 24px calc(14px + env(safe-area-inset-bottom));
+  margin-top: 0;
+  border-top: 0.5px solid var(--paper3);
+  background: var(--paper2);
+  flex-shrink: 0;
 }
 
 .pagination-wrap :deep(.el-pagination) {
@@ -1771,15 +1847,53 @@ async function saveProfile() {
   gap: 6px;
 }
 
-.upload-hint {
+.pagination-wrap :deep(.el-pager li) {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px !important;
+  border: 0.5px solid var(--paper3) !important;
+  background: var(--paper) !important;
+  color: var(--ink) !important;
   font-size: 12px;
-  color: var(--gray3);
-  margin-top: var(--space-xs);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s;
+  font-family: 'DM Sans', sans-serif;
+  min-width: auto;
 }
 
-/* ── Dialog overrides ── */
-:deep(.profile-dialog) {
-  box-shadow: var(--shadow-dialog);
+.pagination-wrap :deep(.el-pager li.is-active) {
+  background: var(--ink) !important;
+  color: var(--paper) !important;
+  border-color: var(--ink) !important;
+}
+
+.pagination-wrap :deep(.el-pager li:hover:not(.is-active)) {
+  background: #fff !important;
+}
+
+.pagination-wrap :deep(.btn-prev),
+.pagination-wrap :deep(.btn-next) {
+  background: var(--paper) !important;
+  border: 0.5px solid var(--paper3) !important;
+  color: var(--ink) !important;
+  border-radius: 6px !important;
+  height: 28px !important;
+  width: 28px !important;
+  min-width: auto !important;
+}
+
+.pagination-wrap :deep(.btn-prev:hover),
+.pagination-wrap :deep(.btn-next:hover) {
+  background: #fff !important;
+}
+
+.upload-hint {
+  font-size: 12px;
+  color: var(--ink3);
+  margin-top: var(--space-xs);
 }
 
 /* ── Background Editor ── */
@@ -1803,8 +1917,8 @@ async function saveProfile() {
   aspect-ratio: 16 / 9;
   position: relative;
   overflow: hidden;
-  background: var(--gray4);
-  border: 1px solid var(--gray2);
+  background: var(--ink);
+  border: 1px solid var(--paper3);
   border-radius: 2px;
   cursor: move;
   user-select: none;
@@ -1827,12 +1941,12 @@ async function saveProfile() {
 .bg-crop-frame {
   position: absolute;
   z-index: 1;
-  outline: 2px solid rgba(216, 90, 48, 0.8);
+  outline: 2px solid var(--gold2);
   border: 2px solid rgba(255, 255, 255, 0.9);
   border-radius: 2px;
   box-shadow:
-    0 0 0 999px rgba(10, 10, 10, 0.45),
-    0 0 10px rgba(216, 90, 48, 0.2);
+    0 0 0 999px rgba(4, 44, 83, 0.55),
+    0 0 10px rgba(239, 159, 39, 0.2);
   pointer-events: none;
 }
 
@@ -1858,19 +1972,19 @@ async function saveProfile() {
 .bg-preview-side {
   text-align: center;
   padding: 16px 12px;
-  border: 1px solid var(--gray2);
-  border-radius: 2px;
-  background: var(--gray1);
+  border: 0.5px solid var(--paper3);
+  border-radius: 8px;
+  background: var(--paper2);
 }
 
 /* Mini profile card */
 .profile-mini-card {
   width: 200px;
   margin: 0 auto;
-  border-radius: 2px;
+  border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 4px 16px rgba(10, 10, 10, 0.08);
-  border: 1px solid var(--gray2);
+  box-shadow: 0 4px 16px rgba(4, 44, 83, 0.08);
+  border: 0.5px solid var(--paper3);
 }
 
 .profile-mini-banner {
@@ -1910,7 +2024,7 @@ async function saveProfile() {
 .profile-mini-name {
   font-size: 10px;
   font-weight: 600;
-  color: var(--black);
+  color: var(--ink);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1924,7 +2038,7 @@ async function saveProfile() {
   width: 10px;
   height: 10px;
   background: #fff;
-  border: 2px solid var(--accent);
+  border: 2px solid var(--ink3);
   border-radius: 2px;
   transform: translate(-50%, -50%);
   box-shadow: 0 1px 6px rgba(10, 10, 10, 0.12);
@@ -1965,16 +2079,16 @@ async function saveProfile() {
 .avatar-preview-side {
   text-align: center;
   padding: 20px 16px;
-  border: 1px solid var(--gray2);
-  border-radius: 2px;
-  background: var(--gray1);
+  border: 0.5px solid var(--paper3);
+  border-radius: 8px;
+  background: var(--paper2);
 }
 
 .preview-label {
-  font-family: var(--font-display);
+  font-family: 'Playfair Display', serif;
   font-size: 13px;
   font-weight: 400;
-  color: var(--gray4);
+  color: var(--ink);
   margin-bottom: var(--space-md);
 }
 
@@ -1984,9 +2098,9 @@ async function saveProfile() {
   border-radius: 50%;
   overflow: hidden;
   margin: 0 auto var(--space-md);
-  background: var(--gray2);
+  background: var(--paper3);
   position: relative;
-  outline: 2px solid var(--gray2);
+  outline: 2px solid var(--paper2);
 }
 
 .preview-circle-sm {
@@ -1995,9 +2109,9 @@ async function saveProfile() {
   border-radius: 50%;
   overflow: hidden;
   margin: 0 auto;
-  background: var(--gray2);
+  background: var(--paper3);
   position: relative;
-  outline: 2px solid var(--gray2);
+  outline: 2px solid var(--paper2);
 }
 
 .preview-img {
@@ -2013,11 +2127,11 @@ async function saveProfile() {
   margin: 0 auto var(--space-md);
   position: relative;
   overflow: hidden;
-  background: var(--gray4);
+  background: var(--ink);
   user-select: none;
   cursor: move;
   border-radius: 2px;
-  border: 1px solid var(--gray2);
+  border: 1px solid var(--paper3);
 }
 
 .crop-img {
@@ -2030,13 +2144,12 @@ async function saveProfile() {
 .crop-frame {
   position: absolute;
   z-index: 1;
-  outline: 2px solid rgba(216, 90, 48, 0.85);
+  outline: 2px solid var(--gold2);
   outline-offset: 0px;
   border: 2px solid rgba(255, 255, 255, 0.92);
   border-radius: 2px;
   box-shadow:
-    0 0 0 999px rgba(10, 10, 10, 0.4),
-    0 0 12px rgba(216, 90, 48, 0.25);
+    0 0 0 999px rgba(4, 44, 83, 0.5);
   pointer-events: none;
 }
 
@@ -2054,7 +2167,7 @@ async function saveProfile() {
   width: 10px;
   height: 10px;
   background: #fff;
-  border: 2px solid var(--accent);
+  border: 2px solid var(--ink3);
   border-radius: 2px;
   transform: translate(-50%, -50%);
   box-shadow: 0 1px 6px rgba(10, 10, 10, 0.12);
@@ -2084,16 +2197,16 @@ async function saveProfile() {
 }
 
 .slider-label {
-  font-family: var(--font-display);
+  font-family: 'DM Sans', sans-serif;
   font-size: 13px;
-  color: var(--gray4);
+  color: var(--ink2);
   flex-shrink: 0;
   font-weight: 400;
 }
 
 .slider-val {
   font-size: 12px;
-  color: var(--gray4);
+  color: var(--ink2);
   min-width: 42px;
   text-align: right;
   font-weight: 500;
@@ -2105,11 +2218,11 @@ async function saveProfile() {
 }
 
 /* ── Responsive ── */
-@media (max-width: 720px) {
+@media (max-width: 768px) {
   .page-container { padding: 16px var(--space-md) 148px; }
-  .profile-banner { height: 218px; }
-  .profile-header { padding: 0 20px 24px; margin-top: -120px; }
-  .profile-header::before { top: 120px; }
+  .profile-banner { height: 140px; }
+  .profile-header { padding: 0 20px 20px; margin-top: -40px; }
+  .profile-header::before { top: 40px; }
   .profile-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .avatar-wrap { margin-top: 0; }
   .works-heading { align-items: flex-start; }

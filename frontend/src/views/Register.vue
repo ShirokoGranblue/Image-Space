@@ -1,13 +1,13 @@
 <template>
   <div class="auth-page">
-    <!-- Left: Form -->
-    <div class="auth-form-side">
-      <div class="auth-form-wrap">
-        <router-link to="/home" class="auth-logo">IMAGESPACE</router-link>
-        <h1 class="auth-title">创建账号</h1>
+    <div class="login-wrap">
+      <!-- Left side panel -->
+      <div class="login-panel">
+        <router-link to="/home" class="login-logo">IMAGESPACE</router-link>
+        <div class="login-heading">创建<br>账号</div>
 
-        <el-form :model="form" :rules="rules" ref="formRef" label-position="top" class="auth-form" @submit.prevent="handleRegister">
-          <el-form-item label="用户名" prop="username">
+        <el-form :model="form" :rules="rules" ref="formRef" label-position="top" class="auth-form register-form" @submit.prevent="handleRegister">
+          <el-form-item class="full-field" label="用户名" prop="username">
             <el-input v-model="form.username" placeholder="你的唯一用户名" size="large" />
           </el-form-item>
           <el-form-item label="密码" prop="password">
@@ -24,40 +24,37 @@
             <el-input v-model="form.phone" placeholder="选填" maxlength="20" size="large" />
           </el-form-item>
           <TurnstileWidget
+            class="register-turnstile full-field"
             ref="turnstileRef"
             @verified="turnstileToken = $event"
             @expired="turnstileToken = ''"
             @error="turnstileToken = ''"
           />
-          <el-form-item>
-            <el-button type="primary" size="large" class="auth-submit" @click="handleRegister" :loading="loading">
+          <el-form-item class="full-field compact-submit">
+            <el-button type="primary" size="large" class="login-btn" @click="handleRegister" :loading="loading">
               创建账号
             </el-button>
           </el-form-item>
         </el-form>
 
-        <p class="auth-footer">
-          已有账号？<router-link to="/login">返回登录</router-link>
-        </p>
+        <div class="login-footer">
+          已有账号？<router-link to="/login">返回登录 ↗</router-link>
+        </div>
       </div>
-    </div>
 
-    <!-- Right: Diagonal gallery -->
-    <div class="auth-gallery-side">
-      <div class="gallery-outer">
-        <div class="gallery-inner">
-          <div class="gallery-track" :style="trackStyle">
-            <div class="gallery-grid" v-for="copy in 2" :key="copy">
-              <img
-                v-for="img in galleryImages"
-                :key="`${copy}-${img.id}`"
-                :src="getImageDownloadUrl(img)"
-                :alt="img.imageName"
-                class="gallery-img"
-                loading="lazy"
-              />
-            </div>
-          </div>
+      <!-- Right side visual -->
+      <div class="login-visual">
+        <div class="vis-grid">
+          <div
+            v-for="(cell, i) in visCells"
+            :key="i"
+            class="vis-cell"
+            :style="{ background: cell.color, opacity: cell.opacity }"
+          ></div>
+        </div>
+        <div style="position:relative;z-index:2;">
+          <div class="vis-quote">记录光影，<br>分享瞬间。</div>
+          <div class="vis-sub">图片社区 · 私人图床 · 创作者空间</div>
         </div>
       </div>
     </div>
@@ -65,20 +62,21 @@
 </template>
 
 <script setup>
-import { reactive, ref, onMounted, computed } from 'vue'
+import { reactive, ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { register } from '../api/user'
-import { getImageList } from '../api/image'
 import { ElMessage } from 'element-plus'
 import TurnstileWidget from '../components/TurnstileWidget.vue'
-import { getImageDownloadUrl } from '../utils/imageRequests'
 
 const router = useRouter()
 const formRef = ref(null)
 const loading = ref(false)
 const turnstileRef = ref(null)
 const turnstileToken = ref('')
-const galleryImages = ref([])
+
+const BLUE_TONES = ['#042C53', '#0C447C', '#185FA5', '#378ADD', '#85B7EB']
+const visCells = ref([])
+let visInterval = null
 
 const form = reactive({
   username: '',
@@ -87,10 +85,6 @@ const form = reactive({
   email: '',
   phone: ''
 })
-
-const trackStyle = computed(() => ({
-  animationDuration: `${Math.max(60, galleryImages.value.length * 3)}s`
-}))
 
 const validateConfirmPassword = (rule, value, callback) => {
   if (value !== form.password) {
@@ -115,11 +109,33 @@ const rules = {
   ]
 }
 
-onMounted(async () => {
-  try {
-    const res = await getImageList({ page: 1, limit: 30, visibility: 'PUBLIC' })
-    galleryImages.value = (res.data?.records || []).filter(img => getImageDownloadUrl(img))
-  } catch {}
+function initVisCells() {
+  const cells = []
+  for (let i = 0; i < 12; i++) {
+    cells.push({
+      color: BLUE_TONES[Math.floor(Math.random() * BLUE_TONES.length)],
+      opacity: Math.random() * 0.5 + 0.3
+    })
+  }
+  visCells.value = cells
+}
+
+function startVisAnimation() {
+  visInterval = setInterval(() => {
+    if (visCells.value.length > 0) {
+      const idx = Math.floor(Math.random() * visCells.value.length)
+      visCells.value[idx].opacity = (Math.random() * 0.5 + 0.3).toFixed(2)
+    }
+  }, 600)
+}
+
+onMounted(() => {
+  initVisCells()
+  startVisAnimation()
+})
+
+onUnmounted(() => {
+  if (visInterval) window.clearInterval(visInterval)
 })
 
 async function handleRegister() {
@@ -130,7 +146,8 @@ async function handleRegister() {
 
   loading.value = true
   try {
-    await register({ ...form, turnstileToken: token })
+    const { confirmPassword, ...payload } = form
+    await register({ ...payload, turnstileToken: token })
     ElMessage.success('注册成功，请登录')
     router.push('/login')
   } catch {} finally {
@@ -151,136 +168,203 @@ function resetTurnstile() {
 
 <style scoped>
 .auth-page {
-  display: flex;
   min-height: 100vh;
   min-height: 100dvh;
-}
-
-.auth-form-side {
-  width: 42%;
-  max-width: 500px;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 34px 24px;
+  background: var(--paper);
+}
+
+.login-wrap {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  width: min(100%, 1000px);
+  min-height: 580px;
+  background: var(--paper);
+  border: 0.5px solid var(--paper3);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 18px 45px rgba(4, 44, 83, 0.08);
+}
+
+.login-panel {
+  background: var(--paper);
   padding: 48px 40px;
-  background: var(--white);
-  overflow-y: auto;
+  border-right: 0.5px solid var(--paper3);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
-.auth-form-wrap {
-  width: 100%;
-  max-width: 380px;
-  animation: fadeUp 0.5s var(--ease-out);
-}
-
-.auth-logo {
-  font-family: var(--font-display);
-  font-size: 26px;
-  letter-spacing: 0.05em;
-  color: var(--black);
+.login-logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 14px;
+  color: var(--ink);
+  letter-spacing: .1em;
+  margin-bottom: 32px;
   text-decoration: none;
+  font-weight: 500;
+  display: inline-block;
 }
 
-.auth-title {
-  font-family: var(--font-display);
-  font-size: 32px;
+.login-logo:hover {
+  opacity: 0.8;
+}
+
+.login-heading {
+  font-family: 'Playfair Display', serif;
+  font-size: 28px;
   font-weight: 400;
-  color: var(--black);
-  margin: 4px 0 32px;
-  letter-spacing: 0.02em;
+  color: var(--ink);
+  line-height: 1.2;
+  margin-bottom: 28px;
 }
 
-.auth-form { margin-top: 0; }
+.login-btn {
+  width: 100%;
+  height: 42px;
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: background .15s, transform .1s;
+  letter-spacing: .03em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-btn:hover {
+  background: var(--ink2);
+}
+
+.login-btn:active {
+  transform: scale(.98);
+}
+
+.login-footer {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 11px;
+  color: var(--ink3);
+}
+
+.login-footer a {
+  color: var(--ink);
+  cursor: pointer;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.login-visual {
+  background: var(--ink);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 32px;
+}
+
+.vis-grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 3px;
+  padding: 3px;
+}
+
+.vis-cell {
+  border-radius: 6px;
+  transition: opacity .6s;
+}
+
+.vis-quote {
+  position: relative;
+  z-index: 2;
+  font-family: 'Playfair Display', serif;
+  font-size: 18px;
+  color: rgba(255, 255, 255, .85);
+  line-height: 1.5;
+}
+
+.vis-sub {
+  font-size: 11px;
+  color: var(--ink5);
+  margin-top: 8px;
+}
+
+/* Form inputs & element-plus override styles */
+.auth-form :deep(.el-form-item) {
+  margin-bottom: 16px;
+}
 
 .auth-form :deep(.el-form-item__label) {
   font-size: 11px;
-  font-weight: 600;
-  color: var(--gray3) !important;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding-bottom: 4px;
+  color: var(--ink2) !important;
+  letter-spacing: .05em;
+  margin-bottom: 6px;
+  padding-bottom: 0;
 }
 
-.auth-submit {
-  width: 100%;
-  height: 46px;
+.auth-form :deep(.el-input__wrapper) {
+  background: var(--paper2) !important;
+  border: 0.5px solid var(--paper3) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  padding: 0 12px;
+  height: 40px;
+  transition: border-color .15s, background .15s;
+}
+
+.auth-form :deep(.el-input__wrapper.is-focus) {
+  border-color: var(--ink4) !important;
+  background: #fff !important;
+}
+
+.auth-form :deep(.el-input__inner) {
+  font-family: 'DM Sans', sans-serif;
   font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  margin-top: 4px;
+  color: var(--ink) !important;
 }
 
-.auth-footer {
-  text-align: center;
-  color: var(--gray3);
-  font-size: 13px;
-  margin-top: 24px;
-}
-.auth-footer a {
-  color: var(--black);
-  font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-/* Right: Diagonal gallery */
-.auth-gallery-side {
-  width: 58%;
-  position: relative;
-  overflow: hidden;
-  background: var(--black);
-}
-.gallery-outer {
-  position: absolute;
-  inset: -10%;
-  overflow: hidden;
-}
-.gallery-inner {
-  position: absolute;
-  inset: -20%;
-  transform: rotate(12deg);
-}
-.gallery-track {
-  animation: scrollDiagonal 80s linear infinite;
-}
-.gallery-grid {
+.register-form {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  padding: 8px;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
 }
-.gallery-img {
-  width: 100%;
-  aspect-ratio: 1;
-  object-fit: cover;
-  filter: grayscale(100%);
-  transition: filter 0.5s ease;
-}
-.gallery-img:hover { filter: grayscale(0%); }
 
-@keyframes scrollDiagonal {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-50%); }
+.register-form :deep(.full-field),
+.register-form .register-turnstile {
+  grid-column: 1 / -1;
 }
 
 @media (max-width: 768px) {
-  .auth-page { flex-direction: column; }
-  .auth-gallery-side {
+  .login-wrap {
+    grid-template-columns: 1fr;
+    min-height: auto;
     width: 100%;
-    height: 160px;
-    order: 1;
-    border-left: none;
-    border-bottom: 1px solid var(--gray2);
   }
-  .gallery-outer { inset: -30%; }
-  .gallery-inner { inset: -40%; transform: rotate(12deg); }
-  .gallery-grid { grid-template-columns: repeat(6, 1fr); gap: 4px; }
-  .auth-form-side {
-    width: 100%;
-    max-width: none;
-    order: 2;
-    padding: 28px 24px;
+  .login-panel {
+    border-right: none;
+    border-bottom: 0.5px solid var(--paper3);
+    padding: 32px 24px;
+  }
+  .login-visual {
+    height: 180px;
+    padding: 24px;
+  }
+  .register-form {
+    grid-template-columns: 1fr;
+    gap: 0;
   }
 }
 </style>

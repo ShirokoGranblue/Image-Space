@@ -3,9 +3,12 @@ package com.picmgmt.cache;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -119,9 +122,18 @@ public class RedisCacheService implements CacheService {
 
     @Override
     public void evictByPattern(String pattern) {
-        Set<String> keys = redisTemplate.keys(pattern);
-        if (keys != null && !keys.isEmpty()) {
-            redisTemplate.delete(keys);
+        try (var cursor = redisTemplate.scan(ScanOptions.scanOptions().match(pattern).count(100).build())) {
+            List<String> keys = new java.util.ArrayList<>();
+            while (cursor.hasNext()) {
+                keys.add(cursor.next());
+                if (keys.size() >= 100) {
+                    redisTemplate.delete(keys);
+                    keys.clear();
+                }
+            }
+            if (!keys.isEmpty()) {
+                redisTemplate.delete(keys);
+            }
         }
         caffeineLocalCache.evictByPattern(pattern);
     }

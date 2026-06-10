@@ -22,7 +22,7 @@ const props = defineProps({
   },
   sitekey: {
     type: String,
-    default: import.meta.env.VITE_TURNSTILE_SITE_KEY || '0x4AAAAAADXRE_jtv9_OBFRo'
+    default: import.meta.env.VITE_TURNSTILE_SITE_KEY || ''
   }
 })
 
@@ -55,6 +55,10 @@ function loadTurnstileScript() {
 }
 
 async function renderWidget() {
+  if (!props.sitekey) {
+    loadFailed.value = true
+    return
+  }
   loading.value = true
   loadFailed.value = false
   await loadTurnstileScript()

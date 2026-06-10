@@ -23,12 +23,14 @@ import com.picmgmt.service.EmailService;
 import com.picmgmt.service.UserService;
 import com.picmgmt.vo.UserVO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
@@ -40,6 +42,7 @@ public class UserServiceImpl implements UserService {
     private final CaptchaService captchaService;
     private final UserRoleMapper userRoleMapper;
     private final BloomFilterService bloomFilterService;
+    private final com.picmgmt.storage.StorageService storageService;
 
     @Override
     public UserVO register(RegisterDTO dto) {
@@ -220,6 +223,9 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private static final int MAX_CODE_ATTEMPTS = 5;
+
     @Override
     public void sendCode(String email, String captchaId, String captchaCode) {
         User user = userMapper.selectOne(
@@ -231,18 +237,20 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException(ErrorCode.USER_DELETED);
         }
         String redisKey = "code:login:" + email;
+        String attemptsKey = "code:attempts:" + email;
         if (!redisCacheService.setIfAbsent(redisKey, "pending", Duration.ofSeconds(60))) {
             throw new BusinessException(ErrorCode.CODE_TOO_FREQUENT);
         }
         captchaService.verify(captchaId, captchaCode);
-        String code = String.format("%06d", ThreadLocalRandom.current().nextInt(1000000));
+        String code = String.format("%06d", SECURE_RANDOM.nextInt(1000000));
         try {
             emailService.sendVerificationCode(email, code);
         } catch (Exception e) {
             redisCacheService.evict(redisKey);
             throw new BusinessException(ErrorCode.CODE_SEND_FAILED, e.getMessage());
         }
-        redisCacheService.put(redisKey, code, Duration.ofSeconds(60));
+        redisCacheService.put(redisKey, code, Duration.ofSeconds(300));
+        redisCacheService.put(attemptsKey, 0, Duration.ofSeconds(300));
     }
 
     @Override
@@ -257,11 +265,18 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException(ErrorCode.USER_DELETED);
         }
         String redisKey = "code:login:" + email;
+        String attemptsKey = "code:attempts:" + email;
+        Integer attempts = redisCacheService.get(attemptsKey, Integer.class).orElse(0);
+        if (attempts >= MAX_CODE_ATTEMPTS) {
+            throw new BusinessException(ErrorCode.CODE_INVALID, "验证码尝试次数过多，请重新获取");
+        }
         String storedCode = redisCacheService.get(redisKey, String.class).orElse(null);
         if (storedCode == null || !storedCode.equals(dto.getCode().trim())) {
+            redisCacheService.put(attemptsKey, attempts + 1, Duration.ofSeconds(300));
             throw new BusinessException(ErrorCode.CODE_INVALID);
         }
         redisCacheService.evict(redisKey);
+        redisCacheService.evict(attemptsKey);
         StpUtil.login(user.getId());
         return StpUtil.getTokenValue();
     }
@@ -270,6 +285,17 @@ public class UserServiceImpl implements UserService {
     public void deleteAccount(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        // Clean up storage files
+        try {
+            if (user.getAvatarKey() != null && !user.getAvatarKey().isBlank()) {
+                storageService.delete("avatars", user.getAvatarKey());
+            }
+            if (user.getBackgroundKey() != null && !user.getBackgroundKey().isBlank()) {
+                storageService.delete("backgrounds", user.getBackgroundKey());
+            }
+        } catch (Exception e) {
+            log.warn("Failed to clean up storage files for user {}: {}", userId, e.getMessage());
+        }
         userMapper.update(null, new LambdaUpdateWrapper<User>()
                 .eq(User::getId, userId)
                 .set(User::getDeleted, 1)

@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 @Aspect
@@ -450,23 +451,34 @@ public class AuditAspect {
         return null;
     }
 
+    private static final Set<String> TRUSTED_PROXY_PREFIXES = Set.of(
+            "127.0.0.1", "10.", "172.16.", "172.17.", "172.18.", "172.19.",
+            "172.20.", "172.21.", "172.22.", "172.23.", "172.24.", "172.25.",
+            "172.26.", "172.27.", "172.28.", "172.29.", "172.30.", "172.31.",
+            "192.168.", "::1"
+    );
+
     private String clientIp(HttpServletRequest request) {
         if (request == null) {
             return null;
         }
-        String cfIp = request.getHeader("CF-Connecting-IP");
-        if (cfIp != null && !cfIp.isBlank()) {
-            return cfIp.trim();
+        String remoteAddr = request.getRemoteAddr();
+        boolean fromTrustedProxy = TRUSTED_PROXY_PREFIXES.stream().anyMatch(remoteAddr::startsWith);
+        if (fromTrustedProxy) {
+            String cfIp = request.getHeader("CF-Connecting-IP");
+            if (cfIp != null && !cfIp.isBlank()) {
+                return cfIp.trim();
+            }
+            String forwardedFor = request.getHeader("X-Forwarded-For");
+            if (forwardedFor != null && !forwardedFor.isBlank()) {
+                return forwardedFor.split(",")[0].trim();
+            }
+            String realIp = request.getHeader("X-Real-IP");
+            if (realIp != null && !realIp.isBlank()) {
+                return realIp.trim();
+            }
         }
-        String forwardedFor = request.getHeader("X-Forwarded-For");
-        if (forwardedFor != null && !forwardedFor.isBlank()) {
-            return forwardedFor.split(",")[0].trim();
-        }
-        String realIp = request.getHeader("X-Real-IP");
-        if (realIp != null && !realIp.isBlank()) {
-            return realIp.trim();
-        }
-        return request.getRemoteAddr();
+        return remoteAddr;
     }
 
     private String firstNonBlank(String... values) {

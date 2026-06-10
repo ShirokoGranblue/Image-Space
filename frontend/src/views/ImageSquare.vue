@@ -2,88 +2,135 @@
   <div class="square-page">
     <NavBar />
     <div class="page-container">
-      <header class="page-header reveal">
-        <div>
-          <h1 class="page-title">Square</h1>
-          <p class="page-desc">浏览发现各种风格创作</p>
-        </div>
-        <div class="square-toolbar">
+      
+      <!-- Redesigned sq-hero -->
+      <header class="sq-hero reveal">
+        <h1 class="sq-hero-title">Square</h1>
+        <p class="sq-hero-sub">浏览社区公开作品，用标签发现同风格创作</p>
+        <div class="sq-search-bar">
           <el-input
             v-model="query.keyword"
-            placeholder="输入图片名称"
+            placeholder="输入图片名称…"
             clearable
             @clear="onFilterChange"
             @keyup.enter="onFilterChange"
-            class="square-search"
+            class="sq-search-el"
           >
             <template #prefix>
               <el-icon><Search /></el-icon>
             </template>
           </el-input>
+          
           <el-select
             v-model="categoryFilter"
             clearable
             placeholder="分类筛选"
-            class="square-category"
+            class="sq-category-el"
           >
             <el-option v-for="cat in categoryOptions" :key="cat" :label="cat" :value="cat" />
           </el-select>
-          <div class="mode-tabs" aria-label="排序方式">
-            <button type="button" :class="{ active: viewMode === 'latest' }" @click="setViewMode('latest')">最新</button>
-            <button type="button" :class="{ active: viewMode === 'hot' }" @click="setViewMode('hot')">最热</button>
-            <button type="button" :class="{ active: viewMode === 'featured' }" @click="setViewMode('featured')">精选</button>
-          </div>
+
+          <select class="sq-sort" v-model="viewModeSelect">
+            <option value="featured">排序：精选</option>
+            <option value="latest">排序：最新</option>
+            <option value="hot">排序：最热</option>
+          </select>
         </div>
       </header>
 
-      <div class="tag-row" v-if="tagOptions.length">
-        <button
-          type="button"
-          class="tag-chip"
-          :class="{ active: query.tags.length === 0 }"
-          @click="setTag('')"
-        >
-          全部
-        </button>
-        <button
-          v-for="tag in tagOptions"
-          :key="tag"
-          type="button"
-          class="tag-chip"
-          :class="{ active: query.tags.includes(tag) }"
-          @click="setTag(tag)"
-        >
-          {{ tag }}
-        </button>
-      </div>
-
-      <div v-if="loading" class="empty-state">
-        <div class="skeleton-grid">
-          <div class="skeleton" v-for="n in 6" :key="n" style="aspect-ratio:1;"></div>
-        </div>
-      </div>
-
-      <div v-else-if="displayedImages.length === 0" class="empty-state">
-        <el-icon><PictureFilled /></el-icon>
-        <p>暂时没有内容</p>
-      </div>
-
-      <div v-else class="reveal visible square-results">
-        <div class="card-grid">
-          <div v-for="(img, idx) in displayedImages" :key="img.id" class="stagger-item" :style="{ animationDelay: `${idx * 0.06}s` }">
-            <ImageCard
-              :image="img"
-              variant="square"
-              open-mode="emit"
-              @view="openDrawer"
-              @like="handleLike"
-              @favorite="handleFavorite"
-            />
+      <!-- Redesigned sq-body (Split columns on desktop) -->
+      <div class="sq-body">
+        
+        <!-- Main gallery column -->
+        <main class="sq-main">
+          <!-- Horizontal Sort Pills (Category tags) -->
+          <div class="sq-sort-row">
+            <button
+              type="button"
+              class="sort-pill"
+              :class="{ act: !categoryFilter }"
+              @click="categoryFilter = ''"
+            >
+              全部
+            </button>
+            <button
+              v-for="cat in categoryOptions"
+              :key="cat"
+              type="button"
+              class="sort-pill"
+              :class="{ act: categoryFilter === cat }"
+              @click="categoryFilter = cat"
+            >
+              {{ cat }}
+            </button>
           </div>
-        </div>
-      </div>
 
+          <div v-if="loading" class="empty-state">
+            <div class="skeleton-grid">
+              <div class="skeleton" v-for="n in 6" :key="n" style="aspect-ratio:1;"></div>
+            </div>
+          </div>
+
+          <div v-else-if="displayedImages.length === 0" class="empty-state">
+            <el-icon><PictureFilled /></el-icon>
+            <p>暂时没有内容</p>
+          </div>
+
+          <div v-else class="reveal visible square-results">
+            <div class="card-grid">
+              <div v-for="(img, idx) in displayedImages" :key="img.id" class="stagger-item" :style="{ animationDelay: `${idx * 0.06}s` }">
+                <ImageCard
+                  :image="img"
+                  variant="square"
+                  open-mode="emit"
+                  @view="openDrawer"
+                  @like="handleLike"
+                  @favorite="handleFavorite"
+                />
+              </div>
+            </div>
+          </div>
+        </main>
+
+        <!-- Right Sidebar (Tags and Creators) -->
+        <aside class="sq-sidebar">
+          <div class="ss-head">热门标签</div>
+          <div class="tag-cloud" v-if="tagOptions.length">
+            <span
+              v-for="tag in tagOptions"
+              :key="tag"
+              class="sq-tag"
+              :class="{ active: query.tags.includes(tag) }"
+              @click="setTag(tag)"
+            >
+              {{ tag }}
+            </span>
+          </div>
+          <div class="tag-cloud" v-else>
+            <span class="sq-tag-empty">暂无标签</span>
+          </div>
+
+          <div class="ss-head" style="margin-top: 24px;">活跃创作者</div>
+          <div class="sq-creators">
+            <div
+              v-for="c in activeCreators"
+              :key="c.username"
+              class="sq-user-row"
+              @click="goCreatorProfile(c.uuidOrId)"
+            >
+              <div class="su-av" :style="{ background: c.avatarColor }">
+                {{ (c.displayName || c.username || '?').charAt(0).toUpperCase() }}
+              </div>
+              <span class="su-name">{{ c.displayName || c.username }}</span>
+              <span class="su-cnt">{{ c.likeCount }} 赞</span>
+            </div>
+          </div>
+        </aside>
+
+      </div>
     </div>
+
+    <!-- Teleport Pagination -->
     <Teleport to="body">
       <div class="pagination-wrap" v-if="total > 0">
         <el-pagination
@@ -98,6 +145,8 @@
         />
       </div>
     </Teleport>
+
+    <!-- Detail Drawer -->
     <transition name="drawer-slide">
       <aside class="image-drawer" v-if="drawerVisible">
         <button class="drawer-close" type="button" @click="drawerVisible = false" aria-label="关闭">
@@ -165,6 +214,8 @@ const query = reactive({
   randomSeed: createRandomSeed()
 })
 
+const BLUE_TONES = ['#042C53', '#0C447C', '#185FA5', '#378ADD', '#85B7EB']
+
 const categoryOptions = computed(() => {
   const categories = new Set()
   for (const image of images.value) {
@@ -194,6 +245,36 @@ const displayedImages = computed(() => {
     list = [...list].sort((a, b) => Number(b.likeCount || 0) - Number(a.likeCount || 0))
   }
   return list
+})
+
+const activeCreators = computed(() => {
+  const map = {}
+  for (const img of images.value) {
+    const username = img.username || 'unknown'
+    const uuidOrId = img.userUuid || img.userId
+    if (!map[username] && uuidOrId) {
+      map[username] = {
+        username,
+        displayName: img.displayName || img.username,
+        uuidOrId,
+        likeCount: 0,
+        avatarColor: BLUE_TONES[Math.floor(Math.random() * BLUE_TONES.length)]
+      }
+    }
+    if (map[username]) {
+      map[username].likeCount += Number(img.likeCount || 0)
+    }
+  }
+  return Object.values(map).sort((a, b) => b.likeCount - a.likeCount).slice(0, 5)
+})
+
+const viewModeSelect = computed({
+  get() {
+    return viewMode.value
+  },
+  set(val) {
+    setViewMode(val)
+  }
 })
 
 const drawerImageSrc = computed(() => getImageDownloadUrl(activeImage.value))
@@ -263,12 +344,18 @@ async function handleLike(image) {
 function handleFavorite() {
   ElMessage.info('当前项目未接入收藏接口')
 }
+
+function goCreatorProfile(uuidOrId) {
+  if (uuidOrId) {
+    router.push(`/profile/${uuidOrId}`)
+  }
+}
 </script>
 
 <style scoped>
 .square-page {
   min-height: 100vh;
-  background: var(--gray1);
+  background: var(--paper);
   display: flex;
   flex-direction: column;
 }
@@ -280,122 +367,247 @@ function handleFavorite() {
   padding-bottom: 112px;
 }
 
-.page-header {
-  padding: 22px;
-  margin-bottom: 14px;
-  border: 1px solid rgba(229, 224, 212, 0.9);
-  border-radius: 24px;
-  background: rgba(255, 253, 248, 0.72);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 18px;
-  flex-wrap: wrap;
+.sq-hero {
+  background: var(--ink);
+  padding: 28px 24px 20px;
+  border-bottom: 0.5px solid var(--ink2);
+  margin-top: 56px; /* Space under fixed navbar */
 }
 
-.page-title {
-  font-family: var(--font-display);
-  font-size: 30px;
-  font-weight: 400;
-  color: var(--nav-blue);
-  letter-spacing: 0;
-  line-height: 1.1;
-  margin: 0;
-}
-
-.page-desc {
-  font-size: 14px;
-  color: var(--gray3);
-  margin-top: 6px;
-  font-weight: 300;
-}
-
-.square-toolbar {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  flex: 1;
-  justify-content: flex-end;
-}
-
-.square-search { width: 220px; }
-.square-category { width: 150px; }
-
-.mode-tabs {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: 40px;
-  padding: 4px;
-  border-radius: 999px;
-  background: #fff;
-  border: 1px solid var(--gray2);
-}
-
-.mode-tabs button,
-.tag-chip {
-  border: 0;
-  background: transparent;
-  color: var(--gray3);
-  font-family: var(--font-body);
-  font-size: 13px;
-  font-weight: 300;
-  cursor: pointer;
-  transition: color 0.18s ease, background 0.18s ease, transform 0.16s ease;
-}
-
-.mode-tabs button {
-  height: 30px;
-  padding: 0 12px;
-  border-radius: 999px;
-}
-
-.mode-tabs button:hover,
-.mode-tabs button.active,
-.tag-chip:hover,
-.tag-chip.active {
+.sq-hero-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
   color: #fff;
-  background: var(--nav-blue);
+  font-weight: 400;
+  margin-bottom: 4px;
 }
 
-.mode-tabs button:active,
-.tag-chip:active {
-  transform: scale(0.98);
+.sq-hero-sub {
+  font-size: 12px;
+  color: var(--ink5);
+  font-family: 'DM Sans', sans-serif;
 }
 
-.tag-row {
+.sq-search-bar {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-top: 16px;
   flex-wrap: wrap;
-  margin: 0 0 18px;
 }
 
-.tag-chip {
-  min-height: 34px;
-  padding: 0 13px;
-  border-radius: 999px;
-  border: 1px solid var(--gray2);
-  background: #fff;
+.sq-search-el {
+  flex: 1;
+  min-width: 200px;
 }
 
-.square-results,
-.card-grid { flex: 1; }
+.sq-search-el :deep(.el-input__wrapper) {
+  background: rgba(255, 255, 255, .1) !important;
+  border: 0.5px solid rgba(255, 255, 255, .2) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  height: 36px;
+  padding: 0 12px;
+  transition: background .15s, border-color .15s;
+}
+
+.sq-search-el :deep(.el-input__wrapper.is-focus) {
+  background: rgba(255, 255, 255, .18) !important;
+  border-color: var(--ink5) !important;
+}
+
+.sq-search-el :deep(.el-input__inner) {
+  color: #fff !important;
+  font-size: 12px;
+}
+
+.sq-search-el :deep(.el-input__inner::placeholder) {
+  color: var(--ink6) !important;
+}
+
+.sq-category-el {
+  width: 160px;
+}
+
+.sq-category-el :deep(.el-input__wrapper) {
+  background: rgba(255, 255, 255, .08) !important;
+  border: 0.5px solid rgba(255, 255, 255, .15) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  height: 36px;
+  padding: 0 10px;
+}
+
+.sq-category-el :deep(.el-input__inner) {
+  color: #fff !important;
+  font-size: 11px;
+}
+
+.sq-sort {
+  height: 36px;
+  background: rgba(255, 255, 255, .08);
+  border: 0.5px solid rgba(255, 255, 255, .15);
+  border-radius: 8px;
+  padding: 0 10px;
+  font-size: 11px;
+  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  outline: none;
+  cursor: pointer;
+  width: 140px;
+}
+
+.sq-sort option {
+  background: var(--ink);
+  color: #fff;
+}
+
+.sq-body {
+  display: grid;
+  grid-template-columns: 1fr 220px;
+  flex: 1;
+}
+
+.sq-main {
+  padding: 18px;
+}
+
+.sq-sort-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.sort-pill {
+  font-size: 11px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 0.5px solid var(--paper3);
+  background: var(--paper);
+  color: var(--ink2);
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all .15s;
+}
+
+.sort-pill.act {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+
+.sort-pill:hover:not(.act) {
+  background: var(--paper2);
+}
+
+.sq-sidebar {
+  border-left: 0.5px solid var(--paper3);
+  padding: 16px 14px;
+  background: var(--paper);
+}
+
+.ss-head {
+  font-size: 10px;
+  letter-spacing: .08em;
+  color: var(--ink3);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.tag-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 16px;
+}
+
+.sq-tag {
+  font-size: 10px;
+  padding: 3px 9px;
+  border-radius: 12px;
+  background: var(--paper2);
+  color: var(--ink2);
+  border: 0.5px solid var(--paper3);
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+
+.sq-tag:hover,
+.sq-tag.active {
+  background: var(--ink7);
+  border-color: var(--ink4);
+  color: var(--ink);
+}
+
+.sq-tag-empty {
+  font-size: 11px;
+  color: var(--ink5);
+  font-style: italic;
+}
+
+.sq-creators {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sq-user-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 4px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background .15s;
+}
+
+.sq-user-row:hover {
+  background: var(--paper2);
+}
+
+.su-av {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 500;
+  flex-shrink: 0;
+  color: #fff;
+}
+
+.su-name {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.su-cnt {
+  font-size: 10px;
+  color: var(--ink3);
+}
 
 .pagination-wrap {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 90;
+  z-index: 150;
   display: flex;
   justify-content: center;
-  padding: 12px 24px calc(12px + env(safe-area-inset-bottom));
+  padding: 14px 24px calc(14px + env(safe-area-inset-bottom));
   margin-top: 0;
-  border-top: 1px solid var(--gray2);
-  background: rgba(245, 244, 237, 0.94);
-  backdrop-filter: blur(12px);
+  border-top: 0.5px solid var(--paper3);
+  background: var(--paper2);
   flex-shrink: 0;
 }
 
@@ -406,20 +618,47 @@ function handleFavorite() {
   gap: 6px;
 }
 
-.skeleton-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 14px;
-  padding-top: var(--space-md);
-}
-.skeleton-grid .skeleton {
-  aspect-ratio: 1;
-  border-radius: var(--radius-md);
+.pagination-wrap :deep(.el-pager li) {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px !important;
+  border: 0.5px solid var(--paper3) !important;
+  background: var(--paper) !important;
+  color: var(--ink) !important;
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s;
+  font-family: 'DM Sans', sans-serif;
+  min-width: auto;
 }
 
-.card-grid > :deep(.stagger-item) {
-  animation: fadeUp 0.4s var(--ease-out) forwards;
-  opacity: 0;
+.pagination-wrap :deep(.el-pager li.is-active) {
+  background: var(--ink) !important;
+  color: var(--paper) !important;
+  border-color: var(--ink) !important;
+}
+
+.pagination-wrap :deep(.el-pager li:hover:not(.is-active)) {
+  background: #fff !important;
+}
+
+.pagination-wrap :deep(.btn-prev),
+.pagination-wrap :deep(.btn-next) {
+  background: var(--paper) !important;
+  border: 0.5px solid var(--paper3) !important;
+  color: var(--ink) !important;
+  border-radius: 6px !important;
+  height: 28px !important;
+  width: 28px !important;
+  min-width: auto !important;
+}
+
+.pagination-wrap :deep(.btn-prev:hover),
+.pagination-wrap :deep(.btn-next:hover) {
+  background: #fff !important;
 }
 
 .image-drawer {
@@ -431,10 +670,10 @@ function handleFavorite() {
   max-width: calc(100vw - 32px);
   z-index: 120;
   overflow: hidden auto;
-  border: 1px solid var(--gray2);
-  border-radius: 24px;
-  background: rgba(255, 253, 248, 0.96);
-  box-shadow: 0 26px 70px rgba(15, 23, 42, 0.18);
+  border: 0.5px solid var(--paper3);
+  border-radius: 12px;
+  background: var(--paper);
+  box-shadow: 0 26px 70px rgba(4, 44, 83, 0.18);
 }
 
 .drawer-close {
@@ -444,9 +683,9 @@ function handleFavorite() {
   z-index: 2;
   width: 34px;
   height: 34px;
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  border-radius: 12px;
-  background: rgba(3, 25, 47, 0.46);
+  border: 0.5px solid rgba(255, 255, 255, 0.24);
+  border-radius: 8px;
+  background: rgba(4, 44, 83, 0.6);
   color: #fff;
   display: grid;
   place-items: center;
@@ -459,13 +698,13 @@ function handleFavorite() {
   aspect-ratio: 4 / 3;
   object-fit: cover;
   display: block;
-  background: #e8f1fa;
+  background: var(--paper2);
 }
 
 .drawer-placeholder {
   display: grid;
   place-items: center;
-  color: var(--accent);
+  color: var(--ink3);
   font-size: 40px;
 }
 
@@ -475,7 +714,8 @@ function handleFavorite() {
 
 .drawer-body h2 {
   margin: 0;
-  color: var(--nav-blue);
+  color: var(--ink);
+  font-family: 'Playfair Display', serif;
   font-size: 22px;
   font-weight: 400;
   line-height: 1.25;
@@ -494,16 +734,17 @@ function handleFavorite() {
   align-items: center;
   min-height: 26px;
   padding: 0 10px;
-  border-radius: 999px;
-  background: var(--blue-soft);
-  color: var(--accent);
+  border-radius: 4px;
+  background: var(--paper2);
+  color: var(--ink3);
   font-size: 12px;
-  font-weight: 300;
+  font-weight: 400;
+  border: 0.5px solid var(--paper3);
 }
 
 .drawer-desc {
   margin: 16px 0 0;
-  color: var(--gray3);
+  color: var(--ink2);
   line-height: 1.8;
   font-size: 13px;
 }
@@ -516,8 +757,8 @@ function handleFavorite() {
 }
 
 .drawer-tags span {
-  background: #f2f0e8;
-  color: var(--gray3);
+  background: var(--paper3);
+  color: var(--ink);
 }
 
 .drawer-actions {
@@ -540,14 +781,20 @@ function handleFavorite() {
 
 @media (max-width: 768px) {
   .page-container { padding-bottom: 148px; }
-  .page-header { flex-direction: column; align-items: stretch; }
-  .page-title { font-size: 26px; }
-  .square-toolbar { justify-content: stretch; }
-  .square-search,
-  .square-category,
-  .mode-tabs { width: 100%; }
-  .mode-tabs { justify-content: space-between; }
-  .mode-tabs button { flex: 1; }
+  .sq-hero { margin-top: 56px; padding: 20px 14px; }
+  .sq-hero-title { font-size: 18px; }
+  .sq-search-bar { flex-direction: column; align-items: stretch; }
+  .sq-search-el,
+  .sq-category-el,
+  .sq-sort { width: 100% !important; }
+  .sq-body {
+    grid-template-columns: 1fr;
+  }
+  .sq-sidebar {
+    border-left: none;
+    border-top: 0.5px solid var(--paper3);
+    margin-top: 20px;
+  }
   .image-drawer {
     top: 74px;
     right: 12px;

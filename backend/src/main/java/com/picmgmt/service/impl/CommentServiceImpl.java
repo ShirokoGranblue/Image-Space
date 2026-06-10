@@ -14,7 +14,11 @@ import com.picmgmt.vo.CommentVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -99,18 +103,42 @@ public class CommentServiceImpl implements CommentService {
     }
 
     private void decorateLikeInfo(List<CommentVO> list) {
-        Long currentUserId = null;
-        if (StpUtil.isLogin()) {
-            currentUserId = StpUtil.getLoginIdAsLong();
+        if (list == null || list.isEmpty()) return;
+
+        List<Long> commentIds = list.stream().map(CommentVO::getId).filter(id -> id != null).toList();
+        if (commentIds.isEmpty()) return;
+
+        // Batch fetch like counts: 1 query
+        Map<Long, Long> likeCounts;
+        try {
+            List<Map<String, Object>> counts = commentLikeMapper.countByCommentIds(commentIds);
+            likeCounts = counts.stream().collect(Collectors.toMap(
+                    m -> ((Number) m.get("comment_id")).longValue(),
+                    m -> ((Number) m.get("cnt")).longValue(),
+                    (a, b) -> a
+            ));
+        } catch (Exception e) {
+            likeCounts = Collections.emptyMap();
         }
+
+        // Batch fetch user-liked status: 1 query (only if logged in)
+        Set<Long> likedByMeIds;
+        if (StpUtil.isLogin()) {
+            long userId = StpUtil.getLoginIdAsLong();
+            try {
+                List<Long> likedIds = commentLikeMapper.findLikedCommentIdsByUser(commentIds, userId);
+                likedByMeIds = Set.copyOf(likedIds);
+            } catch (Exception e) {
+                likedByMeIds = Collections.emptySet();
+            }
+        } else {
+            likedByMeIds = Collections.emptySet();
+        }
+
         for (CommentVO vo : list) {
-            Long count = commentLikeMapper.countByCommentId(vo.getId());
-            vo.setLikeCount(count != null ? count : 0L);
-            if (currentUserId != null) {
-                Long userCount = commentLikeMapper.countByCommentIdAndUserId(vo.getId(), currentUserId);
-                vo.setLikedByMe(userCount != null && userCount > 0);
-            } else {
-                vo.setLikedByMe(false);
+            if (vo.getId() != null) {
+                vo.setLikeCount(likeCounts.getOrDefault(vo.getId(), 0L));
+                vo.setLikedByMe(likedByMeIds.contains(vo.getId()));
             }
         }
     }

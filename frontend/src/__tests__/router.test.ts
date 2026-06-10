@@ -19,7 +19,7 @@ function createTestRouter(initialPath = '/') {
 
 // Mirror the guard logic to test in isolation
 function guardLogic(to: RouteLocationNormalized): string | null {
-  const token = localStorage.getItem('satoken')
+  const token = sessionStorage.getItem('satoken')
   if (to.meta.requiresAuth && !token) return '/login'
   if ((to.path === '/login' || to.path === '/register') && token) return '/home'
   return null // allow
@@ -27,7 +27,7 @@ function guardLogic(to: RouteLocationNormalized): string | null {
 
 describe('Router guard logic', () => {
   beforeEach(() => {
-    localStorage.clear()
+    sessionStorage.clear()
   })
 
   describe('Auth-required routes', () => {
@@ -46,7 +46,7 @@ describe('Router guard logic', () => {
     })
 
     it('allows navigation when token exists', async () => {
-      localStorage.setItem('satoken', 'valid-token')
+      sessionStorage.setItem('satoken', 'valid-token')
       const router = createTestRouter()
 
       router.beforeEach((to, _from, next) => {
@@ -63,7 +63,7 @@ describe('Router guard logic', () => {
 
   describe('Public routes with existing token', () => {
     it('redirects /login to /home when already logged in', async () => {
-      localStorage.setItem('satoken', 'valid-token')
+      sessionStorage.setItem('satoken', 'valid-token')
       const router = createTestRouter()
 
       router.beforeEach((to, _from, next) => {
@@ -78,7 +78,7 @@ describe('Router guard logic', () => {
     })
 
     it('redirects /register to /home when already logged in', async () => {
-      localStorage.setItem('satoken', 'valid-token')
+      sessionStorage.setItem('satoken', 'valid-token')
       const router = createTestRouter()
 
       router.beforeEach((to, _from, next) => {

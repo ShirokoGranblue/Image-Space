@@ -72,8 +72,17 @@ public class CommentController {
     @PostMapping
     @Audit(action = "COMMENT_ADD", module = "COMMENT", targetType = "comment", targetIdResult = "id")
     public Result<Comment> add(@RequestBody Map<String, String> body) {
-        return Result.ok(commentService.add(
-                Long.valueOf(body.get("imageId")), body.get("content"), body.get("imagePath")));
+        String imageIdStr = body.get("imageId");
+        if (imageIdStr == null || imageIdStr.isBlank()) {
+            throw new IllegalArgumentException("缺少 imageId 参数");
+        }
+        Long imageId;
+        try {
+            imageId = Long.valueOf(imageIdStr);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("imageId 格式错误");
+        }
+        return Result.ok(commentService.add(imageId, body.get("content"), body.get("imagePath")));
     }
 
     @Operation(summary = "删除评论")

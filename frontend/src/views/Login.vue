@@ -1,32 +1,25 @@
 <template>
   <div class="auth-page">
-    <section class="auth-shell">
-      <div class="auth-hero">
-        <div class="auth-kicker">Imagine,and make it real</div>
-        <h1 class="auth-title">
-          IMAGESPACE
-        </h1>
-        <p class="auth-desc">a lightweight image storage, focused on uploading, managing, and browsing your images.</p>
-      </div>
-
-      <section class="auth-card" :class="{ 'is-register': authMode === 'register' }">
-        <router-link to="/home" class="auth-logo">IMAGESPACE</router-link>
-        <p class="auth-card-subtitle">{{ authMode === 'login' ? '进入图库与作品集' : '创建账号后即可上传和管理图片' }}</p>
+    <div class="login-wrap">
+      <!-- Left side panel -->
+      <div class="login-panel">
+        <router-link to="/home" class="login-logo">IMAGESPACE</router-link>
+        <div class="login-heading" v-html="authMode === 'login' ? '欢迎<br>回来' : '创建<br>账号'"></div>
 
         <template v-if="authMode === 'login'">
-          <div class="auth-tabs" role="tablist" aria-label="登录方式">
+          <div class="tab-row" role="tablist" aria-label="登录方式">
             <button
               type="button"
-              class="auth-tab"
-              :class="{ active: loginMode === 'password' }"
+              class="login-tab"
+              :class="{ act: loginMode === 'password' }"
               @click="setLoginMode('password')"
             >
               密码登录
             </button>
             <button
               type="button"
-              class="auth-tab"
-              :class="{ active: loginMode === 'email' }"
+              class="login-tab"
+              :class="{ act: loginMode === 'email' }"
               @click="setLoginMode('email')"
             >
               邮箱登录
@@ -55,7 +48,7 @@
               @error="turnstileToken = ''"
             />
             <el-form-item>
-              <el-button type="primary" size="large" class="auth-submit" @click="handleLogin" :loading="loading">
+              <el-button type="primary" size="large" class="login-btn" @click="handleLogin" :loading="loading">
                 登录
               </el-button>
             </el-form-item>
@@ -74,7 +67,7 @@
               <el-input v-model="emailForm.email" placeholder="输入邮箱" size="large" />
             </el-form-item>
             <el-form-item label="图形验证码" prop="captchaCode">
-              <div class="captcha-row">
+              <div class="captcha-row-inline">
                 <el-input v-model="emailForm.captchaCode" placeholder="输入图形验证码" size="large" @keyup.enter="handleSendCode" />
                 <button class="captcha-image" type="button" @click="loadCaptcha" :disabled="captchaLoading">
                   <img v-if="captchaImage" :src="captchaImage" alt="图形验证码" />
@@ -97,19 +90,20 @@
               @error="turnstileToken = ''"
             />
             <el-form-item>
-              <el-button type="primary" size="large" class="auth-submit" @click="handleEmailLogin" :loading="codeLoginLoading">
+              <el-button type="primary" size="large" class="login-btn" @click="handleEmailLogin" :loading="codeLoginLoading">
                 邮箱登录
               </el-button>
             </el-form-item>
           </el-form>
 
-          <div class="auth-oauth">
-            <button class="oauth-btn github" @click="handleGithubLogin" :disabled="githubLoading">
-              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          <div class="or-row">或</div>
+          <div class="oauth-row">
+            <button class="oauth-btn" @click="handleGithubLogin" :disabled="githubLoading">
+              <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" style="margin-right: 4px;"><path fill="currentColor" d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
               GitHub
             </button>
-            <button class="oauth-btn google" @click="handleGoogleLogin" :disabled="googleLoading">
-              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            <button class="oauth-btn" @click="handleGoogleLogin" :disabled="googleLoading">
+              <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" style="margin-right: 4px;"><path fill="#EA4335" d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114A5.56 5.56 0 0 1 8.35 13c0-3.076 2.488-5.571 5.557-5.571 1.48 0 2.81.579 3.8 1.527l3.056-3.056C18.847 2.057 16.518 1 13.907 1 7.855 1 2.923 5.932 2.923 12s4.932 11 10.984 11c6.305 0 10.485-4.429 10.485-10.667 0-.742-.067-1.428-.19-2.048H12.24Z"/></svg>
               Google
             </button>
           </div>
@@ -147,22 +141,38 @@
             @error="turnstileToken = ''"
           />
           <el-form-item class="full-field compact-submit">
-            <el-button type="primary" size="large" class="auth-submit" @click="handleRegister" :loading="registerLoading">
+            <el-button type="primary" size="large" class="login-btn" @click="handleRegister" :loading="registerLoading">
               创建账号
             </el-button>
           </el-form-item>
         </el-form>
 
-        <p class="auth-footer">
+        <div class="login-footer">
           <template v-if="authMode === 'login'">
-            还没有账号？<button type="button" class="auth-inline-link" @click="setAuthMode('register')">创建账号</button>
+            还没有账号？<a @click="setAuthMode('register')">创建账号 ↗</a>
           </template>
           <template v-else>
-            已有账号？<button type="button" class="auth-inline-link" @click="setAuthMode('login')">返回登录</button>
+            已有账号？<a @click="setAuthMode('login')">返回登录 ↗</a>
           </template>
-        </p>
-      </section>
-    </section>
+        </div>
+      </div>
+
+      <!-- Right side visual -->
+      <div class="login-visual">
+        <div class="vis-grid">
+          <div
+            v-for="(cell, i) in visCells"
+            :key="i"
+            class="vis-cell"
+            :style="{ background: cell.color, opacity: cell.opacity }"
+          ></div>
+        </div>
+        <div style="position:relative;z-index:2;">
+          <div class="vis-quote">记录光影，<br>分享瞬间。</div>
+          <div class="vis-sub">图片社区 · 私人图床 · 创作者空间</div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -194,6 +204,10 @@ const turnstileToken = ref('')
 const captchaImage = ref('')
 const countdown = ref(0)
 let countdownTimer = null
+
+const BLUE_TONES = ['#042C53', '#0C447C', '#185FA5', '#378ADD', '#85B7EB']
+const visCells = ref([])
+let visInterval = null
 
 const form = reactive({ username: '', password: '' })
 const emailForm = reactive({ email: '', code: '', captchaId: '', captchaCode: '' })
@@ -242,7 +256,29 @@ const registerRules = {
   ]
 }
 
+function initVisCells() {
+  const cells = []
+  for (let i = 0; i < 12; i++) {
+    cells.push({
+      color: BLUE_TONES[Math.floor(Math.random() * BLUE_TONES.length)],
+      opacity: Math.random() * 0.5 + 0.3
+    })
+  }
+  visCells.value = cells
+}
+
+function startVisAnimation() {
+  visInterval = setInterval(() => {
+    if (visCells.value.length > 0) {
+      const idx = Math.floor(Math.random() * visCells.value.length)
+      visCells.value[idx].opacity = (Math.random() * 0.5 + 0.3).toFixed(2)
+    }
+  }, 600)
+}
+
 onMounted(async () => {
+  initVisCells()
+  startVisAnimation()
   const oauthCode = new URLSearchParams(window.location.search).get('oauth_code')
   if (oauthCode) {
     window.history.replaceState({}, '', '/login')
@@ -259,6 +295,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   if (countdownTimer) window.clearInterval(countdownTimer)
+  if (visInterval) window.clearInterval(visInterval)
 })
 
 function setAuthMode(mode) {
@@ -294,7 +331,8 @@ async function handleRegister() {
   if (!token) { ElMessage.warning('请完成人机验证'); return }
   registerLoading.value = true
   try {
-    await register({ ...registerForm, turnstileToken: token })
+    const { confirmPassword, ...payload } = registerForm
+    await register({ ...payload, turnstileToken: token })
     ElMessage.success('注册成功，请登录')
     setAuthMode('login')
     loginMode.value = 'password'
@@ -370,11 +408,27 @@ function startCountdown() {
   }, 1000)
 }
 
+const ALLOWED_OAUTH_DOMAINS = [
+  'github.com',
+  'accounts.google.com',
+]
+
+function isSafeOAuthUrl(url) {
+  try {
+    const parsed = new URL(url)
+    return ALLOWED_OAUTH_DOMAINS.some(domain => parsed.hostname === domain)
+  } catch {
+    return false
+  }
+}
+
 async function handleGithubLogin() {
   githubLoading.value = true
   try {
     const res = await getGithubAuthUrl()
-    window.location.href = res.data.authorizeUrl
+    const url = res.data.authorizeUrl
+    if (!isSafeOAuthUrl(url)) { ElMessage.error('OAuth 地址无效'); return }
+    window.location.href = url
   } catch {} finally { githubLoading.value = false }
 }
 
@@ -382,7 +436,9 @@ async function handleGoogleLogin() {
   googleLoading.value = true
   try {
     const res = await getGoogleAuthUrl()
-    window.location.href = res.data.authorizeUrl
+    const url = res.data.authorizeUrl
+    if (!isSafeOAuthUrl(url)) { ElMessage.error('OAuth 地址无效'); return }
+    window.location.href = url
   } catch {} finally { googleLoading.value = false }
 }
 
@@ -397,139 +453,273 @@ function resetTurnstile() { turnstileToken.value = ''; turnstileRef.value?.reset
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 34px 24px 64px;
-  background: var(--gray1);
+  padding: 34px 24px;
+  background: var(--paper);
 }
 
-.auth-shell {
-  width: min(100%, 1040px);
+.login-wrap {
   display: grid;
-  grid-template-columns: minmax(300px, 0.9fr) minmax(340px, 420px);
-  align-items: center;
-  gap: 44px;
-  animation: fadeUp 0.42s var(--ease-out);
+  grid-template-columns: 360px 1fr;
+  width: min(100%, 1000px);
+  min-height: 580px;
+  background: var(--paper);
+  border: 0.5px solid var(--paper3);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 18px 45px rgba(4, 44, 83, 0.08);
 }
 
-.auth-hero {
-  padding: 10px 0;
+.login-panel {
+  background: var(--paper);
+  padding: 48px 40px;
+  border-right: 0.5px solid var(--paper3);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
-.auth-kicker {
-  margin-bottom: 18px;
-  font-family: var(--font-display);
-  color: var(--accent);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
-.auth-title {
-  max-width: 520px;
-  font-size: clamp(40px, 7vw, 58px);
-  line-height: 1.05;
-  font-weight: 400;
-  letter-spacing: 0.04em;
-  color: var(--nav-blue);
-}
-
-.auth-desc {
-  max-width: 430px;
-  margin-top: 18px;
-  color: var(--gray3);
-  line-height: 1.9;
-  font-size: 15px;
-  font-weight: 300;
-}
-
-.auth-card {
-  padding: 34px 32px 30px;
-  background: rgba(255, 253, 248, 0.92);
-  border: 1px solid rgba(229, 224, 212, 0.95);
-  border-radius: 30px;
-  box-shadow: 0 18px 45px rgba(30, 41, 59, 0.08);
-  backdrop-filter: blur(12px);
-}
-
-.auth-card.is-register {
-  padding: 28px 32px 24px;
-}
-
-.auth-logo {
-  display: inline-block;
-  font-family: var(--font-display);
-  font-size: 24px;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  color: var(--nav-blue);
+.login-logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 14px;
+  color: var(--ink);
+  letter-spacing: .1em;
+  margin-bottom: 32px;
   text-decoration: none;
+  font-weight: 500;
+  display: inline-block;
 }
 
-.auth-logo:hover {
+.login-logo:hover {
   opacity: 0.8;
 }
 
-.auth-card-subtitle {
-  margin: 8px 0 24px;
-  color: var(--gray3);
-  font-size: 13px;
-  font-weight: 300;
+.login-heading {
+  font-family: 'Playfair Display', serif;
+  font-size: 28px;
+  font-weight: 400;
+  color: var(--ink);
+  line-height: 1.2;
+  margin-bottom: 28px;
 }
 
-.auth-card.is-register .auth-card-subtitle {
+.tab-row {
+  display: flex;
+  border-bottom: 1.5px solid var(--paper3);
+  margin-bottom: 24px;
+}
+
+.login-tab {
+  font-size: 12px;
+  padding: 8px 0;
+  margin-right: 24px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--ink3);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1.5px;
+  transition: border-color .15s, color .15s;
+}
+
+.login-tab.act {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+
+.login-btn {
+  width: 100%;
+  height: 42px;
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: background .15s, transform .1s;
+  letter-spacing: .03em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-btn:hover {
+  background: var(--ink2);
+}
+
+.login-btn:active {
+  transform: scale(.98);
+}
+
+.or-row {
+  text-align: center;
+  margin: 16px 0;
+  font-size: 11px;
+  color: var(--ink3);
+}
+
+.oauth-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.oauth-btn {
+  height: 36px;
+  border: 0.5px solid var(--paper3);
+  border-radius: 8px;
+  background: var(--paper2);
+  font-size: 11px;
+  color: var(--ink);
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background .15s, border-color .15s;
+}
+
+.oauth-btn:hover {
+  background: #fff;
+  border-color: var(--ink5);
+}
+
+.login-footer {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 11px;
+  color: var(--ink3);
+}
+
+.login-footer a {
+  color: var(--ink);
+  cursor: pointer;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.login-visual {
+  background: var(--ink);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 32px;
+}
+
+.vis-grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 3px;
+  padding: 3px;
+}
+
+.vis-cell {
+  border-radius: 6px;
+  transition: opacity .6s;
+}
+
+.vis-quote {
+  position: relative;
+  z-index: 2;
+  font-family: 'Playfair Display', serif;
+  font-size: 18px;
+  color: rgba(255, 255, 255, .85);
+  line-height: 1.5;
+}
+
+.vis-sub {
+  font-size: 11px;
+  color: var(--ink5);
+  margin-top: 8px;
+}
+
+/* Form inputs & element-plus override styles */
+.auth-form :deep(.el-form-item) {
   margin-bottom: 16px;
 }
 
-.auth-tabs {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4px;
-  padding: 4px;
-  margin-bottom: 20px;
-  border: 1px solid var(--gray2);
-  border-radius: 16px;
-  background: rgba(249, 247, 239, 0.88);
+.auth-form :deep(.el-form-item__label) {
+  font-size: 11px;
+  color: var(--ink2) !important;
+  letter-spacing: .05em;
+  margin-bottom: 6px;
+  padding-bottom: 0;
 }
 
-.auth-tab {
-  height: 36px;
-  border: 0;
-  border-radius: 12px;
-  background: transparent;
-  color: var(--gray3);
-  font-family: var(--font-body);
+.auth-form :deep(.el-input__wrapper) {
+  background: var(--paper2) !important;
+  border: 0.5px solid var(--paper3) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  padding: 0 12px;
+  height: 40px;
+  transition: border-color .15s, background .15s;
+}
+
+.auth-form :deep(.el-input__wrapper.is-focus) {
+  border-color: var(--ink4) !important;
+  background: #fff !important;
+}
+
+.auth-form :deep(.el-input__inner) {
+  font-family: 'DM Sans', sans-serif;
   font-size: 13px;
-  font-weight: 300;
+  color: var(--ink) !important;
+}
+
+.captcha-row-inline,
+.code-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px;
+  gap: 8px;
+  align-items: center;
+}
+
+.captcha-image {
+  height: 40px;
+  border: 0.5px solid var(--paper3);
+  border-radius: 8px;
+  background: var(--paper2);
+  color: var(--ink);
+  overflow: hidden;
   cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  padding: 0;
 }
 
-.auth-tab:hover {
-  color: var(--nav-blue);
+.captcha-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-.auth-tab.active {
-  color: var(--nav-blue);
-  background: #fff;
-  box-shadow: 0 8px 18px rgba(20, 36, 55, 0.06);
-}
-
-.auth-form {
-  margin-top: 0;
-}
-
-.auth-form :deep(.el-form-item) {
-  margin-bottom: 18px;
-}
-
-.register-form :deep(.el-form-item) {
-  margin-bottom: 12px;
+.send-code-btn {
+  height: 40px;
+  border-radius: 8px;
+  background: var(--paper2) !important;
+  border: 0.5px solid var(--paper3) !important;
+  color: var(--ink) !important;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  width: 100%;
 }
 
 .register-form {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: 12px;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
 }
 
 .register-form :deep(.full-field),
@@ -537,173 +727,24 @@ function resetTurnstile() { turnstileToken.value = ''; turnstileRef.value?.reset
   grid-column: 1 / -1;
 }
 
-.register-form :deep(.compact-submit) {
-  margin-bottom: 0;
-}
-
-.auth-form :deep(.el-form-item__label) {
-  font-size: 13px;
-  font-weight: 300;
-  color: var(--gray3) !important;
-  padding-bottom: 6px;
-}
-
-.auth-form :deep(.el-input__wrapper) {
-  min-height: 44px;
-  border-radius: 16px !important;
-  background: #fff !important;
-}
-
-.auth-submit {
-  width: 100%;
-  height: 44px;
-  margin-top: 2px;
-  font-size: 14px;
-  font-weight: 400;
-}
-
-.captcha-row,
-.code-row {
-  width: 100%;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 132px;
-  gap: 10px;
-  align-items: center;
-}
-
-.captcha-image {
-  height: 44px;
-  border: 1px solid var(--gray2);
-  border-radius: 14px;
-  background: #fff;
-  color: var(--gray3);
-  overflow: hidden;
-  cursor: pointer;
-  transition: border-color 0.18s ease, background 0.18s ease;
-}
-
-.captcha-image:hover {
-  border-color: #b8cfe0;
-  background: #f8fbfe;
-}
-
-.captcha-image img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.send-code-btn {
-  height: 44px;
-  min-width: 0;
-  border-radius: 14px;
-  font-weight: 300;
-}
-
-.auth-oauth {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 14px;
-}
-
-.oauth-btn {
-  height: 40px;
-  border: 1px solid var(--gray2);
-  background: #fff;
-  color: var(--gray4);
-  border-radius: 14px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  font-family: var(--font-body);
-  font-size: 13px;
-  font-weight: 300;
-  cursor: pointer;
-  transition: transform 0.16s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
-}
-
-.oauth-btn:hover {
-  color: var(--accent);
-  border-color: #b8cfe0;
-  background: #f8fbfe;
-}
-
-.oauth-btn:active {
-  transform: scale(0.98);
-}
-
-.oauth-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.oauth-btn.github {
-  color: #24292f;
-}
-
-.oauth-btn.google {
-  color: #444;
-}
-
-.auth-footer {
-  margin-top: 18px;
-  text-align: center;
-  color: var(--gray3);
-  font-size: 13px;
-  font-weight: 300;
-}
-
-.auth-inline-link {
-  border: 0;
-  background: transparent;
-  padding: 0;
-  color: var(--accent);
-  font-family: var(--font-body);
-  font-size: 13px;
-  font-weight: 400;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.auth-inline-link:hover {
-  opacity: 0.72;
-}
-
-@media (max-width: 520px) {
-  .auth-page {
-    align-items: start;
-    padding: 42px 16px 48px;
-  }
-
-  .auth-shell {
-    gap: 22px;
-  }
-
-  .auth-title {
-    font-size: 34px;
-  }
-
-  .auth-card {
-    padding: 28px 22px;
-    border-radius: 20px;
-  }
-
-  .auth-oauth {
+@media (max-width: 768px) {
+  .login-wrap {
     grid-template-columns: 1fr;
+    min-height: auto;
+    width: 100%;
   }
-
-  .captcha-row,
-  .code-row {
-    grid-template-columns: 1fr;
+  .login-panel {
+    border-right: none;
+    border-bottom: 0.5px solid var(--paper3);
+    padding: 32px 24px;
   }
-}
-
-@media (max-width: 860px) {
-  .auth-shell {
+  .login-visual {
+    height: 180px;
+    padding: 24px;
+  }
+  .register-form {
     grid-template-columns: 1fr;
+    gap: 0;
   }
 }
 </style>

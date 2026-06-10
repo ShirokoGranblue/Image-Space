@@ -132,35 +132,33 @@ function goDetail() {
   position: relative;
   min-width: 0;
   cursor: pointer;
-  border-radius: 18px;
+  border-radius: 10px;
   overflow: hidden;
-  background: #fbfdff;
-  border: 1px solid var(--gray2);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  background: var(--paper2);
+  border: 0.5px solid var(--paper3);
+  transition: border-color .2s, transform .2s;
   animation: fadeUp 0.34s var(--ease-out);
 }
 
 .image-card:hover,
 .image-card:focus-visible {
-  transform: translateY(-4px);
-  border-color: #bfd6e8;
-  box-shadow: 0 18px 32px rgba(30, 41, 59, 0.08);
+  border-color: var(--ink4);
+  transform: translateY(-3px);
 }
 
 .image-card:active {
-  transform: translateY(-2px) scale(0.99);
+  transform: translateY(-1px) scale(0.99);
 }
 
 .image-card.selected {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(29, 93, 155, 0.12);
+  border-color: var(--ink4);
 }
 
 .card-frame {
   position: relative;
   aspect-ratio: 4 / 3;
   overflow: hidden;
-  background: #e8f1fa;
+  background: var(--paper);
 }
 
 .variant-square .card-frame {
@@ -176,8 +174,7 @@ function goDetail() {
 }
 
 .card-img.zoomed {
-  transform: scale(1.045);
-  filter: saturate(1.03);
+  transform: scale(1.04);
 }
 
 .img-fallback {
@@ -185,8 +182,8 @@ function goDetail() {
   height: 100%;
   display: grid;
   place-items: center;
-  color: var(--accent);
-  background: linear-gradient(135deg, #e8f1fa, #f7f5ed);
+  color: var(--ink3);
+  background: var(--paper3);
 }
 
 .card-overlay {
@@ -196,29 +193,30 @@ function goDetail() {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: rgba(3, 25, 47, 0.42);
+  background: rgba(4, 44, 83, 0.6);
+  border-radius: 10px;
 }
 
 .icon-action {
-  width: 34px;
-  height: 34px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  background: rgba(255, 255, 255, 0.16);
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 0.5px solid rgba(255, 255, 255, 0.35);
   color: #fff;
   display: inline-grid;
   place-items: center;
   cursor: pointer;
-  transition: transform 0.16s ease, background 0.18s ease, border-color 0.18s ease;
+  font-size: 14px;
+  transition: background 0.15s, transform 0.1s;
 }
 
 .icon-action:hover {
-  background: rgba(255, 255, 255, 0.26);
-  border-color: rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, 0.35);
 }
 
 .icon-action:active {
-  transform: scale(0.96);
+  transform: scale(0.95);
 }
 
 .icon-action.danger:hover {
@@ -228,59 +226,56 @@ function goDetail() {
 
 .select-toggle {
   position: absolute;
-  top: 10px;
-  left: 10px;
+  top: 7px;
+  left: 7px;
   z-index: 3;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.75);
-  background: rgba(3, 25, 47, 0.34);
-  display: grid;
-  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1.5px solid rgba(255, 255, 255, 0.6);
+  background: transparent;
   cursor: pointer;
   opacity: 0;
-  transform: translateY(-4px);
-  transition: opacity 0.18s ease, transform 0.18s ease, background 0.18s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s, transform 0.2s, background 0.15s, border-color 0.15s;
 }
 
 .image-card:hover .select-toggle,
 .image-card:focus-within .select-toggle,
 .select-toggle.checked {
   opacity: 1;
-  transform: translateY(0);
 }
 
 .select-toggle.checked {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--ink);
+  border-color: var(--ink);
 }
 
 .select-mark {
-  width: 13px;
-  height: 13px;
-  border-radius: 50%;
-  border: 2px solid #fff;
+  display: none;
 }
 
 .select-toggle.checked .select-mark {
-  width: 8px;
-  height: 13px;
+  display: block;
+  width: 4px;
+  height: 8px;
   border-radius: 0;
   border: 0;
   border-right: 2px solid #fff;
   border-bottom: 2px solid #fff;
-  transform: rotate(42deg) translate(-1px, -1px);
+  transform: rotate(45deg) translate(-1px, -2px);
 }
 
 .card-body {
-  padding: 13px 14px 14px;
+  padding: 8px 10px;
 }
 
 .img-name {
-  color: var(--black);
-  font-size: 14px;
-  font-weight: 400;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 500;
   line-height: 1.35;
   white-space: nowrap;
   overflow: hidden;
@@ -293,7 +288,7 @@ function goDetail() {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-top: 8px;
+  margin-top: 4px;
   min-width: 0;
 }
 
@@ -303,38 +298,40 @@ function goDetail() {
   align-items: center;
   min-width: 0;
   max-width: 70%;
-  height: 24px;
-  padding: 0 9px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 300;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 400;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .category-badge {
-  color: var(--accent);
-  background: var(--blue-soft);
+  color: var(--ink3);
+  background: var(--paper);
+  border: 0.5px solid var(--paper3);
 }
 
 .category-badge.muted {
-  color: var(--gray3);
-  background: #f2f0e8;
+  color: var(--ink3);
+  background: var(--paper2);
+  border: 0.5px solid var(--paper3);
 }
 
 .visibility-badge {
   flex-shrink: 0;
-  color: #6d5fb8;
-  background: #eeeaf8;
+  color: var(--ink3);
+  background: var(--ink7);
 }
 
 .meta-text,
 .like-text {
   min-width: 0;
-  color: var(--gray3);
-  font-size: 12px;
-  font-weight: 300;
+  color: var(--ink3);
+  font-size: 10px;
+  font-weight: 400;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -343,9 +340,9 @@ function goDetail() {
 .like-text {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   flex-shrink: 0;
-  color: var(--gray4);
+  color: var(--ink3);
 }
 
 .overlay-fade-enter-active,

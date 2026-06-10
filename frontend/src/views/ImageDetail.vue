@@ -225,6 +225,7 @@ import { getImageResourceStatus, refreshImageAccessUrl } from '../api/resource'
 import { getComments, addComment, deleteComment, uploadCommentImage, likeComment, unlikeComment } from '../api/comment'
 import { getCategoryList, createCategory } from '../api/category'
 import { useUserStore } from '../store/user'
+import { getToken } from '../utils/token'
 import { formatSize, formatTime } from '../utils/format'
 import { getImageDownloadUrl } from '../utils/imageRequests'
 import { applyImageAccessUrl, applyImageStatus, imageToPollingResource } from '../utils/resourceAdapters'
@@ -529,7 +530,7 @@ async function saveEdit() {
 async function handleDownload() {
   downloading.value = true
   try {
-    const token = localStorage.getItem('satoken')
+    const token = getToken()
     const headers = token ? { 'satoken': token } : {}
     const response = await fetch(getImageDownloadUrl(image.value), { headers })
 

@@ -4,8 +4,6 @@ services:
     image: mysql:8.0
     container_name: mysql
     restart: unless-stopped
-    ports:
-      - "3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change-me}
       MYSQL_ROOT_HOST: '%'
@@ -31,12 +29,10 @@ services:
     container_name: redis
     restart: unless-stopped
     command: redis-server --requirepass ${REDIS_PASSWORD:-}
-    ports:
-      - "6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD:-}\" ping | grep -q PONG"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -47,8 +43,6 @@ services:
     build: ./backend
     container_name: backend
     restart: unless-stopped
-    ports:
-      - "8088:8088"
     environment:
       SPRING_PROFILES_ACTIVE: docker
       DB_USERNAME: ${DB_USERNAME:-}
@@ -70,7 +64,7 @@ services:
       APP_WEBHOOK_PATH: ${APP_WEBHOOK_PATH:-/api/webhook}
       MAIL_HOST: ${MAIL_HOST:-smtp.qq.com}
       MAIL_PORT: ${MAIL_PORT:-587}
-      MAIL_USERNAME: ${MAIL_USERNAME:-your_email@qq.com}
+      MAIL_USERNAME: ${MAIL_USERNAME:-your_email@xx.com}
       MAIL_PASSWORD: ${MAIL_PASSWORD:-your_smtp_password}
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-your_github_client_id}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-your_github_client_secret}
@@ -96,7 +90,7 @@ services:
       - picture_management
 
   nginx:
-    image: nginx:latest
+    image: nginx:1.27-alpine
     container_name: nginx
     restart: unless-stopped
     ports:

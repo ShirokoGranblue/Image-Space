@@ -23,13 +23,13 @@ function setupStore() {
 
 describe('userStore', () => {
   beforeEach(() => {
-    localStorage.clear()
+    sessionStorage.clear()
     // Reset mocks
     vi.clearAllMocks()
   })
 
   describe('Initial state', () => {
-    it('has empty token when localStorage is empty', () => {
+    it('has empty token when sessionStorage is empty', () => {
       const store = setupStore()
       expect(store.token).toBe('')
     })
@@ -39,24 +39,24 @@ describe('userStore', () => {
       expect(store.userInfo).toBeNull()
     })
 
-    it('reads token from localStorage on creation', () => {
-      localStorage.setItem('satoken', 'existing-token')
+    it('reads token from sessionStorage on creation', () => {
+      sessionStorage.setItem('satoken', 'existing-token')
       const store = setupStore()
       expect(store.token).toBe('existing-token')
     })
   })
 
   describe('setToken', () => {
-    it('sets token ref and stores in localStorage', () => {
+    it('sets token ref and stores in sessionStorage', () => {
       const store = setupStore()
       store.setToken('new-token')
       expect(store.token).toBe('new-token')
-      expect(localStorage.getItem('satoken')).toBe('new-token')
+      expect(sessionStorage.getItem('satoken')).toBe('new-token')
     })
   })
 
   describe('clearToken', () => {
-    it('clears token, localStorage, and userInfo', () => {
+    it('clears token, sessionStorage, and userInfo', () => {
       const store = setupStore()
       store.setToken('some-token')
       store.userInfo = { id: 1, username: 'x' }
@@ -64,7 +64,7 @@ describe('userStore', () => {
       store.clearToken()
 
       expect(store.token).toBe('')
-      expect(localStorage.getItem('satoken')).toBeNull()
+      expect(sessionStorage.getItem('satoken')).toBeNull()
       expect(store.userInfo).toBeNull()
     })
   })

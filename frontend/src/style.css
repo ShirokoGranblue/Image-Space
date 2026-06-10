@@ -2,51 +2,74 @@
    ImageSpace — Editorial Design System
    ══════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Noto+Sans+SC:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap');
+
+@font-face {
+  font-family: 'Claude Serif';
+  src: url('./assets/fonts/c66fc489e-C-BHYa_K.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
 
 :root {
-  /* Palette */
-  --black: #172033;
+  /* Redesign Palette */
+  --ink: #042C53;
+  --ink2: #0C447C;
+  --ink3: #185FA5;
+  --ink4: #378ADD;
+  --ink5: #85B7EB;
+  --ink6: #B5D4F4;
+  --ink7: #E6F1FB;
+  --paper: #F7F3E8;
+  --paper2: #EDE8D8;
+  --paper3: #E2DBC8;
+  --gold: #BA7517;
+  --gold2: #EF9F27;
+  --gold3: #FAEEDA;
+
+  /* Palette Aliases */
+  --black: var(--ink);
   --white: #fffdf8;
-  --accent: #1d5d9b;
-  --accent2: #2e9d78;
-  --gray1: #f5f4ed;
-  --gray2: #e5e0d4;
-  --gray3: #687386;
-  --gray4: #313c4f;
-  --nav-blue: #03192f;
-  --nav-blue-soft: #0a2a4b;
-  --blue-soft: #e8f1fa;
+  --accent: var(--ink3);
+  --accent2: var(--gold);
+  --gray1: var(--paper);
+  --gray2: var(--paper2);
+  --gray3: var(--ink3);
+  --gray4: var(--ink2);
+  --nav-blue: var(--ink);
+  --nav-blue-soft: var(--ink2);
+  --blue-soft: var(--ink7);
 
-  /* Aliases for existing code */
-  --bg-base: var(--gray1);
-  --bg-surface: #fffdf8;
-  --bg-elevated: #fbfdff;
-  --bg-hover: #f2f7fb;
-  --bg-inverse: var(--nav-blue);
+  /* Semantic Aliases */
+  --bg-base: var(--paper);
+  --bg-surface: var(--paper2);
+  --bg-elevated: #fff;
+  --bg-hover: var(--ink7);
+  --bg-inverse: var(--ink);
 
-  --border-subtle: var(--gray2);
-  --border-visible: #d8d2c5;
-  --border-strong: #b8cfe0;
+  --border-subtle: var(--paper3);
+  --border-visible: var(--paper3);
+  --border-strong: var(--ink5);
 
-  --text-primary: var(--black);
-  --text-secondary: var(--gray4);
-  --text-muted: var(--gray3);
-  --text-inverse: var(--white);
+  --text-primary: var(--ink);
+  --text-secondary: var(--ink2);
+  --text-muted: var(--ink3);
+  --text-inverse: var(--paper);
 
-  --accent-hover: #2e7bc3;
-  --accent-dim: #164b78;
-  --accent-warm: var(--accent);
-  --accent-warm-hover: #c04f26;
-  --accent-glow: var(--accent);
+  --accent-hover: var(--ink4);
+  --accent-dim: var(--ink2);
+  --accent-warm: var(--gold);
+  --accent-warm-hover: var(--gold2);
+  --accent-glow: var(--ink4);
 
   --danger: #d65050;
   --danger-dim: #b83f3f;
-  --success: var(--accent2);
+  --success: #1D9E75;
 
   /* Typography */
-  --font-display: 'Inter', 'Noto Sans SC', 'PingFang SC', 'HarmonyOS Sans SC', 'Microsoft YaHei', sans-serif;
-  --font-body: 'Noto Sans SC', 'Inter', 'PingFang SC', 'HarmonyOS Sans SC', 'Microsoft YaHei', sans-serif;
+  --font-display: 'Playfair Display', 'Claude Serif', serif;
+  --font-body: 'DM Sans', sans-serif;
 
   /* Spacing */
   --space-xs: 4px;  --space-sm: 8px;  --space-md: 16px;

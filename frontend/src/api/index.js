@@ -1,15 +1,16 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import router from '../router'
+import { getToken, removeToken } from '../utils/token'
 
 const api = axios.create({
   baseURL: '/api',
-  timeout: 15000
+  timeout: 60000
 })
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('satoken')
+    const token = getToken()
     if (token) {
       config.headers['satoken'] = token
     }
@@ -22,7 +23,7 @@ api.interceptors.response.use(
   (response) => {
     const res = response.data
     if (res.code === 401) {
-      localStorage.removeItem('satoken')
+      removeToken()
       const path = router.currentRoute?.value?.path
       if (path !== '/login' && path !== '/register') {
         ElMessage.error('登录已过期，请重新登录')

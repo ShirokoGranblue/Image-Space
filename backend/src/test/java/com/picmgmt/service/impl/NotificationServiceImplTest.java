@@ -101,7 +101,7 @@ class NotificationServiceImplTest {
         actor.setUsername("alice");
         actor.setDisplayName("Alice");
         actor.setAvatarKey("2/avatar.png");
-        when(userMapper.selectById(2L)).thenReturn(actor);
+        when(userMapper.selectBatchIds(java.util.Set.of(2L))).thenReturn(java.util.List.of(actor));
 
         String expectedAvatarUrl = "/api/user/avatar/actor-uuid?v=e3be9a8665ae";
         String expectedPreviewUrl = "https://cdn.image-space.app/private/images/1/summer.jpg?auth=abc&expires=1893456000";

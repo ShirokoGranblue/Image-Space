@@ -19,8 +19,11 @@ import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -68,14 +71,8 @@ public class ImageReadService {
         Page<ImageVO> pageParam = new Page<>(dto.getPage(), normalizeLimit(dto.getLimit()));
         Page<ImageVO> result = imageMapper.selectImageVOPage(
                 pageParam, userId, normalizeKeyword(dto.getKeyword()), dto.getCategoryId(), null, null, sortField, sortOrder, "latest", null);
-        for (ImageVO vo : result.getRecords()) {
-            if (vo.getStorageKey() != null && !vo.getStorageKey().isBlank()) {
-                vo.setImageUrl(imageUrlForStorageImage(vo));
-            } else if (vo.getImagePath() != null && vo.getImagePath().startsWith("data:image/")) {
-                vo.setImageUrl("/api/image/download/" + vo.getUuid());
-            }
-            decorateViewerInfo(vo);
-        }
+        decorateUrls(result.getRecords());
+        decorateViewerInfoBatch(result.getRecords());
         return result;
     }
 
@@ -92,14 +89,8 @@ public class ImageReadService {
         Page<ImageVO> result = imageMapper.selectImageVOPage(
                 pageParam, null, normalizeKeyword(keyword), null, "PUBLIC", tagFilters,
                 safeSortField, safeSortOrder, safeSortMode, safeRandomSeed);
-        for (ImageVO vo : result.getRecords()) {
-            if (vo.getStorageKey() != null && !vo.getStorageKey().isBlank()) {
-                vo.setImageUrl(imageUrlForStorageImage(vo));
-            } else if (vo.getImagePath() != null && vo.getImagePath().startsWith("data:image/")) {
-                vo.setImageUrl("/api/image/download/" + vo.getUuid());
-            }
-            decorateViewerInfo(vo);
-        }
+        decorateUrls(result.getRecords());
+        decorateViewerInfoBatch(result.getRecords());
         return result;
     }
 
@@ -126,14 +117,8 @@ public class ImageReadService {
         Page<ImageVO> result = imageMapper.selectImageVOPage(
                 pageParam, user.getId(), normalizeKeyword(keyword), null, "PUBLIC", tagFilters,
                 safeSortField, safeSortOrder, safeSortMode, safeRandomSeed);
-        for (ImageVO vo : result.getRecords()) {
-            if (vo.getStorageKey() != null && !vo.getStorageKey().isBlank()) {
-                vo.setImageUrl(imageUrlForStorageImage(vo));
-            } else if (vo.getImagePath() != null && vo.getImagePath().startsWith("data:image/")) {
-                vo.setImageUrl("/api/image/download/" + vo.getUuid());
-            }
-            decorateViewerInfo(vo);
-        }
+        decorateUrls(result.getRecords());
+        decorateViewerInfoBatch(result.getRecords());
         return result;
     }
 
@@ -221,6 +206,60 @@ public class ImageReadService {
         String privateUrl = imageUrlService.getPrivateImageUrl(vo.getStorageKey());
         vo.setPrivateUrl(privateUrl);
         return privateUrl;
+    }
+
+    private void decorateUrls(List<ImageVO> records) {
+        for (ImageVO vo : records) {
+            if (vo.getStorageKey() != null && !vo.getStorageKey().isBlank()) {
+                vo.setImageUrl(imageUrlForStorageImage(vo));
+            } else if (vo.getImagePath() != null && vo.getImagePath().startsWith("data:image/")) {
+                vo.setImageUrl("/api/image/download/" + vo.getUuid());
+            }
+        }
+    }
+
+    private void decorateViewerInfoBatch(List<ImageVO> records) {
+        if (records == null || records.isEmpty()) return;
+
+        List<Long> imageIds = records.stream().map(ImageVO::getId).filter(id -> id != null).toList();
+        if (imageIds.isEmpty()) return;
+
+        // Batch fetch like counts: 1 query
+        Map<Long, Long> likeCounts;
+        try {
+            List<Map<String, Object>> counts = imageMapper.countByImageIds(imageIds);
+            likeCounts = counts.stream().collect(Collectors.toMap(
+                    m -> ((Number) m.get("image_id")).longValue(),
+                    m -> ((Number) m.get("cnt")).longValue(),
+                    (a, b) -> a
+            ));
+        } catch (Exception e) {
+            likeCounts = Collections.emptyMap();
+        }
+
+        // Batch fetch user-liked status: 1 query (only if logged in)
+        Set<Long> likedByMeIds;
+        if (StpUtil.isLogin()) {
+            long userId = StpUtil.getLoginIdAsLong();
+            try {
+                List<Long> likedIds = imageMapper.findLikedImageIdsByUser(imageIds, userId);
+                likedByMeIds = Set.copyOf(likedIds);
+            } catch (Exception e) {
+                likedByMeIds = Collections.emptySet();
+            }
+        } else {
+            likedByMeIds = Collections.emptySet();
+        }
+
+        // Apply to VOs
+        for (ImageVO vo : records) {
+            if (vo.getId() != null) {
+                vo.setLikeCount(likeCounts.getOrDefault(vo.getId(), 0L));
+                vo.setLikedByMe(likedByMeIds.contains(vo.getId()));
+            }
+            vo.setOwnedByMe(permissionService.isOwner(vo.getUserId()));
+            vo.setEditableByMe(permissionService.canEdit(vo.getUserId()));
+        }
     }
 
     private void decorateViewerInfo(ImageVO vo) {

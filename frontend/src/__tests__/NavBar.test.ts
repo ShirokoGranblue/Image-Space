@@ -57,6 +57,7 @@ function mountNavBar(routePath = '/home') {
         },
         'router-view': true,
         'transition': { name: 'Transition', template: '<div v-if="$attrs"><slot /></div>' },
+        NotificationBell: { template: '<div class="notification-bell" />' },
       },
       mocks: {
         $route: { path: routePath },
@@ -77,29 +78,35 @@ describe('NavBar', () => {
       const wrapper = mountNavBar()
       const logo = wrapper.find('.logo')
       expect(logo.exists()).toBe(true)
-      expect(logo.text()).toBe('ImageSpace')
+      expect(logo.text()).toContain('IMAGE SPACE')
       expect(logo.attributes('href')).toBe('/home')
+    })
+
+    it('renders the logo icon image', () => {
+      const wrapper = mountNavBar()
+      const logoImg = wrapper.find('.logo-mark')
+      expect(logoImg.exists()).toBe(true)
+      expect(logoImg.element.tagName).toBe('IMG')
     })
   })
 
   describe('Desktop navigation', () => {
-    it('renders both nav links', () => {
+    it('renders nav links (Square, Images, Profile when logged in)', () => {
       const wrapper = mountNavBar()
       const links = wrapper.findAll('.nav-link')
-      expect(links).toHaveLength(2)
+      expect(links.length).toBeGreaterThanOrEqual(2)
     })
 
     it('highlights the active route', () => {
       const wrapper = mountNavBar('/home')
-      const homeLink = wrapper.find('.nav-link.active')
-      expect(homeLink.exists()).toBe(true)
+      const homeLink = wrapper.findAll('.nav-link').find(l => l.attributes('href') === '/home')
+      expect(homeLink?.classes()).toContain('active')
     })
 
-    it('does not highlight inactive route', () => {
+    it('highlights square route when active', () => {
       const wrapper = mountNavBar('/square')
-      const homeLink = wrapper.find('.nav-link.active')
-      expect(homeLink.exists()).toBe(true)
-      expect(homeLink.find('.nav-label').text()).toBe('图片广场')
+      const squareLink = wrapper.findAll('.nav-link').find(l => l.attributes('href') === '/square')
+      expect(squareLink?.classes()).toContain('active')
     })
   })
 
@@ -154,18 +161,24 @@ describe('NavBar', () => {
       await nextTick()
 
       const mobileLinks = wrapper.findAll('.mobile-nav-item')
-      expect(mobileLinks).toHaveLength(2)
-      expect(mobileLinks[0].text()).toContain('我的图片')
-      expect(mobileLinks[1].text()).toContain('图片广场')
+      expect(mobileLinks.length).toBeGreaterThanOrEqual(2)
+      expect(mobileLinks[0].text()).toContain('Square')
+      expect(mobileLinks[1].text()).toContain('Images')
     })
   })
 
   describe('User section', () => {
-    it('displays user name and avatar', () => {
+    it('displays avatar button when logged in', () => {
       const wrapper = mountNavBar()
-      const username = wrapper.find('.username')
-      expect(username.exists()).toBe(true)
-      expect(username.text()).toBe('Test')
+      const avatarBtn = wrapper.find('.avatar-button')
+      expect(avatarBtn.exists()).toBe(true)
+    })
+
+    it('displays logout button when logged in', () => {
+      const wrapper = mountNavBar()
+      const logoutBtn = wrapper.find('.logout-btn')
+      expect(logoutBtn.exists()).toBe(true)
+      expect(logoutBtn.text()).toBe('Exit')
     })
   })
 })

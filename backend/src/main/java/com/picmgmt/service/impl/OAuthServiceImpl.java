@@ -180,6 +180,10 @@ public class OAuthServiceImpl implements OAuthService {
         if (avatarUrl == null || avatarUrl.isEmpty()) return null;
         try {
             byte[] bytes = HttpUtil.downloadBytes(avatarUrl);
+            if (!isValidImageContent(bytes)) {
+                log.warn("OAuth avatar failed magic byte check for user {}", userId);
+                return null;
+            }
             String ext = FileUtil.extName(avatarUrl);
             if (ext == null || ext.length() > 5) ext = "png";
             String objectKey = "avatars/oauth_" + userId + "." + ext;
@@ -190,6 +194,17 @@ public class OAuthServiceImpl implements OAuthService {
             log.warn("Failed to download avatar for user {}: {}", userId, e.getMessage());
             return null;
         }
+    }
+
+    private static boolean isValidImageContent(byte[] bytes) {
+        if (bytes == null || bytes.length < 4) return false;
+        if (bytes[0] == (byte) 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47) return true;
+        if (bytes[0] == (byte) 0xFF && bytes[1] == (byte) 0xD8 && bytes[2] == (byte) 0xFF) return true;
+        if (bytes.length >= 6 && bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x47
+                && bytes[3] == 0x38 && (bytes[4] == 0x37 || bytes[4] == 0x39) && bytes[5] == 0x61) return true;
+        if (bytes.length >= 12 && bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46
+                && bytes[8] == 0x57 && bytes[9] == 0x45 && bytes[10] == 0x42 && bytes[11] == 0x50) return true;
+        return false;
     }
 
     private AuthRequest buildAuthRequest(String provider) {
@@ -269,11 +284,16 @@ public class OAuthServiceImpl implements OAuthService {
      * GitHub: fetch /user and /user/emails in parallel using the shared OkHttp connection pool.
      */
     static class ParallelGithubRequest extends AuthGithubRequest {
-        private static final ExecutorService OAUTH_EXECUTOR = Executors.newFixedThreadPool(4, r -> {
-            Thread t = new Thread(r, "oauth-github-");
-            t.setDaemon(true);
-            return t;
-        });
+        private static final ExecutorService OAUTH_EXECUTOR = new java.util.concurrent.ThreadPoolExecutor(
+                2, 4, 60L, java.util.concurrent.TimeUnit.SECONDS,
+                new java.util.concurrent.LinkedBlockingQueue<>(16),
+                r -> {
+                    Thread t = new Thread(r, "oauth-github-");
+                    t.setDaemon(true);
+                    return t;
+                },
+                new java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy()
+        );
 
         ParallelGithubRequest(AuthConfig config) {
             super(config);

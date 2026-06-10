@@ -9,6 +9,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface ImageMapper extends BaseMapper<Image> {
@@ -40,10 +41,13 @@ public interface ImageMapper extends BaseMapper<Image> {
                 </if>
             </where>
             <choose>
-                <when test='sortMode == \"random\"'>ORDER BY MD5(CONCAT(#{randomSeed}, i.id)), i.id</when>
-                <when test='sortField == \"image_name\"'>ORDER BY i.image_name ${sortOrder}</when>
-                <when test='sortField == \"file_size\"'>ORDER BY i.file_size ${sortOrder}</when>
-                <otherwise>ORDER BY i.upload_time ${sortOrder}</otherwise>
+                <when test='sortMode == "random"'>ORDER BY MD5(CONCAT(#{randomSeed}, i.id)), i.id</when>
+                <when test='sortField == "image_name" and sortOrder == "asc"'>ORDER BY i.image_name ASC</when>
+                <when test='sortField == "image_name"'>ORDER BY i.image_name DESC</when>
+                <when test='sortField == "file_size" and sortOrder == "asc"'>ORDER BY i.file_size ASC</when>
+                <when test='sortField == "file_size"'>ORDER BY i.file_size DESC</when>
+                <when test='sortOrder == "asc"'>ORDER BY i.upload_time ASC</when>
+                <otherwise>ORDER BY i.upload_time DESC</otherwise>
             </choose>
         </script>
     """)
@@ -83,10 +87,13 @@ public interface ImageMapper extends BaseMapper<Image> {
                 </if>
             </where>
             <choose>
-                <when test='sortMode == \"random\"'>ORDER BY MD5(CONCAT(#{randomSeed}, i.id)), i.id</when>
-                <when test='sortField == \"image_name\"'>ORDER BY i.image_name ${sortOrder}</when>
-                <when test='sortField == \"file_size\"'>ORDER BY i.file_size ${sortOrder}</when>
-                <otherwise>ORDER BY i.upload_time ${sortOrder}</otherwise>
+                <when test='sortMode == "random"'>ORDER BY MD5(CONCAT(#{randomSeed}, i.id)), i.id</when>
+                <when test='sortField == "image_name" and sortOrder == "asc"'>ORDER BY i.image_name ASC</when>
+                <when test='sortField == "image_name"'>ORDER BY i.image_name DESC</when>
+                <when test='sortField == "file_size" and sortOrder == "asc"'>ORDER BY i.file_size ASC</when>
+                <when test='sortField == "file_size"'>ORDER BY i.file_size DESC</when>
+                <when test='sortOrder == "asc"'>ORDER BY i.upload_time ASC</when>
+                <otherwise>ORDER BY i.upload_time DESC</otherwise>
             </choose>
         </script>
     """)
@@ -100,4 +107,30 @@ public interface ImageMapper extends BaseMapper<Image> {
                                      @Param("sortOrder") String sortOrder,
                                      @Param("sortMode") String sortMode,
                                      @Param("randomSeed") String randomSeed);
+
+    @Select("""
+        <script>
+            SELECT image_id, COUNT(*) AS cnt
+            FROM image_likes
+            WHERE image_id IN
+            <foreach collection='imageIds' item='id' open='(' separator=',' close=')'>
+                #{id}
+            </foreach>
+            GROUP BY image_id
+        </script>
+    """)
+    List<Map<String, Object>> countByImageIds(@Param("imageIds") List<Long> imageIds);
+
+    @Select("""
+        <script>
+            SELECT image_id
+            FROM image_likes
+            WHERE user_id = #{userId}
+            AND image_id IN
+            <foreach collection='imageIds' item='id' open='(' separator=',' close=')'>
+                #{id}
+            </foreach>
+        </script>
+    """)
+    List<Long> findLikedImageIdsByUser(@Param("imageIds") List<Long> imageIds, @Param("userId") Long userId);
 }

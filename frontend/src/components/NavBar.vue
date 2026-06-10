@@ -128,15 +128,15 @@ async function handleLogout() {
   right: 0;
   z-index: 100;
   padding: 10px 24px;
-  background: var(--nav-blue);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 12px 30px rgba(3, 25, 47, 0.12);
+  background: var(--ink);
+  border-bottom: 0.5px solid var(--paper3);
+  box-shadow: 0 12px 30px rgba(4, 44, 83, 0.08);
   transition: box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .navbar.scrolled {
-  background: rgba(3, 25, 47, 0.98);
-  box-shadow: 0 14px 34px rgba(3, 25, 47, 0.16);
+  background: var(--ink);
+  box-shadow: 0 14px 34px rgba(4, 44, 83, 0.12);
 }
 
 .navbar-inner {
@@ -155,10 +155,10 @@ async function handleLogout() {
   gap: 10px;
   flex-shrink: 0;
   color: #fff;
-  font-family: var(--font-display);
+  font-family: 'Playfair Display', serif;
   font-size: 14px;
   font-weight: 500;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   text-decoration: none;
 }
 
@@ -176,34 +176,34 @@ async function handleLogout() {
 .nav-links {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 0;
+  padding: 0;
+  background: transparent;
 }
 
 .nav-link {
-  min-width: 76px;
-  padding: 7px 14px;
-  border-radius: 999px;
-  color: #cfe1ed;
-  font-size: 13px;
-  font-weight: 300;
-  text-align: center;
+  font-size: 11px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: none;
+  background: transparent;
+  color: var(--ink6);
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: background .15s, color .15s;
+  white-space: nowrap;
   text-decoration: none;
-  transition: color 0.18s ease, background 0.18s ease;
 }
 
 .nav-link:hover {
   color: #fff;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.1);
   opacity: 1;
 }
 
 .nav-link.active {
-  color: var(--nav-blue);
-  background: #fffdf8;
+  background: var(--ink3);
+  color: #fff;
 }
 
 .navbar-right,

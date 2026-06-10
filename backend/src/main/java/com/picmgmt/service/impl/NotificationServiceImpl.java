@@ -21,6 +21,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -73,8 +76,22 @@ public class NotificationServiceImpl implements NotificationService {
         long loginId = StpUtil.getLoginIdAsLong();
         Page<NotificationVO> result = notificationMapper.selectNotificationVOPage(
                 new Page<>(normalizePage(page), normalizeLimit(limit)), loginId, unreadOnly);
-        for (NotificationVO vo : result.getRecords()) {
-            decorate(vo);
+
+        List<NotificationVO> records = result.getRecords();
+        if (!records.isEmpty()) {
+            // Batch fetch actor users
+            Set<Long> actorIds = records.stream()
+                    .map(NotificationVO::getActorUserId)
+                    .filter(id -> id != null)
+                    .collect(Collectors.toSet());
+            Map<Long, User> actorsById = actorIds.isEmpty()
+                    ? Map.of()
+                    : userMapper.selectBatchIds(actorIds).stream()
+                            .collect(Collectors.toMap(User::getId, u -> u, (a, b) -> a));
+
+            for (NotificationVO vo : records) {
+                decorate(vo, actorsById);
+            }
         }
         return result;
     }
@@ -136,8 +153,8 @@ public class NotificationServiceImpl implements NotificationService {
         return notification;
     }
 
-    private void decorate(NotificationVO vo) {
-        User actor = vo.getActorUserId() == null ? null : userMapper.selectById(vo.getActorUserId());
+    private void decorate(NotificationVO vo, Map<Long, User> actorsById) {
+        User actor = vo.getActorUserId() == null ? null : actorsById.get(vo.getActorUserId());
         if (actor != null) {
             String displayName = actor.getDisplayName();
             vo.setActorName(displayName != null && !displayName.isBlank() ? displayName : actor.getUsername());

@@ -24,7 +24,14 @@ public class CategoryController {
     @PostMapping
     @Audit(action = "CATEGORY_CREATE", module = "CATEGORY", targetType = "category", targetIdResult = "id")
     public Result<Category> create(@RequestBody Map<String, String> body) {
-        return Result.ok(categoryService.create(body.get("categoryName")));
+        String name = body.get("categoryName");
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("分类名称不能为空");
+        }
+        if (name.trim().length() > 20) {
+            throw new IllegalArgumentException("分类名称不能超过20个字符");
+        }
+        return Result.ok(categoryService.create(name.trim()));
     }
 
     @Operation(summary = "删除分类")
@@ -39,7 +46,14 @@ public class CategoryController {
     @PutMapping("/{id}")
     @Audit(action = "CATEGORY_UPDATE", module = "CATEGORY", targetType = "category")
     public Result<Category> update(@PathVariable Long id, @RequestBody Map<String, String> body) {
-        return Result.ok(categoryService.update(id, body.get("categoryName")));
+        String name = body.get("categoryName");
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("分类名称不能为空");
+        }
+        if (name.trim().length() > 20) {
+            throw new IllegalArgumentException("分类名称不能超过20个字符");
+        }
+        return Result.ok(categoryService.update(id, name.trim()));
     }
 
     @Operation(summary = "获取当前用户的分类列表")

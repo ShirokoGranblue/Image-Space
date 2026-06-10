@@ -237,9 +237,9 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
     @Operation(summary = "修改密码")
     @PutMapping("/password")
     @Audit(action = "USER_PASSWORD_CHANGE", module = "USER", targetType = "user")
-    public Result<Void> changePassword(@RequestBody Map<String, String> body) {
+    public Result<Void> changePassword(@Valid @RequestBody com.picmgmt.dto.ChangePasswordDTO dto) {
         userService.changePassword(StpUtil.getLoginIdAsLong(),
-                body.get("oldPassword"), body.get("newPassword"));
+                dto.getOldPassword(), dto.getNewPassword());
         return Result.ok();
     }
 
@@ -267,20 +267,31 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
         return user;
     }
 
+    private static final Set<String> TRUSTED_PROXY_PREFIXES = Set.of(
+            "127.0.0.1", "10.", "172.16.", "172.17.", "172.18.", "172.19.",
+            "172.20.", "172.21.", "172.22.", "172.23.", "172.24.", "172.25.",
+            "172.26.", "172.27.", "172.28.", "172.29.", "172.30.", "172.31.",
+            "192.168.", "::1"
+    );
+
     private String clientIp(HttpServletRequest request) {
-        String cfIp = request.getHeader("CF-Connecting-IP");
-        if (cfIp != null && !cfIp.isBlank()) {
-            return cfIp.trim();
+        String remoteAddr = request.getRemoteAddr();
+        boolean fromTrustedProxy = TRUSTED_PROXY_PREFIXES.stream().anyMatch(remoteAddr::startsWith);
+        if (fromTrustedProxy) {
+            String cfIp = request.getHeader("CF-Connecting-IP");
+            if (cfIp != null && !cfIp.isBlank()) {
+                return cfIp.trim();
+            }
+            String forwardedFor = request.getHeader("X-Forwarded-For");
+            if (forwardedFor != null && !forwardedFor.isBlank()) {
+                return forwardedFor.split(",")[0].trim();
+            }
+            String realIp = request.getHeader("X-Real-IP");
+            if (realIp != null && !realIp.isBlank()) {
+                return realIp.trim();
+            }
         }
-        String forwardedFor = request.getHeader("X-Forwarded-For");
-        if (forwardedFor != null && !forwardedFor.isBlank()) {
-            return forwardedFor.split(",")[0].trim();
-        }
-        String realIp = request.getHeader("X-Real-IP");
-        if (realIp != null && !realIp.isBlank()) {
-            return realIp.trim();
-        }
-        return request.getRemoteAddr();
+        return remoteAddr;
     }
 
     private static final Set<String> ALLOWED_OAUTH_HOSTS = Set.of(

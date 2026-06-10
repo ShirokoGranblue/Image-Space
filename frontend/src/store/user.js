@@ -1,19 +1,20 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { getUserInfo } from '../api/user'
+import { getToken, setToken as saveToken, removeToken } from '../utils/token'
 
 export const useUserStore = defineStore('user', () => {
-  const token = ref(localStorage.getItem('satoken') || '')
+  const token = ref(getToken())
   const userInfo = ref(null)
 
   function setToken(val) {
     token.value = val
-    localStorage.setItem('satoken', val)
+    saveToken(val)
   }
 
   function clearToken() {
     token.value = ''
-    localStorage.removeItem('satoken')
+    removeToken()
     userInfo.value = null
   }
 

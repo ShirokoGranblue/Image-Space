@@ -18,4 +18,24 @@ describe('TurnstileWidget', () => {
 
     delete window.__turnstileLoading
   })
+
+  it('returns "turnstile-disabled" sentinel when disabled so callers can distinguish from unverified', () => {
+    const wrapper = mount(TurnstileWidget, {
+      props: { enabled: false },
+    })
+
+    // getToken is exposed via defineExpose
+    const token = (wrapper.vm as any).getToken()
+    expect(token).toBe('turnstile-disabled')
+  })
+
+  it('returns empty string when enabled but not yet verified', async () => {
+    const wrapper = mount(TurnstileWidget, {
+      props: { enabled: true, sitekey: 'test-key' },
+    })
+    await nextTick()
+
+    const token = (wrapper.vm as any).getToken()
+    expect(token).toBe('')
+  })
 })

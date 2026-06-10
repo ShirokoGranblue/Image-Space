@@ -1,0 +1,810 @@
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap');
+
+:root {
+  --ink: #042C53;
+  --ink2: #0C447C;
+  --ink3: #185FA5;
+  --ink4: #378ADD;
+  --ink5: #85B7EB;
+  --ink6: #B5D4F4;
+  --ink7: #E6F1FB;
+  --paper: #F7F3E8;
+  --paper2: #EDE8D8;
+  --paper3: #E2DBC8;
+  --gold: #BA7517;
+  --gold2: #EF9F27;
+  --gold3: #FAEEDA;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+.is-app { font-family:'DM Sans',sans-serif; background:transparent; }
+
+.page-switcher {
+  display:flex; gap:0; background:var(--ink); border-radius:12px 12px 0 0;
+  padding:0 16px; height:44px; align-items:center;
+}
+.ps-btn {
+  font-size:11px; padding:6px 14px; border-radius:20px; border:none;
+  background:transparent; color:var(--ink6); cursor:pointer;
+  font-family:'DM Sans',sans-serif; transition:background .15s,color .15s;
+  white-space:nowrap;
+}
+.ps-btn.act { background:var(--ink3); color:#fff; }
+.ps-btn:hover:not(.act) { background:rgba(255,255,255,.1); }
+.ps-sep { flex:1; }
+.ps-brand { font-family:'Playfair Display',serif; font-size:14px; color:#fff; letter-spacing:.04em; }
+
+.page { display:none; }
+.page.show { display:block; }
+
+/* ───── LOGIN ───── */
+.login-wrap {
+  display:grid; grid-template-columns:360px 1fr;
+  min-height:540px;
+  background:var(--paper);
+  border:0.5px solid var(--paper3);
+  border-top:none; border-radius:0 0 12px 12px; overflow:hidden;
+}
+.login-panel {
+  background:var(--paper); padding:48px 40px;
+  border-right:0.5px solid var(--paper3);
+}
+.login-logo {
+  font-family:'Playfair Display',serif; font-size:13px;
+  color:var(--ink); letter-spacing:.1em; margin-bottom:32px;
+}
+.login-heading {
+  font-family:'Playfair Display',serif; font-size:28px;
+  font-weight:400; color:var(--ink); line-height:1.2; margin-bottom:28px;
+}
+.tab-row { display:flex; border-bottom:1.5px solid var(--paper3); margin-bottom:24px; }
+.login-tab {
+  font-size:12px; padding:8px 0; margin-right:24px;
+  background:transparent; border:none; cursor:pointer;
+  font-family:'DM Sans',sans-serif; color:var(--ink3);
+  border-bottom:2px solid transparent; margin-bottom:-1.5px;
+  transition:border-color .15s, color .15s;
+}
+.login-tab.act { color:var(--ink); border-bottom-color:var(--ink); }
+.form-group { margin-bottom:16px; }
+.form-label { font-size:11px; color:var(--ink2); letter-spacing:.05em; margin-bottom:6px; display:block; }
+.form-input {
+  width:100%; height:40px; background:var(--paper2);
+  border:0.5px solid var(--paper3); border-radius:8px;
+  padding:0 12px; font-size:13px; color:var(--ink);
+  font-family:'DM Sans',sans-serif;
+  transition:border-color .15s, background .15s;
+  outline:none;
+}
+.form-input:focus { border-color:var(--ink4); background:#fff; }
+.captcha-row {
+  display:flex; align-items:center; justify-content:space-between;
+  background:#fff; border:0.5px solid var(--paper3);
+  border-radius:8px; padding:10px 14px; margin-bottom:20px;
+}
+.captcha-check { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--ink); }
+.captcha-check i { color:#1D9E75; font-size:16px; }
+.captcha-badge { font-size:9px; color:var(--ink3); text-align:right; line-height:1.4; }
+.login-btn {
+  width:100%; height:42px; background:var(--ink); color:var(--paper);
+  border:none; border-radius:8px; font-size:13px; font-weight:500;
+  cursor:pointer; font-family:'DM Sans',sans-serif;
+  transition:background .15s, transform .1s;
+  letter-spacing:.03em;
+}
+.login-btn:hover { background:var(--ink2); }
+.login-btn:active { transform:scale(.98); }
+.or-row { text-align:center; margin:16px 0; font-size:11px; color:var(--ink3); }
+.oauth-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.oauth-btn {
+  height:36px; border:0.5px solid var(--paper3); border-radius:8px;
+  background:var(--paper2); font-size:11px; color:var(--ink);
+  cursor:pointer; font-family:'DM Sans',sans-serif;
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  transition:background .15s, border-color .15s;
+}
+.oauth-btn:hover { background:#fff; border-color:var(--ink5); }
+.login-footer { text-align:center; margin-top:20px; font-size:11px; color:var(--ink3); }
+.login-footer a { color:var(--ink); cursor:pointer; }
+.login-visual {
+  background:var(--ink); position:relative; overflow:hidden;
+  display:flex; flex-direction:column; justify-content:flex-end; padding:32px;
+}
+.vis-grid {
+  position:absolute; inset:0;
+  display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(4,1fr);
+  gap:3px; padding:3px;
+}
+.vis-cell {
+  border-radius:6px; transition:opacity .6s;
+}
+.vis-quote {
+  position:relative; z-index:2;
+  font-family:'Playfair Display',serif; font-size:18px;
+  color:rgba(255,255,255,.85); line-height:1.5;
+}
+.vis-sub { font-size:11px; color:var(--ink5); margin-top:8px; }
+
+/* ───── COLLECTIONS ───── */
+.coll-wrap {
+  background:var(--paper); border:0.5px solid var(--paper3);
+  border-top:none; border-radius:0 0 12px 12px; overflow:hidden;
+}
+.coll-topbar {
+  display:flex; align-items:center; gap:12px;
+  padding:14px 20px; border-bottom:0.5px solid var(--paper3);
+  background:var(--paper2);
+}
+.coll-heading {
+  font-family:'Playfair Display',serif; font-size:20px;
+  color:var(--ink); font-weight:400;
+}
+.upload-cta {
+  display:flex; align-items:center; gap:6px;
+  background:var(--ink); color:var(--paper);
+  border:none; border-radius:8px; padding:7px 14px;
+  font-size:12px; cursor:pointer; font-family:'DM Sans',sans-serif;
+  transition:background .15s, transform .1s;
+}
+.upload-cta:hover { background:var(--ink2); }
+.upload-cta:active { transform:scale(.97); }
+.coll-topbar-sep { flex:1; }
+.toolbar-item {
+  display:flex; align-items:center; gap:5px;
+  border:0.5px solid var(--paper3); border-radius:8px;
+  padding:6px 10px; background:var(--paper); font-size:11px; color:var(--ink2);
+  cursor:pointer; font-family:'DM Sans',sans-serif;
+  transition:background .15s, border-color .15s;
+}
+.toolbar-item:hover { background:#fff; border-color:var(--ink5); }
+.toolbar-item i { font-size:14px; }
+.search-field {
+  display:flex; align-items:center; gap:6px;
+  border:0.5px solid var(--paper3); border-radius:8px;
+  padding:6px 10px; background:#fff; color:var(--ink2);
+}
+.search-field input {
+  border:none; outline:none; font-size:11px; color:var(--ink);
+  background:transparent; font-family:'DM Sans',sans-serif; width:110px;
+}
+.search-field i { font-size:13px; }
+
+.coll-grid {
+  padding:20px; display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:12px;
+}
+.img-card {
+  background:var(--paper2); border-radius:10px;
+  overflow:hidden; border:0.5px solid var(--paper3);
+  cursor:pointer; transition:border-color .2s, transform .2s;
+  animation:fadeUp .4s ease both;
+  position:relative;
+}
+.img-card:hover { border-color:var(--ink4); transform:translateY(-3px); }
+.img-thumb {
+  width:100%; display:flex; align-items:center; justify-content:center;
+  font-size:32px; color:var(--ink3);
+}
+.img-thumb.tall { height:120px; }
+.img-thumb.med  { height:90px; }
+.img-thumb.short{ height:70px; }
+.img-card-overlay {
+  position:absolute; inset:0; background:rgba(4,44,83,.6);
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  opacity:0; transition:opacity .2s; border-radius:10px;
+}
+.img-card:hover .img-card-overlay { opacity:1; }
+.ov-icon {
+  width:30px; height:30px; border-radius:6px;
+  background:rgba(255,255,255,.2); border:0.5px solid rgba(255,255,255,.35);
+  color:#fff; display:flex; align-items:center; justify-content:center;
+  font-size:14px; cursor:pointer; transition:background .15s;
+}
+.ov-icon:hover { background:rgba(255,255,255,.35); }
+.img-card-meta { padding:8px 10px; }
+.img-card-name { font-size:11px; color:var(--ink); font-weight:500; }
+.img-card-date { font-size:10px; color:var(--ink3); margin-top:2px; }
+.select-cb {
+  position:absolute; top:7px; left:7px;
+  width:16px; height:16px; border-radius:4px;
+  border:1.5px solid rgba(255,255,255,.6); background:transparent;
+  cursor:pointer; accent-color:var(--ink);
+}
+
+.coll-footer {
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  padding:14px; border-top:0.5px solid var(--paper3); background:var(--paper2);
+  font-size:12px; color:var(--ink2);
+}
+.page-btn {
+  width:28px; height:28px; border-radius:6px;
+  border:0.5px solid var(--paper3); background:var(--paper);
+  color:var(--ink); font-size:12px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:background .15s; font-family:'DM Sans',sans-serif;
+}
+.page-btn.cur { background:var(--ink); color:var(--paper); border-color:var(--ink); }
+.page-btn:hover:not(.cur) { background:#fff; }
+
+/* ───── SQUARE ───── */
+.sq-wrap {
+  background:var(--paper); border:0.5px solid var(--paper3);
+  border-top:none; border-radius:0 0 12px 12px; overflow:hidden;
+}
+.sq-hero {
+  background:var(--ink); padding:28px 24px 20px;
+  border-bottom:0.5px solid var(--ink2);
+}
+.sq-hero-title {
+  font-family:'Playfair Display',serif; font-size:22px;
+  color:#fff; font-weight:400; margin-bottom:4px;
+}
+.sq-hero-sub { font-size:12px; color:var(--ink5); }
+.sq-search-bar {
+  display:flex; align-items:center; gap:8px; margin-top:16px;
+}
+.sq-input {
+  flex:1; height:36px; background:rgba(255,255,255,.1);
+  border:0.5px solid rgba(255,255,255,.2); border-radius:8px;
+  padding:0 12px; font-size:12px; color:#fff;
+  font-family:'DM Sans',sans-serif; outline:none;
+  transition:background .15s, border-color .15s;
+}
+.sq-input::placeholder { color:var(--ink6); }
+.sq-input:focus { background:rgba(255,255,255,.18); border-color:var(--ink5); }
+.sq-tag-input {
+  width:160px; height:36px; background:rgba(255,255,255,.08);
+  border:0.5px solid rgba(255,255,255,.15); border-radius:8px;
+  padding:0 10px; font-size:11px; color:#fff;
+  font-family:'DM Sans',sans-serif; outline:none;
+}
+.sq-sort {
+  height:36px; background:rgba(255,255,255,.08);
+  border:0.5px solid rgba(255,255,255,.15); border-radius:8px;
+  padding:0 10px; font-size:11px; color:#fff;
+  font-family:'DM Sans',sans-serif; outline:none; cursor:pointer;
+}
+
+.sq-body { display:grid; grid-template-columns:1fr 200px; }
+.sq-main { padding:18px; }
+.sq-sort-row {
+  display:flex; align-items:center; gap:6px; margin-bottom:14px;
+}
+.sort-pill {
+  font-size:11px; padding:4px 12px; border-radius:20px;
+  border:0.5px solid var(--paper3); background:var(--paper);
+  color:var(--ink2); cursor:pointer; font-family:'DM Sans',sans-serif;
+  transition:all .15s;
+}
+.sort-pill.act { background:var(--ink); color:var(--paper); border-color:var(--ink); }
+.sort-pill:hover:not(.act) { background:var(--paper2); }
+
+.sq-masonry { columns:3; column-gap:10px; }
+.sq-card {
+  break-inside:avoid; margin-bottom:10px;
+  background:var(--paper2); border-radius:10px;
+  overflow:hidden; border:0.5px solid var(--paper3);
+  cursor:pointer; transition:border-color .2s, transform .2s;
+  animation:fadeUp .4s ease both; position:relative;
+}
+.sq-card:hover { border-color:var(--ink4); transform:translateY(-2px); }
+.sq-thumb {
+  width:100%; display:flex; align-items:center; justify-content:center;
+  font-size:28px; color:var(--ink2);
+}
+.sq-card-body { padding:8px 10px 10px; }
+.sq-card-title { font-size:11px; font-weight:500; color:var(--ink); }
+.sq-card-user {
+  display:flex; align-items:center; gap:5px; margin-top:5px;
+}
+.sq-av {
+  width:16px; height:16px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:8px; font-weight:500; flex-shrink:0;
+}
+.sq-uname { font-size:10px; color:var(--ink3); flex:1; }
+.sq-likes {
+  display:flex; align-items:center; gap:3px;
+  font-size:10px; color:var(--ink3); cursor:pointer;
+  transition:color .15s;
+}
+.sq-likes.liked { color:#E24B4A; }
+.sq-likes i { font-size:12px; }
+.sq-card-overlay {
+  position:absolute; inset:0; background:rgba(4,44,83,.55);
+  opacity:0; transition:opacity .2s; display:flex;
+  align-items:center; justify-content:center;
+}
+.sq-card:hover .sq-card-overlay { opacity:1; }
+
+.sq-sidebar {
+  border-left:0.5px solid var(--paper3);
+  padding:16px 14px; background:var(--paper);
+}
+.ss-head {
+  font-size:10px; letter-spacing:.08em; color:var(--ink3);
+  text-transform:uppercase; margin-bottom:8px; font-weight:500;
+}
+.tag-cloud { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:16px; }
+.sq-tag {
+  font-size:10px; padding:3px 9px; border-radius:12px;
+  background:var(--paper2); color:var(--ink2);
+  border:0.5px solid var(--paper3); cursor:pointer;
+  transition:background .15s, border-color .15s;
+}
+.sq-tag:hover { background:var(--ink7); border-color:var(--ink5); color:var(--ink); }
+.sq-user-row {
+  display:flex; align-items:center; gap:8px; margin-bottom:8px;
+  padding:5px 4px; border-radius:7px; cursor:pointer;
+  transition:background .15s;
+}
+.sq-user-row:hover { background:var(--paper2); }
+.su-av {
+  width:28px; height:28px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:10px; font-weight:500; flex-shrink:0;
+}
+.su-name { font-size:11px; font-weight:500; color:var(--ink); flex:1; }
+.su-cnt { font-size:10px; color:var(--ink3); }
+
+/* ───── PROFILE ───── */
+.prof-wrap {
+  background:var(--paper); border:0.5px solid var(--paper3);
+  border-top:none; border-radius:0 0 12px 12px; overflow:hidden;
+}
+.prof-banner {
+  height:180px; background:var(--ink);
+  position:relative; overflow:hidden;
+  display:flex; align-items:flex-end;
+}
+.banner-grid {
+  position:absolute; inset:0; display:grid;
+  grid-template-columns:repeat(5,1fr); grid-template-rows:repeat(3,1fr);
+  gap:2px; padding:2px; opacity:.7;
+}
+.banner-cell { border-radius:4px; }
+.banner-overlay {
+  position:absolute; inset:0;
+  background:linear-gradient(to top,rgba(4,44,83,.9) 0%,transparent 60%);
+}
+.prof-header {
+  position:relative; z-index:2;
+  padding:0 24px 20px; display:flex; align-items:flex-end; gap:16px;
+  width:100%;
+}
+.prof-av-wrap { position:relative; }
+.prof-av {
+  width:72px; height:72px; border-radius:50%;
+  background:var(--ink3); border:3px solid var(--paper);
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Playfair Display',serif; font-size:22px; color:#fff;
+  overflow:hidden;
+}
+.prof-av-edit {
+  position:absolute; bottom:0; right:0;
+  width:22px; height:22px; border-radius:50%;
+  background:var(--gold2); color:#fff;
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; cursor:pointer; border:2px solid var(--paper);
+}
+.prof-info { flex:1; }
+.prof-name {
+  font-family:'Playfair Display',serif; font-size:18px;
+  color:#fff; font-weight:400;
+}
+.prof-bio { font-size:12px; color:var(--ink6); margin-top:3px; }
+.prof-contact {
+  display:flex; gap:14px; margin-top:6px;
+}
+.prof-meta {
+  display:flex; align-items:center; gap:4px;
+  font-size:11px; color:var(--ink6);
+}
+.prof-meta i { font-size:13px; }
+.prof-actions { display:flex; gap:8px; }
+.prof-edit-btn {
+  height:32px; padding:0 14px; border-radius:7px;
+  border:0.5px solid rgba(255,255,255,.3); background:rgba(255,255,255,.12);
+  color:#fff; font-size:11px; cursor:pointer; font-family:'DM Sans',sans-serif;
+  transition:background .15s;
+}
+.prof-edit-btn:hover { background:rgba(255,255,255,.22); }
+
+.prof-stats {
+  display:flex; gap:0; border-bottom:0.5px solid var(--paper3);
+  background:var(--paper2);
+}
+.prof-stat {
+  flex:1; padding:14px; text-align:center;
+  border-right:0.5px solid var(--paper3);
+}
+.prof-stat:last-child { border-right:none; }
+.stat-num {
+  font-family:'Playfair Display',serif; font-size:20px;
+  color:var(--ink); font-weight:400;
+}
+.stat-label { font-size:10px; color:var(--ink3); margin-top:2px; letter-spacing:.05em; }
+
+.prof-body { padding:20px 24px; }
+.works-head {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:14px;
+}
+.works-title {
+  font-family:'Playfair Display',serif; font-size:16px;
+  color:var(--ink); font-weight:400;
+}
+.prof-grid {
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+  gap:10px;
+}
+.prof-img {
+  border-radius:9px; overflow:hidden; border:0.5px solid var(--paper3);
+  cursor:pointer; transition:border-color .2s, transform .2s;
+  position:relative; animation:fadeUp .4s ease both;
+}
+.prof-img:hover { border-color:var(--ink4); transform:translateY(-2px); }
+.prof-img-thumb {
+  width:100%; display:flex; align-items:center; justify-content:center;
+  font-size:26px; color:var(--ink3); background:var(--paper2);
+}
+.prof-img-thumb.h1 { height:110px; }
+.prof-img-thumb.h2 { height:80px; }
+.prof-img-thumb.h3 { height:130px; }
+.prof-img-overlay {
+  position:absolute; inset:0; background:rgba(4,44,83,.55);
+  opacity:0; transition:opacity .2s; border-radius:9px;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.prof-img:hover .prof-img-overlay { opacity:1; }
+.pov-btn {
+  width:28px; height:28px; border-radius:6px;
+  background:rgba(255,255,255,.2); border:0.5px solid rgba(255,255,255,.3);
+  color:#fff; display:flex; align-items:center; justify-content:center;
+  font-size:13px; cursor:pointer; transition:background .15s;
+}
+.pov-btn:hover { background:rgba(255,255,255,.35); }
+.prof-img-meta { padding:7px 9px; background:var(--paper); }
+.prof-img-name { font-size:10px; color:var(--ink); }
+.prof-img-pub { font-size:9px; color:var(--ink3); margin-top:2px; }
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+.like-float {
+  position:absolute; pointer-events:none;
+  color:#E24B4A; font-size:14px;
+  animation:floatUp .65s ease forwards;
+  left:50%; top:40%; transform:translateX(-50%);
+}
+@keyframes floatUp{0%{opacity:1;transform:translateX(-50%) scale(1);}100%{opacity:0;transform:translateX(-50%) translateY(-28px) scale(1.5);}}
+</style>
+
+<h2 class="sr-only">IMAGESPACE 重设计稿 — 包含登录、合集、广场和个人主页四个页面</h2>
+
+<div class="is-app">
+
+<div class="page-switcher">
+  <span class="ps-brand">IMAGESPACE</span>
+  <div class="ps-sep"></div>
+  <button class="ps-btn act" onclick="showPage('login',this)">登录页</button>
+  <button class="ps-btn" onclick="showPage('collections',this)">合集 Collections</button>
+  <button class="ps-btn" onclick="showPage('square',this)">广场 Square</button>
+  <button class="ps-btn" onclick="showPage('profile',this)">主页 Profile</button>
+</div>
+
+<!-- ═══ LOGIN ═══ -->
+<div class="page show" id="p-login">
+  <div class="login-wrap">
+    <div class="login-panel">
+      <div class="login-logo">IMAGESPACE</div>
+      <div class="login-heading">欢迎<br>回来</div>
+      <div class="tab-row">
+        <button class="login-tab act" onclick="switchLoginTab(this,'pwd')">密码登录</button>
+        <button class="login-tab" onclick="switchLoginTab(this,'email')">邮箱登录</button>
+      </div>
+      <div id="login-pwd">
+        <div class="form-group">
+          <label class="form-label">用户名</label>
+          <input class="form-input" value="admin" type="text" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">密码</label>
+          <input class="form-input" value="••••••••••••" type="password" />
+        </div>
+        <div class="captcha-row">
+          <div class="captcha-check"><i class="ti ti-circle-check" aria-hidden="true"></i> 验证成功</div>
+          <div class="captcha-badge">CLOUDFLARE<br>隐私 · 服务</div>
+        </div>
+        <button class="login-btn" id="loginBtn" onclick="loginAnim()">登录</button>
+        <div class="or-row">或</div>
+        <div class="oauth-row">
+          <button class="oauth-btn"><i class="ti ti-brand-github" aria-hidden="true" style="font-size:15px;"></i> GitHub</button>
+          <button class="oauth-btn"><i class="ti ti-brand-google" aria-hidden="true" style="font-size:15px;color:#E24B4A;"></i> Google</button>
+        </div>
+        <div class="login-footer">还没有账号？<a onclick="sendPrompt('我想注册一个 IMAGESPACE 账号，需要什么信息？')">创建账号 ↗</a></div>
+      </div>
+    </div>
+    <div class="login-visual">
+      <div class="vis-grid" id="visGrid"></div>
+      <div style="position:relative;z-index:2;">
+        <div class="vis-quote">记录光影，<br>分享瞬间。</div>
+        <div class="vis-sub">图片社区 · 私人图床 · 创作者空间</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ COLLECTIONS ═══ -->
+<div class="page" id="p-collections">
+  <div class="coll-wrap">
+    <div class="coll-topbar">
+      <div class="coll-heading">Collections</div>
+      <button class="upload-cta"><i class="ti ti-plus" aria-hidden="true" style="font-size:14px;"></i> 上传图片</button>
+      <div class="coll-topbar-sep"></div>
+      <div class="toolbar-item"><input type="checkbox" style="accent-color:var(--ink);width:12px;"> 全选本页</div>
+      <div class="toolbar-item"><i class="ti ti-filter" aria-hidden="true"></i> 按分类筛选 <i class="ti ti-chevron-down" aria-hidden="true" style="font-size:11px;"></i></div>
+      <div class="search-field"><i class="ti ti-search" aria-hidden="true" style="font-size:13px;color:var(--ink3);"></i><input placeholder="搜索图片名称" /></div>
+      <div class="toolbar-item"><i class="ti ti-clock" aria-hidden="true"></i> 按时间 <i class="ti ti-chevron-down" aria-hidden="true" style="font-size:11px;"></i></div>
+    </div>
+    <div class="coll-grid" id="collGrid"></div>
+    <div class="coll-footer">
+      共 12 条
+      <div class="page-btn cur">1</div>
+      <div class="page-btn">2</div>
+      <div class="page-btn"><i class="ti ti-chevron-right" aria-hidden="true" style="font-size:12px;"></i></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SQUARE ═══ -->
+<div class="page" id="p-square">
+  <div class="sq-wrap">
+    <div class="sq-hero">
+      <div class="sq-hero-title">Square</div>
+      <div class="sq-hero-sub">浏览社区公开作品，用标签发现同风格创作</div>
+      <div class="sq-search-bar">
+        <input class="sq-input" placeholder="输入图片名称…" />
+        <input class="sq-tag-input" placeholder="输入或选择标签" />
+        <select class="sq-sort"><option>排序：最新</option><option>排序：最热</option><option>排序：精选</option></select>
+      </div>
+    </div>
+    <div class="sq-body">
+      <div class="sq-main">
+        <div class="sq-sort-row">
+          <button class="sort-pill act" onclick="setSortPill(this)">全部</button>
+          <button class="sort-pill" onclick="setSortPill(this)">插画</button>
+          <button class="sort-pill" onclick="setSortPill(this)">摄影</button>
+          <button class="sort-pill" onclick="setSortPill(this)">风景</button>
+          <button class="sort-pill" onclick="setSortPill(this)">人像</button>
+        </div>
+        <div class="sq-masonry" id="sqMasonry"></div>
+      </div>
+      <aside class="sq-sidebar">
+        <div class="ss-head">热门标签</div>
+        <div class="tag-cloud" id="tagCloud"></div>
+        <div class="ss-head" style="margin-top:12px;">活跃创作者</div>
+        <div id="sqCreators"></div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PROFILE ═══ -->
+<div class="page" id="p-profile">
+  <div class="prof-wrap">
+    <div class="prof-banner">
+      <div class="banner-grid" id="bannerGrid"></div>
+      <div class="banner-overlay"></div>
+      <div class="prof-header">
+        <div class="prof-av-wrap">
+          <div class="prof-av">S</div>
+          <div class="prof-av-edit"><i class="ti ti-camera" aria-hidden="true" style="font-size:10px;"></i></div>
+        </div>
+        <div class="prof-info">
+          <div class="prof-name">ShirokoGranblue</div>
+          <div class="prof-bio">123</div>
+          <div class="prof-contact">
+            <div class="prof-meta"><i class="ti ti-mail" aria-hidden="true"></i> lz2653740949@gmail.com</div>
+            <div class="prof-meta"><i class="ti ti-phone" aria-hidden="true"></i> 13677749786</div>
+          </div>
+        </div>
+        <div class="prof-actions">
+          <button class="prof-edit-btn"><i class="ti ti-edit" aria-hidden="true" style="font-size:13px;"></i> 编辑资料</button>
+          <button class="prof-edit-btn"><i class="ti ti-dots" aria-hidden="true" style="font-size:13px;"></i></button>
+        </div>
+      </div>
+    </div>
+    <div class="prof-stats">
+      <div class="prof-stat"><div class="stat-num" id="sc1">0</div><div class="stat-label">作品</div></div>
+      <div class="prof-stat"><div class="stat-num" id="sc2">0</div><div class="stat-label">获赞</div></div>
+      <div class="prof-stat"><div class="stat-num" id="sc3">0</div><div class="stat-label">关注者</div></div>
+      <div class="prof-stat"><div class="stat-num" id="sc4">0</div><div class="stat-label">收藏</div></div>
+    </div>
+    <div class="prof-body">
+      <div class="works-head">
+        <div class="works-title">作品</div>
+        <div class="toolbar-item" style="font-size:11px;"><input type="checkbox" style="accent-color:var(--ink);width:12px;"> 全选本页</div>
+      </div>
+      <div class="prof-grid" id="profGrid"></div>
+    </div>
+    <div class="coll-footer">共 1 条 <div class="page-btn cur">1</div></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+const PAPER_TONES = ['#F7F3E8','#EDE8D8','#E2DBc8','#D8D0BA','#D0C7AB'];
+const BLUE_TONES  = ['#042C53','#0C447C','#185FA5','#378ADD','#85B7EB'];
+
+function showPage(id, btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('show'));
+  document.getElementById('p-'+id).classList.add('show');
+  document.querySelectorAll('.ps-btn').forEach(b=>b.classList.remove('act'));
+  btn.classList.add('act');
+}
+
+function switchLoginTab(el, mode){
+  document.querySelectorAll('.login-tab').forEach(t=>t.classList.remove('act'));
+  el.classList.add('act');
+}
+
+function loginAnim(){
+  const btn = document.getElementById('loginBtn');
+  btn.textContent='登录中…'; btn.style.background='var(--ink3)';
+  setTimeout(()=>{btn.textContent='✓ 登录成功'; btn.style.background='#1D9E75';},800);
+  setTimeout(()=>{btn.textContent='登录'; btn.style.background='';},2200);
+}
+
+function setSortPill(el){
+  document.querySelectorAll('.sort-pill').forEach(p=>p.classList.remove('act'));
+  el.classList.add('act');
+}
+
+function buildLoginVisual(){
+  const g = document.getElementById('visGrid');
+  const colors = [...BLUE_TONES,...BLUE_TONES,...BLUE_TONES,...BLUE_TONES].slice(0,12);
+  colors.sort(()=>Math.random()-.5);
+  g.innerHTML = colors.map(c=>`<div class="vis-cell" style="background:${c};"></div>`).join('');
+  setInterval(()=>{
+    const cells = g.querySelectorAll('.vis-cell');
+    const i = Math.floor(Math.random()*cells.length);
+    cells[i].style.opacity = (Math.random()*0.5+0.3).toFixed(2);
+  }, 600);
+}
+
+const collItems = [
+  {icon:'ti-building',h:'tall',name:'走廊日光',date:'2026-06-01',pub:true},
+  {icon:'ti-mountain',h:'med',name:'晨雾山脉',date:'2026-05-28',pub:true},
+  {icon:'ti-tree',h:'short',name:'林间光斑',date:'2026-05-20',pub:false},
+  {icon:'ti-droplet',h:'tall',name:'雨后玻璃',date:'2026-05-15',pub:true},
+  {icon:'ti-user-circle',h:'med',name:'街头人像',date:'2026-05-10',pub:true},
+  {icon:'ti-ripple',h:'short',name:'湖面倒影',date:'2026-05-05',pub:false},
+  {icon:'ti-stars',h:'tall',name:'星空延时',date:'2026-04-28',pub:true},
+  {icon:'ti-camera',h:'med',name:'胶片质感',date:'2026-04-20',pub:true},
+  {icon:'ti-cloud',h:'short',name:'暮色云层',date:'2026-04-10',pub:false},
+];
+function buildColl(){
+  const g = document.getElementById('collGrid');
+  g.innerHTML = collItems.map((c,i)=>`
+    <div class="img-card" style="animation-delay:${i*.05}s;">
+      <input type="checkbox" class="select-cb">
+      <div class="img-thumb ${c.h}" style="background:${PAPER_TONES[i%PAPER_TONES.length]};">
+        <i class="ti ${c.icon}" aria-hidden="true"></i>
+      </div>
+      <div class="img-card-overlay">
+        <div class="ov-icon"><i class="ti ti-eye" aria-hidden="true"></i></div>
+        <div class="ov-icon"><i class="ti ti-download" aria-hidden="true"></i></div>
+        <div class="ov-icon"><i class="ti ti-trash" aria-hidden="true"></i></div>
+      </div>
+      <div class="img-card-meta">
+        <div class="img-card-name">${c.name}</div>
+        <div class="img-card-date">${c.date} · ${c.pub?'公开':'私密'}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+const sqItems = [
+  {icon:'ti-building-arch',h:110,name:'老城黄昏',user:'陈渝',av:'渝',avc:'#185FA5',bg:'#E2DBc8',likes:634},
+  {icon:'ti-mountain',h:80,name:'晨雾群山',user:'Mika',av:'M',avc:'#0C447C',bg:'#EDE8D8',likes:1842},
+  {icon:'ti-ripple',h:130,name:'蓝调湖面',user:'Sora',av:'S',avc:'#185FA5',bg:'#D8D0BA',likes:3201},
+  {icon:'ti-user-circle',h:90,name:'街头人像',user:'Lena',av:'L',avc:'#0C447C',bg:'#E2DBc8',likes:2078},
+  {icon:'ti-stars',h:120,name:'银河延时',user:'NS',av:'N',avc:'#042C53',bg:'#EDE8D8',likes:4122},
+  {icon:'ti-camera',h:75,name:'胶片城市',user:'老张',av:'张',avc:'#185FA5',bg:'#D8D0BA',likes:901},
+];
+const sqLiked = new Set();
+function buildSq(){
+  const m = document.getElementById('sqMasonry');
+  m.innerHTML = sqItems.map((c,i)=>`
+    <div class="sq-card" id="sqc${i}" style="animation-delay:${i*.06}s;">
+      <div class="sq-thumb" style="height:${c.h}px;background:${c.bg};">
+        <i class="ti ${c.icon}" aria-hidden="true"></i>
+      </div>
+      <div class="sq-card-overlay"></div>
+      <div class="sq-card-body">
+        <div class="sq-card-title">${c.name}</div>
+        <div class="sq-card-user">
+          <div class="sq-av" style="background:${c.avc};color:#fff;">${c.av}</div>
+          <span class="sq-uname">${c.user}</span>
+          <span class="sq-likes" id="sql${i}" onclick="sqLike(${i},event)">
+            <i class="ti ti-heart" aria-hidden="true"></i> ${c.likes.toLocaleString()}
+          </span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+function sqLike(i, e){
+  e.stopPropagation();
+  const el = document.getElementById('sql'+i);
+  const card = document.getElementById('sqc'+i);
+  if(sqLiked.has(i)){sqLiked.delete(i);sqItems[i].likes--;el.classList.remove('liked');}
+  else{
+    sqLiked.add(i);sqItems[i].likes++;el.classList.add('liked');
+    const f=document.createElement('span');f.className='like-float';f.textContent='♥';
+    card.style.position='relative';card.appendChild(f);
+    setTimeout(()=>f.remove(),700);
+  }
+  el.innerHTML=`<i class="ti ti-heart" aria-hidden="true"></i> ${sqItems[i].likes.toLocaleString()}`;
+}
+
+const sqTags=['插画','摄影','风景','人像','极简','胶片','动漫','建筑','自然','旅行'];
+function buildSqSidebar(){
+  document.getElementById('tagCloud').innerHTML=sqTags.map(t=>`<span class="sq-tag">${t}</span>`).join('');
+  const creators=[{n:'NightSky',cnt:'4.1K',av:'NS',c:'#042C53'},{n:'Mika L.',cnt:'1.8K',av:'M',c:'#185FA5'},{n:'陈渝',cnt:'901',av:'渝',c:'#0C447C'}];
+  document.getElementById('sqCreators').innerHTML=creators.map(c=>`
+    <div class="sq-user-row">
+      <div class="su-av" style="background:${c.c};color:#fff;">${c.av}</div>
+      <span class="su-name">${c.n}</span>
+      <span class="su-cnt">${c.cnt} 赞</span>
+    </div>
+  `).join('');
+}
+
+function buildBanner(){
+  const g=document.getElementById('bannerGrid');
+  const cols=[...BLUE_TONES,...PAPER_TONES].sort(()=>Math.random()-.5).slice(0,15);
+  g.innerHTML=cols.map(c=>`<div class="banner-cell" style="background:${c};"></div>`).join('');
+}
+
+const profImgs=[
+  {icon:'ti-building',h:'h1',name:'走廊日光',pub:'公开'},
+  {icon:'ti-mountain',h:'h2',name:'晨雾山脉',pub:'公开'},
+  {icon:'ti-stars',h:'h3',name:'银河延时',pub:'私密'},
+  {icon:'ti-ripple',h:'h1',name:'蓝调湖面',pub:'公开'},
+  {icon:'ti-tree',h:'h2',name:'林间光斑',pub:'公开'},
+  {icon:'ti-camera',h:'h3',name:'胶片城市',pub:'公开'},
+];
+function buildProf(){
+  const g=document.getElementById('profGrid');
+  g.innerHTML=profImgs.map((c,i)=>`
+    <div class="prof-img" style="animation-delay:${i*.06}s;">
+      <div class="prof-img-thumb ${c.h}" style="background:${PAPER_TONES[i%PAPER_TONES.length]};">
+        <i class="ti ${c.icon}" aria-hidden="true"></i>
+      </div>
+      <div class="prof-img-overlay">
+        <div class="pov-btn"><i class="ti ti-eye" aria-hidden="true"></i></div>
+        <div class="pov-btn"><i class="ti ti-download" aria-hidden="true"></i></div>
+      </div>
+      <div class="prof-img-meta">
+        <div class="prof-img-name">${c.name}</div>
+        <div class="prof-img-pub">${c.pub}</div>
+      </div>
+    </div>
+  `).join('');
+  animCount('sc1',1);animCount('sc2',42);animCount('sc3',8);animCount('sc4',17);
+}
+function animCount(id,target){
+  let v=0;const el=document.getElementById(id);
+  const step=Math.ceil(target/30);
+  const t=setInterval(()=>{v=Math.min(v+step,target);el.textContent=v;if(v>=target)clearInterval(t);},40);
+}
+
+document.querySelectorAll('.sq-tag').forEach(t=>{
+  t.addEventListener('click',function(){this.style.background='var(--ink7)';this.style.borderColor='var(--ink4)';setTimeout(()=>{this.style.background='';this.style.borderColor='';},700);});
+});
+
+buildLoginVisual();buildColl();buildSq();buildSqSidebar();buildBanner();buildProf();
+</script>
