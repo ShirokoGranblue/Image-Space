@@ -1674,7 +1674,7 @@ async function saveProfile() {
 }
 
 .profile-name-row h2 {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-display);
   font-size: 18px;
   color: var(--ink);
   font-weight: 400;
@@ -1752,7 +1752,7 @@ async function saveProfile() {
 
 .stat-num {
   display: block;
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-display);
   font-size: 20px;
   color: var(--ink);
   font-weight: 400;
@@ -1784,7 +1784,7 @@ async function saveProfile() {
 }
 
 .works-heading h3 {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-display);
   font-size: 16px;
   color: var(--ink);
   font-weight: 400;
@@ -1860,7 +1860,7 @@ async function saveProfile() {
   align-items: center;
   justify-content: center;
   transition: background .15s;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body);
   min-width: auto;
 }
 
@@ -2085,7 +2085,7 @@ async function saveProfile() {
 }
 
 .preview-label {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-display);
   font-size: 13px;
   font-weight: 400;
   color: var(--ink);
@@ -2197,7 +2197,7 @@ async function saveProfile() {
 }
 
 .slider-label {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body);
   font-size: 13px;
   color: var(--ink2);
   flex-shrink: 0;

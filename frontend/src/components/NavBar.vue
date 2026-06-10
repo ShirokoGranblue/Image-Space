@@ -155,7 +155,7 @@ async function handleLogout() {
   gap: 10px;
   flex-shrink: 0;
   color: #fff;
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-display);
   font-size: 14px;
   font-weight: 500;
   letter-spacing: 0.04em;
@@ -189,7 +189,7 @@ async function handleLogout() {
   background: transparent;
   color: var(--ink6);
   cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body);
   transition: background .15s, color .15s;
   white-space: nowrap;
   text-decoration: none;

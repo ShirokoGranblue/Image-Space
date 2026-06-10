@@ -199,7 +199,7 @@ function resetTurnstile() {
 }
 
 .login-logo {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-display);
   font-size: 14px;
   color: var(--ink);
   letter-spacing: .1em;
@@ -214,7 +214,7 @@ function resetTurnstile() {
 }
 
 .login-heading {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-display);
   font-size: 28px;
   font-weight: 400;
   color: var(--ink);
@@ -232,7 +232,7 @@ function resetTurnstile() {
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body);
   transition: background .15s, transform .1s;
   letter-spacing: .03em;
   display: flex;
@@ -290,7 +290,7 @@ function resetTurnstile() {
 .vis-quote {
   position: relative;
   z-index: 2;
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-display);
   font-size: 18px;
   color: rgba(255, 255, 255, .85);
   line-height: 1.5;
@@ -331,7 +331,7 @@ function resetTurnstile() {
 }
 
 .auth-form :deep(.el-input__inner) {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body);
   font-size: 13px;
   color: var(--ink) !important;
 }

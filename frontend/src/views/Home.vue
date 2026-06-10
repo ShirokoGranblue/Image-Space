@@ -483,7 +483,7 @@ async function saveEdit() {
 }
 
 .page-title {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-display);
   font-size: 20px;
   font-weight: 400;
   color: var(--ink);
@@ -581,7 +581,7 @@ async function saveEdit() {
   background: var(--ink) !important;
   border: none !important;
   color: var(--paper) !important;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body);
   transition: background .15s, transform .1s;
   display: inline-flex;
   align-items: center;
@@ -644,7 +644,7 @@ async function saveEdit() {
   align-items: center;
   justify-content: center;
   transition: background .15s;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body);
   min-width: auto;
 }
 

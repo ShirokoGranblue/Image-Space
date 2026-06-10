@@ -375,7 +375,7 @@ function goCreatorProfile(uuidOrId) {
 }
 
 .sq-hero-title {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-display);
   font-size: 22px;
   color: #fff;
   font-weight: 400;
@@ -385,7 +385,7 @@ function goCreatorProfile(uuidOrId) {
 .sq-hero-sub {
   font-size: 12px;
   color: var(--ink5);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body);
 }
 
 .sq-search-bar {
@@ -451,7 +451,7 @@ function goCreatorProfile(uuidOrId) {
   padding: 0 10px;
   font-size: 11px;
   color: #fff;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body);
   outline: none;
   cursor: pointer;
   width: 140px;
@@ -488,7 +488,7 @@ function goCreatorProfile(uuidOrId) {
   background: var(--paper);
   color: var(--ink2);
   cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body);
   transition: all .15s;
 }
 
@@ -631,7 +631,7 @@ function goCreatorProfile(uuidOrId) {
   align-items: center;
   justify-content: center;
   transition: background .15s;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body);
   min-width: auto;
 }
 
@@ -715,7 +715,7 @@ function goCreatorProfile(uuidOrId) {
 .drawer-body h2 {
   margin: 0;
   color: var(--ink);
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-display);
   font-size: 22px;
   font-weight: 400;
   line-height: 1.25;

@@ -479,7 +479,7 @@ function resetTurnstile() { turnstileToken.value = ''; turnstileRef.value?.reset
 }
 
 .login-logo {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-display);
   font-size: 14px;
   color: var(--ink);
   letter-spacing: .1em;
@@ -494,7 +494,7 @@ function resetTurnstile() { turnstileToken.value = ''; turnstileRef.value?.reset
 }
 
 .login-heading {
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-display);
   font-size: 28px;
   font-weight: 400;
   color: var(--ink);
@@ -515,7 +515,7 @@ function resetTurnstile() { turnstileToken.value = ''; turnstileRef.value?.reset
   background: transparent;
   border: none;
   cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body);
   color: var(--ink3);
   border-bottom: 2px solid transparent;
   margin-bottom: -1.5px;
@@ -537,7 +537,7 @@ function resetTurnstile() { turnstileToken.value = ''; turnstileRef.value?.reset
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body);
   transition: background .15s, transform .1s;
   letter-spacing: .03em;
   display: flex;
@@ -574,7 +574,7 @@ function resetTurnstile() { turnstileToken.value = ''; turnstileRef.value?.reset
   font-size: 11px;
   color: var(--ink);
   cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -629,7 +629,7 @@ function resetTurnstile() { turnstileToken.value = ''; turnstileRef.value?.reset
 .vis-quote {
   position: relative;
   z-index: 2;
-  font-family: 'Playfair Display', serif;
+  font-family: var(--font-display);
   font-size: 18px;
   color: rgba(255, 255, 255, .85);
   line-height: 1.5;
@@ -670,7 +670,7 @@ function resetTurnstile() { turnstileToken.value = ''; turnstileRef.value?.reset
 }
 
 .auth-form :deep(.el-input__inner) {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body);
   font-size: 13px;
   color: var(--ink) !important;
 }
@@ -711,7 +711,7 @@ function resetTurnstile() { turnstileToken.value = ''; turnstileRef.value?.reset
   background: var(--paper2) !important;
   border: 0.5px solid var(--paper3) !important;
   color: var(--ink) !important;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-body);
   font-size: 11px;
   width: 100%;
 }

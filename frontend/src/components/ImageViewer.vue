@@ -164,7 +164,7 @@ defineExpose({ open, close })
   min-width: 42px;
   text-align: center;
   font-variant-numeric: tabular-nums;
-  font-family: 'Claude Serif', serif;
+  font-family: var(--font-body);
 }
 
 .viewer-stage {

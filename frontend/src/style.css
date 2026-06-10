@@ -2,8 +2,6 @@
    ImageSpace — Editorial Design System
    ══════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap');
-
 @font-face {
   font-family: 'Claude Serif';
   src: url('./assets/fonts/c66fc489e-C-BHYa_K.woff2') format('woff2');
@@ -68,8 +66,8 @@
   --success: #1D9E75;
 
   /* Typography */
-  --font-display: 'Playfair Display', 'Claude Serif', serif;
-  --font-body: 'DM Sans', sans-serif;
+  --font-display: 'Claude Serif', serif;
+  --font-body: 'Claude Serif', serif;
 
   /* Spacing */
   --space-xs: 4px;  --space-sm: 8px;  --space-md: 16px;
