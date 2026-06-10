@@ -147,13 +147,30 @@ public class MicrosoftOAuthServiceImpl implements MicrosoftOAuthService {
     }
 
     /**
-     * 脱敏敏感信息
+     * 脱敏敏感信息：移除可能包含的 token、密钥等字段，仅保留错误类型和描述。
+     * 避免将 access_token、refresh_token、id_token、client_secret 等写入日志。
      */
     private String maskSensitiveInfo(String text) {
         if (text == null) return null;
-        // 简单脱敏：保留前50个字符
-        if (text.length() > 50) {
-            return text.substring(0, 50) + "...";
+        try {
+            JSONObject json = JSONUtil.parseObj(text);
+            // 仅保留 error 相关字段，移除所有 token 和敏感字段
+            JSONObject safe = new JSONObject();
+            if (json.containsKey("error")) safe.set("error", json.getStr("error"));
+            if (json.containsKey("error_description")) safe.set("error_description", json.getStr("error_description"));
+            if (json.containsKey("error_codes")) safe.set("error_codes", json.get("error_codes"));
+            if (json.containsKey("timestamp")) safe.set("timestamp", json.get("timestamp"));
+            if (json.containsKey("trace_id")) safe.set("trace_id", json.getStr("trace_id"));
+            if (json.containsKey("correlation_id")) safe.set("correlation_id", json.getStr("correlation_id"));
+            if (!safe.isEmpty()) {
+                return safe.toString();
+            }
+        } catch (Exception ignored) {
+            // 不是 JSON，按纯文本处理
+        }
+        // 纯文本：截断到 100 字符并移除可能的 token 片段
+        if (text.length() > 100) {
+            return text.substring(0, 100) + "...[truncated]";
         }
         return text;
     }

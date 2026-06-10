@@ -36,7 +36,9 @@ public class OAuthLoginServiceImpl implements OAuthLoginService {
     @Transactional
     public OAuthLoginResult loginOrRegisterByMicrosoft(MicrosoftUserInfo userInfo) {
         String providerUserId = userInfo.getId();
-        String email = userInfo.getEmail();
+        // 使用经过 Microsoft 验证的邮箱（UPN 优先）进行账号绑定，
+        // 防止通过未验证的 mail 别名字段绑定到他人账号
+        String verifiedEmail = userInfo.getVerifiedEmail();
         String displayName = userInfo.getDisplayName();
 
         // 1. 先查是否已有绑定
@@ -72,12 +74,15 @@ public class OAuthLoginServiceImpl implements OAuthLoginService {
                     .build();
         }
 
-        // 2. 没有绑定，尝试根据 email 查找已有用户
+        // 2. 没有绑定，尝试根据已验证邮箱查找已有用户
+        //    使用 getVerifiedEmail()（优先 UPN）而非 getEmail()（优先 mail），
+        //    因为 UPN 是 Microsoft 的登录凭据，始终经过验证；
+        //    mail 可能是用户自行添加的别名，验证强度不足。
         User existingUser = null;
-        if (email != null && !email.isBlank()) {
+        if (verifiedEmail != null && !verifiedEmail.isBlank()) {
             existingUser = userMapper.selectOne(
                     new LambdaQueryWrapper<User>()
-                            .eq(User::getEmail, email)
+                            .eq(User::getEmail, verifiedEmail)
                             .and(w -> w.isNull(User::getDeleted).or().eq(User::getDeleted, 0))
             );
         }
@@ -89,7 +94,7 @@ public class OAuthLoginServiceImpl implements OAuthLoginService {
             // 找到已有用户，创建绑定
             userId = existingUser.getId();
             createOAuthBinding(userId, userInfo);
-            log.info("Microsoft OAuth: created binding for existing user, userId={}, email={}", userId, email);
+            log.info("Microsoft OAuth: created binding for existing user, userId={}, verifiedEmail={}", userId, verifiedEmail);
         } else {
             // 没有已有用户，创建新用户
             User newUser = createNewUser(userInfo);
@@ -128,7 +133,8 @@ public class OAuthLoginServiceImpl implements OAuthLoginService {
         binding.setUserId(userId);
         binding.setProvider(PROVIDER_MICROSOFT);
         binding.setProviderUserId(userInfo.getId());
-        binding.setProviderEmail(userInfo.getEmail());
+        // 存储经过验证的邮箱（UPN 优先）
+        binding.setProviderEmail(userInfo.getVerifiedEmail());
         binding.setProviderUsername(userInfo.getDisplayName());
         // Microsoft Graph /me 不直接返回头像，需要通过 /photo 端点获取
         // 这里先留空，后续可以扩展
@@ -166,8 +172,8 @@ public class OAuthLoginServiceImpl implements OAuthLoginService {
         // 设置角色
         user.setRole("user");
 
-        // 设置邮箱
-        user.setEmail(userInfo.getEmail());
+        // 设置已验证邮箱（UPN 优先）
+        user.setEmail(userInfo.getVerifiedEmail());
 
         // 设置未删除状态
         user.setDeleted(0);

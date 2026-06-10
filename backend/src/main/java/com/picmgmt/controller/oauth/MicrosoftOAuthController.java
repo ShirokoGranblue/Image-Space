@@ -1,6 +1,5 @@
 package com.picmgmt.controller.oauth;
 
-import cn.hutool.core.util.StrUtil;
 import com.picmgmt.config.MicrosoftOAuthProperties;
 import com.picmgmt.dto.oauth.MicrosoftTokenResponse;
 import com.picmgmt.dto.oauth.MicrosoftUserInfo;
@@ -19,10 +18,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.Duration;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -51,6 +52,16 @@ public class MicrosoftOAuthController {
     private static final String STATE_KEY_PREFIX = "oauth:microsoft:state:";
     private static final String BASE_URL_KEY_PREFIX = "oauth:microsoft:baseurl:";
     private static final Duration STATE_TTL = Duration.ofMinutes(5);
+
+    /**
+     * 允许的前端域名白名单，用于防止 open redirect 攻击。
+     * 只有这些域名可以作为 OAuth 回调后的重定向目标。
+     * 部署时需根据实际前端域名配置。
+     */
+    private static final Set<String> ALLOWED_FRONTEND_HOSTS = Set.of(
+            "image-space.app",
+            "localhost"
+    );
 
     /**
      * 生成安全的随机 state
@@ -82,9 +93,14 @@ public class MicrosoftOAuthController {
         // 存储 state 到 Redis，用于 CSRF 防护
         redisTemplate.opsForValue().set(STATE_KEY_PREFIX + state, "1", STATE_TTL);
 
-        // 存储前端 baseUrl，用于回调后重定向
+        // 存储前端 baseUrl，用于回调后重定向（验证白名单防止 open redirect）
         if (baseUrl != null && !baseUrl.isBlank()) {
-            redisTemplate.opsForValue().set(BASE_URL_KEY_PREFIX + state, baseUrl, STATE_TTL);
+            String sanitized = sanitizeBaseUrl(baseUrl);
+            if (sanitized != null) {
+                redisTemplate.opsForValue().set(BASE_URL_KEY_PREFIX + state, sanitized, STATE_TTL);
+            } else {
+                log.warn("Microsoft OAuth login: rejected invalid baseUrl={}", maskUrl(baseUrl));
+            }
         }
 
         // 构建授权 URL
@@ -109,11 +125,16 @@ public class MicrosoftOAuthController {
         String frontendBaseUrl = null;
 
         try {
-            // 获取存储的 baseUrl
+            // 获取存储的 baseUrl（存入时已验证白名单，此处二次校验作为纵深防御）
             if (state != null) {
                 String storedBaseUrl = redisTemplate.opsForValue().get(BASE_URL_KEY_PREFIX + state);
                 if (storedBaseUrl != null) {
-                    frontendBaseUrl = storedBaseUrl;
+                    String sanitized = sanitizeBaseUrl(storedBaseUrl);
+                    if (sanitized != null) {
+                        frontendBaseUrl = sanitized;
+                    } else {
+                        log.warn("Microsoft OAuth callback: stored baseUrl failed re-validation");
+                    }
                     redisTemplate.delete(BASE_URL_KEY_PREFIX + state);
                 }
             }
@@ -188,6 +209,63 @@ public class MicrosoftOAuthController {
         } catch (Exception e) {
             log.error("Microsoft OAuth callback processing failed: {}", e.getMessage(), e);
             redirectWithError(response, failureUrl, "login_failed");
+        }
+    }
+
+    /**
+     * 验证并清洗 baseUrl，防止 open redirect 攻击。
+     * 只有 HTTPS 协议且在白名单中的域名才被允许（localhost 允许 HTTP 用于开发）。
+     *
+     * @param rawBaseUrl 用户提供的 baseUrl
+     * @return 清洗后的 baseUrl，无效时返回 null
+     */
+    private String sanitizeBaseUrl(String rawBaseUrl) {
+        try {
+            URI uri = new URI(rawBaseUrl);
+            String scheme = uri.getScheme();
+            String host = uri.getHost();
+
+            if (host == null || host.isBlank()) {
+                return null;
+            }
+
+            // 验证协议：localhost 允许 HTTP，其他必须 HTTPS
+            if (scheme == null) {
+                return null;
+            }
+            boolean isLocalhost = "localhost".equals(host) || "127.0.0.1".equals(host);
+            if (!isLocalhost && !"https".equalsIgnoreCase(scheme)) {
+                return null;
+            }
+            if (isLocalhost && !"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
+                return null;
+            }
+
+            // 验证域名白名单
+            if (!ALLOWED_FRONTEND_HOSTS.contains(host)) {
+                return null;
+            }
+
+            // 返回清洗后的 origin（不含路径和查询参数）
+            int port = uri.getPort();
+            if (port > 0 && port != 80 && port != 443) {
+                return scheme + "://" + host + ":" + port;
+            }
+            return scheme + "://" + host;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * 脱敏 URL，仅保留域名用于日志记录
+     */
+    private String maskUrl(String url) {
+        try {
+            URI uri = new URI(url);
+            return uri.getHost() != null ? uri.getHost() : "<invalid>";
+        } catch (Exception e) {
+            return "<invalid>";
         }
     }
 
