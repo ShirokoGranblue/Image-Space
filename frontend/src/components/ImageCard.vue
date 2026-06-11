@@ -136,7 +136,8 @@ function goDetail() {
   overflow: hidden;
   background: var(--paper2);
   border: 0.5px solid var(--paper3);
-  transition: border-color .2s, transform .2s;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: border-color .2s, transform .2s, box-shadow .3s;
   animation: fadeUp 0.34s var(--ease-out);
 }
 
@@ -144,6 +145,7 @@ function goDetail() {
 .image-card:focus-visible {
   border-color: var(--ink4);
   transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04);
 }
 
 .image-card:active {
@@ -274,8 +276,8 @@ function goDetail() {
 
 .img-name {
   color: var(--ink);
-  font-size: 11px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 600;
   line-height: 1.35;
   white-space: nowrap;
   overflow: hidden;
@@ -301,8 +303,8 @@ function goDetail() {
   height: 18px;
   padding: 0 6px;
   border-radius: 4px;
-  font-size: 10px;
-  font-weight: 400;
+  font-size: 11px;
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -330,8 +332,8 @@ function goDetail() {
 .like-text {
   min-width: 0;
   color: var(--ink3);
-  font-size: 10px;
-  font-weight: 400;
+  font-size: 11px;
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

@@ -112,8 +112,8 @@ function toggle() {
   border-radius: 50%;
   background: var(--accent);
   color: var(--white);
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;

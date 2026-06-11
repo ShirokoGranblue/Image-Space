@@ -588,13 +588,14 @@ function highlightFromNotification() {
 .detail-page { min-height: 100vh; background: var(--bg-base); }
 .page-container { padding: 76px 8px 40px; }
 .back-bar { margin-bottom: var(--space-md); }
-.back-bar :deep(.el-button) { color: var(--text-muted); font-weight: 500; }
+.back-bar :deep(.el-button) { color: var(--text-muted); font-weight: 600; }
 .back-bar :deep(.el-button:hover) { color: var(--accent); }
 
 .detail-layout {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);
   padding: 28px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05), 0 2px 6px rgba(0, 0, 0, 0.03);
 }
 
 .detail-image {
@@ -602,6 +603,7 @@ function highlightFromNotification() {
   background: var(--bg-elevated); display: flex; align-items: center; justify-content: center;
   position: relative; cursor: pointer; border: 1px solid var(--gray2);
   margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 .detail-image img {
   width: 100%; height: 100%; object-fit: contain;
@@ -625,7 +627,7 @@ function highlightFromNotification() {
 }
 .img-title {
   font-family: var(--font-display);
-  font-size: 28px; font-weight: 400;
+  font-size: 30px; font-weight: 500;
   margin-bottom: 20px;
   word-break: break-word; color: var(--text-primary);
   letter-spacing: 0.02em; line-height: 1;
@@ -636,7 +638,7 @@ function highlightFromNotification() {
   flex-wrap: wrap;
   align-items: center;
   gap: 6px 16px;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-secondary);
   font-family: var(--font-body);
 }
@@ -649,12 +651,12 @@ function highlightFromNotification() {
   color: var(--text-muted);
 }
 .meta-label {
-  font-size: 13px; font-weight: 500; color: var(--text-secondary);
+  font-size: 14px; font-weight: 600; color: var(--text-secondary);
   display: flex; align-items: center; gap: 4px;
 }
-.meta-label .el-icon { font-size: 14px; }
-.meta-value { font-size: 13px; color: var(--text-primary); font-weight: 500; }
-.meta-placeholder { color: var(--text-muted); font-size: 13px; }
+.meta-label .el-icon { font-size: 15px; }
+.meta-value { font-size: 14px; color: var(--text-primary); font-weight: 600; }
+.meta-placeholder { color: var(--text-muted); font-size: 14px; }
 .meta-tags {
   width: 100%;
   margin-top: 4px;
@@ -669,8 +671,8 @@ function highlightFromNotification() {
   background: transparent;
   color: var(--gray4);
   font-family: var(--font-body);
-  font-size: 12px;
-  font-weight: 400;
+  font-size: 13px;
+  font-weight: 500;
   border-radius: 0;
 }
 
@@ -678,9 +680,10 @@ function highlightFromNotification() {
   margin-top: 18px; padding: 14px 16px;
   background: var(--bg-elevated); border-radius: var(--radius-sm);
   border: 1px solid var(--border-subtle);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 .desc-empty { background: transparent; border-style: dashed; }
-.desc-text { font-size: 14px; color: var(--text-secondary); line-height: 1.7; margin: 0; }
+.desc-text { font-size: 15px; color: var(--text-secondary); line-height: 1.7; margin: 0; }
 
 .action-bar {
   margin-top: 18px;
@@ -692,7 +695,8 @@ function highlightFromNotification() {
   align-items: center;
   gap: 12px;
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 15px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
 .action-bar .el-button.liked {
@@ -707,12 +711,12 @@ function highlightFromNotification() {
 
 .like-count-text {
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 15px;
 }
 
 .download-btn {
   padding-top: 18px;
-  font-weight: 600;
+  font-weight: 700;
   border-radius: var(--radius-md);
   transition: transform 0.15s var(--ease-out), box-shadow 0.15s var(--ease-out);
   margin-left: auto;
@@ -738,9 +742,10 @@ function highlightFromNotification() {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   padding: var(--space-xl);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 .comments-section h3 {
-  font-family: var(--font-display); font-size: 24px; font-weight: 400;
+  font-family: var(--font-display); font-size: 26px; font-weight: 500;
   margin-bottom: var(--space-md); color: var(--text-primary);
   letter-spacing: 0.02em;
 }
@@ -760,7 +765,7 @@ function highlightFromNotification() {
   transition: background 0.12s ease, transform 0.12s ease;
 }
 .emoji-item:hover { background: var(--bg-hover); transform: scale(1.15); }
-.upload-hint { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+.upload-hint { font-size: 13px; color: var(--text-muted); white-space: nowrap; }
 
 .comment-item {
   padding: var(--space-md) 0;
@@ -772,10 +777,10 @@ function highlightFromNotification() {
   transform: translateX(4px);
 }
 .comment-header { display: flex; justify-content: space-between; margin-bottom: var(--space-xs); }
-.comment-user { font-weight: 600; color: var(--accent); font-size: 14px; text-decoration: none; }
+.comment-user { font-weight: 700; color: var(--accent); font-size: 15px; text-decoration: none; }
 .comment-user:hover { opacity: 0.7; }
-.comment-time { font-size: 12px; color: var(--text-muted); }
-.comment-content { font-size: 14px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 4px; }
+.comment-time { font-size: 13px; color: var(--text-muted); }
+.comment-content { font-size: 15px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 4px; }
 .comment-footer {
   display: flex;
   align-items: center;
@@ -796,7 +801,7 @@ function highlightFromNotification() {
   transition: transform 0.15s ease;
 }
 .comment-like-heart:hover { transform: scale(1.2); }
-.comment-like-count { font-size: 13px; color: var(--text-muted); }
+.comment-like-count { font-size: 14px; color: var(--text-muted); }
 
 .comment-more-trigger {
   color: var(--gray3);
@@ -814,7 +819,7 @@ function highlightFromNotification() {
   margin: var(--space-xs) 0; object-fit: contain; border: 1px solid var(--border-subtle);
   background: var(--bg-elevated);
 }
-.comment-empty { text-align: center; color: var(--text-muted); padding: var(--space-xl) 0; font-size: 14px; }
+.comment-empty { text-align: center; color: var(--text-muted); padding: var(--space-xl) 0; font-size: 15px; }
 
 .notification-highlight {
   position: relative;

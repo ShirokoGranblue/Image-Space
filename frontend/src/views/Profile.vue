@@ -1591,7 +1591,7 @@ async function saveProfile() {
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: #fff;
   border-radius: 14px;
-  font-weight: 300;
+  font-weight: 400;
   transition: background 0.2s;
 }
 
@@ -1675,9 +1675,9 @@ async function saveProfile() {
 
 .profile-name-row h2 {
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: 20px;
   color: var(--ink);
-  font-weight: 400;
+  font-weight: 500;
   margin: 0;
 }
 
@@ -1702,7 +1702,7 @@ async function saveProfile() {
 }
 
 .bio {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--ink6);
   margin-top: 3px;
 }
@@ -1715,7 +1715,7 @@ async function saveProfile() {
 }
 
 .profile-meta {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--ink3);
   margin-top: 8px;
 }
@@ -1735,6 +1735,7 @@ async function saveProfile() {
   border-radius: 8px;
   overflow: hidden;
   margin-top: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
 .stat-item {
@@ -1753,14 +1754,14 @@ async function saveProfile() {
 .stat-num {
   display: block;
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: 22px;
   color: var(--ink);
-  font-weight: 400;
+  font-weight: 500;
 }
 
 .stat-label {
   display: block;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--ink3);
   margin-top: 2px;
   letter-spacing: .05em;
@@ -1785,9 +1786,9 @@ async function saveProfile() {
 
 .works-heading h3 {
   font-family: var(--font-display);
-  font-size: 16px;
+  font-size: 18px;
   color: var(--ink);
-  font-weight: 400;
+  font-weight: 500;
   margin: 0;
 }
 
@@ -1795,14 +1796,14 @@ async function saveProfile() {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 11px;
+  font-size: 12px;
   background: transparent;
   border: none;
   padding: 0;
 }
 
 .works-actions :deep(.el-checkbox__label) {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--ink2);
 }
 
@@ -1891,7 +1892,7 @@ async function saveProfile() {
 }
 
 .upload-hint {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--ink3);
   margin-top: var(--space-xs);
 }
@@ -2022,8 +2023,8 @@ async function saveProfile() {
 }
 
 .profile-mini-name {
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
   color: var(--ink);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2086,8 +2087,8 @@ async function saveProfile() {
 
 .preview-label {
   font-family: var(--font-display);
-  font-size: 13px;
-  font-weight: 400;
+  font-size: 14px;
+  font-weight: 500;
   color: var(--ink);
   margin-bottom: var(--space-md);
 }
@@ -2198,18 +2199,18 @@ async function saveProfile() {
 
 .slider-label {
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 14px;
   color: var(--ink2);
   flex-shrink: 0;
-  font-weight: 400;
+  font-weight: 500;
 }
 
 .slider-val {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--ink2);
   min-width: 42px;
   text-align: right;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .avatar-replace-upload {

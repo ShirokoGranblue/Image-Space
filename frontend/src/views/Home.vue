@@ -484,8 +484,8 @@ async function saveEdit() {
 
 .page-title {
   font-family: var(--font-display);
-  font-size: 20px;
-  font-weight: 400;
+  font-size: 22px;
+  font-weight: 500;
   color: var(--ink);
   line-height: 1.1;
   margin: 0;
@@ -494,8 +494,8 @@ async function saveEdit() {
 .page-desc {
   margin: 4px 0 0;
   color: var(--ink3);
-  font-size: 11px;
-  font-weight: 400;
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .toolbar {
@@ -569,7 +569,7 @@ async function saveEdit() {
 }
 
 .selection-actions :deep(.el-checkbox__label) {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--ink2);
 }
 
@@ -693,7 +693,7 @@ async function saveEdit() {
 @media (max-width: 768px) {
   .page-container { padding: 20px 8px 148px; }
   .page-header { padding: 14px; }
-  .page-title { font-size: 18px; }
+  .page-title { font-size: 20px; }
   .toolbar { flex-direction: column; align-items: stretch; }
   .toolbar-left, .toolbar-right { flex-wrap: wrap; }
   .toolbar-search,

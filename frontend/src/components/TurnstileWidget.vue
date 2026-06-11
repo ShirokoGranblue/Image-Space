@@ -143,7 +143,7 @@ onUnmounted(() => {
   border-radius: 6px;
   background: #f8fafc;
   color: #475569;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .turnstile-status.is-error {

@@ -193,8 +193,8 @@ function focusInput() {
   border-radius: 8px;
   background: rgba(37, 99, 235, 0.12);
   color: var(--accent-dim);
-  font-size: 13px;
-  font-weight: 650;
+  font-size: 14px;
+  font-weight: 700;
   line-height: 1;
 }
 
@@ -222,7 +222,7 @@ function focusInput() {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1;
   padding: 0;
 }
@@ -253,7 +253,7 @@ function focusInput() {
   min-width: 80px;
   padding: 0;
   color: var(--accent-dim);
-  font-weight: 650;
+  font-weight: 700;
 }
 
 .tag-field::placeholder {

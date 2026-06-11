@@ -141,6 +141,7 @@ defineExpose({ open, close })
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .viewer-toolbar :deep(.el-button) {
@@ -159,8 +160,8 @@ defineExpose({ open, close })
 
 .zoom-level {
   color: #fff;
-  font-size: 13px;
-  font-weight: 400;
+  font-size: 14px;
+  font-weight: 500;
   min-width: 42px;
   text-align: center;
   font-variant-numeric: tabular-nums;

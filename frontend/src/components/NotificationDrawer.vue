@@ -189,6 +189,7 @@ async function handleDeleteSelected() {
   height: 100dvh;
   background: var(--white);
   border-left: 1px solid var(--gray2);
+  box-shadow: -8px 0 30px rgba(0, 0, 0, 0.08), -2px 0 8px rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
 }
@@ -206,17 +207,17 @@ async function handleDeleteSelected() {
   margin: 0;
   font-family: var(--font-display);
   color: var(--black);
-  font-size: 26px;
+  font-size: 28px;
   letter-spacing: 0.03em;
   line-height: 1;
-  font-weight: 400;
+  font-weight: 500;
 }
 
 .notification-header p {
   margin: 6px 0 0;
   color: var(--gray3);
-  font-size: 13px;
-  font-weight: 400;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .notification-header-actions {
@@ -317,7 +318,7 @@ async function handleDeleteSelected() {
 
 .notification-title {
   color: var(--black);
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.4;
   overflow: hidden;
   display: -webkit-box;
@@ -326,12 +327,12 @@ async function handleDeleteSelected() {
 }
 
 .notification-title strong {
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .notification-preview {
   color: var(--gray3);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.3;
   overflow: hidden;
   white-space: nowrap;
@@ -340,7 +341,7 @@ async function handleDeleteSelected() {
 
 .notification-time {
   color: var(--gray3);
-  font-size: 11px;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
