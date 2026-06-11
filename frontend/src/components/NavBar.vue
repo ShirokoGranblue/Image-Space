@@ -156,7 +156,7 @@ async function handleLogout() {
   flex-shrink: 0;
   color: #fff;
   font-family: var(--font-display);
-  font-size: 15px;
+  font-size: 19px;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-decoration: none;
@@ -182,7 +182,7 @@ async function handleLogout() {
 }
 
 .nav-link {
-  font-size: 12px;
+  font-size: 16px;
   padding: 6px 14px;
   border-radius: 20px;
   border: none;
@@ -227,7 +227,7 @@ async function handleLogout() {
   justify-content: center;
   gap: 6px;
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 400;
   cursor: pointer;
   transition: transform 0.16s ease, background 0.18s ease, border-color 0.18s ease;
@@ -340,7 +340,7 @@ async function handleLogout() {
   color: #cfe1ed;
   border-radius: 12px;
   text-align: center;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 400;
 }
 
@@ -381,7 +381,7 @@ async function handleLogout() {
 
 @media (max-width: 480px) {
   .logo span:last-child {
-    font-size: 12px;
+    font-size: 16px;
   }
 }
 </style>

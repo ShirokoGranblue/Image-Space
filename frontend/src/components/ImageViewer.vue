@@ -135,34 +135,33 @@ defineExpose({ open, close })
   align-items: center;
   gap: 8px;
   z-index: 3001;
-  padding: 8px 12px;
-  border-radius: 2px;
-  background: rgba(10, 10, 10, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), 0 4px 8px rgba(0, 0, 0, 0.2);
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: var(--ink);
+  border: 0.5px solid var(--ink2);
+  box-shadow: 0 8px 24px rgba(4, 44, 83, 0.3), 0 4px 8px rgba(4, 44, 83, 0.2);
 }
 
 .viewer-toolbar :deep(.el-button) {
   background: transparent;
   border: none;
-  color: #fff;
-  transition: background 0.15s ease;
-  border-radius: 2px;
+  color: var(--ink6);
+  transition: background 0.15s ease, color 0.15s ease;
+  border-radius: 4px;
 }
 .viewer-toolbar :deep(.el-button:hover) {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--ink2);
+  color: #fff;
 }
 .viewer-toolbar :deep(.el-button.is-disabled) {
   opacity: 0.3;
 }
 
 .zoom-level {
-  color: #fff;
-  font-size: 14px;
+  color: var(--ink5);
+  font-size: 18px;
   font-weight: 500;
-  min-width: 42px;
+  min-width: 48px;
   text-align: center;
   font-variant-numeric: tabular-nums;
   font-family: var(--font-body);

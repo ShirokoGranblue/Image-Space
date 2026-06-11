@@ -134,7 +134,7 @@ function goDetail() {
   cursor: pointer;
   border-radius: 10px;
   overflow: hidden;
-  background: var(--paper2);
+  background: #fff;
   border: 0.5px solid var(--paper3);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.06);
   transition: border-color .2s, transform .2s, box-shadow .3s;
@@ -276,7 +276,7 @@ function goDetail() {
 
 .img-name {
   color: var(--ink);
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 600;
   line-height: 1.35;
   white-space: nowrap;
@@ -303,7 +303,7 @@ function goDetail() {
   height: 18px;
   padding: 0 6px;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -312,13 +312,13 @@ function goDetail() {
 
 .category-badge {
   color: var(--ink3);
-  background: var(--paper);
+  background: #fff;
   border: 0.5px solid var(--paper3);
 }
 
 .category-badge.muted {
   color: var(--ink3);
-  background: var(--paper2);
+  background: var(--paper);
   border: 0.5px solid var(--paper3);
 }
 
@@ -332,7 +332,7 @@ function goDetail() {
 .like-text {
   min-width: 0;
   color: var(--ink3);
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;

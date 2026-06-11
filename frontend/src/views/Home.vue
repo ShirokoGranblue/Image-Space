@@ -474,7 +474,7 @@ async function saveEdit() {
   margin-bottom: 16px;
   border: 0.5px solid var(--paper3);
   border-radius: 12px;
-  background: var(--paper2);
+  background: #fff;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -484,7 +484,7 @@ async function saveEdit() {
 
 .page-title {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 500;
   color: var(--ink);
   line-height: 1.1;
@@ -494,7 +494,7 @@ async function saveEdit() {
 .page-desc {
   margin: 4px 0 0;
   color: var(--ink3);
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 500;
 }
 
@@ -540,7 +540,7 @@ async function saveEdit() {
 }
 
 .toolbar-select :deep(.el-input__wrapper) {
-  background: var(--paper) !important;
+  background: #fff !important;
   border: 0.5px solid var(--paper3) !important;
   border-radius: 8px !important;
   box-shadow: none !important;
@@ -559,7 +559,7 @@ async function saveEdit() {
   gap: 6px;
   min-height: 32px;
   padding: 0 10px;
-  background: var(--paper);
+  background: #fff;
   border: 0.5px solid var(--paper3);
   border-radius: 8px;
 }
@@ -569,7 +569,7 @@ async function saveEdit() {
 }
 
 .selection-actions :deep(.el-checkbox__label) {
-  font-size: 12px;
+  font-size: 16px;
   color: var(--ink2);
 }
 
@@ -577,7 +577,7 @@ async function saveEdit() {
   height: 32px;
   padding: 7px 14px;
   border-radius: 8px;
-  font-size: 12px;
+  font-size: 16px;
   background: var(--ink) !important;
   border: none !important;
   color: var(--paper) !important;
@@ -620,7 +620,7 @@ async function saveEdit() {
   padding: 14px 24px calc(14px + env(safe-area-inset-bottom));
   margin-top: 0;
   border-top: 0.5px solid var(--paper3);
-  background: var(--paper2);
+  background: #fff;
   flex-shrink: 0;
 }
 
@@ -636,9 +636,9 @@ async function saveEdit() {
   height: 28px;
   border-radius: 6px !important;
   border: 0.5px solid var(--paper3) !important;
-  background: var(--paper) !important;
+  background: #fff !important;
   color: var(--ink) !important;
-  font-size: 12px;
+  font-size: 16px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -660,7 +660,7 @@ async function saveEdit() {
 
 .pagination-wrap :deep(.btn-prev),
 .pagination-wrap :deep(.btn-next) {
-  background: var(--paper) !important;
+  background: #fff !important;
   border: 0.5px solid var(--paper3) !important;
   color: var(--ink) !important;
   border-radius: 6px !important;
@@ -693,7 +693,7 @@ async function saveEdit() {
 @media (max-width: 768px) {
   .page-container { padding: 20px 8px 148px; }
   .page-header { padding: 14px; }
-  .page-title { font-size: 20px; }
+  .page-title { font-size: 24px; }
   .toolbar { flex-direction: column; align-items: stretch; }
   .toolbar-left, .toolbar-right { flex-wrap: wrap; }
   .toolbar-search,
@@ -709,7 +709,7 @@ async function saveEdit() {
   .pagination-wrap :deep(.el-pagination) {
     --el-pagination-button-width: 28px;
     --el-pagination-button-height: 28px;
-    font-size: 12px;
+    font-size: 16px;
   }
 }
 </style>

@@ -112,7 +112,7 @@ function toggle() {
   border-radius: 50%;
   background: var(--accent);
   color: var(--white);
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 700;
   display: flex;
   align-items: center;

@@ -498,7 +498,7 @@ function resetTurnstile() { turnstileToken.value = ''; turnstileRef.value?.reset
   align-items: center;
   justify-content: center;
   padding: 34px 24px;
-  background: var(--paper);
+  background: #fff;
 }
 
 .login-wrap {
@@ -506,7 +506,7 @@ function resetTurnstile() { turnstileToken.value = ''; turnstileRef.value?.reset
   grid-template-columns: 360px 1fr;
   width: min(100%, 1000px);
   min-height: 580px;
-  background: var(--paper);
+  background: #fff;
   border: 0.5px solid var(--paper3);
   border-radius: 12px;
   overflow: hidden;
@@ -514,7 +514,7 @@ function resetTurnstile() { turnstileToken.value = ''; turnstileRef.value?.reset
 }
 
 .login-panel {
-  background: var(--paper);
+  background: #fff;
   padding: 48px 40px;
   border-right: 0.5px solid var(--paper3);
   display: flex;
@@ -524,7 +524,7 @@ function resetTurnstile() { turnstileToken.value = ''; turnstileRef.value?.reset
 
 .login-logo {
   font-family: var(--font-display);
-  font-size: 15px;
+  font-size: 19px;
   color: var(--ink);
   letter-spacing: .1em;
   margin-bottom: 32px;
@@ -539,7 +539,7 @@ function resetTurnstile() { turnstileToken.value = ''; turnstileRef.value?.reset
 
 .login-heading {
   font-family: var(--font-display);
-  font-size: 30px;
+  font-size: 34px;
   font-weight: 500;
   color: var(--ink);
   line-height: 1.2;
@@ -553,7 +553,7 @@ function resetTurnstile() { turnstileToken.value = ''; turnstileRef.value?.reset
 }
 
 .login-tab {
-  font-size: 13px;
+  font-size: 17px;
   padding: 8px 0;
   margin-right: 24px;
   background: transparent;
@@ -600,7 +600,7 @@ function resetTurnstile() { turnstileToken.value = ''; turnstileRef.value?.reset
 .or-row {
   text-align: center;
   margin: 16px 0;
-  font-size: 12px;
+  font-size: 16px;
   color: var(--ink3);
 }
 
@@ -614,8 +614,8 @@ function resetTurnstile() { turnstileToken.value = ''; turnstileRef.value?.reset
   height: 36px;
   border: 0.5px solid var(--paper3);
   border-radius: 8px;
-  background: var(--paper2);
-  font-size: 12px;
+  background: #fff;
+  font-size: 16px;
   color: var(--ink);
   cursor: pointer;
   font-family: var(--font-body);
@@ -634,7 +634,7 @@ function resetTurnstile() { turnstileToken.value = ''; turnstileRef.value?.reset
 .login-footer {
   text-align: center;
   margin-top: 20px;
-  font-size: 12px;
+  font-size: 16px;
   color: var(--ink3);
 }
 
@@ -674,13 +674,13 @@ function resetTurnstile() { turnstileToken.value = ''; turnstileRef.value?.reset
   position: relative;
   z-index: 2;
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: 24px;
   color: rgba(255, 255, 255, .85);
   line-height: 1.5;
 }
 
 .vis-sub {
-  font-size: 12px;
+  font-size: 16px;
   color: var(--ink5);
   margin-top: 8px;
 }
@@ -691,7 +691,7 @@ function resetTurnstile() { turnstileToken.value = ''; turnstileRef.value?.reset
 }
 
 .auth-form :deep(.el-form-item__label) {
-  font-size: 11px;
+  font-size: 15px;
   color: var(--ink2) !important;
   letter-spacing: .05em;
   margin-bottom: 6px;
@@ -732,14 +732,14 @@ function resetTurnstile() { turnstileToken.value = ''; turnstileRef.value?.reset
   height: 40px;
   border: 0.5px solid var(--paper3);
   border-radius: 8px;
-  background: var(--paper2);
+  background: #fff;
   color: var(--ink);
   overflow: hidden;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 15px;
   padding: 0;
 }
 
@@ -756,7 +756,7 @@ function resetTurnstile() { turnstileToken.value = ''; turnstileRef.value?.reset
   border: 0.5px solid var(--paper3) !important;
   color: var(--ink) !important;
   font-family: var(--font-body);
-  font-size: 11px;
+  font-size: 15px;
   width: 100%;
 }
 

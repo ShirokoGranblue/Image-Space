@@ -207,7 +207,7 @@ async function handleDeleteSelected() {
   margin: 0;
   font-family: var(--font-display);
   color: var(--black);
-  font-size: 28px;
+  font-size: 32px;
   letter-spacing: 0.03em;
   line-height: 1;
   font-weight: 500;
@@ -216,7 +216,7 @@ async function handleDeleteSelected() {
 .notification-header p {
   margin: 6px 0 0;
   color: var(--gray3);
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 500;
 }
 
@@ -332,7 +332,7 @@ async function handleDeleteSelected() {
 
 .notification-preview {
   color: var(--gray3);
-  font-size: 14px;
+  font-size: 18px;
   line-height: 1.3;
   overflow: hidden;
   white-space: nowrap;
@@ -341,7 +341,7 @@ async function handleDeleteSelected() {
 
 .notification-time {
   color: var(--gray3);
-  font-size: 12px;
+  font-size: 16px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -354,7 +354,7 @@ async function handleDeleteSelected() {
   justify-content: center;
   gap: 14px;
   color: var(--gray3);
-  font-size: 14px;
+  font-size: 18px;
   font-family: var(--font-body);
 }
 

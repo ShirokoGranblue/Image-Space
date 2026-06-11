@@ -96,7 +96,7 @@ const trailSliders = [
 }
 
 .params-section h4 {
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -112,7 +112,7 @@ const trailSliders = [
 }
 
 .slider-label {
-  font-size: 12px;
+  font-size: 16px;
   color: var(--text-secondary);
   min-width: 52px;
   text-align: right;
@@ -120,7 +120,7 @@ const trailSliders = [
 }
 
 .slider-value {
-  font-size: 12px;
+  font-size: 16px;
   color: var(--text-muted);
   min-width: 32px;
   text-align: right;
@@ -129,7 +129,7 @@ const trailSliders = [
 }
 
 .preset-row :deep(.el-button--small) {
-  font-size: 12px;
+  font-size: 16px;
   padding: 4px 8px;
   height: auto;
 }

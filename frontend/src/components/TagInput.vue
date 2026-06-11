@@ -193,7 +193,7 @@ function focusInput() {
   border-radius: 8px;
   background: rgba(37, 99, 235, 0.12);
   color: var(--accent-dim);
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 700;
   line-height: 1;
 }
@@ -222,7 +222,7 @@ function focusInput() {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 17px;
   line-height: 1;
   padding: 0;
 }

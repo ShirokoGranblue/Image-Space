@@ -309,7 +309,7 @@ defineExpose({ open })
 .upload-text {
   color: var(--gray3);
   font-family: var(--font-body);
-  font-size: 15px;
+  font-size: 19px;
   font-weight: 500;
 }
 .upload-text em {
@@ -321,7 +321,7 @@ defineExpose({ open })
 .upload-tip {
   color: var(--gray3);
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: 18px;
   margin-top: 4px;
 }
 
@@ -398,7 +398,7 @@ defineExpose({ open })
 .rename-original {
   min-width: 0;
   color: var(--text-muted);
-  font-size: 14px;
+  font-size: 18px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
