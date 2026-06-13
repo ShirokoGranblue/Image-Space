@@ -744,7 +744,7 @@ async function saveEdit() {
 }
 
 .page-header::before {
-  content: 'PRIVATE ARCHIVE';
+  content: none;
   position: absolute;
   right: 32px;
   top: 30px;
@@ -769,7 +769,7 @@ async function saveEdit() {
 }
 
 .page-title::before {
-  content: 'Private Archive';
+  content: none;
   display: block;
   margin-bottom: 16px;
   color: var(--gold2);
@@ -969,5 +969,118 @@ async function saveEdit() {
     grid-template-columns: 1fr;
     padding: 14px;
   }
+}
+
+/* Anime paper override */
+.home-page {
+  color: var(--ink);
+}
+
+.page-header {
+  border-color: rgba(17, 26, 53, 0.1);
+  background:
+    radial-gradient(circle at 10% 15%, rgba(255, 122, 184, 0.2), transparent 30%),
+    radial-gradient(circle at 86% 10%, rgba(88, 184, 255, 0.22), transparent 28%),
+    linear-gradient(135deg, rgba(255, 244, 222, 0.94), rgba(255, 244, 222, 0.82));
+  box-shadow: 0 24px 70px rgba(17, 26, 53, 0.12);
+}
+
+.page-header::before,
+.page-title::before {
+  content: none;
+}
+
+.page-header::after {
+  content: '';
+  position: absolute;
+  right: 34px;
+  top: 26px;
+  width: 118px;
+  height: 118px;
+  border-radius: 34% 66% 58% 42%;
+  background:
+    radial-gradient(circle at 35% 35%, rgba(255,255,255,0.9), transparent 24%),
+    linear-gradient(135deg, rgba(255,122,184,0.72), rgba(88,184,255,0.66));
+  opacity: 0.72;
+  animation: floatMascot 5.8s var(--ease-in-out) infinite;
+  pointer-events: none;
+}
+
+.page-title {
+  color: var(--ink);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+}
+
+.page-desc {
+  color: rgba(4, 44, 83, 0.68);
+}
+
+.toolbar,
+.selection-actions {
+  border-color: rgba(17, 26, 53, 0.1);
+  background: rgba(255, 244, 222, 0.66);
+}
+
+.toolbar-search :deep(.el-input__wrapper),
+.toolbar-select :deep(.el-input__wrapper),
+.toolbar-right :deep(.el-input__wrapper) {
+  background: rgba(255, 244, 222, 0.86) !important;
+  border-color: rgba(17, 26, 53, 0.1) !important;
+}
+
+.toolbar-search :deep(.el-input__inner),
+.toolbar-select :deep(.el-input__inner),
+.toolbar-right :deep(.el-input__inner),
+.selection-actions :deep(.el-checkbox__label) {
+  color: var(--ink) !important;
+}
+
+.toolbar-search :deep(.el-input__inner::placeholder),
+.toolbar-select :deep(.el-input__inner::placeholder) {
+  color: rgba(4, 44, 83, 0.46) !important;
+}
+
+.btn-slide {
+  background: var(--cinema) !important;
+  border-color: rgba(17, 26, 53, 0.82) !important;
+  color: var(--paper) !important;
+}
+
+.btn-slide:hover {
+  background: var(--anime-pink) !important;
+}
+
+.home-page .card-grid,
+.home-page .empty-state {
+  border-color: rgba(17, 26, 53, 0.1);
+  background: rgba(255, 244, 222, 0.78);
+}
+
+.pagination-wrap {
+  border-top-color: rgba(17, 26, 53, 0.12);
+  background: rgba(255, 244, 222, 0.86);
+}
+
+.pagination-wrap :deep(.el-pagination) {
+  color: var(--ink);
+}
+
+.pagination-wrap :deep(.el-pager li),
+.pagination-wrap :deep(.btn-prev),
+.pagination-wrap :deep(.btn-next) {
+  background: rgba(255, 244, 222, 0.82) !important;
+  border-color: rgba(17, 26, 53, 0.12) !important;
+  color: var(--ink) !important;
+}
+
+.pagination-wrap :deep(.el-pager li.is-active) {
+  background: var(--cinema) !important;
+  color: var(--paper) !important;
+  border-color: var(--cinema) !important;
+}
+
+@keyframes floatMascot {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(-5deg); }
+  50% { transform: translate3d(0, -12px, 0) rotate(5deg); }
 }
 </style>

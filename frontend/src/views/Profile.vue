@@ -2323,7 +2323,7 @@ async function saveProfile() {
 }
 
 .profile-name-row h2::before {
-  content: 'Creator Profile';
+  content: none;
   display: block;
   margin-bottom: 10px;
   color: var(--gold);
@@ -2403,7 +2403,7 @@ async function saveProfile() {
 }
 
 .works-heading h3::before {
-  content: 'Selected Works';
+  content: none;
   display: block;
   margin-bottom: 8px;
   color: var(--gold2);
@@ -2476,5 +2476,175 @@ async function saveProfile() {
   .profile-page .card-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Anime paper override */
+.profile-page {
+  color: var(--ink);
+}
+
+.profile-banner {
+  overflow: visible;
+  border-color: rgba(17, 26, 53, 0.1);
+  background:
+    radial-gradient(circle at 18% 20%, rgba(255, 122, 184, 0.24), transparent 34%),
+    radial-gradient(circle at 86% 8%, rgba(88, 184, 255, 0.24), transparent 30%),
+    linear-gradient(135deg, rgba(255, 244, 222, 0.92), rgba(245, 236, 255, 0.86));
+  box-shadow: 0 24px 70px rgba(17, 26, 53, 0.12);
+}
+
+.banner-overlay {
+  background:
+    linear-gradient(to top, rgba(255, 244, 222, .88) 0%, rgba(255, 244, 222, 0.16) 62%);
+  pointer-events: none;
+}
+
+.banner-grid {
+  opacity: 0.3;
+}
+
+.banner-edit {
+  top: 18px;
+  right: 18px;
+  bottom: auto;
+  z-index: 20;
+  opacity: 1;
+  transform: none;
+  transition: transform 0.18s var(--ease-cinema), opacity 0.18s ease;
+  pointer-events: auto;
+}
+
+.banner-edit :deep(.el-button) {
+  background: rgba(17, 26, 53, 0.82);
+  border-color: rgba(255, 244, 222, 0.56);
+  color: var(--paper);
+  box-shadow: 0 10px 28px rgba(17, 26, 53, 0.18);
+}
+
+.banner-edit :deep(.el-button:hover) {
+  background: var(--anime-pink);
+  border-color: rgba(255, 244, 222, 0.8);
+  transform: translateY(-1px);
+}
+
+.profile-header::before {
+  background: rgba(255, 244, 222, 0.92);
+  border-color: rgba(17, 26, 53, 0.1);
+}
+
+.avatar {
+  background: linear-gradient(135deg, var(--anime-pink), var(--anime-blue));
+}
+
+.avatar-upload :deep(.el-button) {
+  background: var(--anime-pink);
+}
+
+.profile-name-row h2::before,
+.works-heading h3::before {
+  content: none;
+}
+
+.profile-stats {
+  background: rgba(255, 244, 222, 0.68);
+  border-color: rgba(17, 26, 53, 0.1);
+}
+
+.stat-item {
+  border-right-color: rgba(17, 26, 53, 0.08);
+}
+
+.stat-label {
+  color: rgba(4, 44, 83, 0.62);
+  letter-spacing: 0.06em;
+}
+
+.user-works {
+  border-color: rgba(17, 26, 53, 0.1);
+  background: rgba(255, 244, 222, 0.78);
+  color: var(--ink);
+}
+
+.works-heading {
+  border-bottom-color: rgba(17, 26, 53, 0.1);
+}
+
+.works-heading h3 {
+  color: var(--ink);
+}
+
+.works-actions :deep(.el-checkbox__label) {
+  color: var(--ink);
+}
+
+.profile-page .empty-state {
+  color: rgba(4, 44, 83, 0.68);
+}
+
+.pagination-wrap {
+  border-top-color: rgba(17, 26, 53, 0.12);
+  background: rgba(255, 244, 222, 0.88);
+}
+
+.pagination-wrap :deep(.el-pagination) {
+  color: var(--ink);
+}
+
+.pagination-wrap :deep(.el-pager li),
+.pagination-wrap :deep(.btn-prev),
+.pagination-wrap :deep(.btn-next) {
+  background: rgba(255, 244, 222, 0.82) !important;
+  border-color: rgba(17, 26, 53, 0.12) !important;
+  color: var(--ink) !important;
+}
+
+.pagination-wrap :deep(.el-pager li.is-active) {
+  background: var(--cinema) !important;
+  color: var(--paper) !important;
+  border-color: var(--cinema) !important;
+}
+
+:global(.profile-dialog.el-dialog) {
+  background: rgba(255, 244, 222, 0.98) !important;
+  border: 1px solid rgba(17, 26, 53, 0.12) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 30px 90px rgba(17, 26, 53, 0.2) !important;
+}
+
+:global(.profile-dialog .el-dialog__header) {
+  padding: 26px 30px 8px !important;
+}
+
+:global(.profile-dialog .el-dialog__title) {
+  color: var(--ink) !important;
+  font-size: 26px !important;
+  font-weight: 800 !important;
+}
+
+:global(.profile-dialog .el-dialog__body) {
+  color: var(--ink) !important;
+  padding: 18px 30px 24px !important;
+}
+
+:global(.profile-dialog .el-dialog__headerbtn .el-dialog__close) {
+  color: var(--ink) !important;
+}
+
+:global(.profile-dialog .el-button--primary) {
+  background: var(--cinema) !important;
+  border-color: var(--cinema) !important;
+  color: var(--paper) !important;
+}
+
+:global(.profile-dialog .el-button--primary:hover) {
+  background: var(--anime-pink) !important;
+  border-color: var(--anime-pink) !important;
+}
+
+:global(.profile-dialog .bg-preview-side),
+:global(.profile-dialog .avatar-preview-side),
+:global(.profile-dialog .profile-mini-header) {
+  background: var(--paper) !important;
+  border-color: rgba(17, 26, 53, 0.1) !important;
 }
 </style>

@@ -53,8 +53,8 @@
           ></div>
         </div>
         <div style="position:relative;z-index:2;">
-          <div class="vis-quote">记录光影，<br>分享瞬间。</div>
-          <div class="vis-sub">图片社区 · 私人图床 · 创作者空间</div>
+          <div class="vis-quote">收藏灵感，<br>展开次元空间。</div>
+          <div class="vis-sub">角色图集 · 灵感收藏 · 创作者空间</div>
         </div>
       </div>
     </div>
@@ -392,5 +392,84 @@ function resetTurnstile() {
     grid-template-columns: 1fr;
     gap: 0;
   }
+}
+
+/* Anime paper override */
+.auth-page {
+  background:
+    radial-gradient(circle at 14% 10%, rgba(255, 122, 184, 0.24), transparent 30vw),
+    radial-gradient(circle at 90% 6%, rgba(88, 184, 255, 0.22), transparent 28vw),
+    linear-gradient(135deg, var(--paper), var(--anime-cream));
+}
+
+.login-wrap {
+  background: rgba(255, 244, 222, 0.9);
+  border-color: rgba(17, 26, 53, 0.12);
+  box-shadow: 0 26px 80px rgba(17, 26, 53, 0.14);
+}
+
+.login-panel {
+  background: rgba(255, 244, 222, 0.9);
+}
+
+.login-visual {
+  background:
+    radial-gradient(circle at 24% 26%, rgba(255, 122, 184, 0.38), transparent 32%),
+    radial-gradient(circle at 76% 18%, rgba(88, 184, 255, 0.3), transparent 30%),
+    linear-gradient(145deg, #fff4de 0%, #f5ecff 52%, #dff6ff 100%);
+}
+
+.login-visual::after {
+  background:
+    radial-gradient(circle at 76% 22%, rgba(255,255,255,0.82), transparent 12%),
+    linear-gradient(120deg, transparent 24%, rgba(255, 122, 184, 0.16) 48%, transparent 70%);
+}
+
+.vis-cell {
+  box-shadow: inset 0 0 0 1px rgba(17, 26, 53, 0.08);
+  animation: cardTwinkle 4.8s var(--ease-in-out) infinite;
+}
+
+.vis-cell:nth-child(2n) {
+  animation-delay: -1.6s;
+}
+
+.vis-cell:nth-child(3n) {
+  animation-delay: -2.8s;
+}
+
+.vis-quote {
+  color: var(--ink);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.66);
+}
+
+.vis-sub {
+  color: rgba(4, 44, 83, 0.58);
+}
+
+.auth-form :deep(.el-input__wrapper) {
+  background: rgba(255, 244, 222, 0.78) !important;
+  border-color: rgba(17, 26, 53, 0.1) !important;
+}
+
+.auth-form :deep(.el-input__wrapper.is-focus) {
+  border-color: rgba(255, 122, 184, 0.52) !important;
+  background: rgba(255, 244, 222, 0.96) !important;
+  box-shadow: 0 0 0 4px rgba(255, 122, 184, 0.12) !important;
+}
+
+.login-btn {
+  background: var(--cinema) !important;
+  border-color: var(--cinema) !important;
+}
+
+.login-btn:hover {
+  background: var(--anime-pink) !important;
+  border-color: var(--anime-pink) !important;
+}
+
+@keyframes cardTwinkle {
+  0%, 100% { transform: translateY(0); filter: saturate(1); }
+  50% { transform: translateY(-8px); filter: saturate(1.12); }
 }
 </style>

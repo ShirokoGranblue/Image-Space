@@ -5,7 +5,7 @@
       
       <!-- Redesigned sq-hero -->
       <header class="sq-hero reveal">
-        <h1 class="sq-hero-title">Square</h1>
+        <h1 class="sq-hero-title">Space</h1>
         <p class="sq-hero-sub">浏览社区公开作品，用标签发现同风格创作</p>
         <div class="sq-search-bar">
           <el-input
@@ -41,7 +41,7 @@
       <!-- Redesigned sq-body (Split columns on desktop) -->
       <div class="sq-body">
         
-        <!-- Main gallery column -->
+        <!-- Main content column -->
         <main class="sq-main">
           <!-- Horizontal Sort Pills (Category tags) -->
           <div class="sq-sort-row">
@@ -843,7 +843,7 @@ function goCreatorProfile(uuidOrId) {
 }
 
 .sq-hero::before {
-  content: 'PUBLIC GALLERY';
+  content: none;
   position: absolute;
   top: 28px;
   right: 34px;
@@ -876,7 +876,7 @@ function goCreatorProfile(uuidOrId) {
 }
 
 .sq-hero-title::before {
-  content: 'Public Gallery';
+  content: none;
   display: block;
   margin-bottom: 18px;
   color: var(--gold2);
@@ -1221,5 +1221,150 @@ function goCreatorProfile(uuidOrId) {
     bottom: 12px;
     width: calc(100vw - 24px);
   }
+}
+
+/* Anime paper override */
+.square-page {
+  color: var(--ink);
+}
+
+.sq-hero {
+  border-color: rgba(17, 26, 53, 0.1);
+  background:
+    radial-gradient(circle at 12% 18%, rgba(255, 122, 184, 0.22), transparent 32%),
+    radial-gradient(circle at 88% 12%, rgba(88, 184, 255, 0.22), transparent 28%),
+    linear-gradient(135deg, rgba(255, 244, 222, 0.94), rgba(245, 236, 255, 0.86));
+  box-shadow: 0 24px 70px rgba(17, 26, 53, 0.12);
+}
+
+.sq-hero::before,
+.sq-hero-title::before {
+  content: none;
+}
+
+.sq-hero::after {
+  background:
+    radial-gradient(circle at 88% 18%, rgba(255,255,255,0.7), transparent 12%),
+    linear-gradient(112deg, transparent 18%, rgba(255, 122, 184, 0.12) 46%, transparent 70%);
+  animation: softGlow 7s var(--ease-in-out) infinite;
+}
+
+.sq-hero-title {
+  color: var(--ink);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.58);
+}
+
+.sq-hero-sub {
+  color: rgba(4, 44, 83, 0.66);
+}
+
+.sq-search-bar {
+  border-color: rgba(17, 26, 53, 0.1);
+  background: rgba(255, 244, 222, 0.7);
+}
+
+.sq-search-el :deep(.el-input__wrapper),
+.sq-category-el :deep(.el-input__wrapper),
+.sq-sort {
+  background: rgba(255, 244, 222, 0.88) !important;
+  border-color: rgba(17, 26, 53, 0.1) !important;
+  color: var(--ink) !important;
+}
+
+.sq-search-el :deep(.el-input__inner),
+.sq-category-el :deep(.el-input__inner) {
+  color: var(--ink) !important;
+}
+
+.sq-search-el :deep(.el-input__inner::placeholder),
+.sq-category-el :deep(.el-input__inner::placeholder) {
+  color: rgba(4, 44, 83, 0.46) !important;
+}
+
+.sq-main,
+.sq-sidebar {
+  border-color: rgba(17, 26, 53, 0.1);
+  background: rgba(255, 244, 222, 0.78);
+  color: var(--ink);
+}
+
+.sort-pill,
+.sq-tag,
+.sq-tag-empty,
+.sq-user-row {
+  border-color: rgba(17, 26, 53, 0.1);
+  background: rgba(255, 244, 222, 0.72);
+  color: rgba(4, 44, 83, 0.76);
+}
+
+.sort-pill:hover,
+.sq-tag:hover,
+.sq-tag.active,
+.sq-user-row:hover {
+  background: rgba(255, 122, 184, 0.14);
+  border-color: rgba(255, 122, 184, 0.32);
+  color: var(--ink);
+}
+
+.sort-pill.act {
+  background: var(--cinema);
+  color: var(--paper);
+  border-color: var(--cinema);
+}
+
+.ss-head {
+  color: var(--anime-pink);
+}
+
+.su-name {
+  color: var(--ink);
+}
+
+.su-cnt {
+  color: rgba(4, 44, 83, 0.48);
+}
+
+.pagination-wrap {
+  border-top-color: rgba(17, 26, 53, 0.12);
+  background: rgba(255, 244, 222, 0.88);
+}
+
+.pagination-wrap :deep(.el-pagination) {
+  color: var(--ink);
+}
+
+.pagination-wrap :deep(.el-pager li),
+.pagination-wrap :deep(.btn-prev),
+.pagination-wrap :deep(.btn-next) {
+  background: rgba(255, 244, 222, 0.82) !important;
+  border-color: rgba(17, 26, 53, 0.12) !important;
+  color: var(--ink) !important;
+}
+
+.pagination-wrap :deep(.el-pager li.is-active) {
+  background: var(--cinema) !important;
+  color: var(--paper) !important;
+  border-color: var(--cinema) !important;
+}
+
+.image-drawer {
+  border-color: rgba(17, 26, 53, 0.12);
+  background: rgba(255, 244, 222, 0.94);
+  color: var(--ink);
+}
+
+.drawer-body h2 {
+  color: var(--ink);
+}
+
+.drawer-meta span,
+.drawer-tags span {
+  background: rgba(88, 184, 255, 0.14);
+  border-color: rgba(88, 184, 255, 0.2);
+  color: var(--ink);
+}
+
+.drawer-desc {
+  color: rgba(4, 44, 83, 0.68);
 }
 </style>

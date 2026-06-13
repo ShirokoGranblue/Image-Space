@@ -377,4 +377,62 @@ function goDetail() {
 .overlay-fade-leave-to {
   opacity: 0;
 }
+
+/* Anime paper override */
+.image-card {
+  background: rgba(255, 244, 222, 0.94);
+  border-color: rgba(17, 26, 53, 0.08);
+  box-shadow: 0 18px 44px rgba(17, 26, 53, 0.12);
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.image-card:hover,
+.image-card:focus-visible {
+  border-color: rgba(255, 122, 184, 0.56);
+  transform: translateY(-5px) rotate(-0.35deg);
+  box-shadow: 0 28px 72px rgba(88, 184, 255, 0.18), 0 12px 28px rgba(17, 26, 53, 0.18);
+}
+
+.image-card.selected {
+  border-color: rgba(255, 122, 184, 0.92);
+  box-shadow: 0 0 0 4px rgba(255, 238, 142, 0.34), 0 24px 62px rgba(88, 184, 255, 0.22);
+}
+
+.card-frame {
+  background: linear-gradient(135deg, #fff4de, #f5ecff);
+}
+
+.card-vignette {
+  background:
+    radial-gradient(circle at 82% 14%, rgba(255,255,255,0.38), transparent 23%),
+    linear-gradient(180deg, transparent 52%, rgba(17, 26, 53, 0.5));
+}
+
+.card-body {
+  background: rgba(255, 244, 222, 0.96);
+}
+
+.meta-row .meta-text,
+.square-foot .meta-text {
+  display: none;
+}
+
+.square-foot {
+  justify-content: flex-end;
+}
+
+.category-badge {
+  background: rgba(88, 184, 255, 0.16);
+  border-color: rgba(88, 184, 255, 0.22);
+}
+
+.visibility-badge {
+  background: rgba(255, 122, 184, 0.18);
+}
+
+.like-text {
+  color: var(--cinema);
+}
 </style>

@@ -25,12 +25,17 @@
   --gold: #BA7517;
   --gold2: #EF9F27;
   --gold3: #FAEEDA;
-  --cinema: #07111F;
-  --cinema2: #0B1B2E;
-  --cinema3: #102A45;
-  --mist: #C9D8E7;
-  --glass: rgba(255, 253, 248, 0.78);
-  --glass-dark: rgba(7, 17, 31, 0.72);
+  --cinema: #111A35;
+  --cinema2: #18254B;
+  --cinema3: #263D79;
+  --anime-pink: #FF7AB8;
+  --anime-blue: #58B8FF;
+  --anime-violet: #8D7CFF;
+  --anime-mint: #8EE8D8;
+  --anime-cream: #FFF4DE;
+  --mist: #DDEBFA;
+  --glass: rgba(255, 244, 222, 0.82);
+  --glass-dark: rgba(17, 26, 53, 0.72);
   --line-light: rgba(255, 253, 248, 0.18);
   --line-dark: rgba(4, 44, 83, 0.12);
 
@@ -49,8 +54,8 @@
 
   /* Semantic Aliases — white component surfaces */
   --bg-base: var(--paper);
-  --bg-surface: #fff;
-  --bg-elevated: #fff;
+  --bg-surface: var(--paper);
+  --bg-elevated: var(--paper);
   --bg-hover: var(--ink7);
   --bg-inverse: var(--ink);
 
@@ -108,7 +113,7 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 html {
-  background: var(--cinema);
+  background: var(--paper);
   overflow-y: auto;
   scrollbar-gutter: stable;
   scroll-behavior: smooth;
@@ -117,9 +122,10 @@ html {
 body {
   font-family: var(--font-body);
   background:
-    radial-gradient(circle at 18% -12%, rgba(55, 138, 221, 0.28), transparent 34vw),
-    radial-gradient(circle at 92% 12%, rgba(186, 117, 23, 0.2), transparent 28vw),
-    linear-gradient(135deg, var(--cinema) 0%, var(--cinema2) 42%, #101722 100%);
+    radial-gradient(circle at 12% -8%, rgba(255, 122, 184, 0.28), transparent 32vw),
+    radial-gradient(circle at 88% 6%, rgba(88, 184, 255, 0.26), transparent 30vw),
+    radial-gradient(circle at 72% 88%, rgba(141, 124, 255, 0.16), transparent 34vw),
+    linear-gradient(135deg, var(--paper) 0%, var(--anime-cream) 54%, #F5ECFF 100%);
   color: var(--black);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -142,19 +148,20 @@ body::after {
 
 body::before {
   background:
-    linear-gradient(115deg, transparent 18%, rgba(255, 253, 248, 0.08) 42%, transparent 64%),
-    radial-gradient(circle at 50% 50%, rgba(133, 183, 235, 0.11), transparent 42%);
+    linear-gradient(115deg, transparent 18%, rgba(255, 122, 184, 0.1) 42%, transparent 64%),
+    radial-gradient(circle at 50% 50%, rgba(88, 184, 255, 0.12), transparent 42%);
   animation: cinematicDrift 18s var(--ease-in-out) infinite alternate;
 }
 
 body::after {
   z-index: -1;
-  opacity: 0.36;
+  opacity: 0.48;
   background-image:
-    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px);
-  background-size: 42px 42px;
-  mask-image: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent 72%);
+    radial-gradient(circle, rgba(17,26,53,0.1) 1px, transparent 1.4px),
+    linear-gradient(rgba(17,26,53,0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(17,26,53,0.028) 1px, transparent 1px);
+  background-size: 18px 18px, 48px 48px, 48px 48px;
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,0.44), transparent 76%);
 }
 
 h1, h2, h3, h4 {
@@ -168,7 +175,11 @@ h1, h2, h3, h4 {
 a { color: var(--accent); text-decoration: none; transition: opacity 0.2s; }
 a:hover { opacity: 0.72; }
 
-::selection { background: rgba(46,123,195,0.16); color: var(--black); }
+::selection {
+  background: rgba(255, 238, 142, 0.94);
+  color: #07111F;
+  text-shadow: none;
+}
 
 /* ═══ Custom Cursor ═══ */
 .cursor-dot {
@@ -199,9 +210,9 @@ a:hover { opacity: 0.72; }
   z-index: 200;
   width: 36px; height: 36px;
   display: flex; align-items: center; justify-content: center;
-  border: 1px solid var(--line-light);
-  background: rgba(7, 17, 31, 0.62);
-  color: var(--paper);
+  border: 1px solid rgba(17, 26, 53, 0.14);
+  background: rgba(255, 244, 222, 0.82);
+  color: var(--cinema);
   font-family: var(--font-display);
   font-size: 20px;
   cursor: pointer;
@@ -216,9 +227,9 @@ a:hover { opacity: 0.72; }
   transform: translateY(0);
 }
 .back-to-top:hover {
-  background: var(--paper);
-  color: var(--cinema);
-  border-color: rgba(255, 253, 248, 0.7);
+  background: var(--anime-pink);
+  color: var(--paper);
+  border-color: rgba(255, 122, 184, 0.7);
 }
 
 /* ═══ Animations ═══ */
@@ -288,7 +299,7 @@ a:hover { opacity: 0.72; }
   position: relative;
   isolation: isolate;
   min-height: 100vh;
-  color: var(--paper);
+  color: var(--ink);
 }
 
 .cinematic-shell::before {
@@ -298,14 +309,15 @@ a:hover { opacity: 0.72; }
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(circle at 12% 18%, rgba(55, 138, 221, 0.18), transparent 34vw),
-    radial-gradient(circle at 88% 8%, rgba(239, 159, 39, 0.12), transparent 28vw),
-    linear-gradient(180deg, rgba(7, 17, 31, 0.14), rgba(7, 17, 31, 0.68));
+    radial-gradient(circle at 9% 18%, rgba(255, 122, 184, 0.18), transparent 34vw),
+    radial-gradient(circle at 88% 8%, rgba(88, 184, 255, 0.18), transparent 28vw),
+    radial-gradient(circle at 70% 86%, rgba(141, 124, 255, 0.12), transparent 30vw),
+    linear-gradient(180deg, rgba(255, 244, 222, 0.18), rgba(255, 244, 222, 0.52));
 }
 
 .editorial-panel {
-  background: rgba(255, 253, 248, 0.88);
-  border: 1px solid rgba(255, 253, 248, 0.56);
+  background: rgba(255, 244, 222, 0.9);
+  border: 1px solid rgba(17, 26, 53, 0.08);
   border-radius: 18px;
   box-shadow: var(--shadow-cinematic-soft);
   color: var(--ink);
@@ -313,8 +325,8 @@ a:hover { opacity: 0.72; }
 }
 
 .editorial-panel-dark {
-  background: rgba(7, 17, 31, 0.62);
-  border: 1px solid var(--line-light);
+  background: rgba(17, 26, 53, 0.72);
+  border: 1px solid rgba(255, 244, 222, 0.22);
   border-radius: 18px;
   box-shadow: var(--shadow-cinematic);
   color: var(--paper);
@@ -322,7 +334,7 @@ a:hover { opacity: 0.72; }
 }
 
 .page-kicker {
-  color: var(--gold2);
+  color: var(--anime-pink);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.2em;
@@ -331,7 +343,7 @@ a:hover { opacity: 0.72; }
 
 .empty-state {
   text-align: center; padding: 88px var(--space-lg);
-  color: rgba(255, 253, 248, 0.72); font-family: var(--font-display);
+  color: rgba(4, 44, 83, 0.72); font-family: var(--font-display);
   font-size: 22px; font-weight: 500;
 }
 .empty-state :deep(.el-icon) { font-size: 48px; margin-bottom: var(--space-md); opacity: 0.2; display: block; }

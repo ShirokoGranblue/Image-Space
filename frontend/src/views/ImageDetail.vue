@@ -926,7 +926,7 @@ function highlightFromNotification() {
 }
 
 .img-title::before {
-  content: 'Still Details';
+  content: none;
   display: block;
   margin-bottom: 14px;
   color: var(--gold2);
@@ -1087,5 +1087,90 @@ function highlightFromNotification() {
     border-radius: 18px;
     flex-wrap: wrap;
   }
+}
+
+/* Anime paper override */
+.detail-page {
+  color: var(--ink);
+}
+
+.back-bar :deep(.el-button) {
+  border-color: rgba(17, 26, 53, 0.1);
+  background: rgba(255, 244, 222, 0.78);
+  color: var(--ink);
+}
+
+.detail-layout {
+  border-color: rgba(17, 26, 53, 0.1);
+  background: rgba(255, 244, 222, 0.72);
+  box-shadow: 0 24px 70px rgba(17, 26, 53, 0.12);
+}
+
+.detail-image {
+  border-color: rgba(17, 26, 53, 0.1);
+  background:
+    radial-gradient(circle at 22% 20%, rgba(255, 122, 184, 0.16), transparent 34%),
+    radial-gradient(circle at 80% 16%, rgba(88, 184, 255, 0.18), transparent 30%),
+    linear-gradient(135deg, rgba(255, 244, 222, 0.86), rgba(245, 236, 255, 0.72));
+}
+
+.detail-info {
+  border-color: rgba(17, 26, 53, 0.1);
+  background: rgba(255, 244, 222, 0.88);
+  color: var(--ink);
+}
+
+.img-title {
+  color: var(--ink);
+}
+
+.img-title::before {
+  content: none;
+}
+
+.meta-bar {
+  color: rgba(4, 44, 83, 0.68);
+}
+
+.meta-item {
+  border-bottom-color: rgba(17, 26, 53, 0.09);
+}
+
+.meta-label {
+  color: rgba(4, 44, 83, 0.5);
+}
+
+.meta-value,
+.meta-placeholder,
+.uploader-link {
+  color: var(--ink);
+}
+
+.flat-tag,
+.detail-tag-list :deep(.el-tag) {
+  background: rgba(88, 184, 255, 0.14);
+  border-color: rgba(88, 184, 255, 0.2);
+  color: var(--ink);
+}
+
+.desc-block,
+.action-bar {
+  border-color: rgba(17, 26, 53, 0.1);
+  background: rgba(255, 244, 222, 0.62);
+}
+
+.desc-text,
+.like-count-text {
+  color: rgba(4, 44, 83, 0.68);
+}
+
+.comments-section {
+  border-color: rgba(17, 26, 53, 0.1);
+  background: rgba(255, 244, 222, 0.9);
+}
+
+.comment-input {
+  background: rgba(255, 244, 222, 0.68);
+  border-color: rgba(17, 26, 53, 0.1);
 }
 </style>

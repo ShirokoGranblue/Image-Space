@@ -7,11 +7,11 @@
       </router-link>
 
       <nav class="nav-links" role="navigation" aria-label="主导航">
-        <router-link to="/square" class="nav-link" :class="{ active: $route.path === '/square' }">
-          Square
-        </router-link>
         <router-link to="/home" class="nav-link" :class="{ active: $route.path === '/home' }">
           Images
+        </router-link>
+        <router-link to="/square" class="nav-link" :class="{ active: $route.path === '/square' }">
+          Space
         </router-link>
         <router-link v-if="token" :to="profilePath" class="nav-link" :class="{ active: $route.path.startsWith('/profile') }">
           Profile
@@ -41,11 +41,11 @@
     <transition name="slide-down">
       <div class="mobile-drawer" v-if="mobileOpen">
         <nav class="mobile-nav">
-          <router-link to="/square" class="mobile-nav-item" :class="{ active: $route.path === '/square' }" @click="mobileOpen = false">
-            Square
-          </router-link>
           <router-link to="/home" class="mobile-nav-item" :class="{ active: $route.path === '/home' }" @click="mobileOpen = false">
             Images
+          </router-link>
+          <router-link to="/square" class="mobile-nav-item" :class="{ active: $route.path === '/square' }" @click="mobileOpen = false">
+            Space
           </router-link>
           <router-link v-if="token" :to="profilePath" class="mobile-nav-item" :class="{ active: $route.path.startsWith('/profile') }" @click="mobileOpen = false">
             Profile
@@ -413,5 +413,93 @@ async function handleLogout() {
   .logo span:last-child {
     font-size: 13px;
   }
+}
+
+/* Anime paper override */
+.navbar-inner {
+  background: rgba(255, 244, 222, 0.86);
+  border-color: rgba(17, 26, 53, 0.12);
+  box-shadow: 0 14px 46px rgba(17, 26, 53, 0.12);
+}
+
+.navbar.scrolled .navbar-inner {
+  background: rgba(255, 244, 222, 0.94);
+  border-color: rgba(17, 26, 53, 0.16);
+}
+
+.logo {
+  color: var(--cinema);
+}
+
+.nav-links {
+  background: rgba(17, 26, 53, 0.05);
+  border-color: rgba(17, 26, 53, 0.08);
+}
+
+.nav-link {
+  color: rgba(17, 26, 53, 0.7);
+}
+
+.nav-link:hover {
+  color: var(--cinema);
+  background: rgba(255, 122, 184, 0.12);
+}
+
+.nav-link.active {
+  background: var(--cinema);
+  color: var(--paper);
+}
+
+.upload-nav-btn,
+.logout-btn,
+.avatar-button,
+.mobile-toggle {
+  background: rgba(255, 244, 222, 0.78);
+  border-color: rgba(17, 26, 53, 0.12);
+  color: var(--cinema);
+}
+
+.upload-nav-btn {
+  background: var(--cinema);
+  color: var(--paper);
+}
+
+.upload-nav-btn:hover,
+.logout-btn:hover,
+.avatar-button:hover,
+.mobile-toggle:hover {
+  background: rgba(255, 122, 184, 0.16);
+  border-color: rgba(255, 122, 184, 0.34);
+  color: var(--cinema);
+}
+
+.upload-nav-btn:hover {
+  background: var(--anime-pink);
+  color: var(--paper);
+}
+
+.hamburger-line,
+.hamburger-line::before,
+.hamburger-line::after {
+  background: var(--cinema);
+}
+
+.hamburger-line.open {
+  background: transparent;
+}
+
+.mobile-drawer {
+  background: rgba(255, 244, 222, 0.94);
+  border-color: rgba(17, 26, 53, 0.12);
+}
+
+.mobile-nav-item {
+  color: rgba(17, 26, 53, 0.7);
+}
+
+.mobile-nav-item.active,
+.mobile-nav-item:hover {
+  color: var(--paper);
+  background: var(--cinema);
 }
 </style>
