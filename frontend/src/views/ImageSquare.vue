@@ -6,7 +6,6 @@
       <!-- Redesigned sq-hero -->
       <header class="sq-hero reveal">
         <h1 class="sq-hero-title">Space</h1>
-        <p class="sq-hero-sub">浏览社区公开作品，用标签发现同风格创作</p>
         <div class="sq-search-bar">
           <el-input
             v-model="query.keyword"
@@ -1230,10 +1229,7 @@ function goCreatorProfile(uuidOrId) {
 
 .sq-hero {
   border-color: rgba(17, 26, 53, 0.1);
-  background:
-    radial-gradient(circle at 12% 18%, rgba(255, 122, 184, 0.22), transparent 32%),
-    radial-gradient(circle at 88% 12%, rgba(88, 184, 255, 0.22), transparent 28%),
-    linear-gradient(135deg, rgba(255, 244, 222, 0.94), rgba(245, 236, 255, 0.86));
+  background: #f0eee6;
   box-shadow: 0 24px 70px rgba(17, 26, 53, 0.12);
 }
 
@@ -1260,13 +1256,13 @@ function goCreatorProfile(uuidOrId) {
 
 .sq-search-bar {
   border-color: rgba(17, 26, 53, 0.1);
-  background: rgba(255, 244, 222, 0.7);
+  background: #f0eee6;
 }
 
 .sq-search-el :deep(.el-input__wrapper),
 .sq-category-el :deep(.el-input__wrapper),
 .sq-sort {
-  background: rgba(255, 244, 222, 0.88) !important;
+  background: #f0eee6 !important;
   border-color: rgba(17, 26, 53, 0.1) !important;
   color: var(--ink) !important;
 }
@@ -1284,7 +1280,7 @@ function goCreatorProfile(uuidOrId) {
 .sq-main,
 .sq-sidebar {
   border-color: rgba(17, 26, 53, 0.1);
-  background: rgba(255, 244, 222, 0.78);
+  background: #f0eee6;
   color: var(--ink);
 }
 
@@ -1293,7 +1289,7 @@ function goCreatorProfile(uuidOrId) {
 .sq-tag-empty,
 .sq-user-row {
   border-color: rgba(17, 26, 53, 0.1);
-  background: rgba(255, 244, 222, 0.72);
+  background: #f0eee6;
   color: rgba(4, 44, 83, 0.76);
 }
 
@@ -1326,7 +1322,7 @@ function goCreatorProfile(uuidOrId) {
 
 .pagination-wrap {
   border-top-color: rgba(17, 26, 53, 0.12);
-  background: rgba(255, 244, 222, 0.88);
+  background: #f0eee6;
 }
 
 .pagination-wrap :deep(.el-pagination) {
@@ -1336,7 +1332,7 @@ function goCreatorProfile(uuidOrId) {
 .pagination-wrap :deep(.el-pager li),
 .pagination-wrap :deep(.btn-prev),
 .pagination-wrap :deep(.btn-next) {
-  background: rgba(255, 244, 222, 0.82) !important;
+  background: #f0eee6 !important;
   border-color: rgba(17, 26, 53, 0.12) !important;
   color: var(--ink) !important;
 }
@@ -1349,7 +1345,7 @@ function goCreatorProfile(uuidOrId) {
 
 .image-drawer {
   border-color: rgba(17, 26, 53, 0.12);
-  background: rgba(255, 244, 222, 0.94);
+  background: #f0eee6;
   color: var(--ink);
 }
 

@@ -417,7 +417,7 @@ async function handleLogout() {
 
 /* Anime paper override */
 .navbar-inner {
-  background: rgba(255, 244, 222, 0.86);
+  background: #f0eee6;
   border-color: rgba(17, 26, 53, 0.12);
   box-shadow: 0 14px 46px rgba(17, 26, 53, 0.12);
 }

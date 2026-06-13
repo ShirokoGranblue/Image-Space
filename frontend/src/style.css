@@ -121,11 +121,7 @@ html {
 
 body {
   font-family: var(--font-body);
-  background:
-    radial-gradient(circle at 12% -8%, rgba(255, 122, 184, 0.28), transparent 32vw),
-    radial-gradient(circle at 88% 6%, rgba(88, 184, 255, 0.26), transparent 30vw),
-    radial-gradient(circle at 72% 88%, rgba(141, 124, 255, 0.16), transparent 34vw),
-    linear-gradient(135deg, var(--paper) 0%, var(--anime-cream) 54%, #F5ECFF 100%);
+  background: #f0eee6;
   color: var(--black);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

@@ -2528,7 +2528,7 @@ async function saveProfile() {
 }
 
 .profile-header::before {
-  background: rgba(255, 244, 222, 0.92);
+  background: #f0eee6;
   border-color: rgba(17, 26, 53, 0.1);
 }
 
@@ -2546,7 +2546,7 @@ async function saveProfile() {
 }
 
 .profile-stats {
-  background: rgba(255, 244, 222, 0.68);
+  background: #f0eee6;
   border-color: rgba(17, 26, 53, 0.1);
 }
 
@@ -2561,7 +2561,7 @@ async function saveProfile() {
 
 .user-works {
   border-color: rgba(17, 26, 53, 0.1);
-  background: rgba(255, 244, 222, 0.78);
+  background: #f0eee6;
   color: var(--ink);
 }
 
@@ -2583,7 +2583,7 @@ async function saveProfile() {
 
 .pagination-wrap {
   border-top-color: rgba(17, 26, 53, 0.12);
-  background: rgba(255, 244, 222, 0.88);
+  background: #f0eee6;
 }
 
 .pagination-wrap :deep(.el-pagination) {
@@ -2593,7 +2593,7 @@ async function saveProfile() {
 .pagination-wrap :deep(.el-pager li),
 .pagination-wrap :deep(.btn-prev),
 .pagination-wrap :deep(.btn-next) {
-  background: rgba(255, 244, 222, 0.82) !important;
+  background: #f0eee6 !important;
   border-color: rgba(17, 26, 53, 0.12) !important;
   color: var(--ink) !important;
 }
@@ -2605,7 +2605,7 @@ async function saveProfile() {
 }
 
 :global(.profile-dialog.el-dialog) {
-  background: rgba(255, 244, 222, 0.98) !important;
+  background: #f0eee6 !important;
   border: 1px solid rgba(17, 26, 53, 0.12) !important;
   border-radius: 18px !important;
   box-shadow: 0 30px 90px rgba(17, 26, 53, 0.2) !important;
@@ -2644,7 +2644,7 @@ async function saveProfile() {
 :global(.profile-dialog .bg-preview-side),
 :global(.profile-dialog .avatar-preview-side),
 :global(.profile-dialog .profile-mini-header) {
-  background: var(--paper) !important;
+  background: #f0eee6 !important;
   border-color: rgba(17, 26, 53, 0.1) !important;
 }
 </style>

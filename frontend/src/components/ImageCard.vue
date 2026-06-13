@@ -380,7 +380,7 @@ function goDetail() {
 
 /* Anime paper override */
 .image-card {
-  background: rgba(255, 244, 222, 0.94);
+  background: #f0eee6;
   border-color: rgba(17, 26, 53, 0.08);
   box-shadow: 0 18px 44px rgba(17, 26, 53, 0.12);
   -webkit-user-select: none;
@@ -411,7 +411,7 @@ function goDetail() {
 }
 
 .card-body {
-  background: rgba(255, 244, 222, 0.96);
+  background: #f0eee6;
 }
 
 .meta-row .meta-text,

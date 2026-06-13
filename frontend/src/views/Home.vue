@@ -5,7 +5,6 @@
       <header class="page-header">
         <div>
           <h1 class="page-title">Images</h1>
-          <p class="page-desc">管理你的图片、分类和公开范围</p>
         </div>
         <div class="toolbar">
           <div class="toolbar-left">
@@ -978,10 +977,7 @@ async function saveEdit() {
 
 .page-header {
   border-color: rgba(17, 26, 53, 0.1);
-  background:
-    radial-gradient(circle at 10% 15%, rgba(255, 122, 184, 0.2), transparent 30%),
-    radial-gradient(circle at 86% 10%, rgba(88, 184, 255, 0.22), transparent 28%),
-    linear-gradient(135deg, rgba(255, 244, 222, 0.94), rgba(255, 244, 222, 0.82));
+  background: #f0eee6;
   box-shadow: 0 24px 70px rgba(17, 26, 53, 0.12);
 }
 
@@ -1018,13 +1014,13 @@ async function saveEdit() {
 .toolbar,
 .selection-actions {
   border-color: rgba(17, 26, 53, 0.1);
-  background: rgba(255, 244, 222, 0.66);
+  background: #f0eee6;
 }
 
 .toolbar-search :deep(.el-input__wrapper),
 .toolbar-select :deep(.el-input__wrapper),
 .toolbar-right :deep(.el-input__wrapper) {
-  background: rgba(255, 244, 222, 0.86) !important;
+  background: #f0eee6 !important;
   border-color: rgba(17, 26, 53, 0.1) !important;
 }
 
@@ -1053,12 +1049,12 @@ async function saveEdit() {
 .home-page .card-grid,
 .home-page .empty-state {
   border-color: rgba(17, 26, 53, 0.1);
-  background: rgba(255, 244, 222, 0.78);
+  background: #f0eee6;
 }
 
 .pagination-wrap {
   border-top-color: rgba(17, 26, 53, 0.12);
-  background: rgba(255, 244, 222, 0.86);
+  background: #f0eee6;
 }
 
 .pagination-wrap :deep(.el-pagination) {
@@ -1068,7 +1064,7 @@ async function saveEdit() {
 .pagination-wrap :deep(.el-pager li),
 .pagination-wrap :deep(.btn-prev),
 .pagination-wrap :deep(.btn-next) {
-  background: rgba(255, 244, 222, 0.82) !important;
+  background: #f0eee6 !important;
   border-color: rgba(17, 26, 53, 0.12) !important;
   color: var(--ink) !important;
 }

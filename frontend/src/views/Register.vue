@@ -396,20 +396,17 @@ function resetTurnstile() {
 
 /* Anime paper override */
 .auth-page {
-  background:
-    radial-gradient(circle at 14% 10%, rgba(255, 122, 184, 0.24), transparent 30vw),
-    radial-gradient(circle at 90% 6%, rgba(88, 184, 255, 0.22), transparent 28vw),
-    linear-gradient(135deg, var(--paper), var(--anime-cream));
+  background: #f0eee6;
 }
 
 .login-wrap {
-  background: rgba(255, 244, 222, 0.9);
+  background: #f0eee6;
   border-color: rgba(17, 26, 53, 0.12);
   box-shadow: 0 26px 80px rgba(17, 26, 53, 0.14);
 }
 
 .login-panel {
-  background: rgba(255, 244, 222, 0.9);
+  background: #f0eee6;
 }
 
 .login-visual {
@@ -448,13 +445,13 @@ function resetTurnstile() {
 }
 
 .auth-form :deep(.el-input__wrapper) {
-  background: rgba(255, 244, 222, 0.78) !important;
+  background: #f0eee6 !important;
   border-color: rgba(17, 26, 53, 0.1) !important;
 }
 
 .auth-form :deep(.el-input__wrapper.is-focus) {
   border-color: rgba(255, 122, 184, 0.52) !important;
-  background: rgba(255, 244, 222, 0.96) !important;
+  background: #f0eee6 !important;
   box-shadow: 0 0 0 4px rgba(255, 122, 184, 0.12) !important;
 }
 

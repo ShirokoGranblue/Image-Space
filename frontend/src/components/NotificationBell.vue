@@ -81,7 +81,7 @@ function toggle() {
   height: 34px;
   border: none;
   background: transparent;
-  color: var(--gray3);
+  color: var(--ink);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -92,7 +92,7 @@ function toggle() {
 }
 
 .notification-bell:hover {
-  color: var(--black);
+  color: var(--anime-pink);
 }
 
 .bell-icon {

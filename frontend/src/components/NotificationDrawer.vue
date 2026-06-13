@@ -187,7 +187,7 @@ async function handleDeleteSelected() {
   z-index: 2000;
   width: var(--notification-drawer-width, 420px);
   height: 100dvh;
-  background: var(--white);
+  background: #f0eee6;
   border-left: 1px solid var(--gray2);
   box-shadow: -8px 0 30px rgba(0, 0, 0, 0.08), -2px 0 8px rgba(0, 0, 0, 0.04);
   display: flex;
@@ -264,17 +264,17 @@ async function handleDeleteSelected() {
 }
 
 .notification-item:hover {
-  background: var(--white);
+  background: #f0eee6;
   border-left-color: var(--accent);
   transform: translateX(-4px);
 }
 
 .notification-item.unread {
-  background: var(--gray1);
+  background: rgba(17, 26, 53, 0.04);
 }
 
 .notification-item.unread:hover {
-  background: var(--gray1);
+  background: rgba(17, 26, 53, 0.04);
   border-left-color: var(--accent);
   transform: translateX(-4px);
 }
@@ -305,7 +305,7 @@ async function handleDeleteSelected() {
   width: 64px;
   height: 64px;
   object-fit: cover;
-  background: var(--gray1);
+  background: rgba(17, 26, 53, 0.06);
 }
 
 .notification-body {

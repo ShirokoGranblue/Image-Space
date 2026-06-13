@@ -1102,7 +1102,7 @@ function highlightFromNotification() {
 
 .detail-layout {
   border-color: rgba(17, 26, 53, 0.1);
-  background: rgba(255, 244, 222, 0.72);
+  background: #f0eee6;
   box-shadow: 0 24px 70px rgba(17, 26, 53, 0.12);
 }
 
@@ -1156,7 +1156,7 @@ function highlightFromNotification() {
 .desc-block,
 .action-bar {
   border-color: rgba(17, 26, 53, 0.1);
-  background: rgba(255, 244, 222, 0.62);
+  background: #f0eee6;
 }
 
 .desc-text,
@@ -1166,11 +1166,11 @@ function highlightFromNotification() {
 
 .comments-section {
   border-color: rgba(17, 26, 53, 0.1);
-  background: rgba(255, 244, 222, 0.9);
+  background: #f0eee6;
 }
 
 .comment-input {
-  background: rgba(255, 244, 222, 0.68);
+  background: #f0eee6;
   border-color: rgba(17, 26, 53, 0.1);
 }
 </style>
