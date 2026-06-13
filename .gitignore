@@ -71,3 +71,9 @@ AGENTS.md
 PATHFINDER-2026-05-29/
 .omc/
 .superpowers/
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
