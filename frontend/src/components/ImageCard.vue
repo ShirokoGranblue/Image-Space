@@ -38,6 +38,7 @@
       <div v-else class="img-fallback">
         <el-icon :size="40"><PictureFilled /></el-icon>
       </div>
+      <div class="card-vignette"></div>
 
       <transition name="overlay-fade">
         <div class="card-overlay" v-if="hover && !imgFailed">
@@ -132,39 +133,41 @@ function goDetail() {
   position: relative;
   min-width: 0;
   cursor: pointer;
-  border-radius: 10px;
+  border-radius: 16px;
   overflow: hidden;
-  background: #fff;
-  border: 0.5px solid var(--paper3);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.06);
-  transition: border-color .2s, transform .2s, box-shadow .3s;
-  animation: fadeUp 0.34s var(--ease-out);
+  background: rgba(255, 253, 248, 0.9);
+  border: 1px solid rgba(255, 253, 248, 0.6);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.16);
+  transition: border-color .22s ease, transform .24s var(--ease-cinema), box-shadow .28s ease, background .22s ease;
+  animation: fadeUp 0.42s var(--ease-cinema);
+  backdrop-filter: blur(14px);
 }
 
 .image-card:hover,
 .image-card:focus-visible {
-  border-color: var(--ink4);
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04);
+  border-color: rgba(239, 159, 39, 0.5);
+  transform: translateY(-5px);
+  box-shadow: 0 28px 72px rgba(0, 0, 0, 0.26);
 }
 
 .image-card:active {
-  transform: translateY(-1px) scale(0.99);
+  transform: translateY(-2px) scale(0.99);
 }
 
 .image-card.selected {
-  border-color: var(--ink4);
+  border-color: rgba(239, 159, 39, 0.86);
+  box-shadow: 0 0 0 3px rgba(239, 159, 39, 0.14), 0 24px 62px rgba(0, 0, 0, 0.24);
 }
 
 .card-frame {
   position: relative;
   aspect-ratio: 4 / 3;
   overflow: hidden;
-  background: var(--paper);
+  background: var(--cinema2);
 }
 
 .variant-square .card-frame {
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 4 / 5;
 }
 
 .card-img {
@@ -172,11 +175,12 @@ function goDetail() {
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 0.42s var(--ease-out), filter 0.24s ease;
+  transition: transform 0.56s var(--ease-cinema), filter 0.28s ease;
 }
 
 .card-img.zoomed {
-  transform: scale(1.04);
+  transform: scale(1.06);
+  filter: brightness(0.76) saturate(1.05);
 }
 
 .img-fallback {
@@ -184,8 +188,24 @@ function goDetail() {
   height: 100%;
   display: grid;
   place-items: center;
-  color: var(--ink3);
-  background: var(--paper3);
+  background:
+    radial-gradient(circle at 50% 24%, rgba(55, 138, 221, 0.28), transparent 42%),
+    var(--cinema2);
+  color: rgba(247, 243, 232, 0.64);
+}
+
+.card-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent 52%, rgba(7, 17, 31, 0.42));
+  opacity: 0.5;
+  transition: opacity 0.24s ease;
+}
+
+.image-card:hover .card-vignette,
+.image-card:focus-visible .card-vignette {
+  opacity: 0.86;
 }
 
 .card-overlay {
@@ -195,26 +215,28 @@ function goDetail() {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: rgba(4, 44, 83, 0.6);
-  border-radius: 10px;
+  background: radial-gradient(circle at 50% 44%, rgba(7, 17, 31, 0.12), rgba(7, 17, 31, 0.68));
 }
 
 .icon-action {
-  width: 30px;
-  height: 30px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.2);
-  border: 0.5px solid rgba(255, 255, 255, 0.35);
-  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: rgba(255, 253, 248, 0.14);
+  border: 1px solid rgba(255, 253, 248, 0.28);
+  color: var(--paper);
   display: inline-grid;
   place-items: center;
   cursor: pointer;
   font-size: 14px;
-  transition: background 0.15s, transform 0.1s;
+  backdrop-filter: blur(10px);
+  transition: background 0.15s, transform 0.1s, border-color 0.15s, color 0.15s;
 }
 
 .icon-action:hover {
-  background: rgba(255, 255, 255, 0.35);
+  background: var(--paper);
+  color: var(--cinema);
+  border-color: rgba(255, 253, 248, 0.7);
 }
 
 .icon-action:active {
@@ -222,20 +244,21 @@ function goDetail() {
 }
 
 .icon-action.danger:hover {
-  background: rgba(214, 80, 80, 0.9);
+  background: rgba(214, 80, 80, 0.92);
+  color: #fff;
   border-color: rgba(255, 255, 255, 0.3);
 }
 
 .select-toggle {
   position: absolute;
-  top: 7px;
-  left: 7px;
+  top: 9px;
+  left: 9px;
   z-index: 3;
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
-  border: 1.5px solid rgba(255, 255, 255, 0.6);
-  background: transparent;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 253, 248, 0.72);
+  background: rgba(7, 17, 31, 0.42);
   cursor: pointer;
   opacity: 0;
   display: flex;
@@ -251,8 +274,8 @@ function goDetail() {
 }
 
 .select-toggle.checked {
-  background: var(--ink);
-  border-color: var(--ink);
+  background: var(--gold2);
+  border-color: var(--gold2);
 }
 
 .select-mark {
@@ -261,9 +284,8 @@ function goDetail() {
 
 .select-toggle.checked .select-mark {
   display: block;
-  width: 4px;
-  height: 8px;
-  border-radius: 0;
+  width: 5px;
+  height: 9px;
   border: 0;
   border-right: 2px solid #fff;
   border-bottom: 2px solid #fff;
@@ -271,17 +293,18 @@ function goDetail() {
 }
 
 .card-body {
-  padding: 8px 10px;
+  padding: 12px 13px 13px;
 }
 
 .img-name {
   color: var(--ink);
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
   line-height: 1.35;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  letter-spacing: 0.01em;
 }
 
 .meta-row,
@@ -290,7 +313,7 @@ function goDetail() {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-top: 4px;
+  margin-top: 7px;
   min-width: 0;
 }
 
@@ -300,40 +323,40 @@ function goDetail() {
   align-items: center;
   min-width: 0;
   max-width: 70%;
-  height: 18px;
-  padding: 0 6px;
-  border-radius: 4px;
-  font-size: 15px;
-  font-weight: 500;
+  min-height: 20px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .category-badge {
-  color: var(--ink3);
-  background: #fff;
-  border: 0.5px solid var(--paper3);
+  color: var(--ink);
+  background: rgba(230, 241, 251, 0.78);
+  border: 1px solid rgba(4, 44, 83, 0.08);
 }
 
 .category-badge.muted {
   color: var(--ink3);
-  background: var(--paper);
-  border: 0.5px solid var(--paper3);
+  background: rgba(247, 243, 232, 0.8);
+  border: 1px solid rgba(4, 44, 83, 0.08);
 }
 
 .visibility-badge {
   flex-shrink: 0;
-  color: var(--ink3);
-  background: var(--ink7);
+  color: var(--cinema);
+  background: rgba(239, 159, 39, 0.2);
 }
 
 .meta-text,
 .like-text {
   min-width: 0;
   color: var(--ink3);
-  font-size: 15px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -344,7 +367,6 @@ function goDetail() {
   align-items: center;
   gap: 3px;
   flex-shrink: 0;
-  color: var(--ink3);
 }
 
 .overlay-fade-enter-active,

@@ -1,5 +1,5 @@
 <template>
-  <div class="detail-page">
+  <div class="detail-page cinematic-shell">
     <NavBar />
     <div class="page-container" v-loading="loading">
       <div class="back-bar">
@@ -576,7 +576,12 @@ function highlightFromNotification() {
   if (!targetId) return
   highlightedTarget.value = targetId
   const elementId = targetId === 'like' ? 'like-activity' : targetId
-  document.getElementById(elementId)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  const target = document.getElementById(elementId)
+  if (target) {
+    const rect = target.getBoundingClientRect()
+    const top = rect.top + window.scrollY - Math.max(80, window.innerHeight * 0.2)
+    window.scrollTo({ top, behavior: 'smooth' })
+  }
   window.setTimeout(() => {
     if (highlightedTarget.value === targetId) highlightedTarget.value = ''
   }, 1800)
@@ -837,5 +842,250 @@ function highlightFromNotification() {
   .detail-image { height: 420px; min-height: 280px; }
   .comments-section { padding: var(--space-md); }
   .comment-img { height: min(512px, calc(100vw - 58px)); }
+}
+/* Cinematic minimal override */
+.detail-page {
+  min-height: 100vh;
+  background: transparent;
+  color: var(--paper);
+}
+
+.detail-page .page-container {
+  width: min(100%, 1440px);
+  padding: 104px 32px 70px;
+}
+
+.back-bar {
+  margin-bottom: 18px;
+}
+
+.back-bar :deep(.el-button) {
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 253, 248, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 253, 248, 0.08);
+  color: rgba(247, 243, 232, 0.78);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(340px, 0.72fr);
+  gap: 22px;
+  padding: 22px;
+  border: 1px solid rgba(255, 253, 248, 0.14);
+  border-radius: 24px;
+  background: rgba(7, 17, 31, 0.46);
+  box-shadow: var(--shadow-cinematic);
+  backdrop-filter: blur(18px);
+}
+
+.detail-image {
+  height: min(72vh, 760px);
+  min-height: 520px;
+  margin: 0;
+  border: 1px solid rgba(255, 253, 248, 0.12);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(55, 138, 221, 0.2), transparent 42%),
+    var(--cinema2);
+  box-shadow: inset 0 0 0 1px rgba(255, 253, 248, 0.04);
+}
+
+.detail-image img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.detail-image img.zoomed {
+  transform: scale(1.025);
+  filter: brightness(0.72);
+}
+
+.detail-info {
+  position: sticky;
+  top: 96px;
+  align-self: start;
+  padding: 28px;
+  border: 1px solid rgba(255, 253, 248, 0.12);
+  border-radius: 20px;
+  background: rgba(255, 253, 248, 0.1);
+  color: var(--paper);
+  backdrop-filter: blur(18px);
+}
+
+.img-title {
+  margin: 0 0 22px;
+  color: var(--paper);
+  font-size: clamp(36px, 4vw, 58px);
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+}
+
+.img-title::before {
+  content: 'Still Details';
+  display: block;
+  margin-bottom: 14px;
+  color: var(--gold2);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.meta-bar {
+  display: grid;
+  gap: 10px;
+  color: rgba(247, 243, 232, 0.68);
+  font-size: 14px;
+}
+
+.meta-item {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(255, 253, 248, 0.09);
+}
+
+.meta-item + .meta-item::before {
+  content: none;
+}
+
+.meta-label {
+  color: rgba(247, 243, 232, 0.48);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.meta-value,
+.meta-placeholder,
+.uploader-link {
+  color: rgba(247, 243, 232, 0.86);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.flat-tag,
+.detail-tag-list :deep(.el-tag) {
+  border-radius: 999px;
+  background: rgba(255, 253, 248, 0.08);
+  border-color: rgba(255, 253, 248, 0.12);
+  color: rgba(247, 243, 232, 0.72);
+}
+
+.desc-block {
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid rgba(255, 253, 248, 0.1);
+  border-radius: 16px;
+  background: rgba(7, 17, 31, 0.24);
+}
+
+.desc-empty {
+  border-style: dashed;
+}
+
+.desc-text {
+  color: rgba(247, 243, 232, 0.68);
+  font-size: 15px;
+}
+
+.action-bar {
+  margin-top: 20px;
+  padding: 12px;
+  border: 1px solid rgba(255, 253, 248, 0.12);
+  border-radius: 18px;
+  background: rgba(7, 17, 31, 0.22);
+  color: rgba(247, 243, 232, 0.78);
+}
+
+.like-count-text {
+  color: rgba(247, 243, 232, 0.62);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.download-btn {
+  margin-left: auto;
+  padding-top: 0;
+}
+
+.comments-section {
+  margin-top: 24px;
+  padding: 28px;
+  border: 1px solid rgba(255, 253, 248, 0.14);
+  border-radius: 24px;
+  background: rgba(255, 253, 248, 0.9);
+  color: var(--ink);
+  box-shadow: var(--shadow-cinematic-soft);
+}
+
+.comments-section h3 {
+  color: var(--ink);
+  font-size: 32px;
+  letter-spacing: -0.02em;
+}
+
+.comment-input {
+  padding: 10px;
+  border: 1px solid rgba(4, 44, 83, 0.08);
+  border-radius: 999px;
+  background: rgba(4, 44, 83, 0.04);
+}
+
+.comment-item {
+  padding: 18px 0;
+  border-bottom: 1px solid rgba(4, 44, 83, 0.09);
+}
+
+.comment-item:hover {
+  background: transparent;
+  transform: none;
+}
+
+.comment-user {
+  color: var(--ink);
+}
+
+.comment-content {
+  color: var(--ink2);
+  font-size: 15px;
+}
+
+.comment-time,
+.comment-empty {
+  color: var(--ink3);
+}
+
+@media (max-width: 980px) {
+  .detail-page .page-container {
+    padding: 92px 14px 40px;
+  }
+  .detail-layout {
+    grid-template-columns: 1fr;
+    padding: 14px;
+  }
+  .detail-info {
+    position: static;
+  }
+  .detail-image {
+    min-height: 320px;
+    height: min(78vw, 520px);
+  }
+  .meta-item {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .comment-input {
+    border-radius: 18px;
+    flex-wrap: wrap;
+  }
 }
 </style>

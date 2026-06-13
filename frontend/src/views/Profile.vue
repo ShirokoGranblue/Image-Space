@@ -1,5 +1,5 @@
 <template>
-  <div class="profile-page">
+  <div class="profile-page cinematic-shell">
     <NavBar />
     <div class="page-container" v-loading="loading">
       <div class="profile-banner" :style="bannerStyle">
@@ -2241,6 +2241,240 @@ async function saveProfile() {
     --el-pagination-button-width: 28px;
     --el-pagination-button-height: 28px;
     font-size: 16px;
+  }
+}
+/* Cinematic minimal override */
+.profile-page {
+  min-height: 100vh;
+  background: transparent;
+  color: var(--paper);
+}
+
+.profile-page .page-container {
+  max-width: 1180px;
+  padding: 104px 32px 128px;
+}
+
+.profile-banner {
+  height: 260px;
+  border: 1px solid rgba(255, 253, 248, 0.16);
+  border-bottom: none;
+  border-radius: 24px 24px 0 0;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(55, 138, 221, 0.34), transparent 36%),
+    linear-gradient(130deg, var(--cinema) 0%, var(--cinema2) 58%, #17120d 100%);
+  box-shadow: var(--shadow-cinematic);
+}
+
+.banner-grid {
+  gap: 8px;
+  padding: 18px;
+  opacity: 0.42;
+}
+
+.banner-cell {
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+}
+
+.banner-overlay {
+  background: linear-gradient(to top, rgba(7, 17, 31, .92) 0%, rgba(7, 17, 31, 0.08) 62%);
+}
+
+.profile-header {
+  margin-top: -68px;
+  padding: 0 34px 30px;
+}
+
+.profile-header::before {
+  top: 68px;
+  border: 1px solid rgba(255, 253, 248, 0.16);
+  border-top: 0;
+  border-radius: 0 0 24px 24px;
+  background: rgba(255, 253, 248, 0.9);
+  box-shadow: var(--shadow-cinematic-soft);
+  backdrop-filter: blur(18px);
+}
+
+.avatar {
+  width: 92px !important;
+  height: 92px !important;
+  border: 4px solid rgba(255, 253, 248, 0.95);
+  background: var(--cinema3);
+  box-shadow: 0 18px 38px rgba(0,0,0,0.22);
+}
+
+.avatar-upload :deep(.el-button) {
+  width: 30px;
+  height: 30px;
+  background: var(--gold2);
+  border: 2px solid var(--paper);
+}
+
+.profile-name-row {
+  margin-top: 18px;
+}
+
+.profile-name-row h2 {
+  color: var(--ink);
+  font-size: clamp(32px, 4vw, 52px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.profile-name-row h2::before {
+  content: 'Creator Profile';
+  display: block;
+  margin-bottom: 10px;
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.dropdown-trigger {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: var(--ink);
+}
+
+.bio {
+  color: var(--ink2);
+  font-size: 15px;
+}
+
+.profile-meta {
+  color: var(--ink3);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 22px;
+  border: 1px solid rgba(4, 44, 83, 0.08);
+  border-radius: 18px;
+  background: rgba(4, 44, 83, 0.04);
+  box-shadow: none;
+}
+
+.stat-item {
+  padding: 18px 14px;
+  border-right: 1px solid rgba(4, 44, 83, 0.08);
+}
+
+.stat-num {
+  color: var(--ink);
+  font-size: 28px;
+  line-height: 1;
+}
+
+.stat-label {
+  color: var(--ink3);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.user-works {
+  margin-top: 26px;
+  padding: 24px;
+  border: 1px solid rgba(255, 253, 248, 0.12);
+  border-radius: 24px;
+  background: rgba(7, 17, 31, 0.46);
+  box-shadow: var(--shadow-cinematic-soft);
+  backdrop-filter: blur(18px);
+}
+
+.works-heading {
+  margin-bottom: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 253, 248, 0.1);
+}
+
+.works-heading h3 {
+  color: var(--paper);
+  font-size: 34px;
+  letter-spacing: -0.03em;
+}
+
+.works-heading h3::before {
+  content: 'Selected Works';
+  display: block;
+  margin-bottom: 8px;
+  color: var(--gold2);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.works-actions :deep(.el-checkbox__label) {
+  color: rgba(247, 243, 232, 0.76);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.profile-page .card-grid {
+  grid-template-columns: repeat(auto-fill, minmax(218px, 1fr));
+  gap: 20px;
+}
+
+.profile-page .empty-state {
+  color: rgba(247, 243, 232, 0.68);
+}
+
+.pagination-wrap {
+  border-top: 1px solid rgba(255, 253, 248, 0.12);
+  background: rgba(7, 17, 31, 0.78);
+  backdrop-filter: blur(18px);
+}
+
+.pagination-wrap :deep(.el-pager li),
+.pagination-wrap :deep(.btn-prev),
+.pagination-wrap :deep(.btn-next) {
+  background: rgba(255, 253, 248, 0.08) !important;
+  border: 1px solid rgba(255, 253, 248, 0.12) !important;
+  color: rgba(247, 243, 232, 0.78) !important;
+}
+
+.pagination-wrap :deep(.el-pager li.is-active) {
+  background: var(--paper) !important;
+  color: var(--cinema) !important;
+  border-color: var(--paper) !important;
+}
+
+@media (max-width: 820px) {
+  .profile-page .page-container {
+    padding: 92px 14px 148px;
+  }
+  .profile-banner {
+    height: 180px;
+    border-radius: 20px 20px 0 0;
+  }
+  .profile-header {
+    padding: 0 20px 24px;
+    margin-top: -52px;
+  }
+  .profile-header::before {
+    top: 52px;
+    border-radius: 0 0 20px 20px;
+  }
+  .profile-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .stat-item:nth-child(2) {
+    border-right: none;
+  }
+  .user-works {
+    padding: 16px;
+  }
+  .profile-page .card-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

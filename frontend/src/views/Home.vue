@@ -1,5 +1,5 @@
 <template>
-  <div class="home-page">
+  <div class="home-page cinematic-shell">
     <NavBar />
     <div class="page-container">
       <header class="page-header">
@@ -710,6 +710,264 @@ async function saveEdit() {
     --el-pagination-button-width: 28px;
     --el-pagination-button-height: 28px;
     font-size: 16px;
+  }
+}
+/* Cinematic minimal override */
+.home-page {
+  min-height: 100vh;
+  background: transparent;
+  color: var(--paper);
+}
+
+.home-page .page-container {
+  width: min(100%, 1440px);
+  padding: 104px 32px 128px;
+}
+
+.page-header {
+  position: relative;
+  overflow: hidden;
+  padding: 38px;
+  margin-bottom: 22px;
+  display: grid;
+  grid-template-columns: minmax(240px, 0.72fr) minmax(0, 1.28fr);
+  align-items: end;
+  gap: 28px;
+  border: 1px solid rgba(255, 253, 248, 0.16);
+  border-radius: 24px;
+  background:
+    linear-gradient(120deg, rgba(7, 17, 31, 0.9) 0%, rgba(7, 17, 31, 0.62) 54%, rgba(7, 17, 31, 0.88) 100%),
+    radial-gradient(circle at 20% 12%, rgba(55, 138, 221, 0.34), transparent 34%),
+    radial-gradient(circle at 90% 18%, rgba(239, 159, 39, 0.14), transparent 26%);
+  box-shadow: var(--shadow-cinematic);
+  backdrop-filter: blur(18px);
+}
+
+.page-header::before {
+  content: 'PRIVATE ARCHIVE';
+  position: absolute;
+  right: 32px;
+  top: 30px;
+  color: rgba(247, 243, 232, 0.1);
+  font-size: clamp(48px, 7vw, 108px);
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  pointer-events: none;
+}
+
+.page-header > div:first-child {
+  position: relative;
+  z-index: 1;
+}
+
+.page-title {
+  margin: 0;
+  color: var(--paper);
+  font-size: clamp(46px, 6vw, 86px);
+  line-height: 0.88;
+  letter-spacing: -0.05em;
+}
+
+.page-title::before {
+  content: 'Private Archive';
+  display: block;
+  margin-bottom: 16px;
+  color: var(--gold2);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.page-desc {
+  max-width: 420px;
+  margin: 18px 0 0;
+  color: rgba(247, 243, 232, 0.66);
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.toolbar {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  align-self: stretch;
+  padding: 14px;
+  border: 1px solid rgba(255, 253, 248, 0.12);
+  border-radius: 20px;
+  background: rgba(255, 253, 248, 0.08);
+  backdrop-filter: blur(16px);
+}
+
+.toolbar-left,
+.toolbar-right {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.toolbar-left {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(140px, 170px) minmax(140px, 170px) auto;
+}
+
+.toolbar-right {
+  justify-content: flex-end;
+}
+
+.toolbar-search,
+.toolbar-select {
+  width: 100%;
+}
+
+.toolbar-search :deep(.el-input__wrapper),
+.toolbar-select :deep(.el-input__wrapper),
+.toolbar-right :deep(.el-input__wrapper) {
+  height: 42px;
+  background: rgba(255, 253, 248, 0.11) !important;
+  border: 1px solid rgba(255, 253, 248, 0.14) !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+}
+
+.toolbar-search :deep(.el-input__inner),
+.toolbar-select :deep(.el-input__inner),
+.toolbar-right :deep(.el-input__inner) {
+  color: var(--paper) !important;
+  font-size: 14px;
+}
+
+.toolbar-search :deep(.el-input__inner::placeholder),
+.toolbar-select :deep(.el-input__inner::placeholder) {
+  color: rgba(247, 243, 232, 0.52) !important;
+}
+
+.selection-actions {
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 253, 248, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 253, 248, 0.08);
+}
+
+.selection-actions :deep(.el-checkbox__label) {
+  color: rgba(247, 243, 232, 0.76);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.btn-slide {
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: var(--paper) !important;
+  border: 1px solid rgba(255, 253, 248, 0.7) !important;
+  color: var(--cinema) !important;
+  font-size: 14px;
+  font-weight: 800;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+}
+
+.btn-slide:hover {
+  background: #fff !important;
+  transform: translateY(-1px);
+}
+
+.home-page .card-grid {
+  grid-template-columns: repeat(auto-fill, minmax(218px, 1fr));
+  gap: 20px;
+  padding: 22px;
+  border: 1px solid rgba(255, 253, 248, 0.12);
+  border-radius: 22px;
+  background: rgba(7, 17, 31, 0.45);
+  box-shadow: var(--shadow-cinematic-soft);
+  backdrop-filter: blur(18px);
+}
+
+.home-page .empty-state {
+  margin-top: 22px;
+  border: 1px solid rgba(255, 253, 248, 0.12);
+  border-radius: 22px;
+  background: rgba(7, 17, 31, 0.42);
+  backdrop-filter: blur(18px);
+}
+
+.skeleton-grid {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 18px;
+}
+
+.skeleton-grid .skeleton {
+  border-radius: 16px;
+  background:
+    linear-gradient(120deg, rgba(255,253,248,0.06), rgba(255,253,248,0.18), rgba(255,253,248,0.06)),
+    rgba(255,253,248,0.08);
+}
+
+.pagination-wrap {
+  border-top: 1px solid rgba(255, 253, 248, 0.12);
+  background: rgba(7, 17, 31, 0.78);
+  backdrop-filter: blur(18px);
+}
+
+.pagination-wrap :deep(.el-pagination) {
+  color: var(--paper);
+}
+
+.pagination-wrap :deep(.el-pager li),
+.pagination-wrap :deep(.btn-prev),
+.pagination-wrap :deep(.btn-next) {
+  background: rgba(255, 253, 248, 0.08) !important;
+  border: 1px solid rgba(255, 253, 248, 0.12) !important;
+  color: rgba(247, 243, 232, 0.78) !important;
+}
+
+.pagination-wrap :deep(.el-pager li.is-active) {
+  background: var(--paper) !important;
+  color: var(--cinema) !important;
+  border-color: var(--paper) !important;
+}
+
+.category-row {
+  gap: 10px;
+}
+
+@media (max-width: 1040px) {
+  .page-header {
+    grid-template-columns: 1fr;
+  }
+  .toolbar-left {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .home-page .page-container {
+    padding: 92px 14px 148px;
+  }
+  .page-header {
+    padding: 28px 18px;
+    border-radius: 20px;
+  }
+  .toolbar,
+  .toolbar-left,
+  .toolbar-right {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+  .toolbar-search,
+  .toolbar-select,
+  .toolbar-right :deep(.el-select) {
+    width: 100% !important;
+  }
+  .home-page .card-grid {
+    grid-template-columns: 1fr;
+    padding: 14px;
   }
 }
 </style>

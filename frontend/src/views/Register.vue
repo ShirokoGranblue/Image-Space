@@ -173,26 +173,29 @@ function resetTurnstile() {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 34px 24px;
-  background: #fff;
+  padding: 36px 24px;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(55, 138, 221, 0.24), transparent 34vw),
+    radial-gradient(circle at 82% 12%, rgba(239, 159, 39, 0.14), transparent 28vw);
 }
 
 .login-wrap {
   display: grid;
-  grid-template-columns: 360px 1fr;
-  width: min(100%, 1000px);
-  min-height: 580px;
-  background: #fff;
-  border: 0.5px solid var(--paper3);
-  border-radius: 12px;
+  grid-template-columns: minmax(360px, 430px) 1fr;
+  width: min(100%, 1080px);
+  min-height: 640px;
+  background: rgba(255, 253, 248, 0.88);
+  border: 1px solid rgba(255, 253, 248, 0.58);
+  border-radius: 24px;
   overflow: hidden;
-  box-shadow: 0 20px 50px rgba(4, 44, 83, 0.1), 0 8px 20px rgba(4, 44, 83, 0.06);
+  box-shadow: var(--shadow-cinematic);
+  backdrop-filter: blur(22px);
 }
 
 .login-panel {
-  background: #fff;
-  padding: 48px 40px;
-  border-right: 0.5px solid var(--paper3);
+  background: rgba(255, 253, 248, 0.92);
+  padding: 56px 48px;
+  border-right: 1px solid rgba(4, 44, 83, 0.08);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -200,48 +203,51 @@ function resetTurnstile() {
 
 .login-logo {
   font-family: var(--font-display);
-  font-size: 19px;
+  font-size: 13px;
   color: var(--ink);
-  letter-spacing: .1em;
-  margin-bottom: 32px;
+  letter-spacing: .22em;
+  margin-bottom: 42px;
   text-decoration: none;
-  font-weight: 600;
+  font-weight: 800;
   display: inline-block;
 }
 
 .login-logo:hover {
-  opacity: 0.8;
+  opacity: 0.78;
 }
 
 .login-heading {
   font-family: var(--font-display);
-  font-size: 34px;
+  font-size: clamp(38px, 5vw, 56px);
   font-weight: 500;
   color: var(--ink);
-  line-height: 1.2;
-  margin-bottom: 28px;
+  line-height: 0.96;
+  margin-bottom: 32px;
+  letter-spacing: -0.02em;
 }
 
 .login-btn {
   width: 100%;
-  height: 42px;
+  height: 46px;
   background: var(--ink);
   color: var(--paper);
   border: none;
-  border-radius: 8px;
+  border-radius: 999px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 800;
   cursor: pointer;
   font-family: var(--font-body);
-  transition: background .15s, transform .1s;
-  letter-spacing: .03em;
+  transition: background .15s, transform .1s, box-shadow .18s;
+  letter-spacing: .06em;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 12px 30px rgba(4, 44, 83, 0.24);
 }
 
 .login-btn:hover {
   background: var(--ink2);
+  box-shadow: 0 16px 36px rgba(4, 44, 83, 0.3);
 }
 
 .login-btn:active {
@@ -250,84 +256,100 @@ function resetTurnstile() {
 
 .login-footer {
   text-align: center;
-  margin-top: 20px;
-  font-size: 16px;
+  margin-top: 22px;
+  font-size: 13px;
   color: var(--ink3);
 }
 
 .login-footer a {
   color: var(--ink);
   cursor: pointer;
-  text-decoration: underline;
-  font-weight: 600;
+  text-decoration: none;
+  font-weight: 800;
 }
 
 .login-visual {
-  background: var(--ink);
+  background:
+    radial-gradient(circle at 22% 28%, rgba(55, 138, 221, 0.34), transparent 32%),
+    linear-gradient(145deg, var(--cinema) 0%, var(--cinema2) 58%, #14110d 100%);
   position: relative;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  padding: 32px;
+  padding: 42px;
+}
+
+.login-visual::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 24%, rgba(255, 253, 248, 0.1) 48%, transparent 70%);
+  animation: softGlow 9s var(--ease-in-out) infinite;
 }
 
 .vis-grid {
   position: absolute;
-  inset: 0;
+  inset: 18px;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(4, 1fr);
-  gap: 3px;
-  padding: 3px;
+  gap: 8px;
+  opacity: 0.54;
 }
 
 .vis-cell {
-  border-radius: 6px;
-  transition: opacity .6s;
+  border-radius: 14px;
+  transition: opacity .6s, transform .6s;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
 }
 
 .vis-quote {
   position: relative;
   z-index: 2;
   font-family: var(--font-display);
-  font-size: 24px;
-  color: rgba(255, 255, 255, .85);
-  line-height: 1.5;
+  font-size: clamp(26px, 3.2vw, 42px);
+  color: rgba(255, 253, 248, .92);
+  line-height: 1.16;
+  letter-spacing: -0.01em;
 }
 
 .vis-sub {
-  font-size: 16px;
-  color: var(--ink5);
-  margin-top: 8px;
+  position: relative;
+  z-index: 2;
+  font-size: 13px;
+  color: rgba(201, 216, 231, 0.72);
+  margin-top: 14px;
+  letter-spacing: 0.08em;
 }
 
-/* Form inputs & element-plus override styles */
 .auth-form :deep(.el-form-item) {
   margin-bottom: 16px;
 }
 
 .auth-form :deep(.el-form-item__label) {
-  font-size: 15px;
+  font-size: 12px;
   color: var(--ink2) !important;
-  letter-spacing: .05em;
-  margin-bottom: 6px;
+  letter-spacing: .12em;
+  margin-bottom: 7px;
   padding-bottom: 0;
+  text-transform: uppercase;
 }
 
 .auth-form :deep(.el-input__wrapper) {
-  background: #fff !important;
-  border: 0.5px solid var(--paper3) !important;
-  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.72) !important;
+  border: 1px solid rgba(4, 44, 83, 0.1) !important;
+  border-radius: 999px !important;
   box-shadow: none !important;
-  padding: 0 12px;
-  height: 40px;
-  transition: border-color .15s, background .15s;
+  padding: 0 14px;
+  height: 44px;
+  transition: border-color .15s, background .15s, box-shadow .15s;
 }
 
 .auth-form :deep(.el-input__wrapper.is-focus) {
-  border-color: var(--ink4) !important;
+  border-color: rgba(186, 117, 23, 0.55) !important;
   background: #fff !important;
+  box-shadow: 0 0 0 4px rgba(186, 117, 23, 0.1) !important;
 }
 
 .auth-form :deep(.el-input__inner) {
@@ -347,20 +369,24 @@ function resetTurnstile() {
   grid-column: 1 / -1;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 820px) {
+  .auth-page {
+    padding: 20px 14px;
+  }
   .login-wrap {
     grid-template-columns: 1fr;
     min-height: auto;
     width: 100%;
+    border-radius: 20px;
   }
   .login-panel {
     border-right: none;
-    border-bottom: 0.5px solid var(--paper3);
-    padding: 32px 24px;
+    border-bottom: 1px solid rgba(4, 44, 83, 0.08);
+    padding: 34px 24px;
   }
   .login-visual {
-    height: 180px;
-    padding: 24px;
+    min-height: 220px;
+    padding: 28px;
   }
   .register-form {
     grid-template-columns: 1fr;
