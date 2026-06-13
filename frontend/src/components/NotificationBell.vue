@@ -81,7 +81,7 @@ function toggle() {
   height: 34px;
   border: none;
   background: transparent;
-  color: var(--ink);
+  color: var(--black);
   display: inline-flex;
   align-items: center;
   justify-content: center;
