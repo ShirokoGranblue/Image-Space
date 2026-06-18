@@ -1,9 +1,9 @@
 <template>
-  <div class="profile-page cinematic-shell">
+  <div class="profile-page asset-profile">
     <NavBar />
-    <div class="page-container" v-loading="loading">
-      <div class="profile-banner" :style="bannerStyle">
-        <div class="banner-grid" v-if="!backgroundDisplayUrl">
+    <main class="page-container profile-container" v-loading="loading">
+      <section class="profile-banner" :style="bannerStyle">
+        <div class="banner-grid" v-if="!backgroundDisplayUrl" aria-hidden="true">
           <div
             v-for="(cell, i) in bannerCells"
             :key="i"
@@ -14,91 +14,104 @@
         <div class="banner-overlay"></div>
         <div class="banner-edit" v-if="isOwner">
           <el-button size="small" @click="openBackgroundEditor">
-            <el-icon><Edit /></el-icon> 编辑背景
+            <el-icon><Edit /></el-icon>
+            编辑背景
           </el-button>
         </div>
-      </div>
+      </section>
 
-      <div class="profile-header">
-        <div class="avatar-wrap">
-          <el-avatar :size="120" :src="avatarDisplayUrl" class="avatar">
-            <el-icon :size="48"><UserFilled /></el-icon>
-          </el-avatar>
-          <div v-if="isOwner" class="avatar-upload" @click="openAvatarEditor">
-            <el-button size="small" circle><el-icon><Camera /></el-icon></el-button>
+      <section class="profile-header">
+        <div class="avatar-column">
+          <div class="avatar-wrap">
+            <el-avatar :size="122" :src="avatarDisplayUrl" class="avatar">
+              <el-icon :size="48"><UserFilled /></el-icon>
+            </el-avatar>
+            <button v-if="isOwner" class="avatar-upload" type="button" @click="openAvatarEditor" aria-label="编辑头像">
+              <el-icon><Camera /></el-icon>
+            </button>
+          </div>
+          <div class="profile-stats" v-if="!editing">
+            <div class="stat-item">
+              <strong class="stat-num">{{ animStats.works }}</strong>
+              <span class="stat-label">作品</span>
+            </div>
+            <div class="stat-item">
+              <strong class="stat-num">{{ animStats.likes }}</strong>
+              <span class="stat-label">获赞</span>
+            </div>
+            <div class="stat-item">
+              <strong class="stat-num">{{ animStats.followers }}</strong>
+              <span class="stat-label">关注者</span>
+            </div>
+            <div class="stat-item">
+              <strong class="stat-num">{{ animStats.favorites }}</strong>
+              <span class="stat-label">收藏</span>
+            </div>
           </div>
         </div>
 
-        <template v-if="!editing">
-          <div class="profile-name-row">
-            <h2>{{ user.displayName || user.username }}</h2>
-            <el-dropdown v-if="isOwner" trigger="click">
-              <button class="dropdown-trigger" type="button" aria-label="更多操作">
-                <el-icon><MoreFilled /></el-icon>
-              </button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item @click="startEdit">编辑资料</el-dropdown-item>
-                  <el-dropdown-item @click="handleDeleteAccount">注销账号</el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-          </div>
-        </template>
+        <div class="profile-main">
+          <template v-if="!editing">
+            <div class="profile-name-row">
+              <div>
+                <span class="section-label">个人主页</span>
+                <h1>{{ user.displayName || user.username }}</h1>
+              </div>
+              <el-dropdown v-if="isOwner" trigger="click">
+                <button class="dropdown-trigger" type="button" aria-label="更多操作">
+                  <el-icon><MoreFilled /></el-icon>
+                </button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item @click="startEdit">编辑资料</el-dropdown-item>
+                    <el-dropdown-item @click="handleDeleteAccount">注销账号</el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+            </div>
 
-        <div class="profile-edit" v-else>
-          <el-form label-width="80px">
-            <el-form-item label="展示名称">
-              <el-input v-model="form.displayName" maxlength="50" />
-            </el-form-item>
-            <el-form-item label="邮箱" :error="fieldErrors.email">
-              <el-input v-model="form.email" @blur="onEmailBlur" />
-            </el-form-item>
-            <el-form-item label="手机号" :error="fieldErrors.phone">
-              <el-input v-model="form.phone" maxlength="20" @blur="onPhoneBlur" />
-            </el-form-item>
-            <el-form-item label="个人介绍">
-              <el-input v-model="form.bio" type="textarea" :rows="3" maxlength="200" show-word-limit />
-            </el-form-item>
-            <el-form-item>
-              <el-button type="primary" @click="saveProfile" :loading="saving">保存</el-button>
-              <el-button @click="cancelEdit">取消</el-button>
-            </el-form-item>
-          </el-form>
-        </div>
+            <div class="profile-meta" v-if="showProfileMeta">
+              <p v-if="user.bio" class="bio">{{ user.bio }}</p>
+              <div class="contact" v-if="isOwner && (user.email || user.phone)">
+                <span v-if="user.email"><el-icon><Message /></el-icon> {{ user.email }}</span>
+                <span v-if="user.phone"><el-icon><Phone /></el-icon> {{ user.phone }}</span>
+              </div>
+              <span v-if="joinedAt" class="joined"><el-icon><Calendar /></el-icon> {{ joinedAt }}</span>
+            </div>
+          </template>
 
-        <div class="profile-meta" v-if="showProfileMeta">
-          <p v-if="user.bio" class="bio">{{ user.bio }}</p>
-          <div class="contact" v-if="isOwner && (user.email || user.phone)">
-            <span v-if="user.email"><el-icon><Message /></el-icon> {{ user.email }}</span>
-            <span v-if="user.phone"><el-icon><Phone /></el-icon> {{ user.phone }}</span>
-          </div>
-          <span v-if="joinedAt"><el-icon><Calendar /></el-icon> {{ joinedAt }}</span>
-        </div>
-
-        <div class="profile-stats" v-if="!editing">
-          <div class="stat-item">
-            <strong class="stat-num">{{ animStats.works }}</strong>
-            <span class="stat-label">作品</span>
-          </div>
-          <div class="stat-item">
-            <strong class="stat-num">{{ animStats.likes }}</strong>
-            <span class="stat-label">获赞</span>
-          </div>
-          <div class="stat-item">
-            <strong class="stat-num">{{ animStats.followers }}</strong>
-            <span class="stat-label">关注者</span>
-          </div>
-          <div class="stat-item">
-            <strong class="stat-num">{{ animStats.favorites }}</strong>
-            <span class="stat-label">收藏</span>
+          <div class="profile-edit" v-else>
+            <span class="section-label">编辑资料</span>
+            <el-form label-position="top">
+              <div class="form-columns">
+                <el-form-item label="展示名称">
+                  <el-input v-model="form.displayName" maxlength="50" />
+                </el-form-item>
+                <el-form-item label="邮箱" :error="fieldErrors.email">
+                  <el-input v-model="form.email" @blur="onEmailBlur" />
+                </el-form-item>
+              </div>
+              <el-form-item label="手机号" :error="fieldErrors.phone">
+                <el-input v-model="form.phone" maxlength="20" @blur="onPhoneBlur" />
+              </el-form-item>
+              <el-form-item label="个人介绍">
+                <el-input v-model="form.bio" type="textarea" :rows="3" maxlength="200" show-word-limit />
+              </el-form-item>
+              <div class="edit-actions">
+                <el-button type="primary" @click="saveProfile" :loading="saving">保存</el-button>
+                <el-button @click="cancelEdit">取消</el-button>
+              </div>
+            </el-form>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div class="user-works">
+      <section class="user-works">
         <div class="works-heading">
-          <h3>作品</h3>
+          <div>
+            <span class="section-label">作品集</span>
+            <h2>作品</h2>
+          </div>
           <div v-if="isOwner && works.length > 0" class="works-actions">
             <el-checkbox
               :model-value="allWorksSelected"
@@ -108,16 +121,15 @@
               全选本页
             </el-checkbox>
             <el-button v-if="selectedWorkUuids.length > 0" @click="clearWorkSelection">取消选择</el-button>
-            <el-button
-              v-if="selectedWorkUuids.length > 0"
-              type="danger"
-              @click="handleBatchWorkDelete"
-            >
+            <el-button v-if="selectedWorkUuids.length > 0" type="danger" @click="handleBatchWorkDelete">
               删除选中 {{ selectedWorkUuids.length }}
             </el-button>
           </div>
         </div>
-        <div v-if="works.length === 0" class="empty-state"><p>暂无作品</p></div>
+
+        <div v-if="works.length === 0" class="empty-state">
+          <p>暂无作品</p>
+        </div>
         <div v-else class="card-grid">
           <ImageCard
             v-for="img in works"
@@ -132,8 +144,170 @@
             @toggle-select="toggleWorkSelection"
           />
         </div>
-      </div>
-    </div>
+      </section>
+
+      <el-dialog v-model="bgDialogVisible" title="编辑个人背景" width="860px" class="profile-dialog bg-dialog">
+        <div class="background-editor">
+          <div class="background-editor-layout">
+            <div class="bg-crop-side">
+              <div
+                class="bg-crop-container"
+                ref="bgCropContainer"
+                @mousedown="startDragBgCrop"
+                @mousemove="onDragBgCrop"
+                @mouseup="stopDragBgCrop"
+                @mouseleave="stopDragBgCrop"
+              >
+                <img v-if="bgPreviewUrl" :src="bgPreviewUrl" class="bg-crop-img" :style="bgCropImgStyle" draggable="false" />
+                <el-icon v-else :size="72" class="bg-placeholder"><PictureFilled /></el-icon>
+                <div class="bg-crop-frame" v-if="bgPreviewUrl" :style="bgCropFrameStyle"></div>
+                <div class="bg-crop-grid" v-if="bgPreviewUrl" :style="bgCropGridStyle"></div>
+                <template v-if="bgPreviewUrl">
+                  <div class="bg-handle bg-handle-ns" :style="bgHPos('top')" @mousedown.stop="startBgResize($event, 'top')"></div>
+                  <div class="bg-handle bg-handle-ns" :style="bgHPos('bottom')" @mousedown.stop="startBgResize($event, 'bottom')"></div>
+                  <div class="bg-handle bg-handle-ew" :style="bgHPos('left')" @mousedown.stop="startBgResize($event, 'left')"></div>
+                  <div class="bg-handle bg-handle-ew" :style="bgHPos('right')" @mousedown.stop="startBgResize($event, 'right')"></div>
+                  <div class="bg-handle bg-handle-corner bg-handle-nwse" :style="bgHPos('tl')" @mousedown.stop="startBgResize($event, 'tl')"></div>
+                  <div class="bg-handle bg-handle-corner bg-handle-nesw" :style="bgHPos('tr')" @mousedown.stop="startBgResize($event, 'tr')"></div>
+                  <div class="bg-handle bg-handle-corner bg-handle-nesw" :style="bgHPos('bl')" @mousedown.stop="startBgResize($event, 'bl')"></div>
+                  <div class="bg-handle bg-handle-corner bg-handle-nwse" :style="bgHPos('br')" @mousedown.stop="startBgResize($event, 'br')"></div>
+                </template>
+              </div>
+              <div class="bg-controls">
+                <span class="slider-label">裁剪尺寸</span>
+                <el-slider v-model="bgCropRatio" :min="0.45" :max="1" :step="0.01" @input="onBgSliderChange" />
+                <span class="slider-val">{{ Math.round(bgCropRatio * 100) }}%</span>
+              </div>
+              <el-upload :auto-upload="false" :show-file-list="false" :on-change="onBgFileChange" accept="image/jpeg,image/png,image/webp,image/gif" class="bg-upload">
+                <el-button type="primary">选择图片</el-button>
+              </el-upload>
+              <p class="upload-hint" v-if="bgFileName">{{ bgFileName }}</p>
+            </div>
+            <div class="bg-preview-side">
+              <p class="preview-label">预览</p>
+              <div class="profile-mini-card">
+                <div class="profile-mini-banner" :style="miniBannerPreviewStyle" />
+                <div class="profile-mini-header">
+                  <div class="profile-mini-avatar">
+                    <el-avatar :size="22" :src="avatarDisplayUrl">
+                      <el-icon :size="10"><UserFilled /></el-icon>
+                    </el-avatar>
+                  </div>
+                  <div class="profile-mini-name">{{ user.displayName || user.username }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <template #footer>
+          <el-button @click="bgDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="saveBackground" :loading="bgSaving" :disabled="!bgPreviewUrl">应用</el-button>
+        </template>
+      </el-dialog>
+
+      <el-dialog v-model="avatarDialogVisible" title="编辑头像" width="760px" class="profile-dialog avatar-dialog">
+        <div class="avatar-editor">
+          <div class="avatar-editor-layout">
+            <div class="avatar-crop-side">
+              <div
+                class="crop-container"
+                ref="cropContainer"
+                @mousedown="startDragCrop"
+                @mousemove="onDragCrop"
+                @mouseup="stopDragCrop"
+                @mouseleave="stopDragCrop"
+              >
+                <img v-if="avatarPreviewUrl" :src="avatarPreviewUrl" class="crop-img" :style="cropImgStyle" draggable="false" />
+                <el-icon v-else :size="80" class="avatar-empty"><UserFilled /></el-icon>
+                <div class="crop-frame" v-if="avatarPreviewUrl" :style="cropFrameStyle"></div>
+                <div class="crop-grid" v-if="avatarPreviewUrl" :style="cropGridStyle"></div>
+                <template v-if="avatarPreviewUrl">
+                  <div class="crop-handle crop-handle-ns" :style="hPos('top')" @mousedown.stop="startResize($event, 'top')"></div>
+                  <div class="crop-handle crop-handle-ns" :style="hPos('bottom')" @mousedown.stop="startResize($event, 'bottom')"></div>
+                  <div class="crop-handle crop-handle-ew" :style="hPos('left')" @mousedown.stop="startResize($event, 'left')"></div>
+                  <div class="crop-handle crop-handle-ew" :style="hPos('right')" @mousedown.stop="startResize($event, 'right')"></div>
+                  <div class="crop-handle crop-handle-corner crop-handle-nwse" :style="hPos('tl')" @mousedown.stop="startResize($event, 'tl')"></div>
+                  <div class="crop-handle crop-handle-corner crop-handle-nesw" :style="hPos('tr')" @mousedown.stop="startResize($event, 'tr')"></div>
+                  <div class="crop-handle crop-handle-corner crop-handle-nesw" :style="hPos('bl')" @mousedown.stop="startResize($event, 'bl')"></div>
+                  <div class="crop-handle crop-handle-corner crop-handle-nwse" :style="hPos('br')" @mousedown.stop="startResize($event, 'br')"></div>
+                </template>
+              </div>
+              <div class="crop-controls">
+                <span class="slider-label">裁剪尺寸</span>
+                <el-slider v-model="cropRatio" :min="0.25" :max="1" :step="0.01" @input="onSliderChange" />
+                <span class="slider-val">{{ Math.round(cropRatio * 100) }}%</span>
+              </div>
+            </div>
+            <div class="avatar-preview-side">
+              <p class="preview-label">头像预览</p>
+              <div class="preview-circle-lg">
+                <img v-if="avatarPreviewUrl" :src="avatarPreviewUrl" class="preview-img" :style="previewLgImgStyle" />
+                <el-icon v-else :size="48" class="avatar-empty"><UserFilled /></el-icon>
+              </div>
+              <div class="preview-circle-sm">
+                <img v-if="avatarPreviewUrl" :src="avatarPreviewUrl" class="preview-img" :style="previewSmImgStyle" />
+                <el-icon v-else :size="24" class="avatar-empty"><UserFilled /></el-icon>
+              </div>
+            </div>
+          </div>
+          <el-upload :auto-upload="false" :show-file-list="false" :on-change="onAvatarFileChange" accept="image/jpeg,image/png,image/webp,image/gif" class="avatar-replace-upload">
+            <el-button>更换图片</el-button>
+          </el-upload>
+        </div>
+        <template #footer>
+          <el-button @click="avatarDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="confirmAvatar" :loading="avatarSaving" :disabled="!avatarPreviewUrl">确认</el-button>
+        </template>
+      </el-dialog>
+
+      <el-dialog v-model="imageEditVisible" title="编辑图片信息" width="520px" class="profile-dialog">
+        <el-form :model="imageEditForm" label-position="top" v-if="imageEditForm.uuid">
+          <el-form-item label="图片名称">
+            <el-input v-model="imageEditForm.imageName" />
+          </el-form-item>
+          <el-form-item label="分类">
+            <div class="category-row">
+              <el-select v-model="imageEditForm.categoryId" placeholder="选择分类" clearable filterable>
+                <el-option v-for="cat in categories" :key="cat.id" :label="cat.categoryName" :value="cat.id" />
+              </el-select>
+              <el-button @click="openWorkCreateCategory">新建</el-button>
+            </div>
+          </el-form-item>
+          <el-form-item label="描述">
+            <el-input v-model="imageEditForm.description" type="textarea" :rows="3" />
+          </el-form-item>
+          <el-form-item label="标签">
+            <TagInput v-model="imageEditForm.tags" placeholder="多个标签用 # 分隔" />
+          </el-form-item>
+          <el-form-item label="可见权限">
+            <el-select v-model="imageEditForm.visibility">
+              <el-option label="仅自己" value="PRIVATE" />
+              <el-option label="公开" value="PUBLIC" />
+              <el-option label="指定用户" value="SPECIFIED" />
+            </el-select>
+          </el-form-item>
+          <el-form-item v-if="imageEditForm.visibility === 'SPECIFIED'" label="指定用户">
+            <el-input v-model="imageEditForm.visibleUsernames" placeholder="输入用户名，多个用户用逗号或空格分隔" />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="imageEditVisible = false">取消</el-button>
+          <el-button type="primary" @click="saveWorkEdit">保存</el-button>
+        </template>
+      </el-dialog>
+
+      <el-dialog v-model="workCategoryDialogVisible" title="新建分类" width="380px" class="profile-dialog">
+        <el-form label-position="top" @submit.prevent>
+          <el-form-item label="分类名">
+            <el-input v-model="newWorkCategoryName" maxlength="20" show-word-limit @keyup.enter="submitWorkCategory" />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="workCategoryDialogVisible = false">取消</el-button>
+          <el-button type="primary" :loading="creatingWorkCategory" @click="submitWorkCategory">创建</el-button>
+        </template>
+      </el-dialog>
+    </main>
 
     <Teleport to="body">
       <div class="pagination-wrap" v-if="workTotal > 0">
@@ -149,176 +323,6 @@
         />
       </div>
     </Teleport>
-
-    <!-- Background editor dialog -->
-    <el-dialog v-model="bgDialogVisible" title="编辑个人背景" width="860px" class="profile-dialog bg-dialog">
-      <div class="background-editor">
-        <div class="background-editor-layout">
-          <div class="bg-crop-side">
-            <div
-              class="bg-crop-container"
-              ref="bgCropContainer"
-              @mousedown="startDragBgCrop"
-              @mousemove="onDragBgCrop"
-              @mouseup="stopDragBgCrop"
-              @mouseleave="stopDragBgCrop"
-            >
-              <img v-if="bgPreviewUrl" :src="bgPreviewUrl" class="bg-crop-img" :style="bgCropImgStyle" draggable="false" />
-              <el-icon v-else :size="72" class="bg-placeholder"><PictureFilled /></el-icon>
-              <div class="bg-crop-frame" v-if="bgPreviewUrl" :style="bgCropFrameStyle"></div>
-              <div class="bg-crop-grid" v-if="bgPreviewUrl" :style="bgCropGridStyle"></div>
-              <template v-if="bgPreviewUrl">
-                <div class="bg-handle bg-handle-ns" :style="bgHPos('top')" @mousedown.stop="startBgResize($event, 'top')"></div>
-                <div class="bg-handle bg-handle-ns" :style="bgHPos('bottom')" @mousedown.stop="startBgResize($event, 'bottom')"></div>
-                <div class="bg-handle bg-handle-ew" :style="bgHPos('left')" @mousedown.stop="startBgResize($event, 'left')"></div>
-                <div class="bg-handle bg-handle-ew" :style="bgHPos('right')" @mousedown.stop="startBgResize($event, 'right')"></div>
-                <div class="bg-handle bg-handle-corner bg-handle-nwse" :style="bgHPos('tl')" @mousedown.stop="startBgResize($event, 'tl')"></div>
-                <div class="bg-handle bg-handle-corner bg-handle-nesw" :style="bgHPos('tr')" @mousedown.stop="startBgResize($event, 'tr')"></div>
-                <div class="bg-handle bg-handle-corner bg-handle-nesw" :style="bgHPos('bl')" @mousedown.stop="startBgResize($event, 'bl')"></div>
-                <div class="bg-handle bg-handle-corner bg-handle-nwse" :style="bgHPos('br')" @mousedown.stop="startBgResize($event, 'br')"></div>
-              </template>
-            </div>
-            <div class="bg-controls">
-              <span class="slider-label">裁剪尺寸</span>
-              <el-slider v-model="bgCropRatio" :min="0.45" :max="1" :step="0.01" style="flex:1;margin:0 10px" @input="onBgSliderChange" />
-              <span class="slider-val">{{ Math.round(bgCropRatio * 100) }}%</span>
-            </div>
-            <el-upload :auto-upload="false" :show-file-list="false" :on-change="onBgFileChange" accept="image/jpeg,image/png,image/webp,image/gif" class="bg-upload">
-              <el-button type="primary">选择图片</el-button>
-            </el-upload>
-            <p class="upload-hint" v-if="bgFileName">{{ bgFileName }}</p>
-          </div>
-          <div class="bg-preview-side">
-            <p class="preview-label">预览</p>
-            <div class="profile-mini-card">
-              <div class="profile-mini-banner" :style="miniBannerPreviewStyle" />
-              <div class="profile-mini-header">
-                <div class="profile-mini-avatar">
-                  <el-avatar :size="22" :src="avatarDisplayUrl">
-                    <el-icon :size="10"><UserFilled /></el-icon>
-                  </el-avatar>
-                </div>
-                <div class="profile-mini-name">{{ user.displayName || user.username }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <template #footer>
-        <el-button @click="bgDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="saveBackground" :loading="bgSaving" :disabled="!bgPreviewUrl">应用</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- Avatar editor dialog -->
-    <el-dialog v-model="avatarDialogVisible" title="编辑头像" width="760px" class="profile-dialog avatar-dialog">
-      <div class="avatar-editor">
-        <div class="avatar-editor-layout">
-          <div class="avatar-crop-side">
-            <div
-              class="crop-container"
-              ref="cropContainer"
-              @mousedown="startDragCrop"
-              @mousemove="onDragCrop"
-              @mouseup="stopDragCrop"
-              @mouseleave="stopDragCrop"
-            >
-              <img v-if="avatarPreviewUrl" :src="avatarPreviewUrl" class="crop-img" :style="cropImgStyle" draggable="false" />
-              <el-icon v-else :size="80" style="position:absolute;inset:0;margin:auto;color:#ccc"><UserFilled /></el-icon>
-              <div class="crop-frame" v-if="avatarPreviewUrl" :style="cropFrameStyle"></div>
-              <div class="crop-grid" v-if="avatarPreviewUrl" :style="cropGridStyle"></div>
-              <template v-if="avatarPreviewUrl">
-                <div class="crop-handle crop-handle-ns" :style="hPos('top')" @mousedown.stop="startResize($event, 'top')"></div>
-                <div class="crop-handle crop-handle-ns" :style="hPos('bottom')" @mousedown.stop="startResize($event, 'bottom')"></div>
-                <div class="crop-handle crop-handle-ew" :style="hPos('left')" @mousedown.stop="startResize($event, 'left')"></div>
-                <div class="crop-handle crop-handle-ew" :style="hPos('right')" @mousedown.stop="startResize($event, 'right')"></div>
-                <div class="crop-handle crop-handle-corner crop-handle-nwse" :style="hPos('tl')" @mousedown.stop="startResize($event, 'tl')"></div>
-                <div class="crop-handle crop-handle-corner crop-handle-nesw" :style="hPos('tr')" @mousedown.stop="startResize($event, 'tr')"></div>
-                <div class="crop-handle crop-handle-corner crop-handle-nesw" :style="hPos('bl')" @mousedown.stop="startResize($event, 'bl')"></div>
-                <div class="crop-handle crop-handle-corner crop-handle-nwse" :style="hPos('br')" @mousedown.stop="startResize($event, 'br')"></div>
-              </template>
-            </div>
-            <div class="crop-controls">
-              <span class="slider-label">裁剪尺寸</span>
-              <el-slider v-model="cropRatio" :min="0.25" :max="1" :step="0.01" style="flex:1;margin:0 10px" @input="onSliderChange" />
-              <span class="slider-val">{{ Math.round(cropRatio * 100) }}%</span>
-            </div>
-          </div>
-          <div class="avatar-preview-side">
-            <p class="preview-label">头像预览</p>
-            <div class="preview-circle-lg">
-              <img v-if="avatarPreviewUrl" :src="avatarPreviewUrl" class="preview-img" :style="previewLgImgStyle" />
-              <el-icon v-else :size="48" style="color:#ccc"><UserFilled /></el-icon>
-            </div>
-            <div class="preview-circle-sm">
-              <img v-if="avatarPreviewUrl" :src="avatarPreviewUrl" class="preview-img" :style="previewSmImgStyle" />
-              <el-icon v-else :size="24" style="color:#ccc"><UserFilled /></el-icon>
-            </div>
-          </div>
-        </div>
-        <el-upload :auto-upload="false" :show-file-list="false" :on-change="onAvatarFileChange" accept="image/jpeg,image/png,image/webp,image/gif" class="avatar-replace-upload">
-          <el-button>更换图片</el-button>
-        </el-upload>
-      </div>
-      <template #footer>
-        <el-button @click="avatarDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="confirmAvatar" :loading="avatarSaving" :disabled="!avatarPreviewUrl">确认</el-button>
-      </template>
-    </el-dialog>
-
-    <el-dialog v-model="imageEditVisible" title="编辑图片信息" width="480px">
-      <el-form :model="imageEditForm" label-width="86px" v-if="imageEditForm.uuid">
-        <el-form-item label="图片名称">
-          <el-input v-model="imageEditForm.imageName" />
-        </el-form-item>
-        <el-form-item label="分类">
-          <div class="category-row">
-            <el-select
-              v-model="imageEditForm.categoryId"
-              placeholder="选择分类"
-              clearable
-              filterable
-              style="width: 100%"
-            >
-              <el-option v-for="cat in categories" :key="cat.id" :label="cat.categoryName" :value="cat.id" />
-            </el-select>
-            <el-button @click="openWorkCreateCategory">新建分类</el-button>
-          </div>
-        </el-form-item>
-        <el-form-item label="描述">
-          <el-input v-model="imageEditForm.description" type="textarea" :rows="3" />
-        </el-form-item>
-        <el-form-item label="标签">
-          <TagInput v-model="imageEditForm.tags" placeholder="多个标签用 # 分隔" />
-        </el-form-item>
-        <el-form-item label="可见权限">
-          <el-select v-model="imageEditForm.visibility" style="width: 100%">
-            <el-option label="仅自己" value="PRIVATE" />
-            <el-option label="公开" value="PUBLIC" />
-            <el-option label="指定用户" value="SPECIFIED" />
-          </el-select>
-        </el-form-item>
-        <el-form-item v-if="imageEditForm.visibility === 'SPECIFIED'" label="指定用户">
-          <el-input v-model="imageEditForm.visibleUsernames" placeholder="输入用户名，多个用户用逗号或空格分隔" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="imageEditVisible = false">取消</el-button>
-        <el-button type="primary" @click="saveWorkEdit">保存</el-button>
-      </template>
-    </el-dialog>
-
-    <el-dialog v-model="workCategoryDialogVisible" title="新建分类" width="360px">
-      <el-form label-width="70px" @submit.prevent>
-        <el-form-item label="分类名">
-          <el-input v-model="newWorkCategoryName" maxlength="20" show-word-limit @keyup.enter="submitWorkCategory" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="workCategoryDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="creatingWorkCategory" @click="submitWorkCategory">创建</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
@@ -396,8 +400,8 @@ const showProfileMeta = computed(() => {
   return hasContactInfo || user.value.bio || joinedAt.value
 })
 
-const BLUE_TONES = ['#042C53', '#0C447C', '#185FA5', '#378ADD', '#85B7EB']
-const PAPER_TONES = ['#F7F3E8', '#EDE8D8', '#E2DBC8', '#D8D0BA', '#D0C7AB']
+const BLUE_TONES = ['#151922', '#202633', '#2a3140', '#38d5ff', '#9b8cff']
+const PAPER_TONES = ['#b7ff3c', '#d7ff83', '#f5b84b', '#ff6b57', '#f4f1e8']
 const bannerCells = ref([])
 const animStats = reactive({
   works: 0,
@@ -1523,26 +1527,22 @@ async function saveProfile() {
 <style scoped>
 .profile-page {
   min-height: 100vh;
-  background: var(--paper);
+  color: var(--ad-text);
+  background: var(--ad-bg);
 }
 
-.page-container {
-  max-width: 1040px;
-  margin: 0 auto;
-  padding: 76px var(--space-lg) 112px;
+.profile-container {
+  width: min(100%, 1500px);
+  padding: 96px 24px 118px;
 }
 
-/* ── Banner ── */
 .profile-banner {
-  height: 180px;
-  background: var(--ink);
   position: relative;
+  min-height: 260px;
   overflow: hidden;
-  display: flex;
-  align-items: flex-end;
-  border-radius: 12px 12px 0 0;
-  border: 0.5px solid var(--paper3);
-  border-bottom: none;
+  border: 1px solid var(--ad-line);
+  border-bottom: 0;
+  background-color: #101620;
   background-size: cover;
   background-position: center;
 }
@@ -1553,1098 +1553,522 @@ async function saveProfile() {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   grid-template-rows: repeat(3, 1fr);
-  gap: 2px;
-  padding: 2px;
-  opacity: .7;
+  gap: 8px;
+  padding: 20px;
 }
 
 .banner-cell {
-  border-radius: 4px;
+  border: 1px solid rgba(244, 241, 232, 0.12);
+  opacity: 0.72;
 }
 
 .banner-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(4, 44, 83, .9) 0%, transparent 60%);
+  background:
+    linear-gradient(180deg, rgba(13, 16, 22, 0.1), rgba(13, 16, 22, 0.88)),
+    linear-gradient(90deg, rgba(13, 16, 22, 0.8), transparent 56%);
 }
 
 .banner-edit {
   position: absolute;
-  bottom: var(--space-md);
-  right: var(--space-md);
-  display: flex;
-  gap: var(--space-sm);
+  right: 18px;
+  top: 18px;
   z-index: 2;
-  opacity: 0;
-  transform: translateY(12px);
-  transition: opacity 0.3s ease 0.6s, transform 0.3s ease 0.6s;
-}
-
-.profile-banner:hover .banner-edit {
-  opacity: 1;
-  transform: translateY(0);
-  transition: opacity 0.18s ease 0s, transform 0.18s ease 0s;
 }
 
 .banner-edit :deep(.el-button) {
-  background: rgba(10, 10, 10, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #fff;
-  border-radius: 14px;
-  font-weight: 400;
-  transition: background 0.2s;
+  border-color: var(--ad-line);
+  color: var(--ad-text);
+  background: rgba(13, 16, 22, 0.82);
+  box-shadow: none;
 }
 
-.banner-edit :deep(.el-button:hover) {
-  background: rgba(10, 10, 10, 0.8);
-}
-
-/* ── Profile Header ── */
 .profile-header {
-  position: relative;
-  z-index: 2;
-  padding: 0 24px 20px;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  margin-top: -60px;
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 0;
+  min-height: 270px;
+  border: 1px solid var(--ad-line);
+  background: rgba(17, 23, 34, 0.72);
+  box-shadow: var(--ad-shadow-soft);
 }
 
-.profile-header::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 60px;
-  bottom: 0;
-  z-index: -1;
-  background: var(--paper);
-  border: 0.5px solid var(--paper3);
-  border-top: 0;
-  border-radius: 0 0 12px 12px;
+.avatar-column {
+  display: grid;
+  align-content: start;
+  gap: 24px;
+  padding: 28px;
+  border-right: 1px solid var(--ad-line);
 }
 
 .avatar-wrap {
   position: relative;
-  display: inline-block;
-  align-self: flex-start;
+  width: max-content;
+  margin-top: -90px;
 }
 
 .avatar {
-  width: 72px !important;
-  height: 72px !important;
-  border-radius: 50%;
-  background: var(--ink3);
-  border: 3px solid var(--paper);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
+  border: 1px solid var(--ad-line-strong);
+  background: var(--ad-surface-2);
+}
+
+.avatar-upload,
+.dropdown-trigger {
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--ad-line);
+  color: var(--ad-text);
+  background: rgba(244, 241, 232, 0.06);
+  cursor: pointer;
 }
 
 .avatar-upload {
   position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 22px;
-  height: 22px;
-  cursor: pointer;
-}
-
-.avatar-upload :deep(.el-button) {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--gold2);
-  color: #fff;
-  border: 2px solid var(--paper);
-  font-size: 10px;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.profile-name-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 14px;
-  width: 100%;
-}
-
-.profile-name-row h2 {
-  font-family: var(--font-display);
-  font-size: 24px;
-  color: var(--ink);
-  font-weight: 500;
-  margin: 0;
-}
-
-.dropdown-trigger {
-  display: inline-grid;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: 0.5px solid rgba(255, 255, 255, .3);
-  border-radius: 7px;
-  background: var(--ink3);
-  cursor: pointer;
-  font-size: 14px;
-  color: #fff;
-  transition: background .15s;
-}
-
-.dropdown-trigger:hover {
-  background: var(--ink4);
-}
-
-.bio {
-  font-size: 17px;
-  color: var(--ink6);
-  margin-top: 3px;
-}
-
-.contact {
-  display: flex;
-  gap: 14px;
-  margin-top: 6px;
-  flex-wrap: wrap;
-}
-
-.profile-meta {
-  font-size: 16px;
-  color: var(--ink3);
-  margin-top: 8px;
-}
-
-.profile-meta span {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-right: 14px;
+  right: 2px;
+  bottom: 2px;
+  width: 36px;
+  height: 36px;
 }
 
 .profile-stats {
-  display: flex;
-  gap: 0;
-  border-bottom: 0.5px solid var(--paper3);
-  background: #fff;
-  border-radius: 8px;
-  overflow: hidden;
-  margin-top: 16px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.03);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border: 1px solid var(--ad-line);
 }
 
 .stat-item {
-  flex: 1;
-  padding: 14px;
-  text-align: center;
-  border-right: 0.5px solid var(--paper3);
-  background: transparent;
-  border-radius: 0;
+  padding: 16px;
+  border-bottom: 1px solid var(--ad-line);
 }
 
-.stat-item:last-child {
-  border-right: none;
+.stat-item:nth-child(odd) {
+  border-right: 1px solid var(--ad-line);
+}
+
+.stat-item:nth-last-child(-n + 2) {
+  border-bottom: 0;
 }
 
 .stat-num {
   display: block;
-  font-family: var(--font-display);
-  font-size: 22px;
-  color: var(--ink);
-  font-weight: 500;
+  color: var(--ad-green);
+  font-size: 26px;
+  font-weight: 420;
+  line-height: 1;
 }
 
 .stat-label {
   display: block;
-  font-size: 15px;
-  color: var(--ink3);
-  margin-top: 2px;
-  letter-spacing: .05em;
+  margin-top: 8px;
+  color: var(--ad-muted);
+  font-size: 12px;
 }
 
-/* ── Works ── */
+.profile-main {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  padding: 34px;
+}
+
+.profile-name-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.section-label {
+  color: var(--ad-muted);
+  font-size: 11px;
+  letter-spacing: 0;
+}
+
+.profile-name-row h1 {
+  margin: 12px 0 0;
+  color: var(--ad-text);
+  font-size: clamp(46px, 6vw, 88px);
+  line-height: 0.92;
+  font-weight: 340;
+  overflow-wrap: anywhere;
+}
+
+.dropdown-trigger {
+  width: 40px;
+  height: 40px;
+}
+
+.profile-meta {
+  margin-top: 22px;
+  display: grid;
+  gap: 12px;
+  color: var(--ad-text-soft);
+}
+
+.bio {
+  max-width: 760px;
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.contact,
+.joined {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  color: var(--ad-muted);
+  font-size: 13px;
+}
+
+.contact span,
+.joined {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.profile-edit {
+  max-width: 760px;
+}
+
+.form-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 10px;
+}
+
 .user-works {
   margin-top: 24px;
-  padding: 0;
-  background: transparent;
-  border: none;
+  padding: 24px;
+  border: 1px solid var(--ad-line);
+  background: rgba(17, 23, 34, 0.62);
 }
 
 .works-heading {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
-  margin-bottom: 14px;
-  padding-bottom: 6px;
-  border-bottom: 0.5px solid var(--paper3);
+  gap: 18px;
+  margin-bottom: 20px;
 }
 
-.works-heading h3 {
-  font-family: var(--font-display);
-  font-size: 22px;
-  color: var(--ink);
-  font-weight: 500;
-  margin: 0;
+.works-heading h2 {
+  margin-top: 8px;
+  color: var(--ad-text);
+  font-size: 34px;
+  line-height: 1;
+  font-weight: 340;
 }
 
 .works-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  background: transparent;
-  border: none;
-  padding: 0;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .works-actions :deep(.el-checkbox__label) {
-  font-size: 16px;
-  color: var(--ink2);
-}
-
-.category-row {
-  width: 100%;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 10px;
+  color: var(--ad-text-soft);
 }
 
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
 }
 
 .empty-state {
-  text-align: center;
-  color: var(--ink3);
-  padding: var(--space-lg) 0;
+  display: grid;
+  place-items: center;
+  min-height: 240px;
+  border: 1px solid var(--ad-line);
+  color: var(--ad-muted);
+  background: rgba(13, 16, 22, 0.66);
 }
 
 .pagination-wrap {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 150;
-  display: flex;
-  justify-content: center;
-  padding: 14px 24px calc(14px + env(safe-area-inset-bottom));
-  margin-top: 0;
-  border-top: 0.5px solid var(--paper3);
-  background: #fff;
-  flex-shrink: 0;
+  left: 50%;
+  bottom: 18px;
+  z-index: 40;
+  transform: translateX(-50%);
+  padding: 10px 14px;
+  border: 1px solid var(--ad-line);
+  background: rgba(13, 16, 22, 0.94);
+  box-shadow: var(--ad-shadow-soft);
 }
 
 .pagination-wrap :deep(.el-pagination) {
-  max-width: min(100%, 1040px);
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px;
+  --el-pagination-bg-color: transparent;
+  --el-pagination-button-bg-color: rgba(244, 241, 232, 0.06);
+  --el-pagination-button-color: var(--ad-text-soft);
+  --el-pagination-hover-color: var(--ad-green);
+  color: var(--ad-text-soft);
 }
 
-.pagination-wrap :deep(.el-pager li) {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px !important;
-  border: 0.5px solid var(--paper3) !important;
-  background: var(--paper) !important;
-  color: var(--ink) !important;
-  font-size: 16px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: background .15s;
-  font-family: var(--font-body);
-  min-width: auto;
+.pagination-wrap :deep(.el-pagination button),
+.pagination-wrap :deep(.el-pager li),
+.pagination-wrap :deep(.el-select__wrapper) {
+  border: 1px solid var(--ad-line) !important;
+  background: rgba(21, 25, 34, 0.92) !important;
+  color: var(--ad-text-soft) !important;
+  box-shadow: none !important;
 }
 
 .pagination-wrap :deep(.el-pager li.is-active) {
-  background: var(--ink) !important;
-  color: var(--paper) !important;
-  border-color: var(--ink) !important;
+  border-color: var(--ad-green) !important;
+  background: var(--ad-green) !important;
+  color: #071014 !important;
 }
 
-.pagination-wrap :deep(.el-pager li:hover:not(.is-active)) {
-  background: #fff !important;
-}
-
-.pagination-wrap :deep(.btn-prev),
-.pagination-wrap :deep(.btn-next) {
-  background: var(--paper) !important;
-  border: 0.5px solid var(--paper3) !important;
-  color: var(--ink) !important;
-  border-radius: 6px !important;
-  height: 28px !important;
-  width: 28px !important;
-  min-width: auto !important;
-}
-
-.pagination-wrap :deep(.btn-prev:hover),
-.pagination-wrap :deep(.btn-next:hover) {
-  background: #fff !important;
-}
-
-.upload-hint {
-  font-size: 17px;
-  color: var(--ink3);
-  margin-top: var(--space-xs);
-}
-
-/* ── Background Editor ── */
-.background-editor {
-  text-align: center;
-}
-
-.background-editor-layout {
+.background-editor-layout,
+.avatar-editor-layout {
   display: grid;
-  grid-template-columns: minmax(380px, 1fr) 260px;
-  gap: 24px;
-  align-items: flex-start;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 18px;
 }
 
-.bg-crop-side {
-  min-width: 0;
+.bg-crop-container,
+.crop-container {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--ad-line);
+  background:
+    linear-gradient(90deg, rgba(244,241,232,0.035) 1px, transparent 1px),
+    linear-gradient(rgba(244,241,232,0.035) 1px, transparent 1px),
+    #0b0f15;
+  background-size: 32px 32px;
 }
 
 .bg-crop-container {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  position: relative;
-  overflow: hidden;
-  background: var(--ink);
-  border: 1px solid var(--paper3);
-  border-radius: 2px;
-  cursor: move;
-  user-select: none;
+  height: 360px;
 }
 
-.bg-placeholder {
+.crop-container {
+  width: 400px;
+  height: 400px;
+  max-width: 100%;
+}
+
+.bg-crop-img,
+.crop-img,
+.preview-img {
+  position: absolute;
+  user-select: none;
+  pointer-events: none;
+}
+
+.bg-placeholder,
+.avatar-empty {
   position: absolute;
   inset: 0;
   margin: auto;
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--ad-muted);
 }
 
-.bg-crop-img {
+.bg-crop-frame,
+.crop-frame {
   position: absolute;
-  z-index: 0;
-  max-width: none;
-  user-select: none;
+  border: 2px solid var(--ad-green);
+  box-shadow: 0 0 0 999px rgba(0,0,0,0.45);
+  cursor: move;
 }
 
-.bg-crop-frame {
+.bg-crop-grid,
+.crop-grid {
   position: absolute;
-  z-index: 1;
-  outline: 2px solid var(--gold2);
-  border: 2px solid rgba(255, 255, 255, 0.9);
-  border-radius: 2px;
-  box-shadow:
-    0 0 0 999px rgba(4, 44, 83, 0.55),
-    0 0 10px rgba(239, 159, 39, 0.2);
   pointer-events: none;
+  background:
+    linear-gradient(90deg, transparent 33.333%, rgba(255,255,255,0.42) 33.333%, rgba(255,255,255,0.42) 34%, transparent 34%, transparent 66.666%, rgba(255,255,255,0.42) 66.666%, rgba(255,255,255,0.42) 67.333%, transparent 67.333%),
+    linear-gradient(transparent 33.333%, rgba(255,255,255,0.42) 33.333%, rgba(255,255,255,0.42) 34%, transparent 34%, transparent 66.666%, rgba(255,255,255,0.42) 66.666%, rgba(255,255,255,0.42) 67.333%, transparent 67.333%);
 }
 
-.bg-crop-grid {
+.bg-handle,
+.crop-handle {
   position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #071014;
+  background: var(--ad-green);
   z-index: 2;
-  border-radius: 2px;
-  pointer-events: none;
 }
 
-.bg-controls {
-  display: flex;
+.bg-handle-ns,
+.crop-handle-ns {
+  cursor: ns-resize;
+}
+
+.bg-handle-ew,
+.crop-handle-ew {
+  cursor: ew-resize;
+}
+
+.bg-handle-nwse,
+.crop-handle-nwse {
+  cursor: nwse-resize;
+}
+
+.bg-handle-nesw,
+.crop-handle-nesw {
+  cursor: nesw-resize;
+}
+
+.bg-controls,
+.crop-controls {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  max-width: 560px;
-  margin: 14px auto 0;
+  gap: 12px;
+  margin-top: 14px;
+  color: var(--ad-muted);
+  font-size: 12px;
 }
 
-.bg-upload {
-  margin-top: 16px;
-  text-align: center;
+.bg-upload,
+.avatar-replace-upload {
+  margin-top: 14px;
 }
 
-.bg-preview-side {
-  text-align: center;
-  padding: 16px 12px;
-  border: 0.5px solid var(--paper3);
-  border-radius: 8px;
-  background: #fff;
+.upload-hint {
+  margin-top: 10px;
+  color: var(--ad-muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
 }
 
-/* Mini profile card */
+.preview-label {
+  margin-bottom: 10px;
+  color: var(--ad-muted);
+  font-size: 12px;
+}
+
 .profile-mini-card {
-  width: 200px;
-  margin: 0 auto;
-  border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 4px 16px rgba(4, 44, 83, 0.08);
-  border: 0.5px solid var(--paper3);
+  border: 1px solid var(--ad-line);
+  background: var(--ad-surface);
 }
 
 .profile-mini-banner {
-  height: 56px;
-  position: relative;
-  overflow: hidden;
+  height: 82px;
   background-size: cover;
   background-position: center;
 }
 
-.profile-mini-bg {
-  position: absolute;
-  max-width: none;
-  user-select: none;
-  pointer-events: none;
-}
-
 .profile-mini-header {
-  background: #fff;
-  padding: 4px 10px 8px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  padding: 10px;
+  color: var(--ad-text-soft);
+  font-size: 12px;
+}
+
+.preview-circle-lg,
+.preview-circle-sm {
   position: relative;
-}
-
-.profile-mini-avatar {
-  margin-top: -14px;
-  flex-shrink: 0;
-}
-
-.profile-mini-avatar :deep(.el-avatar) {
-  border: 2px solid #fff;
-  box-shadow: 0 2px 6px rgba(10, 10, 10, 0.1);
-}
-
-.profile-mini-name {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--ink);
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  line-height: 1;
-}
-
-/* BG handles */
-.bg-handle {
-  position: absolute;
-  z-index: 3;
-  width: 10px;
-  height: 10px;
-  background: #fff;
-  border: 2px solid var(--ink3);
-  border-radius: 2px;
-  transform: translate(-50%, -50%);
-  box-shadow: 0 1px 6px rgba(10, 10, 10, 0.12);
-  transition: transform 0.12s ease;
-}
-
-.bg-handle:hover {
-  transform: translate(-50%, -50%) scale(1.25);
-}
-
-.bg-handle-corner {
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
-}
-
-.bg-handle-ns { cursor: ns-resize; }
-.bg-handle-ew { cursor: ew-resize; }
-.bg-handle-nwse { cursor: nwse-resize; }
-.bg-handle-nesw { cursor: nesw-resize; }
-
-/* ── Avatar Editor ── */
-.avatar-editor {
-  text-align: center;
-}
-
-.avatar-editor-layout {
-  display: grid;
-  grid-template-columns: minmax(300px, 1fr) 160px;
-  gap: 24px;
-  align-items: flex-start;
-}
-
-.avatar-crop-side {
-  min-width: 0;
-}
-
-.avatar-preview-side {
-  text-align: center;
-  padding: 20px 16px;
-  border: 0.5px solid var(--paper3);
-  border-radius: 8px;
-  background: #fff;
-}
-
-.preview-label {
-  font-family: var(--font-display);
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--ink);
-  margin-bottom: var(--space-md);
+  border-radius: 50%;
+  border: 1px solid var(--ad-line);
+  background: var(--ad-surface-2);
 }
 
 .preview-circle-lg {
   width: 120px;
   height: 120px;
-  border-radius: 50%;
-  overflow: hidden;
-  margin: 0 auto var(--space-md);
-  background: var(--paper3);
-  position: relative;
-  outline: 2px solid var(--paper2);
+  margin-bottom: 16px;
 }
 
 .preview-circle-sm {
   width: 56px;
   height: 56px;
-  border-radius: 50%;
-  overflow: hidden;
-  margin: 0 auto;
-  background: var(--paper3);
-  position: relative;
-  outline: 2px solid var(--paper2);
 }
 
-.preview-img {
-  position: absolute;
-  max-width: none;
-  user-select: none;
-  pointer-events: none;
-}
-
-.crop-container {
-  width: min(100%, 340px);
-  aspect-ratio: 1;
-  margin: 0 auto var(--space-md);
-  position: relative;
-  overflow: hidden;
-  background: var(--ink);
-  user-select: none;
-  cursor: move;
-  border-radius: 2px;
-  border: 1px solid var(--paper3);
-}
-
-.crop-img {
-  position: absolute;
-  z-index: 0;
-  max-width: none;
-  user-select: none;
-}
-
-.crop-frame {
-  position: absolute;
-  z-index: 1;
-  outline: 2px solid var(--gold2);
-  outline-offset: 0px;
-  border: 2px solid rgba(255, 255, 255, 0.92);
-  border-radius: 2px;
-  box-shadow:
-    0 0 0 999px rgba(4, 44, 83, 0.5);
-  pointer-events: none;
-}
-
-.crop-grid {
-  position: absolute;
-  z-index: 2;
-  border-radius: 2px;
-  pointer-events: none;
-}
-
-/* Crop handles */
-.crop-handle {
-  position: absolute;
-  z-index: 3;
-  width: 10px;
-  height: 10px;
-  background: #fff;
-  border: 2px solid var(--ink3);
-  border-radius: 2px;
-  transform: translate(-50%, -50%);
-  box-shadow: 0 1px 6px rgba(10, 10, 10, 0.12);
-  transition: transform 0.12s ease;
-}
-
-.crop-handle:hover {
-  transform: translate(-50%, -50%) scale(1.25);
-}
-
-.crop-handle-corner {
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
-}
-
-.crop-handle-ns { cursor: ns-resize; }
-.crop-handle-ew { cursor: ew-resize; }
-.crop-handle-nwse { cursor: nwse-resize; }
-.crop-handle-nesw { cursor: nesw-resize; }
-
-.crop-controls {
-  display: flex;
-  align-items: center;
-  max-width: 340px;
-  margin: 0 auto;
-}
-
-.slider-label {
-  font-family: var(--font-body);
-  font-size: 14px;
-  color: var(--ink2);
-  flex-shrink: 0;
-  font-weight: 500;
-}
-
-.slider-val {
-  font-size: 17px;
-  color: var(--ink2);
-  min-width: 42px;
-  text-align: right;
-  font-weight: 600;
-}
-
-.avatar-replace-upload {
-  margin-top: 16px;
-  text-align: center;
-}
-
-/* ── Responsive ── */
-@media (max-width: 768px) {
-  .page-container { padding: 16px var(--space-md) 148px; }
-  .profile-banner { height: 140px; }
-  .profile-header { padding: 0 20px 20px; margin-top: -40px; }
-  .profile-header::before { top: 40px; }
-  .profile-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .avatar-wrap { margin-top: 0; }
-  .works-heading { align-items: flex-start; }
-  .works-actions { width: 100%; }
-  .category-row { grid-template-columns: 1fr; }
-  .avatar-editor-layout { grid-template-columns: 1fr; }
-  .avatar-preview-side { display: flex; align-items: center; justify-content: center; gap: 18px; }
-  .background-editor-layout { grid-template-columns: 1fr; }
-  .profile-mini-card { margin: 0 auto; }
-  .preview-label { margin: 0; }
-  .pagination-wrap {
-    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
-  }
-  .pagination-wrap :deep(.el-pagination) {
-    --el-pagination-button-width: 28px;
-    --el-pagination-button-height: 28px;
-    font-size: 16px;
-  }
-}
-/* Cinematic minimal override */
-.profile-page {
-  min-height: 100vh;
-  background: transparent;
-  color: var(--paper);
-}
-
-.profile-page .page-container {
-  max-width: 1180px;
-  padding: 104px 32px 128px;
-}
-
-.profile-banner {
-  height: 260px;
-  border: 1px solid rgba(255, 253, 248, 0.16);
-  border-bottom: none;
-  border-radius: 24px 24px 0 0;
-  background:
-    radial-gradient(circle at 18% 20%, rgba(55, 138, 221, 0.34), transparent 36%),
-    linear-gradient(130deg, var(--cinema) 0%, var(--cinema2) 58%, #17120d 100%);
-  box-shadow: var(--shadow-cinematic);
-}
-
-.banner-grid {
-  gap: 8px;
-  padding: 18px;
-  opacity: 0.42;
-}
-
-.banner-cell {
-  border-radius: 14px;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
-}
-
-.banner-overlay {
-  background: linear-gradient(to top, rgba(7, 17, 31, .92) 0%, rgba(7, 17, 31, 0.08) 62%);
-}
-
-.profile-header {
-  margin-top: -68px;
-  padding: 0 34px 30px;
-}
-
-.profile-header::before {
-  top: 68px;
-  border: 1px solid rgba(255, 253, 248, 0.16);
-  border-top: 0;
-  border-radius: 0 0 24px 24px;
-  background: rgba(255, 253, 248, 0.9);
-  box-shadow: var(--shadow-cinematic-soft);
-  backdrop-filter: blur(18px);
-}
-
-.avatar {
-  width: 92px !important;
-  height: 92px !important;
-  border: 4px solid rgba(255, 253, 248, 0.95);
-  background: var(--cinema3);
-  box-shadow: 0 18px 38px rgba(0,0,0,0.22);
-}
-
-.avatar-upload :deep(.el-button) {
-  width: 30px;
-  height: 30px;
-  background: var(--gold2);
-  border: 2px solid var(--paper);
-}
-
-.profile-name-row {
-  margin-top: 18px;
-}
-
-.profile-name-row h2 {
-  color: var(--ink);
-  font-size: clamp(32px, 4vw, 52px);
-  line-height: 1;
-  letter-spacing: -0.04em;
-}
-
-.profile-name-row h2::before {
-  content: none;
-  display: block;
-  margin-bottom: 10px;
-  color: var(--gold);
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-}
-
-.dropdown-trigger {
-  width: 38px;
-  height: 38px;
-  border-radius: 999px;
-  background: var(--ink);
-}
-
-.bio {
-  color: var(--ink2);
-  font-size: 15px;
-}
-
-.profile-meta {
-  color: var(--ink3);
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.profile-stats {
+.category-row {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin-top: 22px;
-  border: 1px solid rgba(4, 44, 83, 0.08);
-  border-radius: 18px;
-  background: rgba(4, 44, 83, 0.04);
-  box-shadow: none;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  width: 100%;
 }
 
-.stat-item {
-  padding: 18px 14px;
-  border-right: 1px solid rgba(4, 44, 83, 0.08);
+.category-row :deep(.el-select) {
+  width: 100%;
 }
 
-.stat-num {
-  color: var(--ink);
-  font-size: 28px;
-  line-height: 1;
-}
-
-.stat-label {
-  color: var(--ink3);
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.user-works {
-  margin-top: 26px;
-  padding: 24px;
-  border: 1px solid rgba(255, 253, 248, 0.12);
-  border-radius: 24px;
-  background: rgba(7, 17, 31, 0.46);
-  box-shadow: var(--shadow-cinematic-soft);
-  backdrop-filter: blur(18px);
-}
-
-.works-heading {
-  margin-bottom: 18px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(255, 253, 248, 0.1);
-}
-
-.works-heading h3 {
-  color: var(--paper);
-  font-size: 34px;
-  letter-spacing: -0.03em;
-}
-
-.works-heading h3::before {
-  content: none;
-  display: block;
-  margin-bottom: 8px;
-  color: var(--gold2);
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-}
-
-.works-actions :deep(.el-checkbox__label) {
-  color: rgba(247, 243, 232, 0.76);
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.profile-page .card-grid {
-  grid-template-columns: repeat(auto-fill, minmax(218px, 1fr));
-  gap: 20px;
-}
-
-.profile-page .empty-state {
-  color: rgba(247, 243, 232, 0.68);
-}
-
-.pagination-wrap {
-  border-top: 1px solid rgba(255, 253, 248, 0.12);
-  background: rgba(7, 17, 31, 0.78);
-  backdrop-filter: blur(18px);
-}
-
-.pagination-wrap :deep(.el-pager li),
-.pagination-wrap :deep(.btn-prev),
-.pagination-wrap :deep(.btn-next) {
-  background: rgba(255, 253, 248, 0.08) !important;
-  border: 1px solid rgba(255, 253, 248, 0.12) !important;
-  color: rgba(247, 243, 232, 0.78) !important;
-}
-
-.pagination-wrap :deep(.el-pager li.is-active) {
-  background: var(--paper) !important;
-  color: var(--cinema) !important;
-  border-color: var(--paper) !important;
-}
-
-@media (max-width: 820px) {
-  .profile-page .page-container {
-    padding: 92px 14px 148px;
-  }
-  .profile-banner {
-    height: 180px;
-    border-radius: 20px 20px 0 0;
-  }
+@media (max-width: 1020px) {
   .profile-header {
-    padding: 0 20px 24px;
-    margin-top: -52px;
+    grid-template-columns: 1fr;
   }
-  .profile-header::before {
-    top: 52px;
-    border-radius: 0 0 20px 20px;
+
+  .avatar-column {
+    border-right: 0;
+    border-bottom: 1px solid var(--ad-line);
   }
+
   .profile-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
-  .stat-item:nth-child(2) {
-    border-right: none;
+
+  .stat-item,
+  .stat-item:nth-child(odd),
+  .stat-item:nth-last-child(-n + 2) {
+    border-right: 1px solid var(--ad-line);
+    border-bottom: 0;
   }
-  .user-works {
-    padding: 16px;
+
+  .stat-item:last-child {
+    border-right: 0;
   }
-  .profile-page .card-grid {
+
+  .background-editor-layout,
+  .avatar-editor-layout {
     grid-template-columns: 1fr;
   }
 }
 
-/* Anime paper override */
-.profile-page {
-  color: var(--ink);
-}
+@media (max-width: 700px) {
+  .profile-container {
+    padding: 82px 14px 104px;
+  }
 
-.profile-banner {
-  overflow: visible;
-  border-color: rgba(17, 26, 53, 0.1);
-  background:
-    radial-gradient(circle at 18% 20%, rgba(255, 122, 184, 0.24), transparent 34%),
-    radial-gradient(circle at 86% 8%, rgba(88, 184, 255, 0.24), transparent 30%),
-    linear-gradient(135deg, rgba(255, 244, 222, 0.92), rgba(245, 236, 255, 0.86));
-  box-shadow: 0 24px 70px rgba(17, 26, 53, 0.12);
-}
+  .profile-banner {
+    min-height: 200px;
+  }
 
-.banner-overlay {
-  background:
-    linear-gradient(to top, rgba(255, 244, 222, .88) 0%, rgba(255, 244, 222, 0.16) 62%);
-  pointer-events: none;
-}
+  .profile-main,
+  .avatar-column,
+  .user-works {
+    padding: 18px;
+  }
 
-.banner-grid {
-  opacity: 0.3;
-}
+  .profile-stats,
+  .form-columns,
+  .works-heading {
+    grid-template-columns: 1fr;
+  }
 
-.banner-edit {
-  top: 18px;
-  right: 18px;
-  bottom: auto;
-  z-index: 20;
-  opacity: 1;
-  transform: none;
-  transition: transform 0.18s var(--ease-cinema), opacity 0.18s ease;
-  pointer-events: auto;
-}
+  .profile-stats {
+    display: grid;
+  }
 
-.banner-edit :deep(.el-button) {
-  background: rgba(17, 26, 53, 0.82);
-  border-color: rgba(255, 244, 222, 0.56);
-  color: var(--paper);
-  box-shadow: 0 10px 28px rgba(17, 26, 53, 0.18);
-}
+  .works-heading {
+    display: grid;
+    align-items: start;
+  }
 
-.banner-edit :deep(.el-button:hover) {
-  background: var(--anime-pink);
-  border-color: rgba(255, 244, 222, 0.8);
-  transform: translateY(-1px);
-}
+  .profile-name-row {
+    align-items: flex-start;
+  }
 
-.profile-header::before {
-  background: #f0eee6;
-  border-color: rgba(17, 26, 53, 0.1);
-}
-
-.avatar {
-  background: linear-gradient(135deg, var(--anime-pink), var(--anime-blue));
-}
-
-.avatar-upload :deep(.el-button) {
-  background: var(--anime-pink);
-}
-
-.profile-name-row h2::before,
-.works-heading h3::before {
-  content: none;
-}
-
-.profile-stats {
-  background: #f0eee6;
-  border-color: rgba(17, 26, 53, 0.1);
-}
-
-.stat-item {
-  border-right-color: rgba(17, 26, 53, 0.08);
-}
-
-.stat-label {
-  color: rgba(4, 44, 83, 0.62);
-  letter-spacing: 0.06em;
-}
-
-.user-works {
-  border-color: rgba(17, 26, 53, 0.1);
-  background: #f0eee6;
-  color: var(--ink);
-}
-
-.works-heading {
-  border-bottom-color: rgba(17, 26, 53, 0.1);
-}
-
-.works-heading h3 {
-  color: var(--ink);
-}
-
-.works-actions :deep(.el-checkbox__label) {
-  color: var(--ink);
-}
-
-.profile-page .empty-state {
-  color: rgba(4, 44, 83, 0.68);
-}
-
-.pagination-wrap {
-  border-top-color: rgba(17, 26, 53, 0.12);
-  background: #f0eee6;
-}
-
-.pagination-wrap :deep(.el-pagination) {
-  color: var(--ink);
-}
-
-.pagination-wrap :deep(.el-pager li),
-.pagination-wrap :deep(.btn-prev),
-.pagination-wrap :deep(.btn-next) {
-  background: #f0eee6 !important;
-  border-color: rgba(17, 26, 53, 0.12) !important;
-  color: var(--ink) !important;
-}
-
-.pagination-wrap :deep(.el-pager li.is-active) {
-  background: var(--cinema) !important;
-  color: var(--paper) !important;
-  border-color: var(--cinema) !important;
-}
-
-:global(.profile-dialog.el-dialog) {
-  background: #f0eee6 !important;
-  border: 1px solid rgba(17, 26, 53, 0.12) !important;
-  border-radius: 18px !important;
-  box-shadow: 0 30px 90px rgba(17, 26, 53, 0.2) !important;
-}
-
-:global(.profile-dialog .el-dialog__header) {
-  padding: 26px 30px 8px !important;
-}
-
-:global(.profile-dialog .el-dialog__title) {
-  color: var(--ink) !important;
-  font-size: 26px !important;
-  font-weight: 800 !important;
-}
-
-:global(.profile-dialog .el-dialog__body) {
-  color: var(--ink) !important;
-  padding: 18px 30px 24px !important;
-}
-
-:global(.profile-dialog .el-dialog__headerbtn .el-dialog__close) {
-  color: var(--ink) !important;
-}
-
-:global(.profile-dialog .el-button--primary) {
-  background: var(--cinema) !important;
-  border-color: var(--cinema) !important;
-  color: var(--paper) !important;
-}
-
-:global(.profile-dialog .el-button--primary:hover) {
-  background: var(--anime-pink) !important;
-  border-color: var(--anime-pink) !important;
-}
-
-:global(.profile-dialog .bg-preview-side),
-:global(.profile-dialog .avatar-preview-side),
-:global(.profile-dialog .profile-mini-header) {
-  background: #f0eee6 !important;
-  border-color: rgba(17, 26, 53, 0.1) !important;
+  .pagination-wrap {
+    width: calc(100vw - 24px);
+    overflow-x: auto;
+  }
 }
 </style>

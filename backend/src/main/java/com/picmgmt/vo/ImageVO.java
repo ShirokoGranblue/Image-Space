@@ -21,6 +21,18 @@ public class ImageVO {
     private String publicUrl;
     private String privateUrl;
     private String storageKey;
+    private String originalUrl;
+    private String originalKey;
+    private String originalFilename;
+    private String originalContentType;
+    private String originalExt;
+    private Long originalSize;
+    private Integer width;
+    private Integer height;
+    private String mediumUrl;
+    private String mediumKey;
+    private String thumbUrl;
+    private String thumbKey;
     private Long fileSize;
     private String imageType;
     private String description;

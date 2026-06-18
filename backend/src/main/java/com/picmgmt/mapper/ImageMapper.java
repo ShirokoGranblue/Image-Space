@@ -64,6 +64,8 @@ public interface ImageMapper extends BaseMapper<Image> {
     @Select("""
         <script>
             SELECT i.id, i.uuid, i.user_id, i.category_id, i.image_name, i.image_path, i.storage_key,
+                   i.original_key, i.original_filename, i.original_content_type, i.original_ext,
+                   i.original_size, i.width, i.height, i.medium_key, i.thumb_key,
                    i.file_size, i.image_type, i.description, i.tags,
                    i.visibility, i.media_version, i.visible_usernames, i.upload_time,
                    u.uuid as user_uuid,

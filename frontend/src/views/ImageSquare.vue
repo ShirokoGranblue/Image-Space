@@ -1,53 +1,74 @@
 <template>
-  <div class="square-page cinematic-shell">
+  <div class="public-square-page">
     <NavBar />
-    <div class="page-container">
-      
-      <!-- Redesigned sq-hero -->
-      <header class="sq-hero reveal">
-        <h1 class="sq-hero-title">Space</h1>
-        <div class="sq-search-bar">
-          <el-input
-            v-model="query.keyword"
-            placeholder="输入图片名称…"
-            clearable
-            @clear="onFilterChange"
-            @keyup.enter="onFilterChange"
-            class="sq-search-el"
-          >
-            <template #prefix>
-              <el-icon><Search /></el-icon>
-            </template>
-          </el-input>
-          
-          <el-select
-            v-model="categoryFilter"
-            clearable
-            placeholder="分类筛选"
-            class="sq-category-el"
-          >
-            <el-option v-for="cat in categoryOptions" :key="cat" :label="cat" :value="cat" />
-          </el-select>
 
-          <select class="sq-sort" v-model="viewModeSelect">
-            <option value="featured">排序：精选</option>
-            <option value="latest">排序：最新</option>
-            <option value="hot">排序：最热</option>
-          </select>
+    <div class="square-shell">
+      <header class="square-hero">
+        <div class="square-hero-copy">
+          <span class="eyebrow">公开广场</span>
+          <h1>发现大家分享的图片。</h1>
+          <p>按分类、标签或关键词浏览公开作品，也可以进入作者主页查看更多内容。</p>
+        </div>
+
+        <div class="square-hero-metrics" aria-label="公开广场概览">
+          <div class="metric-cell">
+            <strong>{{ total }}</strong>
+            <span>公开图片</span>
+          </div>
+          <div class="metric-cell">
+            <strong>{{ categoryOptions.length }}</strong>
+            <span>分类</span>
+          </div>
+          <div class="metric-cell">
+            <strong>{{ squareStats.totalLikes }}</strong>
+            <span>喜欢</span>
+          </div>
         </div>
       </header>
 
-      <!-- Redesigned sq-body (Split columns on desktop) -->
-      <div class="sq-body">
-        
-        <!-- Main content column -->
-        <main class="sq-main">
-          <!-- Horizontal Sort Pills (Category tags) -->
-          <div class="sq-sort-row">
+      <section class="square-command" aria-label="公开广场筛选">
+        <el-input
+          v-model="query.keyword"
+          placeholder="搜索公开图片"
+          clearable
+          class="square-search"
+          @clear="onFilterChange"
+          @keyup.enter="onFilterChange"
+        >
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+        </el-input>
+
+        <el-select
+          v-model="categoryFilter"
+          clearable
+          placeholder="选择分类"
+          class="square-select"
+        >
+          <el-option v-for="cat in categoryOptions" :key="cat" :label="cat" :value="cat" />
+        </el-select>
+
+        <div class="sort-segment" role="group" aria-label="图片排序">
+          <button
+            v-for="option in sortOptions"
+            :key="option.value"
+            type="button"
+            :class="{ active: viewMode === option.value }"
+            @click="setViewMode(option.value)"
+          >
+            {{ option.label }}
+          </button>
+        </div>
+      </section>
+
+      <div class="square-layout">
+        <main class="square-main">
+          <div class="category-strip" v-if="categoryOptions.length">
             <button
               type="button"
-              class="sort-pill"
-              :class="{ act: !categoryFilter }"
+              class="category-chip"
+              :class="{ active: !categoryFilter }"
               @click="categoryFilter = ''"
             >
               全部
@@ -56,80 +77,133 @@
               v-for="cat in categoryOptions"
               :key="cat"
               type="button"
-              class="sort-pill"
-              :class="{ act: categoryFilter === cat }"
+              class="category-chip"
+              :class="{ active: categoryFilter === cat }"
               @click="categoryFilter = cat"
             >
               {{ cat }}
             </button>
           </div>
 
-          <div v-if="loading" class="empty-state">
-            <div class="skeleton-grid">
-              <div class="skeleton" v-for="n in 6" :key="n" style="aspect-ratio:1;"></div>
+          <div class="result-head">
+            <div>
+              <span>当前显示</span>
+              <strong>{{ displayedImages.length }}</strong>
+              <span>张图片</span>
             </div>
+            <button type="button" class="text-command" @click="clearFilters">
+              清空筛选
+            </button>
           </div>
 
-          <div v-else-if="displayedImages.length === 0" class="empty-state">
+          <section v-if="loading" class="square-loading" aria-label="图片加载中">
+            <div class="asset-skeleton" v-for="n in 9" :key="n"></div>
+          </section>
+
+          <section v-else-if="displayedImages.length === 0" class="empty-state square-empty">
             <el-icon><PictureFilled /></el-icon>
-            <p>暂时没有内容</p>
-          </div>
+            <p>没有符合条件的公开图片。</p>
+          </section>
 
-          <div v-else class="reveal visible square-results">
-            <div class="card-grid">
-              <div v-for="(img, idx) in displayedImages" :key="img.id" class="stagger-item" :style="{ animationDelay: `${idx * 0.06}s` }">
-                <ImageCard
-                  :image="img"
-                  variant="square"
-                  open-mode="emit"
-                  @view="openDrawer"
-                  @like="handleLike"
-                  @favorite="handleFavorite"
-                />
-              </div>
-            </div>
-          </div>
+          <section v-else class="square-grid">
+            <ImageCard
+              v-for="img in displayedImages"
+              :key="img.uuid || img.id"
+              :image="img"
+              variant="square"
+              open-mode="emit"
+              @view="openDrawer"
+              @like="handleLike"
+              @favorite="handleFavorite"
+            />
+          </section>
         </main>
 
-        <!-- Right Sidebar (Tags and Creators) -->
-        <aside class="sq-sidebar">
-          <div class="ss-head">热门标签</div>
-          <div class="tag-cloud" v-if="tagOptions.length">
-            <span
-              v-for="tag in tagOptions"
-              :key="tag"
-              class="sq-tag"
-              :class="{ active: query.tags.includes(tag) }"
-              @click="setTag(tag)"
-            >
-              {{ tag }}
-            </span>
-          </div>
-          <div class="tag-cloud" v-else>
-            <span class="sq-tag-empty">暂无标签</span>
-          </div>
-
-          <div class="ss-head" style="margin-top: 24px;">活跃创作者</div>
-          <div class="sq-creators">
-            <div
-              v-for="c in activeCreators"
-              :key="c.username"
-              class="sq-user-row"
-              @click="goCreatorProfile(c.uuidOrId)"
-            >
-              <div class="su-av" :style="{ background: c.avatarColor }">
-                {{ (c.displayName || c.username || '?').charAt(0).toUpperCase() }}
-              </div>
-              <span class="su-name">{{ c.displayName || c.username }}</span>
-              <span class="su-cnt">{{ c.likeCount }} 赞</span>
+        <aside class="square-side" aria-label="公开广场发现">
+          <section class="side-section">
+            <div class="side-title">
+              <span>当前筛选</span>
+              <strong>{{ activeSortLabel }}</strong>
             </div>
-          </div>
-        </aside>
+            <div class="filter-summary">
+              <div>
+                <span>分类</span>
+                <strong>{{ categoryFilter || '不限' }}</strong>
+              </div>
+              <div>
+                <span>标签</span>
+                <strong>{{ query.tags[0] || '不限' }}</strong>
+              </div>
+              <div>
+                <span>关键词</span>
+                <strong>{{ query.keyword || '未填写' }}</strong>
+              </div>
+            </div>
+          </section>
 
+          <section class="side-section">
+            <div class="side-title">
+              <span>标签</span>
+              <strong>{{ tagOptions.length }}</strong>
+            </div>
+            <div class="tag-cloud" v-if="tagOptions.length">
+              <button
+                v-for="tag in tagOptions"
+                :key="tag"
+                type="button"
+                class="tag-pill"
+                :class="{ active: query.tags.includes(tag) }"
+                @click="setTag(tag)"
+              >
+                #{{ tag }}
+              </button>
+            </div>
+            <p v-else class="side-empty">本页暂无标签。</p>
+          </section>
+
+          <section class="side-section">
+            <div class="side-title">
+              <span>作者</span>
+              <strong>{{ activeCreators.length }}</strong>
+            </div>
+            <div class="creator-list" v-if="activeCreators.length">
+              <button
+                v-for="creator in activeCreators"
+                :key="creator.username"
+                type="button"
+                class="creator-row"
+                @click="goCreatorProfile(creator.uuidOrId)"
+              >
+                <span class="creator-avatar" :style="{ '--avatar-color': creator.avatarColor }">
+                  {{ creator.initial }}
+                </span>
+                <span>
+                  <strong>{{ creator.displayName || creator.username }}</strong>
+                  <small>{{ creator.likeCount }} 次喜欢</small>
+                </span>
+              </button>
+            </div>
+            <p v-else class="side-empty">暂无作者信息。</p>
+          </section>
+
+          <section class="side-section inspector-section" v-if="featuredImage">
+            <div class="side-title">
+              <span>推荐</span>
+              <strong>{{ featuredImage.categoryName || '未分类' }}</strong>
+            </div>
+            <button class="featured-preview" type="button" @click="openDrawer(featuredImage)">
+              <img v-if="featuredImageSrc" :src="featuredImageSrc" :alt="featuredImage.imageName" />
+              <span v-else>
+                <el-icon><PictureFilled /></el-icon>
+              </span>
+            </button>
+            <h2>{{ featuredImage.imageName }}</h2>
+            <p>{{ featuredImage.displayName || featuredImage.username || '匿名用户' }}</p>
+          </section>
+        </aside>
       </div>
     </div>
 
-    <!-- Teleport Pagination -->
     <Teleport to="body">
       <div class="pagination-wrap" v-if="total > 0">
         <el-pagination
@@ -145,9 +219,8 @@
       </div>
     </Teleport>
 
-    <!-- Detail Drawer -->
     <transition name="drawer-slide">
-      <aside class="image-drawer" v-if="drawerVisible">
+      <aside class="image-drawer" v-if="drawerVisible && activeImage">
         <button class="drawer-close" type="button" @click="drawerVisible = false" aria-label="关闭">
           <el-icon><Close /></el-icon>
         </button>
@@ -156,20 +229,25 @@
           <el-icon><PictureFilled /></el-icon>
         </div>
         <div class="drawer-body">
+          <span class="drawer-kicker">{{ activeImage.categoryName || '未分类' }}</span>
           <h2>{{ activeImage.imageName }}</h2>
           <div class="drawer-meta">
-            <span>{{ activeImage.categoryName || '未分类' }}</span>
-            <span>{{ activeImage.displayName || activeImage.username || 'Unknown' }}</span>
-            <span>{{ activeImage.likeCount || 0 }} 喜欢</span>
+            <span>{{ activeImage.displayName || activeImage.username || '匿名用户' }}</span>
+            <span>{{ activeImage.likeCount || 0 }} 次喜欢</span>
+            <span>{{ activeTags.length }} 个标签</span>
           </div>
           <p v-if="activeImage.description" class="drawer-desc">{{ activeImage.description }}</p>
           <div class="drawer-tags" v-if="activeTags.length">
-            <span v-for="tag in activeTags" :key="tag">{{ tag }}</span>
+            <button v-for="tag in activeTags" :key="tag" type="button" @click="setTag(tag)">
+              #{{ tag }}
+            </button>
           </div>
           <div class="drawer-actions">
-            <el-button type="primary" @click="goDetail(activeImage)">查看</el-button>
-            <el-button @click="handleLike(activeImage)">喜欢</el-button>
-            <el-button @click="handleFavorite(activeImage)">收藏</el-button>
+            <button class="primary-command compact" type="button" @click="goDetail(activeImage)">查看详情</button>
+            <button class="secondary-command" type="button" @click="handleLike(activeImage)">
+              {{ activeImage.likedByMe ? '取消喜欢' : '喜欢' }}
+            </button>
+            <button class="secondary-command" type="button" @click="handleFavorite(activeImage)">收藏</button>
           </div>
         </div>
       </aside>
@@ -180,18 +258,17 @@
 <script setup>
 import { computed, reactive, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import NavBar from '../components/NavBar.vue'
 import ImageCard from '../components/ImageCard.vue'
 import { getImageSquare, likeImage, unlikeImage } from '../api/image'
-import { ElMessage } from 'element-plus'
 import {
   buildSquareParams,
   createRandomSeed,
   loadSquareSession,
   saveSquareSession
 } from '../utils/squareFilters'
-import { DEFAULT_IMAGE_PAGE_SIZE, IMAGE_PAGE_SIZES } from '../utils/imageRequests'
-import { getImageDownloadUrl } from '../utils/imageRequests'
+import { DEFAULT_IMAGE_PAGE_SIZE, IMAGE_PAGE_SIZES, getImagePreviewUrl } from '../utils/imageRequests'
 import { useUserStore } from '../store/user'
 
 const router = useRouter()
@@ -202,8 +279,9 @@ const loading = ref(false)
 const categoryFilter = ref('')
 const viewMode = ref('featured')
 const drawerVisible = ref(false)
-const activeImage = ref({})
+const activeImage = ref(null)
 const savedQuery = loadSquareSession()
+
 const query = reactive({
   page: savedQuery.page || 1,
   limit: savedQuery.limit || DEFAULT_IMAGE_PAGE_SIZE,
@@ -213,7 +291,12 @@ const query = reactive({
   randomSeed: createRandomSeed()
 })
 
-const BLUE_TONES = ['#042C53', '#0C447C', '#185FA5', '#378ADD', '#85B7EB']
+const sortOptions = [
+  { label: '推荐', value: 'featured' },
+  { label: '最新', value: 'latest' },
+  { label: '喜欢较多', value: 'hot' }
+]
+const CREATOR_TONES = ['#38d5ff', '#b7ff3c', '#f5b84b', '#9b8cff', '#ff6b57']
 
 const categoryOptions = computed(() => {
   const categories = new Set()
@@ -232,7 +315,7 @@ const tagOptions = computed(() => {
       .filter(Boolean)
       .forEach(tag => tags.add(tag))
   }
-  return Array.from(tags).slice(0, 10)
+  return Array.from(tags).slice(0, 14)
 })
 
 const displayedImages = computed(() => {
@@ -252,12 +335,15 @@ const activeCreators = computed(() => {
     const username = img.username || 'unknown'
     const uuidOrId = img.userUuid || img.userId
     if (!map[username] && uuidOrId) {
+      const toneIndex = Math.abs(hashString(username)) % CREATOR_TONES.length
+      const name = img.displayName || img.username || '?'
       map[username] = {
         username,
         displayName: img.displayName || img.username,
         uuidOrId,
         likeCount: 0,
-        avatarColor: BLUE_TONES[Math.floor(Math.random() * BLUE_TONES.length)]
+        avatarColor: CREATOR_TONES[toneIndex],
+        initial: String(name).charAt(0).toUpperCase()
       }
     }
     if (map[username]) {
@@ -267,17 +353,15 @@ const activeCreators = computed(() => {
   return Object.values(map).sort((a, b) => b.likeCount - a.likeCount).slice(0, 5)
 })
 
-const viewModeSelect = computed({
-  get() {
-    return viewMode.value
-  },
-  set(val) {
-    setViewMode(val)
-  }
-})
+const squareStats = computed(() => ({
+  totalLikes: images.value.reduce((sum, image) => sum + Number(image.likeCount || 0), 0)
+}))
 
-const drawerImageSrc = computed(() => getImageDownloadUrl(activeImage.value))
-const activeTags = computed(() => String(activeImage.value.tags || '').split('#').map(tag => tag.trim()).filter(Boolean))
+const activeSortLabel = computed(() => sortOptions.find(option => option.value === viewMode.value)?.label || '推荐')
+const featuredImage = computed(() => displayedImages.value[0] || images.value[0] || null)
+const featuredImageSrc = computed(() => featuredImage.value ? getImagePreviewUrl(featuredImage.value) : '')
+const drawerImageSrc = computed(() => activeImage.value ? getImagePreviewUrl(activeImage.value) : '')
+const activeTags = computed(() => String(activeImage.value?.tags || '').split('#').map(tag => tag.trim()).filter(Boolean))
 
 onMounted(() => fetchList())
 
@@ -306,7 +390,17 @@ function setViewMode(mode) {
 }
 
 function setTag(tag) {
-  query.tags = tag ? [tag] : []
+  query.tags = query.tags.includes(tag) ? [] : [tag]
+  onFilterChange()
+}
+
+function clearFilters() {
+  categoryFilter.value = ''
+  query.keyword = ''
+  query.tags = []
+  viewMode.value = 'featured'
+  query.sortField = ''
+  query.randomSeed = createRandomSeed()
   onFilterChange()
 }
 
@@ -341,7 +435,7 @@ async function handleLike(image) {
 }
 
 function handleFavorite() {
-  ElMessage.info('当前项目未接入收藏接口')
+  ElMessage.info('收藏功能稍后开放')
 }
 
 function goCreatorProfile(uuidOrId) {
@@ -349,250 +443,445 @@ function goCreatorProfile(uuidOrId) {
     router.push(`/profile/${uuidOrId}`)
   }
 }
+
+function hashString(value) {
+  return String(value).split('').reduce((hash, char) => ((hash << 5) - hash) + char.charCodeAt(0), 0)
+}
 </script>
 
 <style scoped>
-.square-page {
+.public-square-page {
   min-height: 100vh;
-  background: var(--paper);
-  display: flex;
-  flex-direction: column;
+  color: var(--ad-text);
 }
 
-.page-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding-bottom: 112px;
+.square-shell {
+  width: min(100% - 28px, 1600px);
+  margin: 0 auto;
+  padding: 96px 0 112px;
 }
 
-.sq-hero {
-  background: var(--ink);
-  padding: 28px 24px 20px;
-  border-bottom: 0.5px solid var(--ink2);
-  margin-top: 56px; /* Space under fixed navbar */
-}
-
-.sq-hero-title {
-  font-family: var(--font-display);
-  font-size: 28px;
-  color: #fff;
-  font-weight: 500;
-  margin-bottom: 4px;
-}
-
-.sq-hero-sub {
-  font-size: 18px;
-  color: var(--ink5);
-  font-family: var(--font-body);
-}
-
-.sq-search-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 16px;
-  flex-wrap: wrap;
-}
-
-.sq-search-el {
-  flex: 1;
-  min-width: 200px;
-}
-
-.sq-search-el :deep(.el-input__wrapper) {
-  background: rgba(255, 255, 255, .1) !important;
-  border: 0.5px solid rgba(255, 255, 255, .2) !important;
-  border-radius: 8px !important;
-  box-shadow: none !important;
-  height: 36px;
-  padding: 0 12px;
-  transition: background .15s, border-color .15s;
-}
-
-.sq-search-el :deep(.el-input__wrapper.is-focus) {
-  background: rgba(255, 255, 255, .18) !important;
-  border-color: var(--ink5) !important;
-}
-
-.sq-search-el :deep(.el-input__inner) {
-  color: #fff !important;
-  font-size: 18px;
-}
-
-.sq-search-el :deep(.el-input__inner::placeholder) {
-  color: var(--ink6) !important;
-}
-
-.sq-category-el {
-  width: 160px;
-}
-
-.sq-category-el :deep(.el-input__wrapper) {
-  background: rgba(255, 255, 255, .08) !important;
-  border: 0.5px solid rgba(255, 255, 255, .15) !important;
-  border-radius: 8px !important;
-  box-shadow: none !important;
-  height: 36px;
-  padding: 0 10px;
-}
-
-.sq-category-el :deep(.el-input__inner) {
-  color: #fff !important;
-  font-size: 16px;
-}
-
-.sq-sort {
-  height: 36px;
-  background: rgba(255, 255, 255, .08);
-  border: 0.5px solid rgba(255, 255, 255, .15);
-  border-radius: 8px;
-  padding: 0 10px;
-  font-size: 16px;
-  color: #fff;
-  font-family: var(--font-body);
-  outline: none;
-  cursor: pointer;
-  width: 140px;
-}
-
-.sq-sort option {
-  background: var(--ink);
-  color: #fff;
-}
-
-.sq-body {
+.square-hero {
   display: grid;
-  grid-template-columns: 1fr 220px;
-  flex: 1;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 440px);
+  gap: 24px;
+  align-items: stretch;
+  min-height: 260px;
+  border: 1px solid var(--ad-line);
+  border-radius: 18px 18px 0 0;
+  background:
+    linear-gradient(135deg, rgba(21, 25, 34, 0.96), rgba(13, 16, 22, 0.92)),
+    linear-gradient(90deg, rgba(183, 255, 60, 0.08), rgba(56, 213, 255, 0.08));
 }
 
-.sq-main {
+.square-hero-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 38px;
+}
+
+.eyebrow {
+  width: fit-content;
+  margin-bottom: 16px;
+  padding: 5px 9px;
+  border: 1px solid rgba(183, 255, 60, 0.28);
+  border-radius: 999px;
+  background: rgba(183, 255, 60, 0.08);
+  color: var(--ad-green);
+  font-size: 11px;
+  font-weight: 860;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.square-hero h1 {
+  max-width: 860px;
+  margin: 0;
+  color: var(--ad-text);
+  font-size: clamp(40px, 6vw, 82px);
+  font-weight: 340;
+  line-height: 0.92;
+}
+
+.square-hero p {
+  max-width: 680px;
+  margin: 18px 0 0;
+  color: var(--ad-text-soft);
+  font-size: 18px;
+  line-height: 1.55;
+}
+
+.square-hero-metrics {
+  display: grid;
+  grid-template-columns: 1fr;
+  border-left: 1px solid var(--ad-line);
+}
+
+.metric-cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 22px 26px;
+  border-bottom: 1px solid var(--ad-line);
+}
+
+.metric-cell:last-child {
+  border-bottom: 0;
+}
+
+.metric-cell strong {
+  color: var(--ad-text);
+  font-size: 38px;
+  font-weight: 860;
+  line-height: 1;
+}
+
+.metric-cell span {
+  margin-top: 7px;
+  color: var(--ad-muted);
+  font-size: 12px;
+  font-weight: 820;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.square-command {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) 220px auto;
+  gap: 10px;
+  padding: 12px;
+  border-right: 1px solid var(--ad-line);
+  border-left: 1px solid var(--ad-line);
+  background: rgba(17, 23, 34, 0.72);
+}
+
+.square-search,
+.square-select {
+  min-width: 0;
+}
+
+.sort-segment {
+  display: inline-grid;
+  grid-template-columns: repeat(3, minmax(72px, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--ad-line);
+  border-radius: 12px;
+  background: rgba(13, 16, 22, 0.56);
+}
+
+.sort-segment button,
+.category-chip,
+.tag-pill,
+.text-command,
+.creator-row,
+.featured-preview,
+.primary-command,
+.secondary-command {
+  font-family: var(--ad-font);
+}
+
+.sort-segment button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ad-text-soft);
+  font-size: 13px;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.sort-segment button.active,
+.sort-segment button:hover {
+  background: var(--ad-green);
+  color: #071014;
+}
+
+.square-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  border: 1px solid var(--ad-line);
+  border-radius: 0 0 18px 18px;
+  background: rgba(17, 23, 34, 0.54);
+}
+
+.square-main {
+  min-width: 0;
   padding: 18px;
 }
 
-.sq-sort-row {
+.category-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 16px;
+}
+
+.category-chip {
+  min-height: 30px;
+  padding: 0 11px;
+  border: 1px solid var(--ad-line);
+  border-radius: 999px;
+  background: rgba(13, 16, 22, 0.42);
+  color: var(--ad-text-soft);
+  font-size: 13px;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.category-chip.active,
+.category-chip:hover {
+  border-color: rgba(183, 255, 60, 0.48);
+  background: rgba(183, 255, 60, 0.1);
+  color: var(--ad-text);
+}
+
+.result-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  color: var(--ad-muted);
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.result-head div {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 14px;
-  flex-wrap: wrap;
 }
 
-.sort-pill {
-  font-size: 16px;
-  padding: 4px 12px;
-  border-radius: 20px;
-  border: 0.5px solid var(--paper3);
-  background: #fff;
-  color: var(--ink2);
+.result-head strong {
+  color: var(--ad-green);
+  font-size: 18px;
+}
+
+.text-command {
+  border: 0;
+  background: transparent;
+  color: var(--ad-green);
+  font-size: 13px;
+  font-weight: 780;
   cursor: pointer;
-  font-family: var(--font-body);
-  transition: all .15s;
 }
 
-.sort-pill.act {
-  background: var(--ink);
-  color: var(--paper);
-  border-color: var(--ink);
+.square-grid,
+.square-loading {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
 }
 
-.sort-pill:hover:not(.act) {
-  background: #fff;
+.asset-skeleton {
+  min-height: 300px;
+  border: 1px solid var(--ad-line);
+  border-radius: 14px;
+  background:
+    linear-gradient(90deg, rgba(244, 241, 232, 0.06), rgba(244, 241, 232, 0.13), rgba(244, 241, 232, 0.06));
+  background-size: 220% 100%;
+  animation: shimmer 1.3s ease-in-out infinite;
 }
 
-.sq-sidebar {
-  border-left: 0.5px solid var(--paper3);
-  padding: 16px 14px;
-  background: #fff;
+.square-empty {
+  min-height: 340px;
+  border: 1px solid var(--ad-line);
+  border-radius: 14px;
+  background: rgba(13, 16, 22, 0.38);
 }
 
-.ss-head {
-  font-size: 15px;
-  letter-spacing: .08em;
-  color: var(--ink3);
+.square-side {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-left: 1px solid var(--ad-line);
+  background: rgba(13, 16, 22, 0.38);
+}
+
+.side-section {
+  padding: 17px;
+  border-bottom: 1px solid var(--ad-line);
+}
+
+.side-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.side-title span {
+  color: rgba(244, 241, 232, 0.5);
+  font-size: 11px;
+  font-weight: 860;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  margin-bottom: 8px;
-  font-weight: 600;
+}
+
+.side-title strong {
+  color: var(--ad-text);
+  font-size: 12px;
+  font-weight: 820;
+}
+
+.filter-summary {
+  display: grid;
+  gap: 8px;
+}
+
+.filter-summary div {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--ad-line);
+  border-radius: 10px;
+  background: rgba(21, 25, 34, 0.54);
+}
+
+.filter-summary span {
+  color: var(--ad-muted);
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.filter-summary strong {
+  overflow: hidden;
+  color: var(--ad-text);
+  font-size: 13px;
+  font-weight: 780;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tag-cloud {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
-  margin-bottom: 16px;
+  gap: 7px;
 }
 
-.sq-tag {
-  font-size: 15px;
-  padding: 3px 9px;
-  border-radius: 12px;
-  background: #fff;
-  color: var(--ink2);
-  border: 0.5px solid var(--paper3);
+.tag-pill {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--ad-line);
+  border-radius: 999px;
+  background: rgba(21, 25, 34, 0.58);
+  color: var(--ad-text-soft);
+  font-size: 12px;
+  font-weight: 760;
   cursor: pointer;
-  transition: background .15s, border-color .15s;
 }
 
-.sq-tag:hover,
-.sq-tag.active {
-  background: var(--ink7);
-  border-color: var(--ink4);
-  color: var(--ink);
+.tag-pill.active,
+.tag-pill:hover {
+  border-color: rgba(56, 213, 255, 0.54);
+  background: rgba(56, 213, 255, 0.1);
+  color: var(--ad-text);
 }
 
-.sq-tag-empty {
-  font-size: 16px;
-  color: var(--ink5);
-  font-style: italic;
-}
-
-.sq-creators {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.sq-user-row {
-  display: flex;
-  align-items: center;
+.creator-list {
+  display: grid;
   gap: 8px;
-  padding: 5px 4px;
-  border-radius: 7px;
-  cursor: pointer;
-  transition: background .15s;
 }
 
-.sq-user-row:hover {
-  background: #fff;
-}
-
-.su-av {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: flex;
+.creator-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
   align-items: center;
-  justify-content: center;
-  font-size: 15px;
-  font-weight: 600;
-  flex-shrink: 0;
-  color: #fff;
+  width: 100%;
+  min-height: 44px;
+  padding: 7px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ad-text);
+  text-align: left;
+  cursor: pointer;
 }
 
-.su-name {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--ink);
-  flex: 1;
-  white-space: nowrap;
+.creator-row:hover {
+  border-color: var(--ad-line);
+  background: rgba(244, 241, 232, 0.05);
+}
+
+.creator-avatar {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--avatar-color);
+  color: #071014;
+  font-size: 14px;
+  font-weight: 860;
+}
+
+.creator-row strong,
+.creator-row small {
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.su-cnt {
-  font-size: 15px;
-  color: var(--ink3);
+.creator-row strong {
+  font-size: 13px;
+  font-weight: 820;
+}
+
+.creator-row small,
+.side-empty,
+.inspector-section p {
+  color: var(--ad-muted);
+  font-size: 12px;
+  font-weight: 680;
+}
+
+.featured-preview {
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  padding: 0;
+  border: 1px solid var(--ad-line);
+  border-radius: 12px;
+  background: rgba(21, 25, 34, 0.66);
+  cursor: pointer;
+}
+
+.featured-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.featured-preview span {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: var(--ad-muted);
+  font-size: 34px;
+}
+
+.inspector-section h2 {
+  margin: 12px 0 4px;
+  color: var(--ad-text);
+  font-size: 18px;
+  font-weight: 420;
+  line-height: 1.2;
+}
+
+.inspector-section p {
+  margin: 0;
 }
 
 .pagination-wrap {
@@ -603,11 +892,10 @@ function goCreatorProfile(uuidOrId) {
   z-index: 150;
   display: flex;
   justify-content: center;
-  padding: 14px 24px calc(14px + env(safe-area-inset-bottom));
-  margin-top: 0;
-  border-top: 0.5px solid var(--paper3);
-  background: #fff;
-  flex-shrink: 0;
+  padding: 12px 24px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--ad-line);
+  background: rgba(13, 16, 22, 0.9);
+  backdrop-filter: blur(18px);
 }
 
 .pagination-wrap :deep(.el-pagination) {
@@ -617,62 +905,19 @@ function goCreatorProfile(uuidOrId) {
   gap: 6px;
 }
 
-.pagination-wrap :deep(.el-pager li) {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px !important;
-  border: 0.5px solid var(--paper3) !important;
-  background: #fff !important;
-  color: var(--ink) !important;
-  font-size: 16px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: background .15s;
-  font-family: var(--font-body);
-  min-width: auto;
-}
-
-.pagination-wrap :deep(.el-pager li.is-active) {
-  background: var(--ink) !important;
-  color: var(--paper) !important;
-  border-color: var(--ink) !important;
-}
-
-.pagination-wrap :deep(.el-pager li:hover:not(.is-active)) {
-  background: #fff !important;
-}
-
-.pagination-wrap :deep(.btn-prev),
-.pagination-wrap :deep(.btn-next) {
-  background: #fff !important;
-  border: 0.5px solid var(--paper3) !important;
-  color: var(--ink) !important;
-  border-radius: 6px !important;
-  height: 28px !important;
-  width: 28px !important;
-  min-width: auto !important;
-}
-
-.pagination-wrap :deep(.btn-prev:hover),
-.pagination-wrap :deep(.btn-next:hover) {
-  background: #fff !important;
-}
-
 .image-drawer {
   position: fixed;
-  top: 78px;
+  top: 88px;
   right: 22px;
   bottom: 22px;
-  width: 380px;
-  max-width: calc(100vw - 32px);
-  z-index: 120;
+  z-index: 170;
   overflow: hidden auto;
-  border: 0.5px solid var(--paper3);
-  border-radius: 12px;
-  background: #fff;
-  box-shadow: 0 20px 60px rgba(4, 44, 83, 0.15), 0 8px 24px rgba(4, 44, 83, 0.1), 0 2px 8px rgba(4, 44, 83, 0.06);
+  width: 420px;
+  max-width: calc(100vw - 32px);
+  border: 1px solid var(--ad-line);
+  border-radius: 16px;
+  background: rgba(21, 25, 34, 0.98);
+  box-shadow: var(--ad-shadow);
 }
 
 .drawer-close {
@@ -680,12 +925,12 @@ function goCreatorProfile(uuidOrId) {
   top: 12px;
   right: 12px;
   z-index: 2;
-  width: 34px;
-  height: 34px;
-  border: 0.5px solid rgba(255, 255, 255, 0.24);
-  border-radius: 8px;
-  background: rgba(4, 44, 83, 0.6);
-  color: #fff;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--ad-line-strong);
+  border-radius: 10px;
+  background: rgba(13, 16, 22, 0.74);
+  color: var(--ad-text);
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -697,74 +942,99 @@ function goCreatorProfile(uuidOrId) {
   aspect-ratio: 4 / 3;
   object-fit: cover;
   display: block;
-  background: #fff;
+  background: rgba(13, 16, 22, 0.76);
 }
 
 .drawer-placeholder {
   display: grid;
   place-items: center;
-  color: var(--ink3);
-  font-size: 40px;
+  color: var(--ad-muted);
+  font-size: 42px;
 }
 
 .drawer-body {
   padding: 20px;
 }
 
+.drawer-kicker {
+  display: inline-flex;
+  margin-bottom: 10px;
+  padding: 4px 8px;
+  border: 1px solid var(--ad-line);
+  border-radius: 999px;
+  color: var(--ad-green);
+  font-size: 11px;
+  font-weight: 860;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
 .drawer-body h2 {
   margin: 0;
-  color: var(--ink);
-  font-family: var(--font-display);
-  font-size: 28px;
-  font-weight: 500;
-  line-height: 1.25;
+  color: var(--ad-text);
+  font-size: 30px;
+  font-weight: 420;
+  line-height: 1.15;
 }
 
-.drawer-meta {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 12px;
-}
-
-.drawer-meta span,
-.drawer-tags span {
-  display: inline-flex;
-  align-items: center;
-  min-height: 26px;
-  padding: 0 10px;
-  border-radius: 4px;
-  background: #fff;
-  color: var(--ink3);
-  font-size: 18px;
-  font-weight: 500;
-  border: 0.5px solid var(--paper3);
-}
-
-.drawer-desc {
-  margin: 16px 0 0;
-  color: var(--ink2);
-  line-height: 1.8;
-  font-size: 18px;
-}
-
-.drawer-tags {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 16px;
-}
-
-.drawer-tags span {
-  background: var(--paper3);
-  color: var(--ink);
-}
-
+.drawer-meta,
+.drawer-tags,
 .drawer-actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  margin-top: 18px;
+  margin-top: 14px;
+}
+
+.drawer-meta span,
+.drawer-tags button {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border: 1px solid var(--ad-line);
+  border-radius: 999px;
+  background: rgba(13, 16, 22, 0.45);
+  color: var(--ad-text-soft);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.drawer-tags button {
+  cursor: pointer;
+}
+
+.drawer-desc {
+  margin: 16px 0 0;
+  color: var(--ad-text-soft);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.primary-command,
+.secondary-command {
+  min-height: 38px;
+  padding: 0 13px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 820;
+  cursor: pointer;
+}
+
+.primary-command {
+  border: 1px solid var(--ad-green);
+  background: var(--ad-green);
+  color: #071014;
+}
+
+.secondary-command {
+  border: 1px solid var(--ad-line);
+  background: rgba(244, 241, 232, 0.06);
+  color: var(--ad-text);
+}
+
+.compact {
+  min-height: 36px;
 }
 
 .drawer-slide-enter-active,
@@ -778,589 +1048,92 @@ function goCreatorProfile(uuidOrId) {
   opacity: 0;
 }
 
-@media (max-width: 768px) {
-  .page-container { padding-bottom: 148px; }
-  .sq-hero { margin-top: 56px; padding: 20px 14px; }
-  .sq-hero-title { font-size: 24px; }
-  .sq-search-bar { flex-direction: column; align-items: stretch; }
-  .sq-search-el,
-  .sq-category-el,
-  .sq-sort { width: 100% !important; }
-  .sq-body {
+@keyframes shimmer {
+  0% { background-position: 180% 0; }
+  100% { background-position: -40% 0; }
+}
+
+@media (max-width: 1100px) {
+  .square-hero,
+  .square-layout {
     grid-template-columns: 1fr;
   }
-  .sq-sidebar {
-    border-left: none;
-    border-top: 0.5px solid var(--paper3);
-    margin-top: 20px;
+
+  .square-hero-metrics {
+    grid-template-columns: repeat(3, 1fr);
+    border-top: 1px solid var(--ad-line);
+    border-left: 0;
   }
-  .image-drawer {
-    top: 74px;
-    right: 12px;
-    bottom: 12px;
-    max-width: calc(100vw - 24px);
+
+  .metric-cell {
+    border-right: 1px solid var(--ad-line);
+    border-bottom: 0;
   }
-  .pagination-wrap {
-    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+
+  .metric-cell:last-child {
+    border-right: 0;
   }
-  .pagination-wrap :deep(.el-pagination) {
-    --el-pagination-button-width: 28px;
-    --el-pagination-button-height: 28px;
-    font-size: 16px;
+
+  .square-side {
+    border-top: 1px solid var(--ad-line);
+    border-left: 0;
   }
 }
-/* Cinematic minimal override */
-.square-page {
-  min-height: 100vh;
-  background: transparent;
-  color: var(--paper);
-}
 
-.square-page .page-container {
-  width: min(100%, 1440px);
-  padding: 104px 32px 126px;
-}
-
-.sq-hero {
-  position: relative;
-  overflow: hidden;
-  min-height: 320px;
-  margin-top: 0;
-  padding: 44px;
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
-  align-items: end;
-  gap: 34px;
-  border: 1px solid rgba(255, 253, 248, 0.16);
-  border-radius: 24px;
-  background:
-    linear-gradient(120deg, rgba(7, 17, 31, 0.92) 0%, rgba(7, 17, 31, 0.64) 48%, rgba(7, 17, 31, 0.86) 100%),
-    radial-gradient(circle at 18% 24%, rgba(55, 138, 221, 0.4), transparent 34%),
-    radial-gradient(circle at 86% 12%, rgba(239, 159, 39, 0.18), transparent 30%);
-  box-shadow: var(--shadow-cinematic);
-  backdrop-filter: blur(18px);
-}
-
-.sq-hero::before {
-  content: none;
-  position: absolute;
-  top: 28px;
-  right: 34px;
-  color: rgba(247, 243, 232, 0.12);
-  font-size: clamp(54px, 9vw, 132px);
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  line-height: 0.8;
-  pointer-events: none;
-}
-
-.sq-hero::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(112deg, transparent 18%, rgba(255, 253, 248, 0.08) 46%, transparent 70%);
-  opacity: 0.8;
-  animation: softGlow 10s var(--ease-in-out) infinite;
-  pointer-events: none;
-}
-
-.sq-hero-title {
-  position: relative;
-  z-index: 1;
-  margin: 0;
-  color: var(--paper);
-  font-size: clamp(56px, 8vw, 116px);
-  line-height: 0.86;
-  letter-spacing: -0.05em;
-}
-
-.sq-hero-title::before {
-  content: none;
-  display: block;
-  margin-bottom: 18px;
-  color: var(--gold2);
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-}
-
-.sq-hero-sub {
-  position: relative;
-  z-index: 1;
-  max-width: 520px;
-  margin-top: 20px;
-  color: rgba(247, 243, 232, 0.68);
-  font-size: 17px;
-  line-height: 1.7;
-}
-
-.sq-search-bar {
-  position: relative;
-  z-index: 1;
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: minmax(260px, 1fr) 190px 160px;
-  align-items: center;
-  gap: 10px;
-  margin-top: 28px;
-  padding: 10px;
-  border: 1px solid rgba(255, 253, 248, 0.12);
-  border-radius: 999px;
-  background: rgba(255, 253, 248, 0.08);
-  backdrop-filter: blur(16px);
-}
-
-.sq-search-el,
-.sq-category-el {
-  min-width: 0;
-}
-
-.sq-search-el :deep(.el-input__wrapper),
-.sq-category-el :deep(.el-input__wrapper) {
-  height: 44px;
-  background: rgba(255, 253, 248, 0.1) !important;
-  border: 1px solid rgba(255, 253, 248, 0.14) !important;
-  border-radius: 999px !important;
-  box-shadow: none !important;
-}
-
-.sq-search-el :deep(.el-input__inner),
-.sq-category-el :deep(.el-input__inner) {
-  color: var(--paper) !important;
-  font-size: 14px;
-}
-
-.sq-search-el :deep(.el-input__inner::placeholder),
-.sq-category-el :deep(.el-input__inner::placeholder) {
-  color: rgba(247, 243, 232, 0.52) !important;
-}
-
-.sq-sort {
-  width: 100%;
-  height: 44px;
-  padding: 0 18px;
-  border: 1px solid rgba(255, 253, 248, 0.14);
-  border-radius: 999px;
-  background: rgba(255, 253, 248, 0.1);
-  color: var(--paper);
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.sq-body {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
-  gap: 22px;
-  margin-top: 24px;
-}
-
-.sq-main {
-  min-width: 0;
-  padding: 22px;
-  border: 1px solid rgba(255, 253, 248, 0.12);
-  border-radius: 22px;
-  background: rgba(7, 17, 31, 0.48);
-  box-shadow: var(--shadow-cinematic-soft);
-  backdrop-filter: blur(18px);
-}
-
-.sq-sort-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 18px;
-  flex-wrap: wrap;
-}
-
-.sort-pill {
-  min-height: 34px;
-  padding: 7px 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 253, 248, 0.14);
-  background: rgba(255, 253, 248, 0.06);
-  color: rgba(247, 243, 232, 0.72);
-  font-size: 13px;
-  font-weight: 700;
-  transition: background .16s, color .16s, border-color .16s, transform .16s var(--ease-cinema);
-}
-
-.sort-pill:hover {
-  transform: translateY(-1px);
-  border-color: rgba(239, 159, 39, 0.4);
-}
-
-.sort-pill.act {
-  background: var(--paper);
-  color: var(--cinema);
-  border-color: var(--paper);
-}
-
-.square-results .card-grid {
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: 18px;
-}
-
-.sq-sidebar {
-  position: sticky;
-  top: 96px;
-  align-self: start;
-  padding: 20px;
-  border: 1px solid rgba(255, 253, 248, 0.12);
-  border-radius: 22px;
-  background: rgba(255, 253, 248, 0.1);
-  color: var(--paper);
-  box-shadow: var(--shadow-cinematic-soft);
-  backdrop-filter: blur(18px);
-}
-
-.ss-head {
-  margin-bottom: 12px;
-  color: var(--gold2);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-}
-
-.tag-cloud {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 22px;
-}
-
-.sq-tag,
-.sq-tag-empty {
-  min-height: 30px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 253, 248, 0.13);
-  background: rgba(7, 17, 31, 0.2);
-  color: rgba(247, 243, 232, 0.72);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.sq-tag {
-  cursor: pointer;
-  transition: background .16s, color .16s, border-color .16s;
-}
-
-.sq-tag:hover,
-.sq-tag.active {
-  background: rgba(239, 159, 39, 0.18);
-  border-color: rgba(239, 159, 39, 0.42);
-  color: var(--paper);
-}
-
-.sq-creators {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.sq-user-row {
-  width: 100%;
-  display: grid;
-  grid-template-columns: 32px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-  padding: 8px;
-  border: 1px solid transparent;
-  border-radius: 14px;
-  background: transparent;
-  color: var(--paper);
-  cursor: pointer;
-  transition: background .16s, border-color .16s;
-}
-
-.sq-user-row:hover {
-  background: rgba(255, 253, 248, 0.08);
-  border-color: rgba(255, 253, 248, 0.12);
-}
-
-.su-av {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.su-name {
-  min-width: 0;
-  overflow: hidden;
-  color: rgba(247, 243, 232, 0.86);
-  font-size: 13px;
-  font-weight: 800;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.su-cnt {
-  color: rgba(247, 243, 232, 0.48);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.pagination-wrap {
-  border-top: 1px solid rgba(255, 253, 248, 0.12);
-  background: rgba(7, 17, 31, 0.78);
-  backdrop-filter: blur(18px);
-}
-
-.pagination-wrap :deep(.el-pagination) {
-  color: var(--paper);
-}
-
-.pagination-wrap :deep(.el-pager li),
-.pagination-wrap :deep(.btn-prev),
-.pagination-wrap :deep(.btn-next) {
-  background: rgba(255, 253, 248, 0.08) !important;
-  border: 1px solid rgba(255, 253, 248, 0.12) !important;
-  color: rgba(247, 243, 232, 0.78) !important;
-}
-
-.pagination-wrap :deep(.el-pager li.is-active) {
-  background: var(--paper) !important;
-  color: var(--cinema) !important;
-  border-color: var(--paper) !important;
-}
-
-.image-drawer {
-  top: 92px;
-  right: 26px;
-  bottom: 26px;
-  width: 410px;
-  border: 1px solid rgba(255, 253, 248, 0.16);
-  border-radius: 22px;
-  background: rgba(7, 17, 31, 0.82);
-  color: var(--paper);
-  box-shadow: var(--shadow-cinematic);
-  backdrop-filter: blur(22px);
-}
-
-.drawer-close {
-  border-radius: 999px;
-  background: rgba(7, 17, 31, 0.64);
-}
-
-.drawer-img,
-.drawer-placeholder {
-  aspect-ratio: 4 / 5;
-  background: var(--cinema2);
-}
-
-.drawer-body {
-  padding: 24px;
-}
-
-.drawer-body h2 {
-  color: var(--paper);
-  font-size: 32px;
-  line-height: 1.05;
-  letter-spacing: -0.02em;
-}
-
-.drawer-meta span,
-.drawer-tags span {
-  min-height: 28px;
-  border-radius: 999px;
-  background: rgba(255, 253, 248, 0.08);
-  border: 1px solid rgba(255, 253, 248, 0.12);
-  color: rgba(247, 243, 232, 0.72);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.drawer-desc {
-  color: rgba(247, 243, 232, 0.68);
-  font-size: 15px;
-}
-
-.drawer-actions :deep(.el-button) {
-  height: 38px;
-}
-
-@media (max-width: 980px) {
-  .square-page .page-container {
-    padding: 92px 16px 148px;
+@media (max-width: 820px) {
+  .square-shell {
+    width: min(100% - 20px, 1600px);
+    padding-top: 88px;
   }
-  .sq-hero {
-    grid-template-columns: 1fr;
-    min-height: auto;
-    padding: 30px 22px;
+
+  .square-hero-copy {
+    padding: 28px 20px;
   }
-  .sq-search-bar {
-    grid-template-columns: 1fr;
-    border-radius: 20px;
+
+  .square-hero h1 {
+    font-size: 40px;
   }
-  .sq-body {
+
+  .square-command {
     grid-template-columns: 1fr;
   }
-  .sq-sidebar {
-    position: static;
-  }
-}
 
-@media (max-width: 560px) {
-  .sq-hero-title {
-    font-size: 54px;
+  .sort-segment {
+    grid-template-columns: repeat(3, 1fr);
   }
-  .square-results .card-grid {
+
+  .square-main {
+    padding: 14px;
+  }
+
+  .square-grid,
+  .square-loading {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+  }
+
+  .square-hero-metrics {
     grid-template-columns: 1fr;
   }
+
+  .metric-cell {
+    border-right: 0;
+    border-bottom: 1px solid var(--ad-line);
+  }
+
+  .metric-cell:last-child {
+    border-bottom: 0;
+  }
+
   .image-drawer {
     top: 78px;
-    right: 12px;
-    bottom: 12px;
-    width: calc(100vw - 24px);
+    right: 10px;
+    bottom: 10px;
+    max-width: calc(100vw - 20px);
   }
-}
 
-/* Anime paper override */
-.square-page {
-  color: var(--ink);
-}
-
-.sq-hero {
-  border-color: rgba(17, 26, 53, 0.1);
-  background: #f0eee6;
-  box-shadow: 0 24px 70px rgba(17, 26, 53, 0.12);
-}
-
-.sq-hero::before,
-.sq-hero-title::before {
-  content: none;
-}
-
-.sq-hero::after {
-  background:
-    radial-gradient(circle at 88% 18%, rgba(255,255,255,0.7), transparent 12%),
-    linear-gradient(112deg, transparent 18%, rgba(255, 122, 184, 0.12) 46%, transparent 70%);
-  animation: softGlow 7s var(--ease-in-out) infinite;
-}
-
-.sq-hero-title {
-  color: var(--ink);
-  text-shadow: 0 1px 0 rgba(255,255,255,0.58);
-}
-
-.sq-hero-sub {
-  color: rgba(4, 44, 83, 0.66);
-}
-
-.sq-search-bar {
-  border-color: rgba(17, 26, 53, 0.1);
-  background: #f0eee6;
-}
-
-.sq-search-el :deep(.el-input__wrapper),
-.sq-category-el :deep(.el-input__wrapper),
-.sq-sort {
-  background: #f0eee6 !important;
-  border-color: rgba(17, 26, 53, 0.1) !important;
-  color: var(--ink) !important;
-}
-
-.sq-search-el :deep(.el-input__inner),
-.sq-category-el :deep(.el-input__inner) {
-  color: var(--ink) !important;
-}
-
-.sq-search-el :deep(.el-input__inner::placeholder),
-.sq-category-el :deep(.el-input__inner::placeholder) {
-  color: rgba(4, 44, 83, 0.46) !important;
-}
-
-.sq-main,
-.sq-sidebar {
-  border-color: rgba(17, 26, 53, 0.1);
-  background: #f0eee6;
-  color: var(--ink);
-}
-
-.sort-pill,
-.sq-tag,
-.sq-tag-empty,
-.sq-user-row {
-  border-color: rgba(17, 26, 53, 0.1);
-  background: #f0eee6;
-  color: rgba(4, 44, 83, 0.76);
-}
-
-.sort-pill:hover,
-.sq-tag:hover,
-.sq-tag.active,
-.sq-user-row:hover {
-  background: rgba(255, 122, 184, 0.14);
-  border-color: rgba(255, 122, 184, 0.32);
-  color: var(--ink);
-}
-
-.sort-pill.act {
-  background: var(--cinema);
-  color: var(--paper);
-  border-color: var(--cinema);
-}
-
-.ss-head {
-  color: var(--anime-pink);
-}
-
-.su-name {
-  color: var(--ink);
-}
-
-.su-cnt {
-  color: rgba(4, 44, 83, 0.48);
-}
-
-.pagination-wrap {
-  border-top-color: rgba(17, 26, 53, 0.12);
-  background: #f0eee6;
-}
-
-.pagination-wrap :deep(.el-pagination) {
-  color: var(--ink);
-}
-
-.pagination-wrap :deep(.el-pager li),
-.pagination-wrap :deep(.btn-prev),
-.pagination-wrap :deep(.btn-next) {
-  background: #f0eee6 !important;
-  border-color: rgba(17, 26, 53, 0.12) !important;
-  color: var(--ink) !important;
-}
-
-.pagination-wrap :deep(.el-pager li.is-active) {
-  background: var(--cinema) !important;
-  color: var(--paper) !important;
-  border-color: var(--cinema) !important;
-}
-
-.image-drawer {
-  border-color: rgba(17, 26, 53, 0.12);
-  background: #f0eee6;
-  color: var(--ink);
-}
-
-.drawer-body h2 {
-  color: var(--ink);
-}
-
-.drawer-meta span,
-.drawer-tags span {
-  background: rgba(88, 184, 255, 0.14);
-  border-color: rgba(88, 184, 255, 0.2);
-  color: var(--ink);
-}
-
-.drawer-desc {
-  color: rgba(4, 44, 83, 0.68);
+  .pagination-wrap {
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+  }
 }
 </style>

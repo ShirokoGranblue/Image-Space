@@ -19,6 +19,15 @@ public class Image {
     private String imageName;
     private String imagePath;
     private String storageKey;
+    private String originalKey;
+    private String originalFilename;
+    private String originalContentType;
+    private String originalExt;
+    private Long originalSize;
+    private Integer width;
+    private Integer height;
+    private String mediumKey;
+    private String thumbKey;
     private Long fileSize;
     private String imageType;
     private String description;

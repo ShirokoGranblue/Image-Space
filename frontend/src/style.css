@@ -3,7 +3,7 @@
    ══════════════════════════════════════════════ */
 
 @font-face {
-  font-family: 'Claude Serif';
+  font-family: 'Anthropic Serif';
   src: url('./assets/fonts/c66fc489e-C-BHYa_K.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
@@ -78,9 +78,9 @@
   --danger-dim: #b83f3f;
   --success: #1D9E75;
 
-  /* Typography — Claude Serif for English, 微软雅黑/宋体 for Chinese */
-  --font-display: 'Claude Serif', 'Microsoft YaHei', '微软雅黑', 'SimSun', '宋体', serif;
-  --font-body: 'Claude Serif', 'Microsoft YaHei', '微软雅黑', 'SimSun', '宋体', serif;
+  /* Typography — Anthropic Serif for English and Chinese fallback fonts */
+  --font-display: 'Anthropic Serif', 'Microsoft YaHei', '微软雅黑', 'SimSun', '宋体', serif;
+  --font-body: 'Anthropic Serif', 'Microsoft YaHei', '微软雅黑', 'SimSun', '宋体', serif;
 
   /* Spacing */
   --space-xs: 4px;  --space-sm: 8px;  --space-md: 16px;
@@ -508,3 +508,168 @@ a:hover { opacity: 0.72; }
 }
 .sr-only { position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border-width:0; }
 @media (max-width:520px) { :root { --notification-drawer-width: min(100vw,420px); } }
+
+/* Aperture Desk zero-based redesign */
+@font-face {
+  font-family: 'Anthropic Serif';
+  src: url('./assets/fonts/c66fc489e-C-BHYa_K.woff2') format('woff2');
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --ad-bg: #0d1016;
+  --ad-bg-2: #111722;
+  --ad-surface: #151922;
+  --ad-surface-2: #202633;
+  --ad-surface-3: #2a3140;
+  --ad-text: #f4f1e8;
+  --ad-text-soft: rgba(244, 241, 232, 0.72);
+  --ad-muted: #9ca3af;
+  --ad-line: rgba(244, 241, 232, 0.12);
+  --ad-line-strong: rgba(244, 241, 232, 0.22);
+  --ad-green: #b7ff3c;
+  --ad-green-2: #d7ff83;
+  --ad-cyan: #38d5ff;
+  --ad-amber: #f5b84b;
+  --ad-coral: #ff6b57;
+  --ad-violet: #9b8cff;
+  --ad-radius-xs: 6px;
+  --ad-radius-sm: 8px;
+  --ad-radius-md: 12px;
+  --ad-radius-lg: 18px;
+  --ad-shadow: 0 32px 90px rgba(0, 0, 0, 0.36), 0 12px 32px rgba(0, 0, 0, 0.28);
+  --ad-shadow-soft: 0 18px 46px rgba(0, 0, 0, 0.22);
+  --ad-font: 'Anthropic Serif', 'Times New Roman', 'Microsoft YaHei', serif;
+  --ad-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  --font-display: var(--ad-font);
+  --font-body: var(--ad-font);
+  --bg-base: var(--ad-bg);
+  --bg-surface: var(--ad-surface);
+  --bg-elevated: var(--ad-surface-2);
+  --bg-hover: var(--ad-surface-2);
+  --bg-inverse: var(--ad-text);
+  --border-subtle: var(--ad-line);
+  --border-visible: var(--ad-line-strong);
+  --border-strong: var(--ad-green);
+  --text-primary: var(--ad-text);
+  --text-secondary: var(--ad-text-soft);
+  --text-muted: var(--ad-muted);
+  --text-inverse: var(--ad-bg);
+  --accent: var(--ad-green);
+  --accent-hover: var(--ad-green-2);
+  --accent-dim: #86bd28;
+  --accent-warm: var(--ad-amber);
+  --danger: var(--ad-coral);
+  --success: var(--ad-green);
+}
+
+html,
+body {
+  background: var(--ad-bg);
+}
+
+body {
+  font-family: var(--ad-font);
+  font-weight: 420;
+  color: var(--ad-text);
+}
+
+body::before {
+  background:
+    linear-gradient(180deg, rgba(56, 213, 255, 0.08), transparent 34rem),
+    linear-gradient(118deg, transparent 0%, rgba(183, 255, 60, 0.1) 38%, transparent 39%),
+    linear-gradient(62deg, transparent 0%, rgba(255, 107, 87, 0.08) 64%, transparent 65%);
+  animation: none;
+}
+
+body::after {
+  opacity: 1;
+  background-image:
+    linear-gradient(90deg, rgba(244, 241, 232, 0.035) 1px, transparent 1px),
+    linear-gradient(rgba(244, 241, 232, 0.035) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: none;
+}
+
+.cursor-dot,
+.cursor-ring,
+.back-to-top {
+  display: none;
+}
+
+.page-container {
+  width: min(100%, 1600px);
+  padding: 96px 24px 48px;
+}
+
+.el-button--primary {
+  --el-button-bg-color: var(--ad-green);
+  --el-button-border-color: var(--ad-green);
+  --el-button-hover-bg-color: var(--ad-green-2);
+  --el-button-hover-border-color: var(--ad-green-2);
+  --el-button-text-color: #071014;
+  --el-button-active-bg-color: #94d930;
+  border-radius: 10px;
+  box-shadow: none;
+  font-family: var(--ad-font);
+  font-weight: 820;
+}
+
+.el-button--default {
+  --el-button-bg-color: rgba(244, 241, 232, 0.06);
+  --el-button-border-color: var(--ad-line);
+  --el-button-hover-bg-color: var(--ad-surface-2);
+  --el-button-hover-border-color: var(--ad-line-strong);
+  --el-button-text-color: var(--ad-text);
+  border-radius: 10px;
+  box-shadow: none;
+  font-family: var(--ad-font);
+  font-weight: 720;
+}
+
+.el-input__wrapper,
+.el-select .el-input__wrapper {
+  background: rgba(21, 25, 34, 0.84) !important;
+  border: 1px solid var(--ad-line) !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+}
+
+.el-input__wrapper:hover,
+.el-select .el-input__wrapper:hover {
+  border-color: var(--ad-line-strong) !important;
+  box-shadow: none !important;
+}
+
+.el-input__wrapper.is-focus {
+  border-color: rgba(183, 255, 60, 0.48) !important;
+  box-shadow: 0 0 0 3px rgba(183, 255, 60, 0.1) !important;
+}
+
+.el-input__inner,
+.el-select .el-input__inner {
+  color: var(--ad-text) !important;
+  font-family: var(--ad-font);
+  font-weight: 520;
+}
+
+.el-input__inner::placeholder {
+  color: rgba(156, 163, 175, 0.76) !important;
+}
+
+.el-dialog {
+  --el-dialog-bg-color: rgba(21, 25, 34, 0.98);
+  --el-dialog-border-radius: 16px;
+  border: 1px solid var(--ad-line);
+  color: var(--ad-text);
+  box-shadow: var(--ad-shadow);
+}
+
+.el-dialog__title,
+.el-form-item__label {
+  color: var(--ad-text) !important;
+  font-family: var(--ad-font);
+}

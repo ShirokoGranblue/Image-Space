@@ -44,6 +44,24 @@ class InternalMediaServiceTest {
     }
 
     @Test
+    void getMeta_shouldResolveMediumAndThumbKeysToTheOwningImage() {
+        Image image = image("PUBLIC", 6L);
+        image.setStorageKey("images/img-uuid/original.png");
+        image.setOriginalKey("images/img-uuid/original.png");
+        image.setMediumKey("images/img-uuid/medium.jpg");
+        image.setThumbKey("images/img-uuid/thumb.jpg");
+        when(imageMapper.selectOne(any())).thenReturn(image);
+        InternalMediaService service = new InternalMediaService(imageMapper, imageUrlService, permissionService, roleService);
+
+        MediaMetaVO meta = service.getMeta("images/img-uuid/thumb.jpg");
+
+        assertEquals(7L, meta.getImageId());
+        assertEquals("images/img-uuid/thumb.jpg", meta.getStorageKey());
+        assertEquals("public", meta.getVisibility());
+        assertEquals(6L, meta.getVersion());
+    }
+
+    @Test
     void authorize_shouldAcceptValidShortToken() {
         Image image = image("PRIVATE", 1L);
         when(imageMapper.selectOne(any())).thenReturn(image);

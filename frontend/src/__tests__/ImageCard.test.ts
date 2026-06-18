@@ -40,6 +40,19 @@ describe('ImageCard', () => {
       expect(wrapper.find('img.card-img').exists()).toBe(true)
     })
 
+    it('renders the thumbnail URL before medium or original URLs', () => {
+      const wrapper = mountCard({
+        image: {
+          ...mockImage,
+          thumbUrl: 'https://cdn.image-space.app/public/images/a/thumb.jpg?v=2',
+          mediumUrl: 'https://cdn.image-space.app/public/images/a/medium.jpg?v=2',
+          imageUrl: 'https://cdn.image-space.app/public/images/a/original.png?v=2',
+        },
+      })
+
+      expect(wrapper.find('img.card-img').attributes('src')).toBe('https://cdn.image-space.app/public/images/a/thumb.jpg?v=2')
+    })
+
     it('shows fallback element after image error event', async () => {
       const wrapper = mountCard()
 

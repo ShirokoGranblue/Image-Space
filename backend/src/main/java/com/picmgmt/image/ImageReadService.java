@@ -20,7 +20,10 @@ import org.springframework.stereotype.Service;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -48,6 +51,7 @@ public class ImageReadService {
             throw new BusinessException(ErrorCode.IMAGE_PERMISSION_DENIED);
         }
         ImageVO vo = imageRepository.toVO(image);
+        decorateUrls(vo);
         decorateViewerInfo(vo);
         return vo;
     }
@@ -59,6 +63,7 @@ public class ImageReadService {
             throw new BusinessException(ErrorCode.IMAGE_PERMISSION_DENIED);
         }
         ImageVO vo = imageRepository.toVO(image);
+        decorateUrls(vo);
         decorateViewerInfo(vo);
         return vo;
     }
@@ -135,6 +140,84 @@ public class ImageReadService {
         return bytes;
     }
 
+    public ImageDownloadFile downloadByUuid(String uuid, String format) {
+        Image image = imageRepository.findByUuid(uuid)
+                .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
+        if (!permissionService.canView(image)) {
+            throw new BusinessException(ErrorCode.IMAGE_PERMISSION_DENIED);
+        }
+        String normalizedFormat = normalizeFormat(format);
+        if (normalizedFormat == null) {
+            byte[] bytes = downloadFromStorageOrBase64(image);
+            if (bytes == null) {
+                throw new BusinessException(ErrorCode.IMAGE_NOT_FOUND, "原始图片文件不存在");
+            }
+            return new ImageDownloadFile(
+                    bytes,
+                    originalContentType(image),
+                    downloadFilename(image, originalExt(image)),
+                    cacheControlForDownload(image)
+            );
+        }
+
+        if ("gif".equals(normalizedFormat)) {
+            byte[] originalBytes = downloadFromStorageOrBase64(image);
+            if (originalBytes == null) {
+                throw new BusinessException(ErrorCode.IMAGE_NOT_FOUND, "原始图片文件不存在");
+            }
+            boolean gif = ImageConvertUtil.isGif(image.getOriginalContentType(), originalExt(image), originalBytes);
+            if (!gif) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "不支持将静态图片转换为 GIF");
+            }
+            return new ImageDownloadFile(
+                    originalBytes,
+                    "image/gif",
+                    downloadFilename(image, "gif"),
+                    cacheControlForDownload(image)
+            );
+        }
+
+        if (sameOriginalFormat(image, normalizedFormat)) {
+            byte[] originalBytes = downloadFromStorageOrBase64(image);
+            if (originalBytes == null) {
+                throw new BusinessException(ErrorCode.IMAGE_NOT_FOUND, "原始图片文件不存在");
+            }
+            return new ImageDownloadFile(
+                    originalBytes,
+                    ImageConvertUtil.contentTypeForExt(normalizedFormat),
+                    downloadFilename(image, normalizedFormat),
+                    cacheControlForDownload(image)
+            );
+        }
+
+        String downloadKey = downloadCacheKey(image, normalizedFormat);
+        String contentType = ImageConvertUtil.contentTypeForExt(normalizedFormat);
+        if (downloadKey != null && storageService.objectExists("images", downloadKey)) {
+            return new ImageDownloadFile(
+                    storageService.download("images", downloadKey),
+                    contentType,
+                    downloadFilename(image, normalizedFormat),
+                    cacheControlForDownload(image)
+            );
+        }
+
+        byte[] originalBytes = downloadFromStorageOrBase64(image);
+        if (originalBytes == null) {
+            throw new BusinessException(ErrorCode.IMAGE_NOT_FOUND, "原始图片文件不存在");
+        }
+        boolean gif = ImageConvertUtil.isGif(image.getOriginalContentType(), originalExt(image), originalBytes);
+        byte[] converted = convertOriginal(originalBytes, image, normalizedFormat, gif);
+        if (downloadKey != null) {
+            storageService.upload("images", downloadKey, converted, contentType, ImageUrlService.PRIVATE_CACHE_CONTROL);
+        }
+        return new ImageDownloadFile(
+                converted,
+                contentType,
+                downloadFilename(image, normalizedFormat),
+                cacheControlForDownload(image)
+        );
+    }
+
     public byte[] downloadByUuid(String uuid) {
         Image image = imageRepository.findByUuid(uuid)
                 .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
@@ -149,9 +232,9 @@ public class ImageReadService {
     }
 
     private byte[] downloadFromStorageOrBase64(Image image) {
-        if (image.getStorageKey() != null && !image.getStorageKey().isBlank()) {
+        for (String key : originalDownloadKeys(image)) {
             try {
-                return storageService.download("images", image.getStorageKey());
+                return storageService.download("images", key);
             } catch (Exception e) {
                 // fall through to Base64 fallback if storage download fails
             }
@@ -198,24 +281,48 @@ public class ImageReadService {
     }
 
     private String imageUrlForStorageImage(ImageVO vo) {
-        if ("PUBLIC".equals(vo.getVisibility())) {
-            String publicUrl = imageUrlService.getPublicImageUrl(vo.getStorageKey(), vo.getMediaVersion());
-            vo.setPublicUrl(publicUrl);
-            return publicUrl;
-        }
-        String privateUrl = imageUrlService.getPrivateImageUrl(vo.getStorageKey());
-        vo.setPrivateUrl(privateUrl);
-        return privateUrl;
+        return accessUrlForKey(vo, vo.getStorageKey());
     }
 
     private void decorateUrls(List<ImageVO> records) {
         for (ImageVO vo : records) {
-            if (vo.getStorageKey() != null && !vo.getStorageKey().isBlank()) {
-                vo.setImageUrl(imageUrlForStorageImage(vo));
-            } else if (vo.getImagePath() != null && vo.getImagePath().startsWith("data:image/")) {
-                vo.setImageUrl("/api/image/download/" + vo.getUuid());
-            }
+            decorateUrls(vo);
         }
+    }
+
+    private void decorateUrls(ImageVO vo) {
+        String originalKey = firstNonBlank(vo.getOriginalKey(), vo.getStorageKey());
+        if (originalKey != null && !originalKey.isBlank()) {
+            String originalUrl = accessUrlForKey(vo, originalKey);
+            vo.setOriginalUrl(originalUrl);
+            vo.setImageUrl(originalUrl);
+            if ("PUBLIC".equals(vo.getVisibility())) {
+                vo.setPublicUrl(originalUrl);
+            } else {
+                vo.setPrivateUrl(originalUrl);
+            }
+        } else if (vo.getImagePath() != null && vo.getImagePath().startsWith("data:image/")) {
+            String downloadUrl = "/api/image/download/" + vo.getUuid();
+            vo.setImageUrl(downloadUrl);
+            vo.setOriginalUrl(downloadUrl);
+        }
+
+        if (vo.getMediumKey() != null && !vo.getMediumKey().isBlank()) {
+            vo.setMediumUrl(accessUrlForKey(vo, vo.getMediumKey()));
+        }
+        if (vo.getThumbKey() != null && !vo.getThumbKey().isBlank()) {
+            vo.setThumbUrl(accessUrlForKey(vo, vo.getThumbKey()));
+        }
+    }
+
+    private String accessUrlForKey(ImageVO vo, String storageKey) {
+        if (storageKey == null || storageKey.isBlank()) {
+            return null;
+        }
+        if ("PUBLIC".equals(vo.getVisibility())) {
+            return imageUrlService.getPublicImageUrl(storageKey, vo.getMediaVersion());
+        }
+        return imageUrlService.getPrivateImageUrl(storageKey);
     }
 
     private void decorateViewerInfoBatch(List<ImageVO> records) {
@@ -276,6 +383,119 @@ public class ImageReadService {
             vo.setLikedByMe(liked != null && liked > 0);
         } else {
             vo.setLikedByMe(false);
+        }
+    }
+
+    private List<String> originalDownloadKeys(Image image) {
+        LinkedHashSet<String> keys = new LinkedHashSet<>();
+        addKey(keys, image.getOriginalKey());
+        addKey(keys, image.getStorageKey());
+        return new ArrayList<>(keys);
+    }
+
+    private String normalizeFormat(String format) {
+        if (format == null || format.isBlank()) {
+            return null;
+        }
+        String normalized = format.trim().toLowerCase(Locale.ROOT);
+        if ("jpeg".equals(normalized)) {
+            normalized = "jpg";
+        }
+        if (!Set.of("jpg", "png", "gif").contains(normalized)) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "不支持的下载格式");
+        }
+        return normalized;
+    }
+
+    private byte[] convertOriginal(byte[] originalBytes, Image image, String targetFormat, boolean gif) {
+        if ("jpg".equals(targetFormat)) {
+            return gif
+                    ? ImageConvertUtil.extractGifFirstFrameToJpg(originalBytes)
+                    : ImageConvertUtil.convertToJpg(originalBytes);
+        }
+        if ("png".equals(targetFormat)) {
+            return gif
+                    ? ImageConvertUtil.extractGifFirstFrameToPng(originalBytes)
+                    : ImageConvertUtil.convertToPng(originalBytes);
+        }
+        throw new BusinessException(ErrorCode.BAD_REQUEST, "不支持的下载格式");
+    }
+
+    private boolean sameOriginalFormat(Image image, String targetFormat) {
+        String ext = originalExt(image);
+        if ("jpeg".equals(ext)) {
+            ext = "jpg";
+        }
+        return targetFormat.equals(ext) && ("jpg".equals(targetFormat) || "png".equals(targetFormat));
+    }
+
+    private String originalContentType(Image image) {
+        if (image.getOriginalContentType() != null && !image.getOriginalContentType().isBlank()) {
+            return image.getOriginalContentType();
+        }
+        return ImageConvertUtil.contentTypeForExt(originalExt(image));
+    }
+
+    private String originalExt(Image image) {
+        if (image.getOriginalExt() != null && !image.getOriginalExt().isBlank()) {
+            return normalizeExt(image.getOriginalExt());
+        }
+        if (image.getImageType() != null && !image.getImageType().isBlank()) {
+            return normalizeExt(image.getImageType());
+        }
+        String filename = firstNonBlank(image.getOriginalFilename(), image.getImageName());
+        int dot = filename == null ? -1 : filename.lastIndexOf('.');
+        return dot >= 0 && dot < filename.length() - 1 ? normalizeExt(filename.substring(dot + 1)) : "bin";
+    }
+
+    private String downloadFilename(Image image, String ext) {
+        String source = firstNonBlank(image.getOriginalFilename(), image.getImageName());
+        String base = source == null || source.isBlank() ? "image-" + image.getUuid() : source;
+        base = base.replace('\\', '/');
+        int slash = base.lastIndexOf('/');
+        if (slash >= 0) {
+            base = base.substring(slash + 1);
+        }
+        int dot = base.lastIndexOf('.');
+        if (dot > 0) {
+            base = base.substring(0, dot);
+        }
+        base = base.replaceAll("[\\\\/:*?\"<>|\\r\\n]+", "_").trim();
+        if (base.isBlank()) {
+            base = "image-" + image.getUuid();
+        }
+        return base + "." + normalizeExt(ext);
+    }
+
+    private String downloadCacheKey(Image image, String targetFormat) {
+        String key = firstNonBlank(image.getOriginalKey(), image.getStorageKey());
+        if (key != null && key.contains("/original.")) {
+            return key.substring(0, key.lastIndexOf("/original.")) + "/download/original." + targetFormat;
+        }
+        if (image.getUuid() != null && !image.getUuid().isBlank()) {
+            return "images/" + image.getUuid() + "/download/original." + targetFormat;
+        }
+        return null;
+    }
+
+    private String cacheControlForDownload(Image image) {
+        return "PUBLIC".equals(image.getVisibility())
+                ? "public, max-age=604800"
+                : ImageUrlService.PRIVATE_CACHE_CONTROL;
+    }
+
+    private String normalizeExt(String ext) {
+        String value = ext == null ? "" : ext.trim().toLowerCase(Locale.ROOT);
+        return "jpeg".equals(value) ? "jpg" : value;
+    }
+
+    private String firstNonBlank(String first, String second) {
+        return first != null && !first.isBlank() ? first : second;
+    }
+
+    private void addKey(Set<String> keys, String key) {
+        if (key != null && !key.isBlank()) {
+            keys.add(key);
         }
     }
 }

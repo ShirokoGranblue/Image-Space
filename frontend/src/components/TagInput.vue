@@ -20,7 +20,7 @@
       />
       <template v-else>
         <span class="tag-text">{{ tag }}</span>
-        <button class="tag-remove" type="button" :aria-label="`remove tag ${tag}`" @click.stop="removeTag(index)">x</button>
+        <button class="tag-remove" type="button" :aria-label="`删除标签 ${tag}`" @click.stop="removeTag(index)">x</button>
       </template>
     </span>
     <input
@@ -44,7 +44,7 @@ import { nextTick, ref, watch } from 'vue'
 
 const props = defineProps({
   modelValue: { type: String, default: '' },
-  placeholder: { type: String, default: 'Use # to separate tags' },
+  placeholder: { type: String, default: '多个标签用 # 分隔' },
 })
 
 const emit = defineEmits(['update:modelValue'])

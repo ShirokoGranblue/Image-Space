@@ -16,8 +16,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.awt.image.BufferedImage;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -77,38 +81,77 @@ public class ImageWriteService {
             throw new BusinessException(ErrorCode.IMAGE_FORMAT_INVALID);
         }
 
-        String objectKey = "images/" + UUID.randomUUID() + "." + ext;
-        String mimeType = switch (ext) {
-            case "jpg", "jpeg" -> "image/jpeg";
-            case "png" -> "image/png";
-            case "webp" -> "image/webp";
-            case "gif" -> "image/gif";
-            default -> "application/octet-stream";
-        };
+        String mimeType = ImageConvertUtil.contentTypeForExt(ext);
 
         String resolvedVisibility = resolveVisibility(visibility);
         String normalizedVisibleUsernames = normalizeVisibleUsernames(visibleUsernames);
         validateSpecifiedUsers(resolvedVisibility, normalizedVisibleUsernames);
         String cacheControl = ImageUrlService.cacheControlForVisibility(resolvedVisibility);
-        storageService.upload("images", objectKey, bytes, mimeType, cacheControl);
 
-        Image image = new Image();
-        image.setUuid(java.util.UUID.randomUUID().toString());
-        image.setUserId(userId);
-        image.setCategoryId(categoryId);
-        image.setImageName(buildStoredImageName(originalFilename, imageName, ext));
-        image.setStorageKey(objectKey);
-        image.setFileSize(file.getSize());
-        image.setImageType(ext.toUpperCase());
-        image.setDescription(description);
-        image.setTags(tags);
-        image.setVisibility(resolvedVisibility);
-        image.setMediaVersion(1L);
-        image.setVisibleUsernames("SPECIFIED".equals(resolvedVisibility) ? normalizedVisibleUsernames : null);
-        image.setUploadTime(LocalDateTime.now());
-        imageRepository.insert(image);
+        String imageUuid = UUID.randomUUID().toString();
+        String objectPrefix = "images/" + imageUuid;
+        String originalKey = objectPrefix + "/original." + ext;
+        ImageVariant medium = null;
+        ImageVariant thumb = null;
+        Integer originalWidth = null;
+        Integer originalHeight = null;
+        if (!ImageConvertUtil.isWebp(mimeType, ext, bytes)) {
+            BufferedImage originalImage = ImageConvertUtil.readSupportedImage(bytes, mimeType, ext);
+            originalWidth = originalImage.getWidth();
+            originalHeight = originalImage.getHeight();
+            medium = ImageConvertUtil.createDisplayVariant(bytes, mimeType, ext, 1200);
+            thumb = ImageConvertUtil.createDisplayVariant(bytes, mimeType, ext, 400);
+        }
 
-        return imageRepository.toVO(image);
+        List<String> uploadedKeys = new ArrayList<>();
+        try {
+            storageService.upload("images", originalKey, bytes, mimeType, cacheControl);
+            uploadedKeys.add(originalKey);
+
+            String mediumKey = null;
+            if (medium != null) {
+                mediumKey = objectPrefix + "/medium." + medium.ext();
+                storageService.upload("images", mediumKey, medium.bytes(), medium.contentType(), cacheControl);
+                uploadedKeys.add(mediumKey);
+            }
+
+            String thumbKey = null;
+            if (thumb != null) {
+                thumbKey = objectPrefix + "/thumb." + thumb.ext();
+                storageService.upload("images", thumbKey, thumb.bytes(), thumb.contentType(), cacheControl);
+                uploadedKeys.add(thumbKey);
+            }
+
+            Image image = new Image();
+            image.setUuid(imageUuid);
+            image.setUserId(userId);
+            image.setCategoryId(categoryId);
+            image.setImageName(buildStoredImageName(originalFilename, imageName, ext));
+            image.setStorageKey(originalKey);
+            image.setOriginalKey(originalKey);
+            image.setOriginalFilename(originalFilename);
+            image.setOriginalContentType(mimeType);
+            image.setOriginalExt(normalizeExt(ext));
+            image.setOriginalSize(file.getSize());
+            image.setWidth(originalWidth);
+            image.setHeight(originalHeight);
+            image.setMediumKey(mediumKey);
+            image.setThumbKey(thumbKey);
+            image.setFileSize(file.getSize());
+            image.setImageType(ext.toUpperCase());
+            image.setDescription(description);
+            image.setTags(tags);
+            image.setVisibility(resolvedVisibility);
+            image.setMediaVersion(1L);
+            image.setVisibleUsernames("SPECIFIED".equals(resolvedVisibility) ? normalizedVisibleUsernames : null);
+            image.setUploadTime(LocalDateTime.now());
+            imageRepository.insert(image);
+
+            return imageRepository.toVO(image);
+        } catch (RuntimeException e) {
+            cleanupUploadedObjects(uploadedKeys);
+            throw e;
+        }
     }
 
     @Transactional
@@ -118,9 +161,7 @@ public class ImageWriteService {
 
         permissionService.validateOwnershipOrAdmin(image);
 
-        if (image.getStorageKey() != null) {
-            storageService.delete("images", image.getStorageKey());
-        }
+        deleteImageObjects(image);
         imageRepository.deleteById(imageId);
         evictMediaState(image);
         purgePublicUrlIfNeeded(image);
@@ -131,9 +172,7 @@ public class ImageWriteService {
         Image image = imageRepository.findByUuid(uuid)
                 .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
         permissionService.validateOwnershipOrAdmin(image);
-        if (image.getStorageKey() != null) {
-            storageService.delete("images", image.getStorageKey());
-        }
+        deleteImageObjects(image);
         imageRepository.deleteById(image.getId());
         evictMediaState(image);
         purgePublicUrlIfNeeded(image);
@@ -166,9 +205,12 @@ public class ImageWriteService {
 
         String oldVisibility = image.getVisibility();
         Long oldMediaVersion = normalizeMediaVersion(image.getMediaVersion());
-        String oldPublicUrl = "PUBLIC".equals(oldVisibility)
-                ? imageUrlService.getPublicImageUrl(image.getStorageKey(), oldMediaVersion)
-                : null;
+        List<String> oldPublicUrls = "PUBLIC".equals(oldVisibility)
+                ? mediaKeys(image).stream()
+                .map(key -> imageUrlService.getPublicImageUrl(key, oldMediaVersion))
+                .filter(url -> url != null && !url.isBlank())
+                .toList()
+                : List.of();
         boolean visibilityChanged = false;
         boolean publicnessChanged = false;
         String newVisibility = image.getVisibility();
@@ -205,17 +247,21 @@ public class ImageWriteService {
 
         imageRepository.updateById(image);
         if (visibilityChanged || visibleUsersChanged) {
-            imageUrlService.evictPrivateAccess(image.getStorageKey());
+            for (String key : mediaKeys(image)) {
+                imageUrlService.evictPrivateAccess(key);
+            }
         }
         if (visibilityChanged) {
-            mediaMetaCacheService.evict(image.getStorageKey());
+            evictMediaMeta(image);
         }
-        if (publicnessChanged && image.getStorageKey() != null && !image.getStorageKey().isBlank()) {
+        if (publicnessChanged) {
             boolean isPublic = "PUBLIC".equals(image.getVisibility());
-            storageService.updateObjectMetadata("images", image.getStorageKey(),
-                    ImageUrlService.cacheControlForVisibility(image.getVisibility()), isPublic);
-            if (!isPublic && oldPublicUrl != null) {
-                cloudflareCachePurgeService.purgeFile(oldPublicUrl);
+            for (String key : mediaKeys(image)) {
+                storageService.updateObjectMetadata("images", key,
+                        ImageUrlService.cacheControlForVisibility(image.getVisibility()), isPublic);
+            }
+            if (!isPublic) {
+                oldPublicUrls.forEach(cloudflareCachePurgeService::purgeFile);
             }
         }
         return imageRepository.toVO(image);
@@ -279,24 +325,91 @@ public class ImageWriteService {
     }
 
     private void evictMediaState(Image image) {
-        if (image == null || image.getStorageKey() == null || image.getStorageKey().isBlank()) {
-            return;
+        if (image == null) return;
+        for (String key : mediaKeys(image)) {
+            imageUrlService.evictPrivateAccess(key);
+            mediaMetaCacheService.evict(key);
         }
-        imageUrlService.evictPrivateAccess(image.getStorageKey());
-        mediaMetaCacheService.evict(image.getStorageKey());
     }
 
     private void purgePublicUrlIfNeeded(Image image) {
-        if (image == null || image.getStorageKey() == null || image.getStorageKey().isBlank()
-                || !"PUBLIC".equals(image.getVisibility())) {
+        if (image == null || !"PUBLIC".equals(image.getVisibility())) {
             return;
         }
-        cloudflareCachePurgeService.purgeFile(
-                imageUrlService.getPublicImageUrl(image.getStorageKey(), normalizeMediaVersion(image.getMediaVersion()))
-        );
+        mediaKeys(image).stream()
+                .map(key -> imageUrlService.getPublicImageUrl(key, normalizeMediaVersion(image.getMediaVersion())))
+                .filter(url -> url != null && !url.isBlank())
+                .forEach(cloudflareCachePurgeService::purgeFile);
     }
 
     private Long normalizeMediaVersion(Long mediaVersion) {
         return mediaVersion == null || mediaVersion < 1 ? 1L : mediaVersion;
+    }
+
+    private void cleanupUploadedObjects(List<String> uploadedKeys) {
+        for (String key : uploadedKeys) {
+            storageService.deleteObjectIfExists("images", key);
+        }
+    }
+
+    private void deleteImageObjects(Image image) {
+        for (String key : mediaKeys(image)) {
+            storageService.deleteObjectIfExists("images", key);
+        }
+        for (String key : downloadCacheKeys(image)) {
+            storageService.deleteObjectIfExists("images", key);
+        }
+    }
+
+    private void evictMediaMeta(Image image) {
+        for (String key : mediaKeys(image)) {
+            mediaMetaCacheService.evict(key);
+        }
+    }
+
+    private List<String> mediaKeys(Image image) {
+        LinkedHashSet<String> keys = new LinkedHashSet<>();
+        addKey(keys, image.getStorageKey());
+        addKey(keys, image.getOriginalKey());
+        addKey(keys, image.getMediumKey());
+        addKey(keys, image.getThumbKey());
+        return new ArrayList<>(keys);
+    }
+
+    private List<String> downloadCacheKeys(Image image) {
+        String root = downloadCacheRoot(image);
+        if (root == null || root.isBlank()) {
+            return List.of();
+        }
+        return List.of(
+                root + "/original.jpg",
+                root + "/original.png",
+                root + "/original.gif"
+        );
+    }
+
+    private String downloadCacheRoot(Image image) {
+        String key = firstNonBlank(image.getOriginalKey(), image.getStorageKey());
+        if (key != null && key.contains("/original.")) {
+            return key.substring(0, key.lastIndexOf("/original.")) + "/download";
+        }
+        if (image.getUuid() != null && !image.getUuid().isBlank()) {
+            return "images/" + image.getUuid() + "/download";
+        }
+        return null;
+    }
+
+    private void addKey(Set<String> keys, String key) {
+        if (key != null && !key.isBlank()) {
+            keys.add(key);
+        }
+    }
+
+    private String firstNonBlank(String first, String second) {
+        return first != null && !first.isBlank() ? first : second;
+    }
+
+    private String normalizeExt(String ext) {
+        return "jpeg".equalsIgnoreCase(ext) ? "jpg" : ext.toLowerCase();
     }
 }

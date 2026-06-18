@@ -16,6 +16,11 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.Color;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -24,6 +29,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -77,7 +83,7 @@ class ImageWriteServiceTest {
                 "file",
                 "original.jpg",
                 "image/jpeg",
-                new byte[] {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, 0x00}
+                jpegBytes()
         );
 
         ImageVO result = service.upload(
@@ -105,7 +111,7 @@ class ImageWriteServiceTest {
                 "file",
                 "loop.gif",
                 "image/gif",
-                new byte[] {'G', 'I', 'F', '8', '9', 'a', 0x01, 0x00}
+                gifBytes()
         );
 
         ImageVO result = service.upload(
@@ -133,7 +139,7 @@ class ImageWriteServiceTest {
                 "file",
                 "public.png",
                 "image/png",
-                new byte[] {(byte) 0x89, 0x50, 0x4E, 0x47}
+                pngBytes()
         );
 
         ImageVO result = service.upload(
@@ -150,7 +156,7 @@ class ImageWriteServiceTest {
                 "file",
                 "specified.png",
                 "image/png",
-                new byte[] {(byte) 0x89, 0x50, 0x4E, 0x47}
+                pngBytes()
         );
 
         BusinessException ex = assertThrows(BusinessException.class, () ->
@@ -166,6 +172,55 @@ class ImageWriteServiceTest {
                 any(String.class)
         );
         verify(imageRepository, never()).insert(any());
+    }
+
+    @Test
+    void upload_shouldPersistOriginalMediumAndThumbMetadataWithoutOverwritingOriginal() {
+        stpMock.when(StpUtil::getLoginIdAsLong).thenReturn(4L);
+        when(storageService.upload(eq("images"), any(String.class), any(byte[].class), any(String.class),
+                eq(ImageUrlService.PUBLIC_CACHE_CONTROL)))
+                .thenAnswer(invocation -> invocation.getArgument(1, String.class));
+        doAnswer(invocation -> {
+            var image = invocation.getArgument(0, com.picmgmt.entity.Image.class);
+            ImageVO vo = new ImageVO();
+            vo.setUuid(image.getUuid());
+            vo.setStorageKey(image.getStorageKey());
+            vo.setOriginalKey(image.getOriginalKey());
+            vo.setOriginalFilename(image.getOriginalFilename());
+            vo.setOriginalContentType(image.getOriginalContentType());
+            vo.setOriginalExt(image.getOriginalExt());
+            vo.setOriginalSize(image.getOriginalSize());
+            vo.setWidth(image.getWidth());
+            vo.setHeight(image.getHeight());
+            vo.setMediumKey(image.getMediumKey());
+            vo.setThumbKey(image.getThumbKey());
+            return vo;
+        }).when(imageRepository).toVO(any());
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "transparent.png",
+                "image/png",
+                pngBytes()
+        );
+
+        ImageVO result = service.upload(
+                file, null, null, null, "PUBLIC", null, null
+        );
+
+        assertEquals(result.getOriginalKey(), result.getStorageKey());
+        assertEquals("transparent.png", result.getOriginalFilename());
+        assertEquals("image/png", result.getOriginalContentType());
+        assertEquals("png", result.getOriginalExt());
+        assertEquals(2, result.getWidth());
+        assertEquals(2, result.getHeight());
+        org.junit.jupiter.api.Assertions.assertTrue(result.getOriginalKey().endsWith("/original.png"));
+        org.junit.jupiter.api.Assertions.assertTrue(result.getMediumKey().contains("/medium."));
+        org.junit.jupiter.api.Assertions.assertTrue(result.getThumbKey().contains("/thumb."));
+        org.junit.jupiter.api.Assertions.assertNotEquals(result.getOriginalKey(), result.getMediumKey());
+        org.junit.jupiter.api.Assertions.assertNotEquals(result.getOriginalKey(), result.getThumbKey());
+        verify(storageService, times(3)).upload(eq("images"), any(String.class), any(byte[].class), any(String.class),
+                eq(ImageUrlService.PUBLIC_CACHE_CONTROL));
     }
 
     @Test
@@ -300,5 +355,50 @@ class ImageWriteServiceTest {
         image.setVisibility(visibility);
         image.setMediaVersion(mediaVersion);
         return image;
+    }
+
+    private static byte[] pngBytes() {
+        try {
+            BufferedImage image = new BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB);
+            image.setRGB(0, 0, new Color(255, 0, 0, 0).getRGB());
+            image.setRGB(1, 0, Color.BLUE.getRGB());
+            image.setRGB(0, 1, Color.GREEN.getRGB());
+            image.setRGB(1, 1, Color.WHITE.getRGB());
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            ImageIO.write(image, "png", out);
+            return out.toByteArray();
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private static byte[] jpegBytes() {
+        try {
+            BufferedImage image = new BufferedImage(2, 2, BufferedImage.TYPE_INT_RGB);
+            image.setRGB(0, 0, Color.RED.getRGB());
+            image.setRGB(1, 0, Color.BLUE.getRGB());
+            image.setRGB(0, 1, Color.GREEN.getRGB());
+            image.setRGB(1, 1, Color.WHITE.getRGB());
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            ImageIO.write(image, "jpg", out);
+            return out.toByteArray();
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private static byte[] gifBytes() {
+        try {
+            BufferedImage image = new BufferedImage(2, 2, BufferedImage.TYPE_INT_RGB);
+            image.setRGB(0, 0, Color.RED.getRGB());
+            image.setRGB(1, 0, Color.BLUE.getRGB());
+            image.setRGB(0, 1, Color.GREEN.getRGB());
+            image.setRGB(1, 1, Color.WHITE.getRGB());
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            ImageIO.write(image, "gif", out);
+            return out.toByteArray();
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
 }

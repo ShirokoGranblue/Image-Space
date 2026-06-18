@@ -6,14 +6,41 @@ export {
   parseAccessUrlMetadata,
 } from './resourceAccess'
 
+export function getImageDisplayUrl(imageOrId) {
+  if (!imageOrId) return ''
+  if (typeof imageOrId === 'object') {
+    if (imageOrId.thumbUrl) return imageOrId.thumbUrl
+    if (imageOrId.mediumUrl) return imageOrId.mediumUrl
+    const original = originalCompatibleUrl(imageOrId)
+    if (original) return original
+    return imageOrId.uuid ? `/api/image/download/${imageOrId.uuid}` : ''
+  }
+  return typeof imageOrId === 'string' && !/^\d+$/.test(imageOrId)
+    ? `/api/image/download/${imageOrId}`
+    : ''
+}
+
+export function getImagePreviewUrl(imageOrId) {
+  if (!imageOrId) return ''
+  if (typeof imageOrId === 'object') {
+    if (imageOrId.mediumUrl) return imageOrId.mediumUrl
+    const original = originalCompatibleUrl(imageOrId)
+    if (original) return original
+    return imageOrId.uuid ? `/api/image/download/${imageOrId.uuid}` : ''
+  }
+  return getImageDisplayUrl(imageOrId)
+}
+
+export function getOriginalDownloadUrl(imageOrId) {
+  const uuid = imageUuid(imageOrId)
+  return uuid ? `/api/image/download/${uuid}` : ''
+}
+
 export function getImageDownloadUrl(imageOrId) {
   if (!imageOrId) return ''
   if (typeof imageOrId === 'object') {
-    if (imageOrId.visibility === 'PUBLIC' && imageOrId.publicUrl) return imageOrId.publicUrl
-    if (imageOrId.visibility !== 'PUBLIC' && imageOrId.privateUrl) return imageOrId.privateUrl
-    if (imageOrId.publicUrl) return imageOrId.publicUrl
-    if (imageOrId.privateUrl) return imageOrId.privateUrl
-    if (imageOrId.imageUrl) return imageOrId.imageUrl
+    const original = originalCompatibleUrl(imageOrId)
+    if (original) return original
     return imageOrId.uuid ? `/api/image/download/${imageOrId.uuid}` : ''
   }
   return typeof imageOrId === 'string' && !/^\d+$/.test(imageOrId)
@@ -44,4 +71,20 @@ export function buildImageListParams(query) {
 export function normalizeImagePageSize(size) {
   const numericSize = Number(size)
   return IMAGE_PAGE_SIZES.includes(numericSize) ? numericSize : DEFAULT_IMAGE_PAGE_SIZE
+}
+
+function originalCompatibleUrl(image) {
+  if (image.visibility === 'PUBLIC' && image.publicUrl) return image.publicUrl
+  if (image.visibility !== 'PUBLIC' && image.privateUrl) return image.privateUrl
+  if (image.imageUrl) return image.imageUrl
+  if (image.originalUrl) return image.originalUrl
+  if (image.publicUrl) return image.publicUrl
+  if (image.privateUrl) return image.privateUrl
+  return ''
+}
+
+function imageUuid(imageOrId) {
+  if (!imageOrId) return ''
+  const uuid = typeof imageOrId === 'object' ? imageOrId.uuid : imageOrId
+  return typeof uuid === 'string' && uuid.trim() && !/^\d+$/.test(uuid.trim()) ? uuid.trim() : ''
 }

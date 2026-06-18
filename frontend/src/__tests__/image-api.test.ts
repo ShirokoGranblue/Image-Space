@@ -10,7 +10,7 @@ vi.mock('../api/index', () => ({
 }))
 
 import api from '../api/index'
-import { deleteImage, getImageSquare, getUserPublicImages, likeImage, unlikeImage, updateImage } from '../api/image'
+import { deleteImage, downloadImage, downloadImageAs, getImageSquare, getUserPublicImages, likeImage, unlikeImage, updateImage } from '../api/image'
 
 describe('image api', () => {
   beforeEach(() => {
@@ -66,5 +66,14 @@ describe('image api', () => {
 
     expect(api.post).toHaveBeenCalledWith(`/image/${uuid}/like`)
     expect(api.delete).toHaveBeenCalledWith(`/image/${uuid}/like`)
+  })
+
+  it('builds original and format download URLs from image UUIDs', () => {
+    const uuid = '400a1e49-6990-489e-b4a8-35eb0a02d056'
+
+    expect(downloadImage(uuid)).toBe(`/api/image/download/${uuid}`)
+    expect(downloadImageAs(uuid, 'jpeg')).toBe(`/api/image/download/${uuid}?format=jpg`)
+    expect(downloadImageAs({ uuid }, 'png')).toBe(`/api/image/download/${uuid}?format=png`)
+    expect(() => downloadImageAs(uuid, 'bmp')).toThrow('Unsupported image download format')
   })
 })

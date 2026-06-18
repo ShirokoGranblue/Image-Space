@@ -12,6 +12,27 @@ public interface StorageService {
 
     void delete(String bucket, String objectKey);
 
+    default boolean objectExists(String bucket, String objectKey) {
+        if (objectKey == null || objectKey.isBlank()) {
+            return false;
+        }
+        return getFileMeta(bucket, objectKey) != null;
+    }
+
+    default byte[] downloadAsBytes(String bucket, String objectKey) {
+        return download(bucket, objectKey);
+    }
+
+    default void uploadBytes(String bucket, String objectKey, byte[] bytes, String contentType) {
+        upload(bucket, objectKey, bytes, contentType);
+    }
+
+    default void deleteObjectIfExists(String bucket, String objectKey) {
+        if (objectKey != null && !objectKey.isBlank()) {
+            delete(bucket, objectKey);
+        }
+    }
+
     String getAccessUrl(String bucket, String objectKey);
 
     String getPresignedUrl(String bucket, String objectKey, Duration expiry);

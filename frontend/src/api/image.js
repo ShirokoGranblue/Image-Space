@@ -41,6 +41,15 @@ export function downloadImage(uuid) {
   return `/api/image/download/${requireImageUuid(uuid)}`
 }
 
+export function downloadOriginalImage(uuid) {
+  return downloadImage(uuid)
+}
+
+export function downloadImageAs(uuid, format) {
+  const normalized = normalizeDownloadFormat(format)
+  return `/api/image/download/${requireImageUuid(uuid)}?format=${normalized}`
+}
+
 export function getImageSquare(params) {
   return api.get('/image/square', { params })
 }
@@ -51,4 +60,13 @@ export function likeImage(uuid) {
 
 export function unlikeImage(uuid) {
   return api.delete(`/image/${requireImageUuid(uuid)}/like`)
+}
+
+function normalizeDownloadFormat(format) {
+  const normalized = String(format || '').trim().toLowerCase()
+  const value = normalized === 'jpeg' ? 'jpg' : normalized
+  if (!['jpg', 'png', 'gif'].includes(value)) {
+    throw new Error('Unsupported image download format')
+  }
+  return value
 }

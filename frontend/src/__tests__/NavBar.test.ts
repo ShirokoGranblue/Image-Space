@@ -74,11 +74,11 @@ describe('NavBar', () => {
   })
 
   describe('Logo', () => {
-    it('renders the ImageSpace logo linking to home', () => {
+    it('renders the product logo linking to home', () => {
       const wrapper = mountNavBar()
       const logo = wrapper.find('.logo')
       expect(logo.exists()).toBe(true)
-      expect(logo.text()).toContain('IMAGE SPACE')
+      expect(logo.text()).toContain('图像空间')
       expect(logo.attributes('href')).toBe('/home')
     })
 
@@ -91,7 +91,7 @@ describe('NavBar', () => {
   })
 
   describe('Desktop navigation', () => {
-    it('renders nav links (Square, Images, Profile when logged in)', () => {
+    it('renders nav links when logged in', () => {
       const wrapper = mountNavBar()
       const links = wrapper.findAll('.nav-link')
       expect(links.length).toBeGreaterThanOrEqual(2)
@@ -162,8 +162,8 @@ describe('NavBar', () => {
 
       const mobileLinks = wrapper.findAll('.mobile-nav-item')
       expect(mobileLinks.length).toBeGreaterThanOrEqual(2)
-      expect(mobileLinks[0].text()).toContain('Square')
-      expect(mobileLinks[1].text()).toContain('Images')
+      expect(mobileLinks[0].text()).toContain('广场')
+      expect(mobileLinks[1].text()).toContain('图片')
     })
   })
 
@@ -178,7 +178,7 @@ describe('NavBar', () => {
       const wrapper = mountNavBar()
       const logoutBtn = wrapper.find('.logout-btn')
       expect(logoutBtn.exists()).toBe(true)
-      expect(logoutBtn.text()).toBe('Exit')
+      expect(logoutBtn.text()).toBe('退出')
     })
   })
 })

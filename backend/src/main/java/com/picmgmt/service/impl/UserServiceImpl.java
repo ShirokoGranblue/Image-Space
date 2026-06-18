@@ -49,17 +49,15 @@ public class UserServiceImpl implements UserService {
         if (!dto.getPassword().equals(dto.getConfirmPassword())) {
             throw new BusinessException(ErrorCode.PASSWORD_MISMATCH);
         }
+        String email = dto.getEmail().trim();
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(User::getUsername, dto.getUsername());
         if (userMapper.selectCount(wrapper) > 0) {
             throw new BusinessException(ErrorCode.USERNAME_EXISTS);
         }
-        if (dto.getEmail() != null && !dto.getEmail().trim().isEmpty()) {
-            String email = dto.getEmail().trim();
-            if (userMapper.selectCount(
-                    new LambdaQueryWrapper<User>().eq(User::getEmail, email)) > 0) {
-                throw new BusinessException(ErrorCode.EMAIL_EXISTS);
-            }
+        if (userMapper.selectCount(
+                new LambdaQueryWrapper<User>().eq(User::getEmail, email)) > 0) {
+            throw new BusinessException(ErrorCode.EMAIL_EXISTS);
         }
         if (dto.getPhone() != null && !dto.getPhone().trim().isEmpty()) {
             String phone = dto.getPhone().trim();
@@ -68,15 +66,14 @@ public class UserServiceImpl implements UserService {
                 throw new BusinessException(ErrorCode.PHONE_EXISTS);
             }
         }
+        verifyEmailCode("register", email, dto.getCode());
         User user = new User();
         user.setUuid(java.util.UUID.randomUUID().toString());
         user.setUsername(dto.getUsername());
         user.setDisplayName(dto.getUsername());
         user.setPassword(BCrypt.hashpw(dto.getPassword(), BCrypt.gensalt()));
         user.setRole("user");
-        if (dto.getEmail() != null && !dto.getEmail().trim().isEmpty()) {
-            user.setEmail(dto.getEmail().trim());
-        }
+        user.setEmail(email);
         if (dto.getPhone() != null && !dto.getPhone().trim().isEmpty()) {
             user.setPhone(dto.getPhone().trim());
         }
@@ -225,23 +222,33 @@ public class UserServiceImpl implements UserService {
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final int MAX_CODE_ATTEMPTS = 5;
+    private static final String CODE_PURPOSE_REGISTER = "register";
+    private static final String CODE_PURPOSE_LOGIN = "login";
 
     @Override
-    public void sendCode(String email, String captchaId, String captchaCode) {
-        User user = userMapper.selectOne(
-                new LambdaQueryWrapper<User>().eq(User::getEmail, email));
-        if (user == null) {
-            throw new BusinessException(ErrorCode.EMAIL_NOT_BOUND);
+    public void sendCode(String email, String captchaId, String captchaCode, String purpose) {
+        String normalizedPurpose = normalizeCodePurpose(purpose);
+        if (CODE_PURPOSE_REGISTER.equals(normalizedPurpose)) {
+            if (userMapper.selectCount(
+                    new LambdaQueryWrapper<User>().eq(User::getEmail, email)) > 0) {
+                throw new BusinessException(ErrorCode.EMAIL_EXISTS);
+            }
+        } else {
+            User user = userMapper.selectOne(
+                    new LambdaQueryWrapper<User>().eq(User::getEmail, email));
+            if (user == null) {
+                throw new BusinessException(ErrorCode.EMAIL_NOT_BOUND);
+            }
+            if (user.getDeleted() != null && user.getDeleted() == 1) {
+                throw new BusinessException(ErrorCode.USER_DELETED);
+            }
         }
-        if (user.getDeleted() != null && user.getDeleted() == 1) {
-            throw new BusinessException(ErrorCode.USER_DELETED);
-        }
-        String redisKey = "code:login:" + email;
-        String attemptsKey = "code:attempts:" + email;
+        String redisKey = verificationCodeKey(normalizedPurpose, email);
+        String attemptsKey = verificationAttemptsKey(normalizedPurpose, email);
+        captchaService.verify(captchaId, captchaCode);
         if (!redisCacheService.setIfAbsent(redisKey, "pending", Duration.ofSeconds(60))) {
             throw new BusinessException(ErrorCode.CODE_TOO_FREQUENT);
         }
-        captchaService.verify(captchaId, captchaCode);
         String code = String.format("%06d", SECURE_RANDOM.nextInt(1000000));
         try {
             emailService.sendVerificationCode(email, code);
@@ -264,8 +271,8 @@ public class UserServiceImpl implements UserService {
         if (user.getDeleted() != null && user.getDeleted() == 1) {
             throw new BusinessException(ErrorCode.USER_DELETED);
         }
-        String redisKey = "code:login:" + email;
-        String attemptsKey = "code:attempts:" + email;
+        String redisKey = verificationCodeKey(CODE_PURPOSE_LOGIN, email);
+        String attemptsKey = verificationAttemptsKey(CODE_PURPOSE_LOGIN, email);
         Integer attempts = redisCacheService.get(attemptsKey, Integer.class).orElse(0);
         if (attempts >= MAX_CODE_ATTEMPTS) {
             throw new BusinessException(ErrorCode.CODE_INVALID, "验证码尝试次数过多，请重新获取");
@@ -279,6 +286,37 @@ public class UserServiceImpl implements UserService {
         redisCacheService.evict(attemptsKey);
         StpUtil.login(user.getId());
         return StpUtil.getTokenValue();
+    }
+
+    private void verifyEmailCode(String purpose, String email, String code) {
+        String redisKey = verificationCodeKey(purpose, email);
+        String attemptsKey = verificationAttemptsKey(purpose, email);
+        Integer attempts = redisCacheService.get(attemptsKey, Integer.class).orElse(0);
+        if (attempts >= MAX_CODE_ATTEMPTS) {
+            throw new BusinessException(ErrorCode.CODE_INVALID, "验证码尝试次数过多，请重新获取");
+        }
+        String storedCode = redisCacheService.get(redisKey, String.class).orElse(null);
+        if (storedCode == null || code == null || !storedCode.equals(code.trim())) {
+            redisCacheService.put(attemptsKey, attempts + 1, Duration.ofSeconds(300));
+            throw new BusinessException(ErrorCode.CODE_INVALID);
+        }
+        redisCacheService.evict(redisKey);
+        redisCacheService.evict(attemptsKey);
+    }
+
+    private String normalizeCodePurpose(String purpose) {
+        if (CODE_PURPOSE_REGISTER.equalsIgnoreCase(String.valueOf(purpose).trim())) {
+            return CODE_PURPOSE_REGISTER;
+        }
+        return CODE_PURPOSE_LOGIN;
+    }
+
+    private String verificationCodeKey(String purpose, String email) {
+        return "code:" + purpose + ":" + email;
+    }
+
+    private String verificationAttemptsKey(String purpose, String email) {
+        return "code:attempts:" + purpose + ":" + email;
     }
 
     @Override

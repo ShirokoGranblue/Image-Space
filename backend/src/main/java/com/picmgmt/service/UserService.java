@@ -33,7 +33,7 @@ public interface UserService {
 
     void checkField(String field, String value, Long excludeId);
 
-    void sendCode(String email, String captchaId, String captchaCode);
+    void sendCode(String email, String captchaId, String captchaCode, String purpose);
 
     String loginByCode(CodeLoginDTO dto);
 

@@ -3,7 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { nextTick, reactive } from 'vue'
 
 import ImageDetail from '../views/ImageDetail.vue'
-import { getImageDetail } from '../api/image'
+import { getImageDetail, updateImage } from '../api/image'
 import { getComments } from '../api/comment'
 
 const routeState = reactive({
@@ -48,6 +48,8 @@ vi.mock('../api/image', () => ({
   likeImage: vi.fn(),
   unlikeImage: vi.fn(),
   updateImage: vi.fn(),
+  downloadImage: vi.fn((uuid: string) => `/api/image/download/${uuid}`),
+  downloadImageAs: vi.fn((uuid: string, format: string) => `/api/image/download/${uuid}?format=${format}`),
 }))
 
 vi.mock('../api/resource', () => ({
@@ -185,6 +187,84 @@ describe('ImageDetail edit entry', () => {
     await nextTick()
 
     expect(wrapper.find('.detail-image img').attributes('src')).toBe('https://cdn.image-space.app/private/images/a.png?auth=new&expires=1893456030&v=2')
+  })
+
+  it('renders medium preview URL before original-compatible imageUrl', async () => {
+    vi.mocked(getImageDetail).mockResolvedValue({ data: imageDetail({
+      mediumUrl: 'https://cdn.image-space.app/public/images/a/medium.jpg?v=2',
+      imageUrl: 'https://cdn.image-space.app/public/images/a/original.png?v=2',
+    }) })
+
+    const wrapper = mountDetail()
+    await flushPromises()
+
+    expect(wrapper.find('.detail-image img').attributes('src')).toBe('https://cdn.image-space.app/public/images/a/medium.jpg?v=2')
+  })
+
+  it('downloads through the original download endpoint instead of the preview URL', async () => {
+    vi.mocked(getImageDetail).mockResolvedValue({ data: imageDetail({
+      mediumUrl: 'https://cdn.image-space.app/public/images/a/medium.jpg?v=2',
+      imageUrl: 'https://cdn.image-space.app/public/images/a/original.png?v=2',
+    }) })
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      blob: vi.fn().mockResolvedValue(new Blob(['image-bytes'], { type: 'image/png' })),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const originalCreateObjectURL = URL.createObjectURL
+    const originalRevokeObjectURL = URL.revokeObjectURL
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => 'blob:test') })
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() })
+
+    try {
+      const wrapper = mountDetail()
+      await flushPromises()
+
+      await wrapper.find('.download-btn').trigger('click')
+      await flushPromises()
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/image/download/400a1e49-6990-489e-b4a8-35eb0a02d056',
+        expect.objectContaining({ headers: expect.any(Object) }),
+      )
+    } finally {
+      Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: originalCreateObjectURL })
+      Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: originalRevokeObjectURL })
+    }
+  })
+
+  it('replaces stale preview variant URLs after saving image edits', async () => {
+    vi.mocked(getImageDetail).mockResolvedValue({ data: imageDetail({
+      ownedByMe: true,
+      visibility: 'PUBLIC',
+      mediumUrl: 'https://cdn.image-space.app/public/images/a/medium.jpg?v=1',
+      imageUrl: 'https://cdn.image-space.app/public/images/a/original.png?v=1',
+    }) })
+    vi.mocked(updateImage).mockResolvedValue({ data: imageDetail({
+      ownedByMe: true,
+      visibility: 'PRIVATE',
+      mediaVersion: 2,
+      mediumUrl: 'https://cdn.image-space.app/private/images/a/medium.jpg?auth=new&expires=1893456030',
+      thumbUrl: 'https://cdn.image-space.app/private/images/a/thumb.jpg?auth=new&expires=1893456030',
+      imageUrl: 'https://cdn.image-space.app/private/images/a/original.png?auth=new&expires=1893456030',
+      privateUrl: 'https://cdn.image-space.app/private/images/a/original.png?auth=new&expires=1893456030',
+      publicUrl: null,
+    }) })
+
+    const wrapper = mountDetail()
+    await flushPromises()
+
+    const editButton = wrapper.findAll('button').find(button => button.text().includes('编辑信息'))
+    expect(editButton).toBeTruthy()
+    await editButton!.trigger('click')
+    await nextTick()
+
+    const saveButton = wrapper.findAll('button').find(button => button.text().includes('保存'))
+    expect(saveButton).toBeTruthy()
+    await saveButton!.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('.detail-image img').attributes('src')).toBe('https://cdn.image-space.app/private/images/a/medium.jpg?auth=new&expires=1893456030')
   })
 
   it('disables the resource display when polling reports deletion', async () => {

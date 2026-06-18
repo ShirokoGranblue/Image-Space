@@ -15,5 +15,7 @@ public class SendCodeDTO {
     @NotBlank(message = "图形验证码不能为空")
     private String captchaCode;
 
+    private String purpose;
+
     private String turnstileToken;
 }

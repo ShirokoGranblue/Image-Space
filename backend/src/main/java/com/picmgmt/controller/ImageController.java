@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.picmgmt.annotation.Audit;
 import com.picmgmt.common.Result;
 import com.picmgmt.dto.ImageQueryDTO;
+import com.picmgmt.image.ImageDownloadFile;
 import com.picmgmt.image.ImageReadService;
 import com.picmgmt.image.ImageUpdateDTO;
 import com.picmgmt.image.ImageUrlService;
@@ -26,7 +27,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.TimeUnit;
 
 @Tag(name = "图片模块")
 @RestController
@@ -92,21 +92,17 @@ public class ImageController {
 
     @Operation(summary = "下载图片")
     @GetMapping("/download/{uuid}")
-    public ResponseEntity<byte[]> download(@PathVariable String uuid) {
-        var vo = imageReadService.getByUuid(uuid);
-        byte[] bytes = imageReadService.downloadByUuid(uuid);
-        String encodedName = URLEncoder.encode(vo.getImageName(), StandardCharsets.UTF_8)
+    public ResponseEntity<byte[]> download(@PathVariable String uuid,
+                                           @RequestParam(required = false) String format) {
+        ImageDownloadFile file = imageReadService.downloadByUuid(uuid, format);
+        String encodedName = URLEncoder.encode(file.filename(), StandardCharsets.UTF_8)
                 .replace("+", "%20");
-
-        CacheControl cacheControl = "PUBLIC".equals(vo.getVisibility())
-                ? CacheControl.maxAge(7, TimeUnit.DAYS).cachePublic()
-                : CacheControl.noStore();
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedName)
-                .contentType(mediaType(vo.getImageType()))
-                .cacheControl(cacheControl)
-                .body(bytes);
+                .header(HttpHeaders.CACHE_CONTROL, file.cacheControl())
+                .contentType(MediaType.parseMediaType(file.contentType()))
+                .body(file.bytes());
     }
 
     @Operation(summary = "Worker 私有媒体鉴权")

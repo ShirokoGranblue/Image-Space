@@ -19,6 +19,7 @@ logs/
 # Node / Vue
 node_modules/
 dist/
+frontend/output/
 
 # Upload directory
 upload/

@@ -69,7 +69,17 @@ public class ImageRepository {
         vo.setUserId(image.getUserId());
         vo.setCategoryId(image.getCategoryId());
         vo.setImageName(image.getImageName());
+        vo.setImagePath(image.getImagePath());
         vo.setStorageKey(image.getStorageKey());
+        vo.setOriginalKey(image.getOriginalKey());
+        vo.setOriginalFilename(image.getOriginalFilename());
+        vo.setOriginalContentType(image.getOriginalContentType());
+        vo.setOriginalExt(image.getOriginalExt());
+        vo.setOriginalSize(image.getOriginalSize());
+        vo.setWidth(image.getWidth());
+        vo.setHeight(image.getHeight());
+        vo.setMediumKey(image.getMediumKey());
+        vo.setThumbKey(image.getThumbKey());
         vo.setFileSize(image.getFileSize());
         vo.setImageType(image.getImageType());
         vo.setDescription(image.getDescription());
@@ -79,18 +89,26 @@ public class ImageRepository {
         vo.setVisibleUsernames(image.getVisibleUsernames());
         vo.setUploadTime(image.getUploadTime());
 
-        if (image.getStorageKey() != null && !image.getStorageKey().isBlank()) {
+        String originalKey = firstNonBlank(image.getOriginalKey(), image.getStorageKey());
+        if (originalKey != null && !originalKey.isBlank()) {
+            String originalUrl = accessUrlFor(image, originalKey);
+            vo.setOriginalUrl(originalUrl);
+            vo.setImageUrl(originalUrl);
             if ("PUBLIC".equals(image.getVisibility())) {
-                String publicUrl = imageUrlService.getPublicImageUrl(image.getStorageKey(), image.getMediaVersion());
-                vo.setPublicUrl(publicUrl);
-                vo.setImageUrl(publicUrl);
+                vo.setPublicUrl(originalUrl);
             } else {
-                String privateUrl = imageUrlService.getPrivateImageUrl(image.getStorageKey());
-                vo.setPrivateUrl(privateUrl);
-                vo.setImageUrl(privateUrl);
+                vo.setPrivateUrl(originalUrl);
             }
         } else if (image.getImagePath() != null && image.getImagePath().startsWith("data:image/")) {
-            vo.setImageUrl("/api/image/download/" + image.getUuid());
+            String downloadUrl = "/api/image/download/" + image.getUuid();
+            vo.setImageUrl(downloadUrl);
+            vo.setOriginalUrl(downloadUrl);
+        }
+        if (image.getMediumKey() != null && !image.getMediumKey().isBlank()) {
+            vo.setMediumUrl(accessUrlFor(image, image.getMediumKey()));
+        }
+        if (image.getThumbKey() != null && !image.getThumbKey().isBlank()) {
+            vo.setThumbUrl(accessUrlFor(image, image.getThumbKey()));
         }
         User user = userMapper.selectById(image.getUserId());
         if (user != null) {
@@ -105,5 +123,16 @@ public class ImageRepository {
             }
         }
         return vo;
+    }
+
+    private String accessUrlFor(Image image, String key) {
+        if ("PUBLIC".equals(image.getVisibility())) {
+            return imageUrlService.getPublicImageUrl(key, image.getMediaVersion());
+        }
+        return imageUrlService.getPrivateImageUrl(key);
+    }
+
+    private String firstNonBlank(String first, String second) {
+        return first != null && !first.isBlank() ? first : second;
     }
 }

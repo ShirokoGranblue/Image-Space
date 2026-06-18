@@ -24,13 +24,14 @@ public class InternalMediaService {
     private final SaTokenPermissionImpl roleService;
 
     public MediaMetaVO getMeta(String storageKey) {
-        Image image = findByStorageKey(storageKey);
+        String normalizedKey = normalizeKey(storageKey);
+        Image image = findByStorageKey(normalizedKey);
         if (image == null) {
             return null;
         }
         return new MediaMetaVO(
                 image.getId(),
-                image.getStorageKey(),
+                normalizedKey,
                 "PUBLIC".equals(image.getVisibility()) ? "public" : "private",
                 image.getUserId(),
                 normalizeVersion(image.getMediaVersion())
@@ -38,14 +39,15 @@ public class InternalMediaService {
     }
 
     public boolean authorize(String storageKey, String accessToken, String authorization, String saToken) {
-        Image image = findByStorageKey(storageKey);
+        String normalizedKey = normalizeKey(storageKey);
+        Image image = findByStorageKey(normalizedKey);
         if (image == null) {
             log.debug("Internal media authorize rejected missing image: {}", storageKey);
             return false;
         }
 
         if (accessToken != null && !accessToken.isBlank()
-                && imageUrlService.authorizePrivateAccess(storageKey, accessToken)) {
+                && imageUrlService.authorizePrivateAccess(normalizedKey, accessToken)) {
             return true;
         }
 
@@ -58,12 +60,15 @@ public class InternalMediaService {
     }
 
     private Image findByStorageKey(String storageKey) {
-        String normalizedKey = normalizeKey(storageKey);
-        if (normalizedKey.isBlank() || !normalizedKey.startsWith("images/")) {
+        if (storageKey == null || storageKey.isBlank() || !storageKey.startsWith("images/")) {
             return null;
         }
         return imageMapper.selectOne(new LambdaQueryWrapper<Image>()
-                .eq(Image::getStorageKey, normalizedKey));
+                .and(wrapper -> wrapper
+                        .eq(Image::getStorageKey, storageKey)
+                        .or().eq(Image::getOriginalKey, storageKey)
+                        .or().eq(Image::getMediumKey, storageKey)
+                        .or().eq(Image::getThumbKey, storageKey)));
     }
 
     private Long resolveViewerUserId(String authorization, String saToken) {

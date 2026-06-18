@@ -1,10 +1,64 @@
 <template>
   <div class="auth-page">
-    <div class="login-wrap">
-      <!-- Left side panel -->
-      <div class="login-panel">
-        <router-link to="/home" class="login-logo">IMAGESPACE</router-link>
-        <div class="login-heading" v-html="authMode === 'login' ? '欢迎<br>回来' : '创建<br>账号'"></div>
+    <div class="auth-shell">
+      <aside class="auth-visual-panel">
+        <router-link to="/home" class="auth-brand" aria-label="图像空间首页">
+          <span class="brand-mark">图</span>
+          <span>图像空间</span>
+        </router-link>
+
+        <div class="auth-visual-frame">
+          <div class="vis-grid" aria-hidden="true">
+            <div
+              v-for="(cell, i) in visCells"
+              :key="i"
+              class="vis-cell"
+              :style="{ background: cell.color, opacity: cell.opacity }"
+            ></div>
+          </div>
+          <div class="visual-copy">
+            <span class="eyebrow">私人图库</span>
+            <h2>整理灵感，保留图像的来路。</h2>
+            <p>上传、分类、分享与回看，都在一个清爽的空间里完成。</p>
+          </div>
+          <div class="visual-rail" aria-hidden="true">
+            <span>01</span>
+            <span>收集</span>
+            <span>整理</span>
+          </div>
+        </div>
+
+        <div class="auth-stats" aria-label="图像空间能力">
+          <div>
+            <strong>收藏</strong>
+            <span>把图片集中保存</span>
+          </div>
+          <div>
+            <strong>整理</strong>
+            <span>按分类和标签归档</span>
+          </div>
+          <div>
+            <strong>分享</strong>
+            <span>控制每张图可见范围</span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="auth-card">
+        <div class="auth-card-head">
+          <span class="auth-kicker">{{ authMode === 'login' ? '账户登录' : '创建账户' }}</span>
+          <h1>{{ authMode === 'login' ? '欢迎回来' : '创建账号' }}</h1>
+          <p>{{ authMode === 'login' ? '继续整理图片、分类和分享范围。' : '从第一张收藏开始，建立自己的图片空间。' }}</p>
+        </div>
+
+        <div class="auth-mode-switch" aria-label="账户操作">
+          <button type="button" :class="{ active: authMode === 'login' }" @click="setAuthMode('login')">
+            登录
+          </button>
+          <button type="button" :class="{ active: authMode === 'register' }" @click="setAuthMode('register')">
+            注册
+          </button>
+        </div>
 
         <template v-if="authMode === 'login'">
           <div class="tab-row" role="tablist" aria-label="登录方式">
@@ -14,6 +68,7 @@
               :class="{ act: loginMode === 'password' }"
               @click="setLoginMode('password')"
             >
+              <el-icon><Lock /></el-icon>
               密码登录
             </button>
             <button
@@ -22,15 +77,16 @@
               :class="{ act: loginMode === 'email' }"
               @click="setLoginMode('email')"
             >
+              <el-icon><Message /></el-icon>
               邮箱登录
             </button>
           </div>
 
           <el-form
             v-if="loginMode === 'password'"
+            ref="formRef"
             :model="form"
             :rules="rules"
-            ref="formRef"
             label-position="top"
             class="auth-form"
             @submit.prevent="handleLogin"
@@ -39,7 +95,14 @@
               <el-input v-model="form.username" placeholder="输入用户名" size="large" />
             </el-form-item>
             <el-form-item label="密码" prop="password">
-              <el-input v-model="form.password" type="password" placeholder="输入密码" size="large" show-password @keyup.enter="handleLogin" />
+              <el-input
+                v-model="form.password"
+                type="password"
+                placeholder="输入密码"
+                size="large"
+                show-password
+                @keyup.enter="handleLogin"
+              />
             </el-form-item>
             <TurnstileWidget
               ref="turnstileRef"
@@ -47,28 +110,34 @@
               @expired="turnstileToken = ''"
               @error="turnstileToken = ''"
             />
-            <el-form-item>
+            <el-form-item class="submit-row">
               <el-button type="primary" size="large" class="login-btn" @click="handleLogin" :loading="loading">
-                登录
+                <span>登录</span>
+                <el-icon><ArrowRight /></el-icon>
               </el-button>
             </el-form-item>
           </el-form>
 
           <el-form
             v-else
+            ref="emailFormRef"
             :model="emailForm"
             :rules="emailRules"
-            ref="emailFormRef"
             label-position="top"
             class="auth-form"
             @submit.prevent="handleEmailLogin"
           >
             <el-form-item label="邮箱" prop="email">
-              <el-input v-model="emailForm.email" placeholder="输入邮箱" size="large" />
+              <el-input v-model="emailForm.email" placeholder="name@example.com" size="large" />
             </el-form-item>
             <el-form-item label="图形验证码" prop="captchaCode">
               <div class="captcha-row-inline">
-                <el-input v-model="emailForm.captchaCode" placeholder="输入图形验证码" size="large" @keyup.enter="handleSendCode" />
+                <el-input
+                  v-model="emailForm.captchaCode"
+                  placeholder="输入图形验证码"
+                  size="large"
+                  @keyup.enter="handleSendCode"
+                />
                 <button class="captcha-image" type="button" @click="loadCaptcha" :disabled="captchaLoading">
                   <img v-if="captchaImage" :src="captchaImage" alt="图形验证码" />
                   <span v-else>{{ captchaLoading ? '加载中' : '刷新' }}</span>
@@ -77,9 +146,14 @@
             </el-form-item>
             <el-form-item label="邮箱验证码" prop="code">
               <div class="code-row">
-                <el-input v-model="emailForm.code" placeholder="输入邮箱验证码" size="large" @keyup.enter="handleEmailLogin" />
+                <el-input
+                  v-model="emailForm.code"
+                  placeholder="输入邮箱验证码"
+                  size="large"
+                  @keyup.enter="handleEmailLogin"
+                />
                 <el-button class="send-code-btn" @click="handleSendCode" :loading="sendCodeLoading" :disabled="countdown > 0">
-                  {{ countdown > 0 ? `${countdown}s` : '发送验证码' }}
+                  {{ countdown > 0 ? countdown + 's' : '发送验证码' }}
                 </el-button>
               </div>
             </el-form-item>
@@ -89,93 +163,135 @@
               @expired="turnstileToken = ''"
               @error="turnstileToken = ''"
             />
-            <el-form-item>
+            <el-form-item class="submit-row">
               <el-button type="primary" size="large" class="login-btn" @click="handleEmailLogin" :loading="codeLoginLoading">
-                邮箱登录
+                <span>邮箱登录</span>
+                <el-icon><ArrowRight /></el-icon>
               </el-button>
             </el-form-item>
           </el-form>
 
-          <div class="or-row">或</div>
+          <div class="or-row"><span>或使用第三方账户</span></div>
           <div class="oauth-row">
-            <button class="oauth-btn" @click="handleGithubLogin" :disabled="githubLoading">
-              <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" style="margin-right: 4px;"><path fill="currentColor" d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-              GitHub
+            <button class="oauth-btn" type="button" @click="handleGithubLogin" :disabled="githubLoading">
+              <svg class="oauth-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="currentColor" d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+              </svg>
+              <span>GitHub</span>
             </button>
-            <button class="oauth-btn" @click="handleGoogleLogin" :disabled="googleLoading">
-              <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" style="margin-right: 4px;"><path fill="#EA4335" d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114A5.56 5.56 0 0 1 8.35 13c0-3.076 2.488-5.571 5.557-5.571 1.48 0 2.81.579 3.8 1.527l3.056-3.056C18.847 2.057 16.518 1 13.907 1 7.855 1 2.923 5.932 2.923 12s4.932 11 10.984 11c6.305 0 10.485-4.429 10.485-10.667 0-.742-.067-1.428-.19-2.048H12.24Z"/></svg>
-              Google
+            <button class="oauth-btn" type="button" @click="handleGoogleLogin" :disabled="googleLoading">
+              <svg class="oauth-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="#EA4335" d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114A5.56 5.56 0 0 1 8.35 13c0-3.076 2.488-5.571 5.557-5.571 1.48 0 2.81.579 3.8 1.527l3.056-3.056C18.847 2.057 16.518 1 13.907 1 7.855 1 2.923 5.932 2.923 12s4.932 11 10.984 11c6.305 0 10.485-4.429 10.485-10.667 0-.742-.067-1.428-.19-2.048H12.24Z" />
+              </svg>
+              <span>Google</span>
             </button>
-            <button class="oauth-btn" @click="handleMicrosoftLogin" :disabled="microsoftLoading">
-              <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" style="margin-right: 4px;"><path fill="#F25022" d="M11.4 2H2v9.4h9.4V2z"/><path fill="#7FBA00" d="M22 2h-9.4v9.4H22V2z"/><path fill="#00A4EF" d="M11.4 12.6H2V22h9.4v-9.4z"/><path fill="#FFB900" d="M22 12.6h-9.4V22H22v-9.4z"/></svg>
-              Microsoft
+            <button class="oauth-btn" type="button" @click="handleMicrosoftLogin" :disabled="microsoftLoading">
+              <svg class="oauth-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="#F25022" d="M11.4 2H2v9.4h9.4V2z" />
+                <path fill="#7FBA00" d="M22 2h-9.4v9.4H22V2z" />
+                <path fill="#00A4EF" d="M11.4 12.6H2V22h9.4v-9.4z" />
+                <path fill="#FFB900" d="M22 12.6h-9.4V22H22v-9.4z" />
+              </svg>
+              <span>Microsoft</span>
             </button>
           </div>
         </template>
 
         <el-form
           v-else
+          ref="registerFormRef"
           :model="registerForm"
           :rules="registerRules"
-          ref="registerFormRef"
           label-position="top"
           class="auth-form register-form"
           @submit.prevent="handleRegister"
         >
-          <el-form-item class="full-field" label="用户名" prop="username">
-            <el-input v-model="registerForm.username" placeholder="你的唯一用户名" size="large" />
+          <div class="form-columns">
+            <el-form-item label="用户名" prop="username">
+              <el-input v-model="registerForm.username" placeholder="你的唯一用户名" size="large" />
+            </el-form-item>
+            <el-form-item label="手机号（选填）">
+              <el-input v-model="registerForm.phone" placeholder="选填" maxlength="20" size="large" />
+            </el-form-item>
+          </div>
+          <div class="form-columns">
+            <el-form-item label="密码" prop="password">
+              <el-input v-model="registerForm.password" type="password" placeholder="至少 6 位密码" size="large" show-password />
+            </el-form-item>
+            <el-form-item label="确认密码" prop="confirmPassword">
+              <el-input
+                v-model="registerForm.confirmPassword"
+                type="password"
+                placeholder="再次输入密码"
+                size="large"
+                show-password
+                @keyup.enter="handleRegister"
+              />
+            </el-form-item>
+          </div>
+          <el-form-item label="邮箱" required class="email-verification-item">
+            <div class="email-verification-controls">
+              <el-form-item prop="email" class="inline-form-item">
+                <el-input v-model="registerForm.email" placeholder="name@example.com" size="large" />
+              </el-form-item>
+              <el-form-item prop="code" class="inline-form-item email-code-inline">
+                <div class="code-row">
+                  <el-input
+                    v-model="registerForm.code"
+                    placeholder="输入邮箱验证码"
+                    size="large"
+                    @keyup.enter="handleRegister"
+                  />
+                  <el-button
+                    class="send-code-btn"
+                    @click="handleRegisterSendCode"
+                    :loading="registerSendCodeLoading"
+                    :disabled="registerCountdown > 0"
+                  >
+                    {{ registerCountdown > 0 ? registerCountdown + 's' : '发送验证码' }}
+                  </el-button>
+                </div>
+              </el-form-item>
+            </div>
           </el-form-item>
-          <el-form-item label="密码" prop="password">
-            <el-input v-model="registerForm.password" type="password" placeholder="至少 6 位密码" size="large" show-password />
-          </el-form-item>
-          <el-form-item label="确认密码" prop="confirmPassword">
-            <el-input v-model="registerForm.confirmPassword" type="password" placeholder="再次输入密码" size="large" show-password @keyup.enter="handleRegister" />
-          </el-form-item>
-          <el-form-item label="邮箱（选填）">
-            <el-input v-model="registerForm.email" placeholder="your@email.com" size="large" />
-          </el-form-item>
-          <el-form-item label="手机号（选填）">
-            <el-input v-model="registerForm.phone" placeholder="选填" maxlength="20" size="large" />
+          <el-form-item class="centered-captcha-item" label="图形验证码" prop="captchaCode">
+            <div class="captcha-row-inline">
+              <el-input
+                v-model="registerForm.captchaCode"
+                placeholder="输入图形验证码"
+                size="large"
+                @keyup.enter="handleRegisterSendCode"
+              />
+              <button class="captcha-image" type="button" @click="loadRegisterCaptcha" :disabled="registerCaptchaLoading">
+                <img v-if="registerCaptchaImage" :src="registerCaptchaImage" alt="图形验证码" />
+                <span v-else>{{ registerCaptchaLoading ? '加载中' : '刷新' }}</span>
+              </button>
+            </div>
           </el-form-item>
           <TurnstileWidget
-            class="register-turnstile full-field"
+            class="register-turnstile"
             ref="turnstileRef"
             @verified="turnstileToken = $event"
             @expired="turnstileToken = ''"
             @error="turnstileToken = ''"
           />
-          <el-form-item class="full-field compact-submit">
+          <el-form-item class="submit-row">
             <el-button type="primary" size="large" class="login-btn" @click="handleRegister" :loading="registerLoading">
-              创建账号
+              <span>创建账号</span>
+              <el-icon><ArrowRight /></el-icon>
             </el-button>
           </el-form-item>
         </el-form>
 
         <div class="login-footer">
           <template v-if="authMode === 'login'">
-            还没有账号？<a @click="setAuthMode('register')">创建账号 ↗</a>
+            还没有账号？<button type="button" @click="setAuthMode('register')">创建账号</button>
           </template>
           <template v-else>
-            已有账号？<a @click="setAuthMode('login')">返回登录 ↗</a>
+            已有账号？<button type="button" @click="setAuthMode('login')">返回登录</button>
           </template>
         </div>
-      </div>
-
-      <!-- Right side visual -->
-      <div class="login-visual">
-        <div class="vis-grid">
-          <div
-            v-for="(cell, i) in visCells"
-            :key="i"
-            class="vis-cell"
-            :style="{ background: cell.color, opacity: cell.opacity }"
-          ></div>
-        </div>
-        <div style="position:relative;z-index:2;">
-          <div class="vis-quote">收藏灵感，<br>展开次元空间。</div>
-          <div class="vis-sub">角色图集 · 灵感收藏 · 创作者空间</div>
-        </div>
-      </div>
+      </main>
     </div>
   </div>
 </template>
@@ -201,16 +317,21 @@ const registerLoading = ref(false)
 const codeLoginLoading = ref(false)
 const sendCodeLoading = ref(false)
 const captchaLoading = ref(false)
+const registerSendCodeLoading = ref(false)
+const registerCaptchaLoading = ref(false)
 const githubLoading = ref(false)
 const googleLoading = ref(false)
 const microsoftLoading = ref(false)
 const turnstileRef = ref(null)
 const turnstileToken = ref('')
 const captchaImage = ref('')
+const registerCaptchaImage = ref('')
 const countdown = ref(0)
+const registerCountdown = ref(0)
 let countdownTimer = null
+let registerCountdownTimer = null
 
-const BLUE_TONES = ['#042C53', '#0C447C', '#185FA5', '#378ADD', '#85B7EB']
+const BLUE_TONES = ['#151922', '#202633', '#2a3140', '#b7ff3c', '#38d5ff', '#ff6b57']
 const visCells = ref([])
 let visInterval = null
 
@@ -221,7 +342,10 @@ const registerForm = reactive({
   password: '',
   confirmPassword: '',
   email: '',
-  phone: ''
+  phone: '',
+  code: '',
+  captchaId: '',
+  captchaCode: ''
 })
 
 const validateConfirmPassword = (_rule, value, callback) => {
@@ -258,7 +382,13 @@ const registerRules = {
   confirmPassword: [
     { required: true, message: '请确认密码', trigger: 'blur' },
     { validator: validateConfirmPassword, trigger: 'blur' }
-  ]
+  ],
+  email: [
+    { required: true, message: '请输入邮箱', trigger: 'blur' },
+    { type: 'email', message: '邮箱格式不正确', trigger: 'blur' }
+  ],
+  captchaCode: [{ required: true, message: '请输入图形验证码', trigger: 'blur' }],
+  code: [{ required: true, message: '请输入邮箱验证码', trigger: 'blur' }]
 }
 
 function initVisCells() {
@@ -321,12 +451,14 @@ onMounted(async () => {
 
 onUnmounted(() => {
   if (countdownTimer) window.clearInterval(countdownTimer)
+  if (registerCountdownTimer) window.clearInterval(registerCountdownTimer)
   if (visInterval) window.clearInterval(visInterval)
 })
 
 function setAuthMode(mode) {
   authMode.value = mode
   resetTurnstile()
+  if (mode === 'register' && !registerCaptchaImage.value) loadRegisterCaptcha()
 }
 
 async function setLoginMode(mode) {
@@ -357,7 +489,7 @@ async function handleRegister() {
   if (!token) { ElMessage.warning('请完成人机验证'); return }
   registerLoading.value = true
   try {
-    const { confirmPassword, ...payload } = registerForm
+    const { confirmPassword, captchaId, captchaCode, ...payload } = registerForm
     await register({ ...payload, turnstileToken: token })
     ElMessage.success('注册成功，请登录')
     setAuthMode('login')
@@ -366,6 +498,53 @@ async function handleRegister() {
   } catch {} finally {
     resetTurnstile()
     registerLoading.value = false
+  }
+}
+
+async function loadRegisterCaptcha() {
+  registerCaptchaLoading.value = true
+  try {
+    const res = await getCaptcha()
+    registerForm.captchaId = res.data?.captchaId || ''
+    registerCaptchaImage.value = res.data?.captchaImage || ''
+  } catch {} finally {
+    registerCaptchaLoading.value = false
+  }
+}
+
+async function validateRegisterFields(fields) {
+  for (const field of fields) {
+    const ok = await registerFormRef.value.validateField(field).then(() => true).catch(() => false)
+    if (!ok) return false
+  }
+  return true
+}
+
+async function handleRegisterSendCode() {
+  const valid = await validateRegisterFields(['username', 'password', 'confirmPassword', 'email', 'captchaCode'])
+  if (!valid) return
+  const token = getTurnstileToken()
+  if (!token) { ElMessage.warning('请完成人机验证'); return }
+
+  registerSendCodeLoading.value = true
+  try {
+    await sendCode({
+      email: registerForm.email,
+      captchaId: registerForm.captchaId,
+      captchaCode: registerForm.captchaCode,
+      purpose: 'register',
+      turnstileToken: token
+    })
+    ElMessage.success('邮箱验证码已发送')
+    registerForm.captchaCode = ''
+    startRegisterCountdown()
+    resetTurnstile()
+    await loadRegisterCaptcha()
+  } catch {
+    registerForm.captchaCode = ''
+    await loadRegisterCaptcha()
+  } finally {
+    registerSendCodeLoading.value = false
   }
 }
 
@@ -434,6 +613,18 @@ function startCountdown() {
   }, 1000)
 }
 
+function startRegisterCountdown() {
+  registerCountdown.value = 60
+  if (registerCountdownTimer) window.clearInterval(registerCountdownTimer)
+  registerCountdownTimer = window.setInterval(() => {
+    registerCountdown.value -= 1
+    if (registerCountdown.value <= 0) {
+      window.clearInterval(registerCountdownTimer)
+      registerCountdownTimer = null
+    }
+  }, 1000)
+}
+
 const ALLOWED_OAUTH_DOMAINS = [
   'github.com',
   'accounts.google.com',
@@ -454,7 +645,7 @@ async function handleGithubLogin() {
   try {
     const res = await getGithubAuthUrl()
     const url = res.data.authorizeUrl
-    if (!isSafeOAuthUrl(url)) { ElMessage.error('OAuth 地址无效'); return }
+    if (!isSafeOAuthUrl(url)) { ElMessage.error('第三方登录地址无效'); return }
     window.location.href = url
   } catch {} finally { githubLoading.value = false }
 }
@@ -464,7 +655,7 @@ async function handleGoogleLogin() {
   try {
     const res = await getGoogleAuthUrl()
     const url = res.data.authorizeUrl
-    if (!isSafeOAuthUrl(url)) { ElMessage.error('OAuth 地址无效'); return }
+    if (!isSafeOAuthUrl(url)) { ElMessage.error('第三方登录地址无效'); return }
     window.location.href = url
   } catch {} finally { googleLoading.value = false }
 }
@@ -493,229 +684,243 @@ function resetTurnstile() { turnstileToken.value = ''; turnstileRef.value?.reset
 <style scoped>
 .auth-page {
   min-height: 100vh;
-  min-height: 100dvh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 36px 24px;
-  background:
-    radial-gradient(circle at 18% 18%, rgba(55, 138, 221, 0.24), transparent 34vw),
-    radial-gradient(circle at 82% 12%, rgba(239, 159, 39, 0.14), transparent 28vw);
-}
-
-.login-wrap {
   display: grid;
-  grid-template-columns: minmax(360px, 430px) 1fr;
-  width: min(100%, 1080px);
-  min-height: 640px;
-  background: rgba(255, 253, 248, 0.88);
-  border: 1px solid rgba(255, 253, 248, 0.58);
-  border-radius: 24px;
-  overflow: hidden;
-  box-shadow: var(--shadow-cinematic);
-  backdrop-filter: blur(22px);
+  place-items: center;
+  padding: 32px;
+  color: var(--ad-text);
+  background:
+    linear-gradient(135deg, rgba(183, 255, 60, 0.08), transparent 32%),
+    linear-gradient(45deg, rgba(56, 213, 255, 0.07), transparent 38%),
+    var(--ad-bg);
 }
 
-.login-panel {
-  background: rgba(255, 253, 248, 0.92);
-  padding: 56px 48px;
-  border-right: 1px solid rgba(4, 44, 83, 0.08);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+.auth-shell {
+  width: min(1180px, 100%);
+  min-height: min(760px, calc(100vh - 64px));
+  display: grid;
+  grid-template-columns: minmax(360px, 0.92fr) minmax(420px, 1fr);
+  border: 1px solid var(--ad-line);
+  background: rgba(13, 16, 22, 0.78);
+  box-shadow: var(--ad-shadow);
 }
 
-.login-logo {
-  font-family: var(--font-display);
-  font-size: 13px;
-  color: var(--ink);
-  letter-spacing: .22em;
-  margin-bottom: 42px;
-  text-decoration: none;
-  font-weight: 800;
-  display: inline-block;
+.auth-visual-panel,
+.auth-card {
+  min-width: 0;
 }
 
-.login-logo:hover {
-  opacity: 0.78;
+.auth-visual-panel {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 24px;
+  padding: 28px;
+  border-right: 1px solid var(--ad-line);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.035), transparent),
+    rgba(17, 23, 34, 0.92);
 }
 
-.login-heading {
-  font-family: var(--font-display);
-  font-size: clamp(38px, 5vw, 56px);
-  font-weight: 500;
-  color: var(--ink);
-  line-height: 0.96;
-  margin-bottom: 32px;
-  letter-spacing: -0.02em;
-}
-
-.tab-row {
+.auth-brand {
   display: inline-flex;
-  align-self: flex-start;
-  gap: 4px;
-  padding: 4px;
-  border: 1px solid rgba(4, 44, 83, 0.1);
-  border-radius: 999px;
-  background: rgba(4, 44, 83, 0.04);
-  margin-bottom: 24px;
-}
-
-.login-tab {
-  font-size: 13px;
-  padding: 8px 14px;
-  background: transparent;
-  border: none;
-  border-radius: 999px;
-  cursor: pointer;
-  font-family: var(--font-body);
-  color: var(--ink3);
-  font-weight: 700;
-  transition: background .15s, color .15s, transform .15s;
-}
-
-.login-tab:hover {
-  transform: translateY(-1px);
-}
-
-.login-tab.act {
-  color: var(--paper);
-  background: var(--ink);
-}
-
-.login-btn {
-  width: 100%;
-  height: 46px;
-  background: var(--ink);
-  color: var(--paper);
-  border: none;
-  border-radius: 999px;
-  font-size: 14px;
-  font-weight: 800;
-  cursor: pointer;
-  font-family: var(--font-body);
-  transition: background .15s, transform .1s, box-shadow .18s;
-  letter-spacing: .06em;
-  display: flex;
   align-items: center;
-  justify-content: center;
-  box-shadow: 0 12px 30px rgba(4, 44, 83, 0.24);
-}
-
-.login-btn:hover {
-  background: var(--ink2);
-  box-shadow: 0 16px 36px rgba(4, 44, 83, 0.3);
-}
-
-.login-btn:active {
-  transform: scale(.98);
-}
-
-.or-row {
-  text-align: center;
-  margin: 18px 0;
+  gap: 10px;
+  width: max-content;
+  color: var(--ad-text);
   font-size: 12px;
-  color: var(--ink3);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  letter-spacing: 0;
 }
 
-.oauth-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 8px;
+.brand-mark {
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--ad-line-strong);
+  color: var(--ad-green);
+  background: rgba(244, 241, 232, 0.04);
 }
 
-.oauth-btn {
-  height: 38px;
-  border: 1px solid rgba(4, 44, 83, 0.1);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.58);
-  font-size: 13px;
-  color: var(--ink);
-  cursor: pointer;
-  font-family: var(--font-body);
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  transition: background .15s, border-color .15s, transform .15s;
-}
-
-.oauth-btn:hover {
-  background: #fff;
-  border-color: rgba(55, 138, 221, 0.42);
-  transform: translateY(-1px);
-}
-
-.login-footer {
-  text-align: center;
-  margin-top: 22px;
-  font-size: 13px;
-  color: var(--ink3);
-}
-
-.login-footer a {
-  color: var(--ink);
-  cursor: pointer;
-  text-decoration: none;
-  font-weight: 800;
-}
-
-.login-visual {
-  background:
-    radial-gradient(circle at 22% 28%, rgba(55, 138, 221, 0.34), transparent 32%),
-    linear-gradient(145deg, var(--cinema) 0%, var(--cinema2) 58%, #14110d 100%);
+.auth-visual-frame {
   position: relative;
+  display: grid;
+  align-content: end;
+  min-height: 470px;
+  padding: 28px;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding: 42px;
-}
-
-.login-visual::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(120deg, transparent 24%, rgba(255, 253, 248, 0.1) 48%, transparent 70%);
-  animation: softGlow 9s var(--ease-in-out) infinite;
+  border: 1px solid var(--ad-line);
+  background:
+    linear-gradient(90deg, rgba(244,241,232,0.04) 1px, transparent 1px),
+    linear-gradient(rgba(244,241,232,0.04) 1px, transparent 1px),
+    #0f141d;
+  background-size: 42px 42px;
 }
 
 .vis-grid {
   position: absolute;
   inset: 18px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(4, 1fr);
-  gap: 8px;
-  opacity: 0.54;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 10px;
+  opacity: 0.86;
 }
 
 .vis-cell {
-  border-radius: 14px;
-  transition: opacity .6s, transform .6s;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+  min-height: 82px;
+  border: 1px solid rgba(244, 241, 232, 0.16);
+  filter: saturate(0.9);
+  transition: opacity 0.42s var(--ad-ease), transform 0.42s var(--ad-ease);
 }
 
-.vis-quote {
-  position: relative;
-  z-index: 2;
-  font-family: var(--font-display);
-  font-size: clamp(26px, 3.2vw, 42px);
-  color: rgba(255, 253, 248, .92);
-  line-height: 1.16;
-  letter-spacing: -0.01em;
+.vis-cell:nth-child(2n) {
+  transform: translateY(18px);
 }
 
-.vis-sub {
+.visual-copy {
   position: relative;
   z-index: 2;
+  max-width: 360px;
+}
+
+.eyebrow,
+.auth-kicker,
+.visual-rail,
+.auth-stats span {
+  color: var(--ad-muted);
+  font-size: 11px;
+  letter-spacing: 0;
+}
+
+.visual-copy h2 {
+  margin: 14px 0 14px;
+  color: var(--ad-text);
+  font-size: clamp(34px, 4.2vw, 58px);
+  line-height: 0.98;
+  font-weight: 340;
+}
+
+.visual-copy p {
+  color: var(--ad-text-soft);
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.visual-rail {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  display: grid;
+  gap: 10px;
+  justify-items: end;
+}
+
+.auth-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid var(--ad-line);
+}
+
+.auth-stats div {
+  padding: 16px;
+}
+
+.auth-stats div + div {
+  border-left: 1px solid var(--ad-line);
+}
+
+.auth-stats strong {
+  display: block;
+  color: var(--ad-green);
+  font-size: 18px;
+  font-weight: 520;
+}
+
+.auth-stats span {
+  display: block;
+  margin-top: 8px;
+  line-height: 1.4;
+}
+
+.auth-card {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(34px, 5vw, 64px);
+  background:
+    linear-gradient(180deg, rgba(244, 241, 232, 0.035), transparent 36%),
+    rgba(13, 16, 22, 0.94);
+}
+
+.auth-card-head {
+  margin-bottom: 24px;
+}
+
+.auth-card-head h1 {
+  margin: 10px 0 12px;
+  color: var(--ad-text);
+  font-size: clamp(46px, 5.8vw, 78px);
+  line-height: 0.95;
+  font-weight: 340;
+}
+
+.auth-card-head p {
+  max-width: 520px;
+  color: var(--ad-text-soft);
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.auth-mode-switch,
+.tab-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+  padding: 4px;
+  gap: 4px;
+  border: 1px solid var(--ad-line);
+  background: rgba(244, 241, 232, 0.04);
+}
+
+.auth-mode-switch {
+  margin-bottom: 18px;
+}
+
+.auth-mode-switch button,
+.login-tab {
+  border: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 0 14px;
+  color: var(--ad-muted);
+  background: transparent;
+  font-family: var(--ad-font);
   font-size: 13px;
-  color: rgba(201, 216, 231, 0.72);
-  margin-top: 14px;
-  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.auth-mode-switch button.active,
+.login-tab.act {
+  color: #071014;
+  background: var(--ad-green);
+}
+
+.tab-row {
+  margin-bottom: 18px;
+}
+
+.auth-form {
+  display: grid;
+  gap: 2px;
+}
+
+.form-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .auth-form :deep(.el-form-item) {
@@ -723,189 +928,204 @@ function resetTurnstile() { turnstileToken.value = ''; turnstileRef.value?.reset
 }
 
 .auth-form :deep(.el-form-item__label) {
-  font-size: 12px;
-  color: var(--ink2) !important;
-  letter-spacing: .12em;
-  margin-bottom: 7px;
-  padding-bottom: 0;
-  text-transform: uppercase;
+  padding-bottom: 8px;
+  color: var(--ad-text-soft) !important;
+  font-weight: 420;
 }
 
-.auth-form :deep(.el-input__wrapper) {
-  background: rgba(255, 255, 255, 0.72) !important;
-  border: 1px solid rgba(4, 44, 83, 0.1) !important;
-  border-radius: 999px !important;
-  box-shadow: none !important;
-  padding: 0 14px;
-  height: 44px;
-  transition: border-color .15s, background .15s, box-shadow .15s;
+.email-verification-item {
+  width: 100%;
 }
 
-.auth-form :deep(.el-input__wrapper.is-focus) {
-  border-color: rgba(186, 117, 23, 0.55) !important;
-  background: #fff !important;
-  box-shadow: 0 0 0 4px rgba(186, 117, 23, 0.1) !important;
+.email-verification-item :deep(.el-form-item__content) {
+  display: block;
 }
 
-.auth-form :deep(.el-input__inner) {
-  font-family: var(--font-body);
-  font-size: 14px;
-  color: var(--ink) !important;
+.email-verification-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.92fr);
+  gap: 10px;
+  align-items: start;
+  width: 100%;
+}
+
+.email-verification-controls :deep(.el-form-item) {
+  margin-bottom: 0;
+}
+
+.inline-form-item {
+  min-width: 0;
 }
 
 .captcha-row-inline,
 .code-row {
-  width: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 118px;
-  gap: 8px;
-  align-items: center;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  width: 100%;
 }
 
 .captcha-image,
-.send-code-btn {
-  height: 44px;
-  border: 1px solid rgba(4, 44, 83, 0.1);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
-  color: var(--ink);
-  overflow: hidden;
+.oauth-btn,
+.login-footer button {
+  border: 1px solid var(--ad-line);
+  background: rgba(244, 241, 232, 0.05);
+  color: var(--ad-text);
+  font-family: var(--ad-font);
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
-  padding: 0;
+}
+
+.captcha-image {
+  width: 132px;
+  min-height: 40px;
+  overflow: hidden;
 }
 
 .captcha-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 
 .send-code-btn {
-  background: rgba(4, 44, 83, 0.06) !important;
-  color: var(--ink) !important;
-  font-family: var(--font-body);
-  width: 100%;
+  min-width: 116px;
 }
 
-.register-form {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+.centered-captcha-item {
+  width: min(100%, 420px);
+  justify-self: center;
 }
 
-.register-form :deep(.full-field),
-.register-form .register-turnstile {
-  grid-column: 1 / -1;
+.register-turnstile {
+  margin-bottom: 16px;
 }
 
-@media (max-width: 820px) {
-  .auth-page {
-    padding: 20px 14px;
-  }
-  .login-wrap {
-    grid-template-columns: 1fr;
-    min-height: auto;
-    width: 100%;
-    border-radius: 20px;
-  }
-  .login-panel {
-    border-right: none;
-    border-bottom: 1px solid rgba(4, 44, 83, 0.08);
-    padding: 34px 24px;
-  }
-  .login-visual {
-    min-height: 220px;
-    padding: 28px;
-  }
-  .register-form {
-    grid-template-columns: 1fr;
-    gap: 0;
-  }
-  .oauth-row {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Anime paper override */
-.auth-page {
-  background: #f0eee6;
-}
-
-.login-wrap {
-  background: #f0eee6;
-  border-color: rgba(17, 26, 53, 0.12);
-  box-shadow: 0 26px 80px rgba(17, 26, 53, 0.14);
-}
-
-.login-panel {
-  background: #f0eee6;
-}
-
-.login-visual {
-  background:
-    radial-gradient(circle at 24% 26%, rgba(255, 122, 184, 0.38), transparent 32%),
-    radial-gradient(circle at 76% 18%, rgba(88, 184, 255, 0.3), transparent 30%),
-    linear-gradient(145deg, #fff4de 0%, #f5ecff 52%, #dff6ff 100%);
-}
-
-.login-visual::after {
-  background:
-    radial-gradient(circle at 76% 22%, rgba(255,255,255,0.82), transparent 12%),
-    linear-gradient(120deg, transparent 24%, rgba(255, 122, 184, 0.16) 48%, transparent 70%);
-}
-
-.vis-cell {
-  box-shadow: inset 0 0 0 1px rgba(17, 26, 53, 0.08);
-  animation: cardTwinkle 4.8s var(--ease-in-out) infinite;
-}
-
-.vis-cell:nth-child(2n) {
-  animation-delay: -1.6s;
-}
-
-.vis-cell:nth-child(3n) {
-  animation-delay: -2.8s;
-}
-
-.vis-quote {
-  color: var(--ink);
-  text-shadow: 0 1px 0 rgba(255,255,255,0.66);
-}
-
-.vis-sub {
-  color: rgba(4, 44, 83, 0.58);
-}
-
-.auth-form :deep(.el-input__wrapper),
-.captcha-image,
-.send-code-btn {
-  background: #f0eee6 !important;
-  border-color: rgba(17, 26, 53, 0.1) !important;
-}
-
-.auth-form :deep(.el-input__wrapper.is-focus) {
-  border-color: rgba(255, 122, 184, 0.52) !important;
-  background: #f0eee6 !important;
-  box-shadow: 0 0 0 4px rgba(255, 122, 184, 0.12) !important;
+.submit-row {
+  margin-top: 4px;
 }
 
 .login-btn {
-  background: var(--cinema) !important;
-  border-color: var(--cinema) !important;
+  width: 100%;
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
-.login-btn:hover {
-  background: var(--anime-pink) !important;
-  border-color: var(--anime-pink) !important;
+.or-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 0 14px;
+  color: var(--ad-muted);
+  font-size: 12px;
 }
 
-@keyframes cardTwinkle {
-  0%, 100% { transform: translateY(0); filter: saturate(1); }
-  50% { transform: translateY(-8px); filter: saturate(1.12); }
+.or-row::before,
+.or-row::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: var(--ad-line);
+}
+
+.oauth-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.oauth-btn {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: background .16s ease, border-color .16s ease, transform .16s var(--ad-ease);
+}
+
+.oauth-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+}
+
+.oauth-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: var(--ad-line-strong);
+  background: rgba(244, 241, 232, 0.08);
+}
+
+.oauth-btn:disabled,
+.captcha-image:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.login-footer {
+  margin-top: 22px;
+  color: var(--ad-muted);
+  font-size: 14px;
+}
+
+.login-footer button,
+.login-footer a {
+  margin-left: 6px;
+  padding: 0;
+  border: 0;
+  color: var(--ad-green);
+  background: transparent;
+}
+
+@media (max-width: 980px) {
+  .auth-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-visual-panel {
+    display: none;
+  }
+
+  .auth-card {
+    min-height: calc(100vh - 64px);
+  }
+}
+
+@media (max-width: 640px) {
+  .auth-page {
+    padding: 16px;
+  }
+
+  .auth-card {
+    padding: 26px 18px;
+  }
+
+  .auth-mode-switch,
+  .tab-row,
+  .oauth-row,
+  .form-columns,
+  .email-verification-controls,
+  .captcha-row-inline,
+  .code-row {
+    width: 100%;
+    grid-template-columns: 1fr;
+  }
+
+  .auth-mode-switch,
+  .tab-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .oauth-row {
+    grid-template-columns: 1fr;
+  }
+
+  .captcha-image,
+  .send-code-btn {
+    width: 100%;
+  }
 }
 </style>

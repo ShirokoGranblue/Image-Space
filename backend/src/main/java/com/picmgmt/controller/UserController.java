@@ -222,7 +222,7 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
     @Audit(action = "USER_SEND_CODE", module = "USER", targetType = "user")
     public Result<Void> sendCode(@Valid @RequestBody SendCodeDTO dto, HttpServletRequest request) {
         turnstileService.verify(dto.getTurnstileToken(), clientIp(request));
-        userService.sendCode(dto.getEmail().trim(), dto.getCaptchaId(), dto.getCaptchaCode());
+        userService.sendCode(dto.getEmail().trim(), dto.getCaptchaId(), dto.getCaptchaCode(), dto.getPurpose());
         return Result.ok();
     }
 

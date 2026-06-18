@@ -1,100 +1,233 @@
 <template>
-  <div class="home-page cinematic-shell">
+  <div class="asset-page">
     <NavBar />
-    <div class="page-container">
-      <header class="page-header">
-        <div>
-          <h1 class="page-title">Images</h1>
-        </div>
-        <div class="toolbar">
-          <div class="toolbar-left">
-            <el-input
-              v-model="query.keyword"
-              placeholder="搜索图片名称"
-              clearable
-              @clear="onFilterChange"
-              @keyup.enter="onFilterChange"
-              class="toolbar-search"
-            >
-              <template #prefix>
-                <el-icon><Search /></el-icon>
-              </template>
-            </el-input>
-            <el-select
-              v-model="query.categoryId"
-              placeholder="分类筛选"
-              clearable
-              @change="onFilterChange"
-              class="toolbar-select"
-            >
-              <el-option v-for="cat in categories" :key="cat.id" :label="cat.categoryName" :value="cat.id" />
-            </el-select>
-            <el-select
-              v-model="query.visibility"
-              placeholder="公开/私有"
-              clearable
-              class="toolbar-select"
-            >
-              <el-option label="公开" value="PUBLIC" />
-              <el-option label="私有" value="PRIVATE" />
-              <el-option label="指定用户" value="SPECIFIED" />
-            </el-select>
-            <div class="selection-actions" v-if="displayedImages.length > 0">
-              <el-checkbox
-                :model-value="allVisibleSelected"
-                :indeterminate="partiallySelected"
-                @change="toggleSelectAll"
-              >
-                全选本页
-              </el-checkbox>
+
+    <div class="asset-shell">
+      <aside class="workspace-rail" aria-label="图片工作区">
+        <section class="rail-section">
+          <h2 class="rail-title">图库</h2>
+          <button class="rail-item" :class="{ active: !query.visibility }" type="button" @click="setVisibilityFilter('')">
+            <span class="dot green"></span>
+            <span>全部图片</span>
+            <strong>{{ total }}</strong>
+          </button>
+          <button class="rail-item" :class="{ active: query.visibility === 'PUBLIC' }" type="button" @click="setVisibilityFilter('PUBLIC')">
+            <span class="dot cyan"></span>
+            <span>公开</span>
+            <strong>{{ visibilityStats.PUBLIC }}</strong>
+          </button>
+          <button class="rail-item" :class="{ active: query.visibility === 'SPECIFIED' }" type="button" @click="setVisibilityFilter('SPECIFIED')">
+            <span class="dot amber"></span>
+            <span>指定用户</span>
+            <strong>{{ visibilityStats.SPECIFIED }}</strong>
+          </button>
+          <button class="rail-item" :class="{ active: query.visibility === 'PRIVATE' }" type="button" @click="setVisibilityFilter('PRIVATE')">
+            <span class="dot coral"></span>
+            <span>仅自己</span>
+            <strong>{{ visibilityStats.PRIVATE }}</strong>
+          </button>
+        </section>
+
+        <section class="rail-section">
+          <h2 class="rail-title">筛选</h2>
+          <button class="rail-item" type="button" @click="query.keyword = ''; query.categoryId = null; onFilterChange()">
+            <span class="dot violet"></span>
+            <span>清空筛选</span>
+            <strong>重置</strong>
+          </button>
+          <button class="rail-item" type="button" @click="clearSelection" :disabled="selectedImageUuids.length === 0">
+            <span class="dot green"></span>
+            <span>已选择</span>
+            <strong>{{ selectedImageUuids.length }}</strong>
+          </button>
+        </section>
+
+        <section class="rail-section">
+          <h2 class="rail-title">状态</h2>
+          <div class="meter-card">
+            <div class="meter-top">
+              <span>页面状态</span>
+              <strong>{{ loading ? '加载中' : '已就绪' }}</strong>
+            </div>
+            <div class="meter"><span :style="{ width: loading ? '38%' : '74%' }"></span></div>
+          </div>
+        </section>
+      </aside>
+
+      <main class="asset-main">
+        <header class="main-head">
+          <div class="headline-block">
+            <h1>在一个页面整理、筛选和分享图片。</h1>
+            <p>上传新图片，按分类和可见范围快速筛选，也可以批量选择、编辑信息或复制分享链接。</p>
+          </div>
+          <div class="stats" aria-label="图片统计">
+            <div class="stat">
+              <strong>{{ total }}</strong>
+              <span>全部图片</span>
+            </div>
+            <div class="stat">
+              <strong>{{ categories.length }}</strong>
+              <span>分类</span>
+            </div>
+            <div class="stat">
+              <strong>{{ selectedImageUuids.length }}</strong>
+              <span>已选择</span>
             </div>
           </div>
-          <div class="toolbar-right">
-            <el-select v-model="query.sortField" @change="onFilterChange" style="width: 120px">
-              <el-option label="按时间" value="upload_time" />
-              <el-option label="按名称" value="image_name" />
-              <el-option label="按大小" value="file_size" />
-            </el-select>
-            <el-button v-if="selectedImageUuids.length > 0" @click="clearSelection">取消选择</el-button>
-            <el-button
-              v-if="selectedImageUuids.length > 0"
-              type="danger"
-              @click="handleBatchDelete"
+        </header>
+
+        <section class="command-panel" aria-label="搜索和筛选">
+          <el-input
+            v-model="query.keyword"
+            placeholder="按图片名称搜索"
+            clearable
+            class="command-search"
+            @clear="onFilterChange"
+            @keyup.enter="onFilterChange"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+
+          <el-select v-model="query.categoryId" placeholder="选择分类" clearable class="command-select" @change="onFilterChange">
+            <el-option v-for="cat in categories" :key="cat.id" :label="cat.categoryName" :value="cat.id" />
+          </el-select>
+
+          <el-select v-model="query.sortField" class="command-select" @change="onFilterChange">
+            <el-option label="最新上传" value="upload_time" />
+            <el-option label="名称" value="image_name" />
+            <el-option label="文件大小" value="file_size" />
+          </el-select>
+
+          <button class="select-all" type="button" :class="{ active: allVisibleSelected }" @click="toggleSelectAll(!allVisibleSelected)">
+            {{ allVisibleSelected ? '取消本页' : '选择本页' }}
+          </button>
+
+          <button class="primary-command" type="button" @click="uploadRef.open()">
+            <el-icon><Plus /></el-icon>
+            上传
+          </button>
+        </section>
+
+        <section class="filter-strip" aria-label="快速筛选">
+          <button class="filter-chip" :class="{ active: !query.visibility }" type="button" @click="setVisibilityFilter('')">全部</button>
+          <button class="filter-chip" :class="{ active: query.visibility === 'PUBLIC' }" type="button" @click="setVisibilityFilter('PUBLIC')">公开</button>
+          <button class="filter-chip" :class="{ active: query.visibility === 'SPECIFIED' }" type="button" @click="setVisibilityFilter('SPECIFIED')">指定用户</button>
+          <button class="filter-chip" :class="{ active: query.visibility === 'PRIVATE' }" type="button" @click="setVisibilityFilter('PRIVATE')">仅自己</button>
+          <button class="filter-chip danger" v-if="selectedImageUuids.length > 0" type="button" @click="handleBatchDelete">
+            删除 {{ selectedImageUuids.length }}
+          </button>
+        </section>
+
+        <section class="gallery-stage">
+          <div v-if="loading" class="skeleton-grid">
+            <div class="asset-skeleton" v-for="n in 8" :key="n"></div>
+          </div>
+
+          <div v-else-if="displayedImages.length === 0" class="empty-state asset-empty">
+            <el-icon><PictureFilled /></el-icon>
+            <p>没有符合条件的图片。</p>
+          </div>
+
+          <div v-else class="asset-grid">
+            <ImageCard
+              v-for="img in displayedImages"
+              :key="img.uuid || img.id"
+              :image="img"
+              :show-actions="true"
+              :selectable="true"
+              :selected="selectedImageUuids.includes(img.uuid)"
+              @delete="handleDelete"
+              @copy="copyImageLink"
+              @toggle-select="toggleImageSelection"
+            />
+          </div>
+        </section>
+
+        <footer class="batch-queue" v-if="displayedImages.length > 0">
+          <span>已选图片</span>
+          <div class="queue-strip">
+            <button
+              v-for="img in selectedPreviewImages"
+              :key="img.uuid"
+              class="queue-thumb"
+              type="button"
+              :title="img.imageName"
+              @click="toggleImageSelection(img.uuid)"
             >
-              删除选中 {{ selectedImageUuids.length }}
-            </el-button>
-            <el-button type="primary" class="btn-slide" @click="uploadRef.open()">
-              <el-icon><Plus /></el-icon> 上传图片
-            </el-button>
+              <img v-if="getImageDisplayUrl(img)" :src="getImageDisplayUrl(img)" :alt="img.imageName" />
+            </button>
+          </div>
+          <div class="queue-actions">
+            <button class="secondary-command" type="button" @click="clearSelection" :disabled="selectedImageUuids.length === 0">清空</button>
+            <button class="primary-command compact" type="button" @click="handleBatchDelete" :disabled="selectedImageUuids.length === 0">删除</button>
+          </div>
+        </footer>
+      </main>
+
+      <aside class="asset-inspector" aria-label="图片信息">
+        <div class="inspector-card" v-if="inspectedImage">
+          <div class="inspect-preview">
+            <img v-if="inspectedImageSrc" :src="inspectedImageSrc" :alt="inspectedImage.imageName" />
+            <div v-else class="inspect-fallback">
+              <el-icon><PictureFilled /></el-icon>
+            </div>
+          </div>
+
+          <div class="inspect-body">
+            <div class="inspect-head">
+              <div>
+                <h2>{{ inspectedImage.imageName }}</h2>
+                <p>图片信息与分享状态</p>
+              </div>
+              <span class="inspect-status" :class="visibilityClass(inspectedImage.visibility)">{{ visibilityText(inspectedImage.visibility) }}</span>
+            </div>
+
+            <div class="meta-grid">
+              <div class="meta">
+                <span>分类</span>
+                <strong>{{ inspectedImage.categoryName || '未分类' }}</strong>
+              </div>
+              <div class="meta">
+                <span>大小</span>
+                <strong>{{ formatFileSize(inspectedImage.fileSize) }}</strong>
+              </div>
+              <div class="meta">
+                <span>类型</span>
+                <strong>{{ inspectedImage.imageType || '--' }}</strong>
+              </div>
+              <div class="meta">
+                <span>上传时间</span>
+                <strong>{{ inspectedImage.uploadTime ? formatTime(inspectedImage.uploadTime) : '--' }}</strong>
+              </div>
+            </div>
+
+            <div class="route-box">
+              <div class="route-line">
+                <span>分享状态</span>
+                <code>{{ visibilityText(inspectedImage.visibility) }}</code>
+              </div>
+              <div class="route-line">
+                <span>访问说明</span>
+                <code>{{ visibilityDescription(inspectedImage.visibility) }}</code>
+              </div>
+            </div>
+
+            <div class="inspect-actions">
+              <button class="primary-command compact" type="button" @click="goDetail(inspectedImage)">查看详情</button>
+              <button class="secondary-command" type="button" @click="copyImageLink(inspectedImage)">复制链接</button>
+              <button class="secondary-command" type="button" @click="handleEdit(inspectedImage)">编辑信息</button>
+              <button class="secondary-command danger-text" type="button" @click="handleDelete(inspectedImage)">删除</button>
+            </div>
           </div>
         </div>
-      </header>
 
-      <div v-if="loading" class="empty-state">
-        <div class="skeleton-grid">
-          <div class="skeleton" v-for="n in 6" :key="n" style="aspect-ratio:1;"></div>
+        <div class="inspector-card empty-inspector" v-else>
+          <h2>还没有选择图片</h2>
+          <p>选择一张图片后，可以在这里查看信息并处理分享。</p>
         </div>
-      </div>
-
-      <div v-else-if="displayedImages.length === 0" class="empty-state">
-        <el-icon><PictureFilled /></el-icon>
-        <p>上传图片</p>
-      </div>
-
-      <div v-else class="card-grid">
-        <div v-for="(img, idx) in displayedImages" :key="img.id" class="stagger-item" :style="{ animationDelay: `${idx * 0.06}s` }">
-          <ImageCard
-            :image="img"
-            :show-actions="true"
-            :selectable="true"
-            :selected="selectedImageUuids.includes(img.uuid)"
-            @delete="handleDelete"
-            @copy="copyImageLink"
-            @toggle-select="toggleImageSelection"
-          />
-        </div>
-      </div>
-
+      </aside>
     </div>
 
     <Teleport to="body">
@@ -114,23 +247,17 @@
 
     <ImageUpload ref="uploadRef" @uploaded="handleUploaded" />
 
-    <el-dialog v-model="editVisible" title="编辑图片信息" width="480px">
-      <el-form :model="editForm" label-width="86px" v-if="editForm.uuid">
+    <el-dialog v-model="editVisible" title="编辑图片信息" width="520px">
+      <el-form :model="editForm" label-width="110px" v-if="editForm.uuid">
         <el-form-item label="图片名称">
           <el-input v-model="editForm.imageName" />
         </el-form-item>
         <el-form-item label="分类">
           <div class="category-row">
-            <el-select
-              v-model="editForm.categoryId"
-              placeholder="选择分类"
-              clearable
-              filterable
-              style="width: 100%"
-            >
+            <el-select v-model="editForm.categoryId" placeholder="选择分类" clearable filterable style="width: 100%">
               <el-option v-for="cat in categories" :key="cat.id" :label="cat.categoryName" :value="cat.id" />
             </el-select>
-            <el-button @click="openCreateCategory">新建分类</el-button>
+            <el-button @click="openCreateCategory">新建</el-button>
           </div>
         </el-form-item>
         <el-form-item label="描述">
@@ -139,7 +266,7 @@
         <el-form-item label="标签">
           <TagInput v-model="editForm.tags" placeholder="多个标签用 # 分隔" />
         </el-form-item>
-        <el-form-item label="可见权限">
+        <el-form-item label="可见范围">
           <el-select v-model="editForm.visibility" style="width: 100%">
             <el-option label="仅自己" value="PRIVATE" />
             <el-option label="公开" value="PUBLIC" />
@@ -156,8 +283,8 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="categoryDialogVisible" title="新建分类" width="360px">
-      <el-form label-width="70px" @submit.prevent>
+    <el-dialog v-model="categoryDialogVisible" title="新建分类" width="380px">
+      <el-form label-width="88px" @submit.prevent>
         <el-form-item label="分类名">
           <el-input v-model="newCategoryName" maxlength="20" show-word-limit @keyup.enter="submitCategory" />
         </el-form-item>
@@ -181,10 +308,11 @@ import TagInput from '../components/TagInput.vue'
 import { getImageList, deleteImage, updateImage } from '../api/image'
 import { getImageResourceStatus, refreshImageAccessUrl } from '../api/resource'
 import { getCategoryList, createCategory } from '../api/category'
-import { DEFAULT_IMAGE_PAGE_SIZE, IMAGE_PAGE_SIZES, buildImageListParams, getImageDownloadUrl } from '../utils/imageRequests'
+import { DEFAULT_IMAGE_PAGE_SIZE, IMAGE_PAGE_SIZES, buildImageListParams, getImageDisplayUrl, getImageDownloadUrl, getImagePreviewUrl } from '../utils/imageRequests'
 import { applyImageAccessUrl, applyImageStatus, imageToPollingResource } from '../utils/resourceAdapters'
 import { isAccessUrlExpiring } from '../utils/resourceAccess'
 import { hasSpecifiedUsers } from '../utils/visibility'
+import { formatTime } from '../utils/format'
 import { POLLING_INTERVALS, useResourcePolling } from '../composables/useResourcePolling'
 
 const uploadRef = ref(null)
@@ -200,19 +328,15 @@ const newCategoryName = ref('')
 const creatingCategory = ref(false)
 const selectedImageUuids = ref([])
 const recentUploadResources = ref([])
-const displayedImages = computed(() => {
-  if (!query.visibility) return images.value
-  return images.value.filter(img => img.visibility === query.visibility)
-})
-const visibleImageUuids = computed(() => displayedImages.value.map(img => img.uuid))
-const allVisibleSelected = computed(() => visibleImageUuids.value.length > 0 && visibleImageUuids.value.every(uuid => selectedImageUuids.value.includes(uuid)))
-const partiallySelected = computed(() => selectedImageUuids.value.length > 0 && !allVisibleSelected.value)
-const recentUploadPollingResource = computed(() => {
-  const active = recentUploadResources.value.filter(img => img?.uuid && !img.deleted)
-  const next = active.find(img => img.status === 'PROCESSING')
-    || active.find(img => isAccessUrlExpiring(imageToPollingResource(img)?.url))
-    || active[0]
-  return imageToPollingResource(next)
+
+const query = reactive({
+  page: 1,
+  limit: DEFAULT_IMAGE_PAGE_SIZE,
+  keyword: '',
+  categoryId: null,
+  visibility: '',
+  sortField: 'upload_time',
+  sortOrder: 'desc'
 })
 
 const editForm = reactive({
@@ -225,14 +349,30 @@ const editForm = reactive({
   visibleUsernames: ''
 })
 
-const query = reactive({
-  page: 1,
-  limit: DEFAULT_IMAGE_PAGE_SIZE,
-  keyword: '',
-  categoryId: null,
-  visibility: '',
-  sortField: 'upload_time',
-  sortOrder: 'desc'
+const displayedImages = computed(() => {
+  if (!query.visibility) return images.value
+  return images.value.filter(img => img.visibility === query.visibility)
+})
+const visibleImageUuids = computed(() => displayedImages.value.map(img => img.uuid).filter(Boolean))
+const allVisibleSelected = computed(() => visibleImageUuids.value.length > 0 && visibleImageUuids.value.every(uuid => selectedImageUuids.value.includes(uuid)))
+const selectedPreviewImages = computed(() => images.value.filter(img => selectedImageUuids.value.includes(img.uuid)).slice(0, 8))
+const inspectedImage = computed(() => selectedPreviewImages.value[0] || displayedImages.value[0] || null)
+const inspectedImageSrc = computed(() => inspectedImage.value ? getImagePreviewUrl(inspectedImage.value) : '')
+const visibilityStats = computed(() => {
+  const stats = { PUBLIC: 0, SPECIFIED: 0, PRIVATE: 0 }
+  for (const image of images.value) {
+    if (image.visibility === 'PUBLIC') stats.PUBLIC += 1
+    else if (image.visibility === 'SPECIFIED') stats.SPECIFIED += 1
+    else stats.PRIVATE += 1
+  }
+  return stats
+})
+const recentUploadPollingResource = computed(() => {
+  const active = recentUploadResources.value.filter(img => img?.uuid && !img.deleted)
+  const next = active.find(img => img.status === 'PROCESSING')
+    || active.find(img => isAccessUrlExpiring(imageToPollingResource(img)?.url))
+    || active[0]
+  return imageToPollingResource(next)
 })
 
 onMounted(() => {
@@ -259,9 +399,7 @@ useResourcePolling({
   },
   onStatusChange: (status) => {
     updatePolledImage(status.uuid, image => applyImageStatus(image, status))
-    if (status.deleted) {
-      removePolledImage(status.uuid)
-    }
+    if (status.deleted) removePolledImage(status.uuid)
   },
   onAccessUrl: (access, status) => {
     const source = access.source || status.source
@@ -286,7 +424,7 @@ async function fetchList() {
     }))
     images.value = res.data.records || []
     total.value = res.data.total || 0
-    selectedImageUuids.value = selectedImageUuids.value.filter(uuid => displayedImages.value.some(img => img.uuid === uuid))
+    selectedImageUuids.value = selectedImageUuids.value.filter(uuid => images.value.some(img => img.uuid === uuid))
   } catch {} finally {
     loading.value = false
   }
@@ -304,6 +442,10 @@ async function openUploadFromRoute() {
 function onFilterChange() {
   query.page = 1
   fetchList()
+}
+
+function setVisibilityFilter(visibility) {
+  query.visibility = visibility
 }
 
 function onPageSizeChange(size) {
@@ -334,7 +476,7 @@ function openCreateCategory() {
 async function submitCategory() {
   const name = newCategoryName.value.trim()
   if (!name) {
-    ElMessage.warning('请输入分类名')
+    ElMessage.warning('请输入分类名称')
     return
   }
   creatingCategory.value = true
@@ -345,7 +487,7 @@ async function submitCategory() {
     categories.value.push(category)
     editForm.categoryId = category.id
     categoryDialogVisible.value = false
-    ElMessage.success('分类创建成功')
+    ElMessage.success('分类已创建')
   } catch {} finally {
     creatingCategory.value = false
   }
@@ -386,7 +528,8 @@ async function handleBatchDelete() {
 async function handleDelete(img) {
   try {
     await deleteImage(img.uuid)
-    ElMessage.success('删除成功')
+    ElMessage.success('图片已删除')
+    selectedImageUuids.value = selectedImageUuids.value.filter(uuid => uuid !== img.uuid)
     fetchList()
   } catch {}
 }
@@ -446,166 +589,536 @@ async function saveEdit() {
       visibility: editForm.visibility,
       visibleUsernames: editForm.visibility === 'SPECIFIED' ? editForm.visibleUsernames : ''
     })
-    ElMessage.success('更新成功')
+    ElMessage.success('图片信息已更新')
     editVisible.value = false
     fetchList()
   } catch {}
 }
+
+function goDetail(img) {
+  if (img?.uuid) router.push(`/image/${img.uuid}`)
+}
+
+function visibilityText(visibility) {
+  if (visibility === 'PUBLIC') return '公开'
+  if (visibility === 'SPECIFIED') return '指定用户'
+  return '仅自己'
+}
+
+function visibilityDescription(visibility) {
+  if (visibility === 'PUBLIC') return '任何人可查看'
+  if (visibility === 'SPECIFIED') return '仅指定用户可查看'
+  return '只有你可查看'
+}
+
+function visibilityClass(visibility) {
+  if (visibility === 'PUBLIC') return 'public'
+  if (visibility === 'SPECIFIED') return 'specified'
+  return 'private'
+}
+
+function formatFileSize(size) {
+  const numeric = Number(size || 0)
+  if (!numeric) return '--'
+  if (numeric >= 1024 * 1024) return `${(numeric / 1024 / 1024).toFixed(1)} MB`
+  return `${Math.max(1, Math.round(numeric / 1024))} KB`
+}
 </script>
 
 <style scoped>
-.home-page {
+.asset-page {
   min-height: 100vh;
-  background: var(--gray1);
-  display: flex;
-  flex-direction: column;
+  color: var(--ad-text);
 }
 
-.page-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding-bottom: 112px;
+.asset-shell {
+  width: min(100% - 28px, 1600px);
+  min-height: calc(100vh - 28px);
+  margin: 0 auto;
+  padding: 96px 0 96px;
+  display: grid;
+  grid-template-columns: 212px minmax(0, 1fr) 340px;
+  gap: 0;
 }
 
-.page-header {
-  padding: 14px 20px;
-  margin-bottom: 16px;
-  border: 0.5px solid var(--paper3);
-  border-radius: 12px;
-  background: #fff;
-  display: flex;
+.workspace-rail,
+.asset-main,
+.asset-inspector {
+  border-top: 1px solid var(--ad-line);
+  border-bottom: 1px solid var(--ad-line);
+  background: rgba(17, 23, 34, 0.62);
+}
+
+.workspace-rail {
+  padding: 18px 14px;
+  border-left: 1px solid var(--ad-line);
+  border-right: 1px solid var(--ad-line);
+  border-radius: 18px 0 0 18px;
+}
+
+.rail-section + .rail-section {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--ad-line);
+}
+
+.rail-title,
+.queue-title {
+  margin: 0 0 10px;
+  color: rgba(244, 241, 232, 0.46);
+  font-size: 11px;
+  font-weight: 860;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.rail-item {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
   align-items: center;
+  gap: 9px;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ad-text-soft);
+  font-size: 13px;
+  font-weight: 720;
+  text-align: left;
+}
+
+.rail-item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.rail-item.active,
+.rail-item:hover:not(:disabled) {
+  border-color: rgba(183, 255, 60, 0.26);
+  background: rgba(183, 255, 60, 0.1);
+  color: var(--ad-text);
+}
+
+.rail-item strong {
+  color: var(--ad-muted);
+  font-size: 11px;
+  font-weight: 760;
+}
+
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ad-muted);
+}
+
+.dot.green { background: var(--ad-green); }
+.dot.cyan { background: var(--ad-cyan); }
+.dot.amber { background: var(--ad-amber); }
+.dot.coral { background: var(--ad-coral); }
+.dot.violet { background: var(--ad-violet); }
+
+.meter-card {
+  padding: 12px;
+  border: 1px solid var(--ad-line);
+  border-radius: 12px;
+  background: rgba(13, 16, 22, 0.52);
+}
+
+.meter-top {
+  display: flex;
   justify-content: space-between;
+  gap: 8px;
+  color: var(--ad-text-soft);
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.meter {
+  overflow: hidden;
+  height: 7px;
+  margin-top: 10px;
+  border-radius: 999px;
+  background: rgba(244, 241, 232, 0.08);
+}
+
+.meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--ad-green), var(--ad-cyan));
+  transition: width 0.24s var(--ad-ease);
+}
+
+.asset-main {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  border-right: 1px solid var(--ad-line);
+  background: rgba(13, 16, 22, 0.36);
+}
+
+.main-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: end;
+  padding: 24px 24px 18px;
+  border-bottom: 1px solid var(--ad-line);
+}
+
+.headline-block h1 {
+  max-width: 760px;
+  margin: 0;
+  color: var(--ad-text);
+  font-size: clamp(42px, 5.2vw, 80px);
+  font-weight: 340;
+  line-height: 0.95;
+  letter-spacing: 0;
+}
+
+.headline-block p {
+  max-width: 720px;
+  margin: 14px 0 0;
+  color: var(--ad-text-soft);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 112px);
+  gap: 8px;
+}
+
+.stat {
+  min-height: 82px;
+  padding: 12px;
+  border: 1px solid var(--ad-line);
+  border-radius: 12px;
+  background: rgba(21, 25, 34, 0.84);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.14);
+}
+
+.stat strong {
+  display: block;
+  color: var(--ad-text);
+  font-size: 24px;
+  font-weight: 820;
+  line-height: 1;
+}
+
+.stat span {
+  display: block;
+  margin-top: 8px;
+  color: var(--ad-muted);
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.command-panel {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) 170px 140px auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 16px 24px 0;
+}
+
+.command-search,
+.command-select {
+  width: 100%;
+}
+
+.select-all,
+.primary-command,
+.secondary-command,
+.filter-chip {
+  min-height: 40px;
+  border: 1px solid var(--ad-line);
+  border-radius: 10px;
+  background: rgba(21, 25, 34, 0.86);
+  color: var(--ad-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 13px;
+  font-family: var(--ad-font);
+  font-size: 13px;
+  font-weight: 780;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.16s var(--ad-ease);
+}
+
+.select-all:hover,
+.secondary-command:hover,
+.filter-chip:hover {
+  border-color: var(--ad-line-strong);
+  background: var(--ad-surface-2);
+}
+
+.select-all.active,
+.filter-chip.active,
+.primary-command {
+  background: var(--ad-green);
+  border-color: var(--ad-green);
+  color: #071014;
+}
+
+.primary-command:hover {
+  background: var(--ad-green-2);
+  border-color: var(--ad-green-2);
+  transform: translateY(-1px);
+}
+
+.primary-command:disabled,
+.secondary-command:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.primary-command.compact {
+  min-height: 38px;
+}
+
+.danger-text,
+.filter-chip.danger {
+  color: #fff;
+  border-color: rgba(255, 107, 87, 0.48);
+  background: rgba(255, 107, 87, 0.14);
+}
+
+.filter-strip {
+  display: flex;
   flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px 24px 0;
+}
+
+.filter-chip {
+  min-height: 32px;
+  border-radius: 999px;
+  padding: 0 11px;
+  color: var(--ad-muted);
+  font-size: 12px;
+}
+
+.gallery-stage {
+  min-width: 0;
+  padding: 18px 24px 24px;
+}
+
+.asset-grid,
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(214px, 1fr));
   gap: 12px;
 }
 
-.page-title {
-  font-family: var(--font-display);
-  font-size: 26px;
-  font-weight: 500;
-  color: var(--ink);
-  line-height: 1.1;
-  margin: 0;
+.asset-skeleton {
+  min-height: 260px;
+  border: 1px solid var(--ad-line);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(244, 241, 232, 0.08), rgba(244, 241, 232, 0.02));
+  animation: skPulse 1.8s ease-in-out infinite;
 }
 
-.page-desc {
-  margin: 4px 0 0;
-  color: var(--ink3);
-  font-size: 16px;
-  font-weight: 500;
+.asset-empty {
+  min-height: 360px;
+  border: 1px solid var(--ad-line);
+  border-radius: 16px;
+  background: rgba(21, 25, 34, 0.58);
+  color: var(--ad-text-soft);
 }
 
-.toolbar {
-  display: flex;
-  justify-content: space-between;
+.batch-queue {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  flex: 1;
+  gap: 14px;
+  padding: 13px 18px;
+  border-top: 1px solid var(--ad-line);
+  background: rgba(17, 23, 34, 0.86);
 }
 
-.toolbar-left,
-.toolbar-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+.batch-queue > span {
+  color: rgba(244, 241, 232, 0.46);
+  font-size: 11px;
+  font-weight: 860;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
-.toolbar-left {
-  flex: 1;
-}
-
-.toolbar-right {
-  justify-content: flex-end;
-}
-
-.toolbar-search {
-  width: 180px;
-}
-
-.toolbar-search :deep(.el-input__wrapper) {
-  background: #fff !important;
-  border: 0.5px solid var(--paper3) !important;
-  border-radius: 8px !important;
-  box-shadow: none !important;
-  height: 32px;
-}
-
-.toolbar-select {
-  width: 130px;
-}
-
-.toolbar-select :deep(.el-input__wrapper) {
-  background: #fff !important;
-  border: 0.5px solid var(--paper3) !important;
-  border-radius: 8px !important;
-  box-shadow: none !important;
-  height: 32px;
-  transition: background .15s, border-color .15s;
-}
-
-.toolbar-select :deep(.el-input__wrapper:hover) {
-  background: #fff !important;
-  border-color: var(--ink5) !important;
-}
-
-.selection-actions {
+.queue-strip {
   display: flex;
   align-items: center;
-  gap: 6px;
-  min-height: 32px;
-  padding: 0 10px;
-  background: #fff;
-  border: 0.5px solid var(--paper3);
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.queue-thumb {
+  width: 52px;
+  height: 40px;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 1px solid var(--ad-line);
   border-radius: 8px;
+  background: linear-gradient(135deg, var(--ad-cyan), var(--ad-violet));
+  padding: 0;
 }
 
-.selection-actions :deep(.el-checkbox) {
-  height: 32px;
-}
-
-.selection-actions :deep(.el-checkbox__label) {
-  font-size: 16px;
-  color: var(--ink2);
-}
-
-.btn-slide {
-  height: 32px;
-  padding: 7px 14px;
-  border-radius: 8px;
-  font-size: 16px;
-  background: var(--ink) !important;
-  border: none !important;
-  color: var(--paper) !important;
-  font-family: var(--font-body);
-  transition: background .15s, transform .1s;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.btn-slide:hover {
-  background: var(--ink2) !important;
-}
-
-.btn-slide:active {
-  transform: scale(.97);
-}
-
-.category-row {
+.queue-thumb img {
   width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.queue-actions,
+.inspect-actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+.asset-inspector {
+  padding: 18px;
+  border-right: 1px solid var(--ad-line);
+  border-radius: 0 18px 18px 0;
+}
+
+.inspector-card {
+  overflow: hidden;
+  border: 1px solid var(--ad-line);
+  border-radius: 16px;
+  background: rgba(21, 25, 34, 0.94);
+  box-shadow: var(--ad-shadow-soft);
+}
+
+.inspect-preview {
+  min-height: 244px;
+  background:
+    linear-gradient(180deg, rgba(244, 241, 232, 0.08), transparent 38%),
+    linear-gradient(135deg, rgba(56, 213, 255, 0.56), rgba(155, 140, 255, 0.5), rgba(13, 16, 22, 0.94));
+}
+
+.inspect-preview img {
+  width: 100%;
+  height: 244px;
+  display: block;
+  object-fit: cover;
+}
+
+.inspect-fallback {
+  min-height: 244px;
+  display: grid;
+  place-items: center;
+  color: var(--ad-text-soft);
+}
+
+.inspect-body {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+}
+
+.inspect-head {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: start;
+}
+
+.inspect-head h2,
+.empty-inspector h2 {
+  margin: 0;
+  color: var(--ad-text);
+  font-size: 26px;
+  line-height: 1;
+  font-weight: 420;
+}
+
+.inspect-head p,
+.empty-inspector p {
+  margin: 6px 0 0;
+  color: var(--ad-muted);
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.inspect-status {
+  min-height: 24px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 860;
+  white-space: nowrap;
+}
+
+.inspect-status.public { background: var(--ad-green); color: #071014; }
+.inspect-status.private { background: var(--ad-coral); color: #fff; }
+.inspect-status.specified { background: var(--ad-amber); color: #17100a; }
+
+.meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.meta {
+  padding: 10px;
+  border: 1px solid var(--ad-line);
+  border-radius: 10px;
+  background: rgba(13, 16, 22, 0.44);
+}
+
+.meta span {
+  display: block;
+  color: var(--ad-muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.meta strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--ad-text);
+  font-size: 13px;
+  font-weight: 760;
+  word-break: break-word;
+}
+
+.route-box {
+  display: grid;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid rgba(183, 255, 60, 0.22);
+  border-radius: 12px;
+  background: rgba(183, 255, 60, 0.08);
+}
+
+.route-line {
+  display: grid;
+  grid-template-columns: 66px minmax(0, 1fr);
+  gap: 8px;
   align-items: center;
+  color: var(--ad-text-soft);
+  font-size: 11px;
 }
-.category-row :deep(.el-select) {
-  flex: 1;
+
+.route-line code {
+  min-width: 0;
+  color: var(--ad-green);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.category-row .el-button {
-  flex-shrink: 0;
+
+.empty-inspector {
+  padding: 18px;
 }
 
 .pagination-wrap {
@@ -616,467 +1129,87 @@ async function saveEdit() {
   z-index: 150;
   display: flex;
   justify-content: center;
-  padding: 14px 24px calc(14px + env(safe-area-inset-bottom));
-  margin-top: 0;
-  border-top: 0.5px solid var(--paper3);
-  background: #fff;
-  flex-shrink: 0;
-}
-
-.pagination-wrap :deep(.el-pagination) {
-  max-width: min(100%, 1280px);
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px;
-}
-
-.pagination-wrap :deep(.el-pager li) {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px !important;
-  border: 0.5px solid var(--paper3) !important;
-  background: #fff !important;
-  color: var(--ink) !important;
-  font-size: 16px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: background .15s;
-  font-family: var(--font-body);
-  min-width: auto;
-}
-
-.pagination-wrap :deep(.el-pager li.is-active) {
-  background: var(--ink) !important;
-  color: var(--paper) !important;
-  border-color: var(--ink) !important;
-}
-
-.pagination-wrap :deep(.el-pager li:hover:not(.is-active)) {
-  background: #fff !important;
-}
-
-.pagination-wrap :deep(.btn-prev),
-.pagination-wrap :deep(.btn-next) {
-  background: #fff !important;
-  border: 0.5px solid var(--paper3) !important;
-  color: var(--ink) !important;
-  border-radius: 6px !important;
-  height: 28px !important;
-  width: 28px !important;
-  min-width: auto !important;
-}
-
-.pagination-wrap :deep(.btn-prev:hover),
-.pagination-wrap :deep(.btn-next:hover) {
-  background: #fff !important;
-}
-
-.skeleton-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 14px;
-  padding-top: var(--space-md);
-}
-.skeleton-grid .skeleton {
-  aspect-ratio: 1;
-  border-radius: var(--radius-md);
-}
-
-.card-grid > :deep(.stagger-item) {
-  animation: fadeUp 0.4s var(--ease-out) forwards;
-  opacity: 0;
-}
-
-@media (max-width: 768px) {
-  .page-container { padding: 20px 8px 148px; }
-  .page-header { padding: 14px; }
-  .page-title { font-size: 24px; }
-  .toolbar { flex-direction: column; align-items: stretch; }
-  .toolbar-left, .toolbar-right { flex-wrap: wrap; }
-  .toolbar-search,
-  .toolbar-select,
-  .toolbar-right :deep(.el-select),
-  .category-row {
-    width: 100% !important;
-    grid-template-columns: 1fr;
-  }
-  .pagination-wrap {
-    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
-  }
-  .pagination-wrap :deep(.el-pagination) {
-    --el-pagination-button-width: 28px;
-    --el-pagination-button-height: 28px;
-    font-size: 16px;
-  }
-}
-/* Cinematic minimal override */
-.home-page {
-  min-height: 100vh;
-  background: transparent;
-  color: var(--paper);
-}
-
-.home-page .page-container {
-  width: min(100%, 1440px);
-  padding: 104px 32px 128px;
-}
-
-.page-header {
-  position: relative;
-  overflow: hidden;
-  padding: 38px;
-  margin-bottom: 22px;
-  display: grid;
-  grid-template-columns: minmax(240px, 0.72fr) minmax(0, 1.28fr);
-  align-items: end;
-  gap: 28px;
-  border: 1px solid rgba(255, 253, 248, 0.16);
-  border-radius: 24px;
-  background:
-    linear-gradient(120deg, rgba(7, 17, 31, 0.9) 0%, rgba(7, 17, 31, 0.62) 54%, rgba(7, 17, 31, 0.88) 100%),
-    radial-gradient(circle at 20% 12%, rgba(55, 138, 221, 0.34), transparent 34%),
-    radial-gradient(circle at 90% 18%, rgba(239, 159, 39, 0.14), transparent 26%);
-  box-shadow: var(--shadow-cinematic);
-  backdrop-filter: blur(18px);
-}
-
-.page-header::before {
-  content: none;
-  position: absolute;
-  right: 32px;
-  top: 30px;
-  color: rgba(247, 243, 232, 0.1);
-  font-size: clamp(48px, 7vw, 108px);
-  font-weight: 900;
-  letter-spacing: -0.05em;
-  pointer-events: none;
-}
-
-.page-header > div:first-child {
-  position: relative;
-  z-index: 1;
-}
-
-.page-title {
-  margin: 0;
-  color: var(--paper);
-  font-size: clamp(46px, 6vw, 86px);
-  line-height: 0.88;
-  letter-spacing: -0.05em;
-}
-
-.page-title::before {
-  content: none;
-  display: block;
-  margin-bottom: 16px;
-  color: var(--gold2);
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-}
-
-.page-desc {
-  max-width: 420px;
-  margin: 18px 0 0;
-  color: rgba(247, 243, 232, 0.66);
-  font-size: 16px;
-  line-height: 1.7;
-}
-
-.toolbar {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-  align-self: stretch;
-  padding: 14px;
-  border: 1px solid rgba(255, 253, 248, 0.12);
-  border-radius: 20px;
-  background: rgba(255, 253, 248, 0.08);
-  backdrop-filter: blur(16px);
-}
-
-.toolbar-left,
-.toolbar-right {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.toolbar-left {
-  display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(140px, 170px) minmax(140px, 170px) auto;
-}
-
-.toolbar-right {
-  justify-content: flex-end;
-}
-
-.toolbar-search,
-.toolbar-select {
-  width: 100%;
-}
-
-.toolbar-search :deep(.el-input__wrapper),
-.toolbar-select :deep(.el-input__wrapper),
-.toolbar-right :deep(.el-input__wrapper) {
-  height: 42px;
-  background: rgba(255, 253, 248, 0.11) !important;
-  border: 1px solid rgba(255, 253, 248, 0.14) !important;
-  border-radius: 999px !important;
-  box-shadow: none !important;
-}
-
-.toolbar-search :deep(.el-input__inner),
-.toolbar-select :deep(.el-input__inner),
-.toolbar-right :deep(.el-input__inner) {
-  color: var(--paper) !important;
-  font-size: 14px;
-}
-
-.toolbar-search :deep(.el-input__inner::placeholder),
-.toolbar-select :deep(.el-input__inner::placeholder) {
-  color: rgba(247, 243, 232, 0.52) !important;
-}
-
-.selection-actions {
-  min-height: 42px;
-  padding: 0 14px;
-  border: 1px solid rgba(255, 253, 248, 0.14);
-  border-radius: 999px;
-  background: rgba(255, 253, 248, 0.08);
-}
-
-.selection-actions :deep(.el-checkbox__label) {
-  color: rgba(247, 243, 232, 0.76);
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.btn-slide {
-  height: 42px;
-  padding: 0 18px;
-  border-radius: 999px;
-  background: var(--paper) !important;
-  border: 1px solid rgba(255, 253, 248, 0.7) !important;
-  color: var(--cinema) !important;
-  font-size: 14px;
-  font-weight: 800;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
-}
-
-.btn-slide:hover {
-  background: #fff !important;
-  transform: translateY(-1px);
-}
-
-.home-page .card-grid {
-  grid-template-columns: repeat(auto-fill, minmax(218px, 1fr));
-  gap: 20px;
-  padding: 22px;
-  border: 1px solid rgba(255, 253, 248, 0.12);
-  border-radius: 22px;
-  background: rgba(7, 17, 31, 0.45);
-  box-shadow: var(--shadow-cinematic-soft);
-  backdrop-filter: blur(18px);
-}
-
-.home-page .empty-state {
-  margin-top: 22px;
-  border: 1px solid rgba(255, 253, 248, 0.12);
-  border-radius: 22px;
-  background: rgba(7, 17, 31, 0.42);
-  backdrop-filter: blur(18px);
-}
-
-.skeleton-grid {
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 18px;
-}
-
-.skeleton-grid .skeleton {
-  border-radius: 16px;
-  background:
-    linear-gradient(120deg, rgba(255,253,248,0.06), rgba(255,253,248,0.18), rgba(255,253,248,0.06)),
-    rgba(255,253,248,0.08);
-}
-
-.pagination-wrap {
-  border-top: 1px solid rgba(255, 253, 248, 0.12);
-  background: rgba(7, 17, 31, 0.78);
+  padding: 12px 24px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--ad-line);
+  background: rgba(13, 16, 22, 0.88);
   backdrop-filter: blur(18px);
 }
 
 .pagination-wrap :deep(.el-pagination) {
-  color: var(--paper);
-}
-
-.pagination-wrap :deep(.el-pager li),
-.pagination-wrap :deep(.btn-prev),
-.pagination-wrap :deep(.btn-next) {
-  background: rgba(255, 253, 248, 0.08) !important;
-  border: 1px solid rgba(255, 253, 248, 0.12) !important;
-  color: rgba(247, 243, 232, 0.78) !important;
-}
-
-.pagination-wrap :deep(.el-pager li.is-active) {
-  background: var(--paper) !important;
-  color: var(--cinema) !important;
-  border-color: var(--paper) !important;
+  color: var(--ad-text);
 }
 
 .category-row {
-  gap: 10px;
+  width: 100%;
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
-@media (max-width: 1040px) {
-  .page-header {
+.category-row :deep(.el-select) {
+  flex: 1;
+}
+
+@media (max-width: 1260px) {
+  .asset-shell {
+    grid-template-columns: 76px minmax(0, 1fr);
+  }
+  .asset-inspector {
+    display: none;
+  }
+  .workspace-rail {
+    border-radius: 18px 0 0 18px;
+  }
+  .asset-main {
+    border-radius: 0 18px 18px 0;
+  }
+  .rail-title,
+  .rail-item span:not(.dot),
+  .rail-item strong,
+  .meter-card {
+    display: none;
+  }
+  .rail-item {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+}
+
+@media (max-width: 980px) {
+  .asset-shell {
+    width: min(100% - 20px, 1600px);
+    grid-template-columns: 1fr;
+    padding-top: 92px;
+  }
+  .workspace-rail {
+    display: none;
+  }
+  .asset-main {
+    border: 1px solid var(--ad-line);
+    border-radius: 18px;
+  }
+  .main-head,
+  .command-panel {
     grid-template-columns: 1fr;
   }
-  .toolbar-left {
-    grid-template-columns: 1fr 1fr;
+  .stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
-}
-
-@media (max-width: 768px) {
-  .home-page .page-container {
-    padding: 92px 14px 148px;
-  }
-  .page-header {
-    padding: 28px 18px;
-    border-radius: 20px;
-  }
-  .toolbar,
-  .toolbar-left,
-  .toolbar-right {
-    display: grid;
+  .batch-queue {
     grid-template-columns: 1fr;
-    align-items: stretch;
   }
-  .toolbar-search,
-  .toolbar-select,
-  .toolbar-right :deep(.el-select) {
-    width: 100% !important;
+}
+
+@media (max-width: 620px) {
+  .headline-block h1 {
+    font-size: 42px;
   }
-  .home-page .card-grid {
+  .stats {
     grid-template-columns: 1fr;
-    padding: 14px;
   }
-}
-
-/* Anime paper override */
-.home-page {
-  color: var(--ink);
-}
-
-.page-header {
-  border-color: rgba(17, 26, 53, 0.1);
-  background: #f0eee6;
-  box-shadow: 0 24px 70px rgba(17, 26, 53, 0.12);
-}
-
-.page-header::before,
-.page-title::before {
-  content: none;
-}
-
-.page-header::after {
-  content: '';
-  position: absolute;
-  right: 34px;
-  top: 26px;
-  width: 118px;
-  height: 118px;
-  border-radius: 34% 66% 58% 42%;
-  background:
-    radial-gradient(circle at 35% 35%, rgba(255,255,255,0.9), transparent 24%),
-    linear-gradient(135deg, rgba(255,122,184,0.72), rgba(88,184,255,0.66));
-  opacity: 0.72;
-  animation: floatMascot 5.8s var(--ease-in-out) infinite;
-  pointer-events: none;
-}
-
-.page-title {
-  color: var(--ink);
-  text-shadow: 0 1px 0 rgba(255,255,255,0.5);
-}
-
-.page-desc {
-  color: rgba(4, 44, 83, 0.68);
-}
-
-.toolbar,
-.selection-actions {
-  border-color: rgba(17, 26, 53, 0.1);
-  background: #f0eee6;
-}
-
-.toolbar-search :deep(.el-input__wrapper),
-.toolbar-select :deep(.el-input__wrapper),
-.toolbar-right :deep(.el-input__wrapper) {
-  background: #f0eee6 !important;
-  border-color: rgba(17, 26, 53, 0.1) !important;
-}
-
-.toolbar-search :deep(.el-input__inner),
-.toolbar-select :deep(.el-input__inner),
-.toolbar-right :deep(.el-input__inner),
-.selection-actions :deep(.el-checkbox__label) {
-  color: var(--ink) !important;
-}
-
-.toolbar-search :deep(.el-input__inner::placeholder),
-.toolbar-select :deep(.el-input__inner::placeholder) {
-  color: rgba(4, 44, 83, 0.46) !important;
-}
-
-.btn-slide {
-  background: var(--cinema) !important;
-  border-color: rgba(17, 26, 53, 0.82) !important;
-  color: var(--paper) !important;
-}
-
-.btn-slide:hover {
-  background: var(--anime-pink) !important;
-}
-
-.home-page .card-grid,
-.home-page .empty-state {
-  border-color: rgba(17, 26, 53, 0.1);
-  background: #f0eee6;
-}
-
-.pagination-wrap {
-  border-top-color: rgba(17, 26, 53, 0.12);
-  background: #f0eee6;
-}
-
-.pagination-wrap :deep(.el-pagination) {
-  color: var(--ink);
-}
-
-.pagination-wrap :deep(.el-pager li),
-.pagination-wrap :deep(.btn-prev),
-.pagination-wrap :deep(.btn-next) {
-  background: #f0eee6 !important;
-  border-color: rgba(17, 26, 53, 0.12) !important;
-  color: var(--ink) !important;
-}
-
-.pagination-wrap :deep(.el-pager li.is-active) {
-  background: var(--cinema) !important;
-  color: var(--paper) !important;
-  border-color: var(--cinema) !important;
-}
-
-@keyframes floatMascot {
-  0%, 100% { transform: translate3d(0, 0, 0) rotate(-5deg); }
-  50% { transform: translate3d(0, -12px, 0) rotate(5deg); }
+  .asset-grid,
+  .skeleton-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

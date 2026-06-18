@@ -18,10 +18,17 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import javax.imageio.ImageIO;
+import java.awt.Color;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.util.List;
+import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -193,5 +200,91 @@ class ImageReadServiceTest {
 
         verify(imageMapper).selectImageVOPage(any(), eq(42L), isNull(), isNull(), eq("PUBLIC"),
                 isNull(), eq("upload_time"), eq("desc"), eq("latest"), isNull());
+    }
+
+    @Test
+    void downloadByUuid_shouldUseOriginalKeyInsteadOfDisplayVariantKeys() {
+        com.picmgmt.entity.Image image = publicImage();
+        image.setStorageKey("images/img-uuid/original.png");
+        image.setOriginalKey("images/img-uuid/original.png");
+        image.setMediumKey("images/img-uuid/medium.jpg");
+        image.setThumbKey("images/img-uuid/thumb.jpg");
+        byte[] originalBytes = new byte[] {1, 2, 3};
+        when(imageRepository.findByUuid("img-uuid")).thenReturn(Optional.of(image));
+        when(permissionService.canView(image)).thenReturn(true);
+        when(storageService.download("images", "images/img-uuid/original.png")).thenReturn(originalBytes);
+
+        byte[] result = service.downloadByUuid("img-uuid");
+
+        assertArrayEquals(originalBytes, result);
+        verify(storageService).download("images", "images/img-uuid/original.png");
+        verify(storageService, never()).download("images", "images/img-uuid/thumb.jpg");
+        verify(storageService, never()).download("images", "images/img-uuid/medium.jpg");
+    }
+
+    @Test
+    void downloadByUuidWithFormat_shouldConvertOriginalToJpgAndCacheResult() {
+        com.picmgmt.entity.Image image = publicImage();
+        image.setOriginalKey("images/img-uuid/original.png");
+        image.setOriginalFilename("transparent.png");
+        image.setOriginalContentType("image/png");
+        image.setOriginalExt("png");
+        when(imageRepository.findByUuid("img-uuid")).thenReturn(Optional.of(image));
+        when(permissionService.canView(image)).thenReturn(true);
+        when(storageService.objectExists("images", "images/img-uuid/download/original.jpg")).thenReturn(false);
+        when(storageService.download("images", "images/img-uuid/original.png")).thenReturn(pngBytes());
+
+        ImageDownloadFile result = service.downloadByUuid("img-uuid", "jpeg");
+
+        assertEquals("image/jpeg", result.contentType());
+        assertEquals("transparent.jpg", result.filename());
+        Assertions.assertTrue(result.bytes().length > 2);
+        assertEquals((byte) 0xFF, result.bytes()[0]);
+        verify(storageService).upload(eq("images"), eq("images/img-uuid/download/original.jpg"),
+                any(byte[].class), eq("image/jpeg"), eq(ImageUrlService.PRIVATE_CACHE_CONTROL));
+    }
+
+    @Test
+    void downloadByUuidWithFormat_shouldRejectStaticImageToGif() {
+        com.picmgmt.entity.Image image = publicImage();
+        image.setOriginalKey("images/img-uuid/original.png");
+        image.setOriginalContentType("image/png");
+        image.setOriginalExt("png");
+        when(imageRepository.findByUuid("img-uuid")).thenReturn(Optional.of(image));
+        when(permissionService.canView(image)).thenReturn(true);
+        when(storageService.download("images", "images/img-uuid/original.png")).thenReturn(pngBytes());
+
+        com.picmgmt.common.BusinessException ex = assertThrows(
+                com.picmgmt.common.BusinessException.class,
+                () -> service.downloadByUuid("img-uuid", "gif")
+        );
+
+        assertEquals(com.picmgmt.common.ErrorCode.BAD_REQUEST, ex.getErrorCode());
+        verify(storageService, never()).upload(eq("images"), any(String.class), any(byte[].class), any(String.class), any(String.class));
+    }
+
+    private com.picmgmt.entity.Image publicImage() {
+        com.picmgmt.entity.Image image = new com.picmgmt.entity.Image();
+        image.setId(7L);
+        image.setUuid("img-uuid");
+        image.setUserId(4L);
+        image.setVisibility("PUBLIC");
+        image.setMediaVersion(1L);
+        return image;
+    }
+
+    private static byte[] pngBytes() {
+        try {
+            BufferedImage image = new BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB);
+            image.setRGB(0, 0, new Color(255, 0, 0, 0).getRGB());
+            image.setRGB(1, 0, Color.BLUE.getRGB());
+            image.setRGB(0, 1, Color.GREEN.getRGB());
+            image.setRGB(1, 1, Color.WHITE.getRGB());
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            ImageIO.write(image, "png", out);
+            return out.toByteArray();
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
 }

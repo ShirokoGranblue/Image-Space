@@ -3,6 +3,8 @@
     class="image-card"
     :class="[`variant-${variant}`, { selected }]"
     tabindex="0"
+    role="button"
+    :aria-label="`查看图片：${image.imageName}`"
     @mouseenter="hover = true"
     @mouseleave="hover = false"
     @focus="hover = true"
@@ -10,10 +12,12 @@
     @click="goDetail"
     @keydown.enter.prevent="goDetail"
     @keydown.space.prevent="goDetail"
-    role="button"
-    :aria-label="`查看图片: ${image.imageName}`"
   >
-    <div class="card-frame">
+      <div class="card-frame">
+        <div class="asset-topline">
+        <span class="visibility-chip" :class="visibilityClass">{{ visibilityLabel }}</span>
+      </div>
+
       <button
         v-if="selectable"
         class="select-toggle"
@@ -33,11 +37,13 @@
         class="card-img"
         :class="{ zoomed: hover }"
         loading="lazy"
+        decoding="async"
         @error="handleImgError"
       />
       <div v-else class="img-fallback">
-        <el-icon :size="40"><PictureFilled /></el-icon>
+        <el-icon :size="38"><PictureFilled /></el-icon>
       </div>
+
       <div class="card-vignette"></div>
 
       <transition name="overlay-fade">
@@ -54,6 +60,9 @@
           <button v-if="showActions" class="icon-action" type="button" title="复制链接" @click.stop="emit('copy', image)">
             <el-icon><Link /></el-icon>
           </button>
+          <button v-if="showActions" class="icon-action" type="button" title="编辑" @click.stop="emit('edit', image)">
+            <el-icon><Edit /></el-icon>
+          </button>
           <button v-if="showActions" class="icon-action danger" type="button" title="删除" @click.stop="emit('delete', image)">
             <el-icon><Delete /></el-icon>
           </button>
@@ -67,10 +76,10 @@
         <span class="category-badge" v-if="image.categoryName">{{ image.categoryName }}</span>
         <span class="category-badge muted" v-else>未分类</span>
         <span v-if="variant === 'square'" class="meta-text">{{ authorName }}</span>
-        <span v-else class="visibility-badge">{{ visibilityLabel }}</span>
+        <span v-else class="meta-text">{{ fileSizeText }}</span>
       </div>
       <div v-if="variant === 'square'" class="square-foot">
-        <span class="meta-text">{{ tagsText || '无标签' }}</span>
+        <span class="meta-text">{{ tagsText || '暂无标签' }}</span>
         <span class="like-text">
           <el-icon><StarFilled /></el-icon>
           {{ likeCount }}
@@ -83,7 +92,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { getImageDownloadUrl } from '../utils/imageRequests'
+import { getImageDisplayUrl } from '../utils/imageRequests'
 
 const props = defineProps({
   image: { type: Object, required: true },
@@ -100,15 +109,26 @@ const router = useRouter()
 const hover = ref(false)
 const imgFailed = ref(false)
 
-const imageSrc = computed(() => imgFailed.value ? '' : getImageDownloadUrl(props.image))
-const authorName = computed(() => props.image.displayName || props.image.username || 'Unknown')
+const imageSrc = computed(() => imgFailed.value ? '' : getImageDisplayUrl(props.image))
+const authorName = computed(() => props.image.displayName || props.image.username || '匿名用户')
 const likeCount = computed(() => Number(props.image.likeCount || 0))
 const tagsText = computed(() => String(props.image.tags || '').split('#').map(tag => tag.trim()).filter(Boolean).join(' / '))
+const fileSizeText = computed(() => {
+  const size = Number(props.image.fileSize || 0)
+  if (!size) return '--'
+  if (size >= 1024 * 1024) return `${(size / 1024 / 1024).toFixed(1)} MB`
+  return `${Math.max(1, Math.round(size / 1024))} KB`
+})
 
 const visibilityLabel = computed(() => {
   if (props.image.visibility === 'PUBLIC') return '公开'
   if (props.image.visibility === 'SPECIFIED') return '指定用户'
   return '仅自己'
+})
+const visibilityClass = computed(() => {
+  if (props.image.visibility === 'PUBLIC') return 'public'
+  if (props.image.visibility === 'SPECIFIED') return 'specified'
+  return 'private'
 })
 
 function handleImgError() {
@@ -132,42 +152,100 @@ function goDetail() {
 .image-card {
   position: relative;
   min-width: 0;
-  cursor: pointer;
-  border-radius: 16px;
   overflow: hidden;
-  background: rgba(255, 253, 248, 0.9);
-  border: 1px solid rgba(255, 253, 248, 0.6);
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.16);
-  transition: border-color .22s ease, transform .24s var(--ease-cinema), box-shadow .28s ease, background .22s ease;
-  animation: fadeUp 0.42s var(--ease-cinema);
-  backdrop-filter: blur(14px);
+  cursor: pointer;
+  border: 1px solid var(--ad-line);
+  border-radius: 14px;
+  background: rgba(21, 25, 34, 0.86);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.18);
+  transition: transform 0.2s var(--ad-ease), border-color 0.16s ease, box-shadow 0.2s ease;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .image-card:hover,
-.image-card:focus-visible {
-  border-color: rgba(239, 159, 39, 0.5);
-  transform: translateY(-5px);
-  box-shadow: 0 28px 72px rgba(0, 0, 0, 0.26);
-}
-
-.image-card:active {
-  transform: translateY(-2px) scale(0.99);
+.image-card:focus-visible,
+.image-card.selected {
+  transform: translateY(-2px);
+  border-color: rgba(183, 255, 60, 0.5);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.24), 0 0 0 1px rgba(183, 255, 60, 0.12);
+  outline: none;
 }
 
 .image-card.selected {
-  border-color: rgba(239, 159, 39, 0.86);
-  box-shadow: 0 0 0 3px rgba(239, 159, 39, 0.14), 0 24px 62px rgba(0, 0, 0, 0.24);
+  box-shadow: 0 0 0 3px rgba(183, 255, 60, 0.16), 0 18px 42px rgba(0, 0, 0, 0.26);
 }
 
 .card-frame {
   position: relative;
   aspect-ratio: 4 / 3;
   overflow: hidden;
-  background: var(--cinema2);
+  background:
+    linear-gradient(180deg, rgba(244, 241, 232, 0.08), transparent 38%),
+    linear-gradient(135deg, rgba(56, 213, 255, 0.44), rgba(155, 140, 255, 0.34) 48%, rgba(13, 16, 22, 0.96));
 }
 
 .variant-square .card-frame {
   aspect-ratio: 4 / 5;
+}
+
+.card-frame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 34%);
+  pointer-events: none;
+}
+
+.asset-topline {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  z-index: 3;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.asset-id,
+.visibility-chip,
+.category-badge,
+.like-text {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(7, 10, 15, 0.68);
+  color: rgba(244, 241, 232, 0.84);
+  font-size: 11px;
+  font-weight: 780;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.visibility-chip.public {
+  background: rgba(183, 255, 60, 0.9);
+  border-color: rgba(183, 255, 60, 0.92);
+  color: #071014;
+}
+
+.visibility-chip.private {
+  background: rgba(255, 107, 87, 0.9);
+  border-color: rgba(255, 107, 87, 0.92);
+  color: #fff;
+}
+
+.visibility-chip.specified {
+  background: rgba(245, 184, 75, 0.92);
+  border-color: rgba(245, 184, 75, 0.94);
+  color: #17100a;
 }
 
 .card-img {
@@ -175,12 +253,12 @@ function goDetail() {
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 0.56s var(--ease-cinema), filter 0.28s ease;
+  transition: transform 0.42s var(--ad-ease), filter 0.24s ease;
 }
 
 .card-img.zoomed {
-  transform: scale(1.06);
-  filter: brightness(0.76) saturate(1.05);
+  transform: scale(1.025);
+  filter: brightness(0.82) saturate(1.02);
 }
 
 .img-fallback {
@@ -189,82 +267,76 @@ function goDetail() {
   display: grid;
   place-items: center;
   background:
-    radial-gradient(circle at 50% 24%, rgba(55, 138, 221, 0.28), transparent 42%),
-    var(--cinema2);
-  color: rgba(247, 243, 232, 0.64);
+    linear-gradient(180deg, rgba(244, 241, 232, 0.08), transparent 38%),
+    linear-gradient(135deg, rgba(56, 213, 255, 0.46), rgba(13, 16, 22, 0.94));
+  color: rgba(244, 241, 232, 0.64);
 }
 
 .card-vignette {
   position: absolute;
-  inset: 0;
+  inset: auto 0 0;
+  z-index: 2;
+  height: 42%;
   pointer-events: none;
-  background: linear-gradient(180deg, transparent 52%, rgba(7, 17, 31, 0.42));
-  opacity: 0.5;
-  transition: opacity 0.24s ease;
-}
-
-.image-card:hover .card-vignette,
-.image-card:focus-visible .card-vignette {
-  opacity: 0.86;
+  background: linear-gradient(180deg, transparent, rgba(7, 10, 15, 0.62));
 }
 
 .card-overlay {
   position: absolute;
   inset: 0;
+  z-index: 4;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: radial-gradient(circle at 50% 44%, rgba(7, 17, 31, 0.12), rgba(7, 17, 31, 0.68));
+  background: rgba(7, 10, 15, 0.5);
 }
 
 .icon-action {
-  width: 36px;
-  height: 36px;
-  border-radius: 999px;
-  background: rgba(255, 253, 248, 0.14);
-  border: 1px solid rgba(255, 253, 248, 0.28);
-  color: var(--paper);
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--ad-line-strong);
+  border-radius: 10px;
+  background: rgba(21, 25, 34, 0.9);
+  color: var(--ad-text);
   display: inline-grid;
   place-items: center;
   cursor: pointer;
-  font-size: 14px;
-  backdrop-filter: blur(10px);
-  transition: background 0.15s, transform 0.1s, border-color 0.15s, color 0.15s;
+  transition: background 0.15s ease, transform 0.1s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .icon-action:hover {
-  background: var(--paper);
-  color: var(--cinema);
-  border-color: rgba(255, 253, 248, 0.7);
+  background: var(--ad-green);
+  border-color: var(--ad-green);
+  color: #071014;
 }
 
 .icon-action:active {
-  transform: scale(0.95);
+  transform: scale(0.96);
 }
 
 .icon-action.danger:hover {
-  background: rgba(214, 80, 80, 0.92);
+  background: var(--ad-coral);
   color: #fff;
-  border-color: rgba(255, 255, 255, 0.3);
+  border-color: var(--ad-coral);
 }
 
 .select-toggle {
   position: absolute;
-  top: 9px;
-  left: 9px;
-  z-index: 3;
-  width: 22px;
-  height: 22px;
+  top: 44px;
+  left: 10px;
+  z-index: 5;
+  width: 24px;
+  height: 24px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 253, 248, 0.72);
-  background: rgba(7, 17, 31, 0.42);
+  border: 1px solid rgba(244, 241, 232, 0.58);
+  background: rgba(7, 10, 15, 0.68);
   cursor: pointer;
   opacity: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.2s, transform 0.2s, background 0.15s, border-color 0.15s;
+  transition: opacity 0.18s ease, background 0.15s ease, border-color 0.15s ease;
 }
 
 .image-card:hover .select-toggle,
@@ -274,8 +346,8 @@ function goDetail() {
 }
 
 .select-toggle.checked {
-  background: var(--gold2);
-  border-color: var(--gold2);
+  background: var(--ad-green);
+  border-color: var(--ad-green);
 }
 
 .select-mark {
@@ -286,25 +358,26 @@ function goDetail() {
   display: block;
   width: 5px;
   height: 9px;
-  border: 0;
-  border-right: 2px solid #fff;
-  border-bottom: 2px solid #fff;
+  border-right: 2px solid #071014;
+  border-bottom: 2px solid #071014;
   transform: rotate(45deg) translate(-1px, -2px);
 }
 
 .card-body {
-  padding: 12px 13px 13px;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
 }
 
 .img-name {
-  color: var(--ink);
+  margin: 0;
+  color: var(--ad-text);
   font-size: 15px;
-  font-weight: 700;
-  line-height: 1.35;
+  font-weight: 820;
+  line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  letter-spacing: 0.01em;
 }
 
 .meta-row,
@@ -313,59 +386,34 @@ function goDetail() {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-top: 7px;
   min-width: 0;
-}
-
-.category-badge,
-.visibility-badge {
-  display: inline-flex;
-  align-items: center;
-  min-width: 0;
-  max-width: 70%;
-  min-height: 20px;
-  padding: 1px 7px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .category-badge {
-  color: var(--ink);
-  background: rgba(230, 241, 251, 0.78);
-  border: 1px solid rgba(4, 44, 83, 0.08);
+  max-width: 70%;
+  background: rgba(244, 241, 232, 0.06);
+  border-color: var(--ad-line);
+  color: var(--ad-text-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .category-badge.muted {
-  color: var(--ink3);
-  background: rgba(247, 243, 232, 0.8);
-  border: 1px solid rgba(4, 44, 83, 0.08);
+  color: var(--ad-muted);
 }
 
-.visibility-badge {
-  flex-shrink: 0;
-  color: var(--cinema);
-  background: rgba(239, 159, 39, 0.2);
-}
-
-.meta-text,
-.like-text {
+.meta-text {
   min-width: 0;
-  color: var(--ink3);
+  color: var(--ad-muted);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 650;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .like-text {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
+  gap: 4px;
   flex-shrink: 0;
 }
 
@@ -376,63 +424,5 @@ function goDetail() {
 .overlay-fade-enter-from,
 .overlay-fade-leave-to {
   opacity: 0;
-}
-
-/* Anime paper override */
-.image-card {
-  background: #f0eee6;
-  border-color: rgba(17, 26, 53, 0.08);
-  box-shadow: 0 18px 44px rgba(17, 26, 53, 0.12);
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.image-card:hover,
-.image-card:focus-visible {
-  border-color: rgba(255, 122, 184, 0.56);
-  transform: translateY(-5px) rotate(-0.35deg);
-  box-shadow: 0 28px 72px rgba(88, 184, 255, 0.18), 0 12px 28px rgba(17, 26, 53, 0.18);
-}
-
-.image-card.selected {
-  border-color: rgba(255, 122, 184, 0.92);
-  box-shadow: 0 0 0 4px rgba(255, 238, 142, 0.34), 0 24px 62px rgba(88, 184, 255, 0.22);
-}
-
-.card-frame {
-  background: linear-gradient(135deg, #fff4de, #f5ecff);
-}
-
-.card-vignette {
-  background:
-    radial-gradient(circle at 82% 14%, rgba(255,255,255,0.38), transparent 23%),
-    linear-gradient(180deg, transparent 52%, rgba(17, 26, 53, 0.5));
-}
-
-.card-body {
-  background: #f0eee6;
-}
-
-.meta-row .meta-text,
-.square-foot .meta-text {
-  display: none;
-}
-
-.square-foot {
-  justify-content: flex-end;
-}
-
-.category-badge {
-  background: rgba(88, 184, 255, 0.16);
-  border-color: rgba(88, 184, 255, 0.22);
-}
-
-.visibility-badge {
-  background: rgba(255, 122, 184, 0.18);
-}
-
-.like-text {
-  color: var(--cinema);
 }
 </style>
