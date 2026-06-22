@@ -304,6 +304,7 @@ import { login, register, sendCode, loginByCode, getCaptcha, getGithubAuthUrl, g
 import { useUserStore } from '../store/user'
 import { ElMessage } from 'element-plus'
 import TurnstileWidget from '../components/TurnstileWidget.vue'
+import { fireBigSideCannons } from '../utils/confettiEffect'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -492,6 +493,7 @@ async function handleRegister() {
     const { confirmPassword, captchaId, captchaCode, ...payload } = registerForm
     await register({ ...payload, turnstileToken: token })
     ElMessage.success('注册成功，请登录')
+    fireBigSideCannons()
     setAuthMode('login')
     loginMode.value = 'password'
     form.username = registerForm.username

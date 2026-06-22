@@ -112,6 +112,7 @@ import { ElMessage } from 'element-plus'
 import { uploadImage } from '../api/image'
 import { getCategoryList, createCategory } from '../api/category'
 import { hasSpecifiedUsers } from '../utils/visibility'
+import { fireMediumSideCannons } from '../utils/confettiEffect'
 import TagInput from './TagInput.vue'
 
 const visible = ref(false)
@@ -252,6 +253,7 @@ async function handleUpload() {
     ElMessage.error(errors.join('; '))
   }
   ElMessage.success(`成功上传 ${success} / ${fileList.value.length} 张图片`)
+  if (success > 0) fireMediumSideCannons()
   visible.value = false
   emit('uploaded', uploadedImages)
 }

@@ -130,6 +130,7 @@ import { useRouter } from 'vue-router'
 import { getCaptcha, register, sendCode } from '../api/user'
 import { ElMessage } from 'element-plus'
 import TurnstileWidget from '../components/TurnstileWidget.vue'
+import { fireBigSideCannons } from '../utils/confettiEffect'
 
 const router = useRouter()
 const formRef = ref(null)
@@ -275,6 +276,7 @@ async function handleRegister() {
     const { confirmPassword, captchaId, captchaCode, ...payload } = form
     await register({ ...payload, turnstileToken: token })
     ElMessage.success('注册成功，请登录')
+    fireBigSideCannons()
     router.push('/login')
   } catch {} finally {
     resetTurnstile()

@@ -257,7 +257,7 @@
 
 <script setup>
 import { computed, reactive, ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import NavBar from '../components/NavBar.vue'
 import ImageCard from '../components/ImageCard.vue'
@@ -269,9 +269,11 @@ import {
   saveSquareSession
 } from '../utils/squareFilters'
 import { DEFAULT_IMAGE_PAGE_SIZE, IMAGE_PAGE_SIZES, getImagePreviewUrl } from '../utils/imageRequests'
+import { fireSmallSideCannons } from '../utils/confettiEffect'
 import { useUserStore } from '../store/user'
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 const images = ref([])
 const total = ref(0)
@@ -297,10 +299,62 @@ const sortOptions = [
   { label: '喜欢较多', value: 'hot' }
 ]
 const CREATOR_TONES = ['#38d5ff', '#b7ff3c', '#f5b84b', '#9b8cff', '#ff6b57']
+const demoImages = [
+  {
+    id: 'demo-1',
+    uuid: 'demo-image-hover-1',
+    imageName: '山色试映.jpg',
+    visibility: 'PUBLIC',
+    categoryName: '风景',
+    username: 'demo',
+    displayName: 'Demo',
+    userId: 'demo-user',
+    userUuid: 'demo-user-1',
+    imageUrl: 'https://picsum.photos/seed/image-space-1/900/1100',
+    mediumUrl: 'https://picsum.photos/seed/image-space-1/900/1100',
+    thumbUrl: 'https://picsum.photos/seed/image-space-1/640/800',
+    tags: '#自然#预览',
+    likeCount: 12
+  },
+  {
+    id: 'demo-2',
+    uuid: 'demo-image-hover-2',
+    imageName: '城市霓虹.png',
+    visibility: 'SPECIFIED',
+    categoryName: '夜景',
+    username: 'demo',
+    displayName: 'Demo',
+    userId: 'demo-user',
+    userUuid: 'demo-user-1',
+    imageUrl: 'https://picsum.photos/seed/image-space-2/900/1100',
+    mediumUrl: 'https://picsum.photos/seed/image-space-2/900/1100',
+    thumbUrl: 'https://picsum.photos/seed/image-space-2/640/800',
+    tags: '#城市#霓虹',
+    likeCount: 28
+  },
+  {
+    id: 'demo-3',
+    uuid: 'demo-image-hover-3',
+    imageName: '静物练习.webp',
+    visibility: 'PRIVATE',
+    categoryName: '创作',
+    username: 'demo',
+    displayName: 'Demo',
+    userId: 'demo-user',
+    userUuid: 'demo-user-1',
+    imageUrl: 'https://picsum.photos/seed/image-space-3/900/1100',
+    mediumUrl: 'https://picsum.photos/seed/image-space-3/900/1100',
+    thumbUrl: 'https://picsum.photos/seed/image-space-3/640/800',
+    tags: '#静物#测试',
+    likeCount: 7
+  }
+]
+const isDemoCards = computed(() => import.meta.env.DEV && route.query.demoCards === '1')
+const squareImages = computed(() => isDemoCards.value ? demoImages : images.value)
 
 const categoryOptions = computed(() => {
   const categories = new Set()
-  for (const image of images.value) {
+  for (const image of squareImages.value) {
     if (image.categoryName) categories.add(image.categoryName)
   }
   return Array.from(categories)
@@ -308,7 +362,7 @@ const categoryOptions = computed(() => {
 
 const tagOptions = computed(() => {
   const tags = new Set()
-  for (const image of images.value) {
+  for (const image of squareImages.value) {
     String(image.tags || '')
       .split('#')
       .map(tag => tag.trim())
@@ -319,7 +373,7 @@ const tagOptions = computed(() => {
 })
 
 const displayedImages = computed(() => {
-  let list = images.value
+  let list = squareImages.value
   if (categoryFilter.value) {
     list = list.filter(image => image.categoryName === categoryFilter.value)
   }
@@ -331,7 +385,7 @@ const displayedImages = computed(() => {
 
 const activeCreators = computed(() => {
   const map = {}
-  for (const img of images.value) {
+  for (const img of squareImages.value) {
     const username = img.username || 'unknown'
     const uuidOrId = img.userUuid || img.userId
     if (!map[username] && uuidOrId) {
@@ -354,11 +408,11 @@ const activeCreators = computed(() => {
 })
 
 const squareStats = computed(() => ({
-  totalLikes: images.value.reduce((sum, image) => sum + Number(image.likeCount || 0), 0)
+  totalLikes: squareImages.value.reduce((sum, image) => sum + Number(image.likeCount || 0), 0)
 }))
 
 const activeSortLabel = computed(() => sortOptions.find(option => option.value === viewMode.value)?.label || '推荐')
-const featuredImage = computed(() => displayedImages.value[0] || images.value[0] || null)
+const featuredImage = computed(() => displayedImages.value[0] || squareImages.value[0] || null)
 const featuredImageSrc = computed(() => featuredImage.value ? getImagePreviewUrl(featuredImage.value) : '')
 const drawerImageSrc = computed(() => activeImage.value ? getImagePreviewUrl(activeImage.value) : '')
 const activeTags = computed(() => String(activeImage.value?.tags || '').split('#').map(tag => tag.trim()).filter(Boolean))
@@ -367,6 +421,11 @@ onMounted(() => fetchList())
 
 async function fetchList() {
   saveSquareSession(query)
+  if (isDemoCards.value) {
+    total.value = demoImages.length
+    loading.value = false
+    return
+  }
   loading.value = true
   try {
     const res = await getImageSquare(buildSquareParams(query))
@@ -427,10 +486,12 @@ async function handleLike(image) {
     return
   }
   try {
+    const shouldCelebrate = !image.likedByMe
     const res = image.likedByMe ? await unlikeImage(image.uuid) : await likeImage(image.uuid)
     image.likeCount = res.data.likeCount
     image.likedByMe = res.data.likedByMe
     ElMessage.success(image.likedByMe ? '已喜欢' : '已取消喜欢')
+    if (shouldCelebrate && image.likedByMe) fireSmallSideCannons()
   } catch {}
 }
 
