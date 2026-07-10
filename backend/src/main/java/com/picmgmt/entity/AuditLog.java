@@ -24,7 +24,11 @@ public class AuditLog {
     private String ip;
     private String userAgent;
     private String requestParams;
+    private String responseResult;
     private String result;
+    private String status;
+    private String riskLevel;
+    private Long costTime;
     private String errorMessage;
     private LocalDateTime createTime;
 }

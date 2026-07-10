@@ -25,10 +25,12 @@ import com.picmgmt.vo.UserVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -45,6 +47,7 @@ public class UserServiceImpl implements UserService {
     private final com.picmgmt.storage.StorageService storageService;
 
     @Override
+    @Transactional
     public UserVO register(RegisterDTO dto) {
         if (!dto.getPassword().equals(dto.getConfirmPassword())) {
             throw new BusinessException(ErrorCode.PASSWORD_MISMATCH);
@@ -74,6 +77,7 @@ public class UserServiceImpl implements UserService {
         user.setPassword(BCrypt.hashpw(dto.getPassword(), BCrypt.gensalt()));
         user.setRole("user");
         user.setEmail(email);
+        user.setEmailVerified(1);
         if (dto.getPhone() != null && !dto.getPhone().trim().isEmpty()) {
             user.setPhone(dto.getPhone().trim());
         }
@@ -138,6 +142,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserVO updateProfile(Long userId, String displayName, String email, String phone, String bio) {
+        return updateProfile(userId, displayName, email, phone, bio, null);
+    }
+
+    @Override
+    public UserVO updateProfile(Long userId, String displayName, String email, String phone,
+                                String bio, String emailCode) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         if (displayName != null) user.setDisplayName(displayName);
@@ -145,13 +155,17 @@ public class UserServiceImpl implements UserService {
             email = email.trim();
             if (email.isEmpty()) {
                 user.setEmail(null);
-            } else if (!email.equals(user.getEmail())) {
+                user.setEmailVerified(0);
+            } else if (!email.equals(user.getEmail())
+                    || !Objects.equals(user.getEmailVerified(), 1) && hasText(emailCode)) {
                 if (userMapper.selectCount(
                         new LambdaQueryWrapper<User>().eq(User::getEmail, email)
                                 .ne(User::getId, userId)) > 0) {
                     throw new BusinessException(ErrorCode.EMAIL_EXISTS);
                 }
+                verifyEmailChangeCode(userId, email, emailCode);
                 user.setEmail(email);
+                user.setEmailVerified(1);
             }
         }
         if (phone != null) {
@@ -176,16 +190,42 @@ public class UserServiceImpl implements UserService {
     public void updateAvatar(Long userId, String avatarKey) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        String oldKey = user.getAvatarKey();
         user.setAvatarKey(avatarKey);
-        userRepository.updateById(user);
+        try {
+            userRepository.updateById(user);
+        } catch (RuntimeException e) {
+            safeDeleteMedia("avatars", avatarKey);
+            throw e;
+        }
+        if (!Objects.equals(oldKey, avatarKey)) {
+            safeDeleteMedia("avatars", oldKey);
+        }
     }
 
     @Override
     public void updateBackground(Long userId, String backgroundKey) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        String oldKey = user.getBackgroundKey();
         user.setBackgroundKey(backgroundKey);
-        userRepository.updateById(user);
+        try {
+            userRepository.updateById(user);
+        } catch (RuntimeException e) {
+            safeDeleteMedia("backgrounds", backgroundKey);
+            throw e;
+        }
+        if (!Objects.equals(oldKey, backgroundKey)) {
+            safeDeleteMedia("backgrounds", oldKey);
+        }
+    }
+
+    private void safeDeleteMedia(String bucket, String objectKey) {
+        try {
+            storageService.deleteObjectIfExists(bucket, objectKey);
+        } catch (RuntimeException e) {
+            log.warn("Failed to clean up {} object {}: {}", bucket, objectKey, e.getMessage());
+        }
     }
 
     @Override
@@ -244,20 +284,21 @@ public class UserServiceImpl implements UserService {
             }
         }
         String redisKey = verificationCodeKey(normalizedPurpose, email);
+        String cooldownKey = verificationCooldownKey(normalizedPurpose, email);
         String attemptsKey = verificationAttemptsKey(normalizedPurpose, email);
         captchaService.verify(captchaId, captchaCode);
-        if (!redisCacheService.setIfAbsent(redisKey, "pending", Duration.ofSeconds(60))) {
+        if (!redisCacheService.setIfAbsent(cooldownKey, "1", Duration.ofSeconds(60))) {
             throw new BusinessException(ErrorCode.CODE_TOO_FREQUENT);
         }
         String code = String.format("%06d", SECURE_RANDOM.nextInt(1000000));
         try {
             emailService.sendVerificationCode(email, code);
         } catch (Exception e) {
-            redisCacheService.evict(redisKey);
+            redisCacheService.evict(cooldownKey);
             throw new BusinessException(ErrorCode.CODE_SEND_FAILED, e.getMessage());
         }
-        redisCacheService.put(redisKey, code, Duration.ofSeconds(300));
-        redisCacheService.put(attemptsKey, 0, Duration.ofSeconds(300));
+        redisCacheService.putExact(redisKey, code, Duration.ofSeconds(300));
+        redisCacheService.putExact(attemptsKey, 0, Duration.ofSeconds(300));
     }
 
     @Override
@@ -279,13 +320,47 @@ public class UserServiceImpl implements UserService {
         }
         String storedCode = redisCacheService.get(redisKey, String.class).orElse(null);
         if (storedCode == null || !storedCode.equals(dto.getCode().trim())) {
-            redisCacheService.put(attemptsKey, attempts + 1, Duration.ofSeconds(300));
+            redisCacheService.putExact(attemptsKey, attempts + 1, Duration.ofSeconds(300));
             throw new BusinessException(ErrorCode.CODE_INVALID);
         }
         redisCacheService.evict(redisKey);
         redisCacheService.evict(attemptsKey);
+        if (!Objects.equals(user.getEmailVerified(), 1)) {
+            user.setEmailVerified(1);
+            userRepository.updateById(user);
+        }
         StpUtil.login(user.getId());
         return StpUtil.getTokenValue();
+    }
+
+    @Override
+    public void sendEmailChangeCode(Long userId, String email) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        String normalizedEmail = normalizeEmail(email);
+        if (userMapper.selectCount(new LambdaQueryWrapper<User>()
+                .eq(User::getEmail, normalizedEmail)
+                .ne(User::getId, userId)) > 0) {
+            throw new BusinessException(ErrorCode.EMAIL_EXISTS);
+        }
+        String redisKey = emailChangeCodeKey(userId, normalizedEmail);
+        String cooldownKey = emailChangeCooldownKey(userId, normalizedEmail);
+        if (!redisCacheService.setIfAbsent(cooldownKey, "1", Duration.ofSeconds(60))) {
+            throw new BusinessException(ErrorCode.CODE_TOO_FREQUENT);
+        }
+        String code = String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
+        try {
+            emailService.sendVerificationCode(normalizedEmail, code);
+        } catch (Exception e) {
+            redisCacheService.evict(cooldownKey);
+            throw new BusinessException(ErrorCode.CODE_SEND_FAILED, e.getMessage());
+        }
+        redisCacheService.putExact(redisKey, code, Duration.ofSeconds(300));
+        redisCacheService.putExact(
+                emailChangeAttemptsKey(userId, normalizedEmail),
+                0,
+                Duration.ofSeconds(300)
+        );
     }
 
     private void verifyEmailCode(String purpose, String email, String code) {
@@ -297,7 +372,7 @@ public class UserServiceImpl implements UserService {
         }
         String storedCode = redisCacheService.get(redisKey, String.class).orElse(null);
         if (storedCode == null || code == null || !storedCode.equals(code.trim())) {
-            redisCacheService.put(attemptsKey, attempts + 1, Duration.ofSeconds(300));
+            redisCacheService.putExact(attemptsKey, attempts + 1, Duration.ofSeconds(300));
             throw new BusinessException(ErrorCode.CODE_INVALID);
         }
         redisCacheService.evict(redisKey);
@@ -317,6 +392,51 @@ public class UserServiceImpl implements UserService {
 
     private String verificationAttemptsKey(String purpose, String email) {
         return "code:attempts:" + purpose + ":" + email;
+    }
+
+    private String verificationCooldownKey(String purpose, String email) {
+        return "code:cooldown:" + purpose + ":" + email;
+    }
+
+    private void verifyEmailChangeCode(Long userId, String email, String code) {
+        String redisKey = emailChangeCodeKey(userId, email);
+        String attemptsKey = emailChangeAttemptsKey(userId, email);
+        Integer attempts = redisCacheService.get(attemptsKey, Integer.class).orElse(0);
+        if (attempts >= MAX_CODE_ATTEMPTS) {
+            throw new BusinessException(ErrorCode.CODE_INVALID, "验证码尝试次数过多，请重新获取");
+        }
+        String storedCode = redisCacheService.get(redisKey, String.class).orElse(null);
+        if (storedCode == null || code == null || !storedCode.equals(code.trim())) {
+            redisCacheService.putExact(attemptsKey, attempts + 1, Duration.ofSeconds(300));
+            throw new BusinessException(ErrorCode.CODE_INVALID);
+        }
+        redisCacheService.evict(redisKey);
+        redisCacheService.evict(attemptsKey);
+    }
+
+    private String emailChangeCodeKey(Long userId, String email) {
+        return "code:change_email:" + userId + ":" + email;
+    }
+
+    private String emailChangeAttemptsKey(Long userId, String email) {
+        return "code:attempts:change_email:" + userId + ":" + email;
+    }
+
+    private String emailChangeCooldownKey(Long userId, String email) {
+        return "code:cooldown:change_email:" + userId + ":" + email;
+    }
+
+    private String normalizeEmail(String email) {
+        String normalized = email == null ? "" : email.trim();
+        if (normalized.length() > 100
+                || !normalized.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "邮箱格式不正确");
+        }
+        return normalized;
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 
     @Override

@@ -24,6 +24,10 @@ export function updateProfile(data) {
   return api.put('/user/profile', data)
 }
 
+export function sendEmailChangeCode(email) {
+  return api.post('/user/email-change-code', { email })
+}
+
 export function uploadAvatar(formData) {
   return api.post('/user/avatar', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }

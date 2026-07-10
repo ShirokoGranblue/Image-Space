@@ -4,6 +4,8 @@ import com.picmgmt.common.BusinessException;
 import com.picmgmt.common.ErrorCode;
 
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
@@ -12,8 +14,12 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Locale;
+import java.util.Iterator;
 
 public final class ImageConvertUtil {
+
+    static final int MAX_IMAGE_DIMENSION = 16_384;
+    static final long MAX_IMAGE_PIXELS = 40_000_000L;
 
     private ImageConvertUtil() {
     }
@@ -56,14 +62,43 @@ public final class ImageConvertUtil {
         if (isWebp(contentType, ext, sourceBytes)) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "当前环境不支持 WebP 格式转换");
         }
-        try {
-            BufferedImage image = ImageIO.read(new ByteArrayInputStream(sourceBytes));
-            if (image == null) {
+        try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(sourceBytes))) {
+            if (input == null) {
                 throw new BusinessException(ErrorCode.INTERNAL_ERROR, "图片文件解析失败");
             }
-            return image;
+            Iterator<ImageReader> readers = ImageIO.getImageReaders(input);
+            if (!readers.hasNext()) {
+                throw new BusinessException(ErrorCode.INTERNAL_ERROR, "图片文件解析失败");
+            }
+            ImageReader reader = readers.next();
+            try {
+                reader.setInput(input, true, true);
+                int width = reader.getWidth(0);
+                int height = reader.getHeight(0);
+                validateDimensions(width, height);
+                BufferedImage image = reader.read(0);
+                if (image == null) {
+                    throw new BusinessException(ErrorCode.INTERNAL_ERROR, "图片文件解析失败");
+                }
+                return image;
+            } finally {
+                reader.dispose();
+            }
         } catch (IOException e) {
             throw new BusinessException(ErrorCode.INTERNAL_ERROR, "图片文件解析失败");
+        }
+    }
+
+    private static void validateDimensions(int width, int height) {
+        long pixels = (long) width * height;
+        if (width <= 0 || height <= 0
+                || width > MAX_IMAGE_DIMENSION
+                || height > MAX_IMAGE_DIMENSION
+                || pixels > MAX_IMAGE_PIXELS) {
+            throw new BusinessException(
+                    ErrorCode.IMAGE_SIZE_EXCEEDED,
+                    "图片尺寸过大，最大允许 16384×16384 且总像素不超过 4000 万"
+            );
         }
     }
 

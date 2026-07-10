@@ -90,6 +90,18 @@
                 <el-form-item label="邮箱" :error="fieldErrors.email">
                   <el-input v-model="form.email" @blur="onEmailBlur" />
                 </el-form-item>
+                <el-form-item v-if="emailChanged" label="邮箱验证码">
+                  <div class="email-code-row">
+                    <el-input v-model="form.emailCode" maxlength="6" placeholder="输入新邮箱收到的验证码" />
+                    <el-button
+                      :loading="sendingEmailCode"
+                      :disabled="emailCodeCountdown > 0 || !!fieldErrors.email"
+                      @click="handleSendEmailChangeCode"
+                    >
+                      {{ emailCodeCountdown > 0 ? `${emailCodeCountdown}s` : '发送验证码' }}
+                    </el-button>
+                  </div>
+                </el-form-item>
               </div>
               <el-form-item label="手机号" :error="fieldErrors.phone">
                 <el-input v-model="form.phone" maxlength="20" @blur="onPhoneBlur" />
@@ -334,7 +346,7 @@ import NavBar from '../components/NavBar.vue'
 import ImageCard from '../components/ImageCard.vue'
 import TagInput from '../components/TagInput.vue'
 import { useUserStore } from '../store/user'
-import { getUserProfile, updateProfile, uploadAvatar, uploadBackground, checkField, deleteAccount } from '../api/user'
+import { getUserProfile, updateProfile, uploadAvatar, uploadBackground, checkField, deleteAccount, sendEmailChangeCode } from '../api/user'
 import { getImageList, getUserPublicImages, deleteImage, updateImage } from '../api/image'
 import { getUserMediaResourceStatus, refreshUserMediaAccessUrl } from '../api/resource'
 import { getCategoryList, createCategory } from '../api/category'
@@ -382,6 +394,9 @@ const workTotal = ref(0)
 const loading = ref(false)
 const editing = ref(false)
 const saving = ref(false)
+const sendingEmailCode = ref(false)
+const emailCodeCountdown = ref(0)
+let emailCodeTimer = null
 const isOwner = computed(() => !!(userStore.userInfo?.id && user.value.id && userStore.userInfo.id === user.value.id))
 const categories = ref([])
 const selectedWorkUuids = ref([])
@@ -439,7 +454,10 @@ function animateCounts() {
   })
 }
 
-const form = reactive({ displayName: '', email: '', phone: '', bio: '' })
+const form = reactive({ displayName: '', email: '', emailCode: '', phone: '', bio: '' })
+const emailChanged = computed(() =>
+  form.email.trim() !== String(user.value.email || '').trim()
+)
 const imageEditForm = reactive({
   uuid: '',
   imageName: '',
@@ -576,6 +594,7 @@ watch(bgDialogVisible, (val) => { if (!val) teardownBgResizeObserver() })
 
 onUnmounted(() => {
   teardownBgResizeObserver()
+  if (emailCodeTimer) window.clearInterval(emailCodeTimer)
 })
 
 function openBackgroundEditor() {
@@ -1491,11 +1510,32 @@ async function onPhoneBlur() {
 
 function startEdit() {
   form.displayName = user.value.displayName || ''
-  form.email = user.value.email || ''; form.phone = user.value.phone || ''; form.bio = user.value.bio || ''
+  form.email = user.value.email || ''; form.emailCode = ''; form.phone = user.value.phone || ''; form.bio = user.value.bio || ''
   fieldErrors.email = ''; fieldErrors.phone = ''
   editing.value = true
 }
 function cancelEdit() { editing.value = false }
+
+async function handleSendEmailChangeCode() {
+  await onEmailBlur()
+  if (fieldErrors.email || !form.email.trim()) return
+  sendingEmailCode.value = true
+  try {
+    await sendEmailChangeCode(form.email.trim())
+    ElMessage.success('验证码已发送到新邮箱')
+    emailCodeCountdown.value = 60
+    if (emailCodeTimer) window.clearInterval(emailCodeTimer)
+    emailCodeTimer = window.setInterval(() => {
+      emailCodeCountdown.value -= 1
+      if (emailCodeCountdown.value <= 0) {
+        window.clearInterval(emailCodeTimer)
+        emailCodeTimer = null
+      }
+    }, 1000)
+  } finally {
+    sendingEmailCode.value = false
+  }
+}
 
 async function handleDeleteAccount() {
   try {
@@ -1516,7 +1556,13 @@ async function handleDeleteAccount() {
 async function saveProfile() {
   saving.value = true
   try {
-    const res = await updateProfile({ displayName: form.displayName, email: form.email, phone: form.phone, bio: form.bio })
+    const res = await updateProfile({
+      displayName: form.displayName,
+      email: form.email,
+      emailCode: form.emailCode,
+      phone: form.phone,
+      bio: form.bio
+    })
     user.value = res.data
     if (isOwner.value) userStore.userInfo = res.data
     editing.value = false; ElMessage.success('资料已更新')
@@ -1736,6 +1782,12 @@ async function saveProfile() {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
+}
+
+.email-code-row {
+  width: 100%;
+  display: flex;
+  gap: 10px;
 }
 
 .edit-actions {

@@ -44,12 +44,19 @@ public class RedisCacheService implements CacheService {
         // L1: Caffeine
         Optional<Object> l1 = caffeineLocalCache.getRaw(key);
         if (l1.isPresent()) {
-            return unwrapCacheData(l1.get(), type);
+            if (!isExpired(l1.get())) {
+                return unwrapCacheData(l1.get(), type);
+            }
+            caffeineLocalCache.evict(key);
         }
 
         // L2: Redis
         Object value = redisTemplate.opsForValue().get(key);
         if (value != null) {
+            if (isExpired(value)) {
+                evict(key);
+                return Optional.empty();
+            }
             caffeineLocalCache.put(key, value, L1_BACKFILL_TTL);
             return unwrapCacheData(value, type);
         }
@@ -57,8 +64,22 @@ public class RedisCacheService implements CacheService {
         return Optional.empty();
     }
 
+    @Override
+    public <T> Optional<T> take(String key, Class<T> type) {
+        caffeineLocalCache.evict(key);
+        Object value = redisTemplate.opsForValue().getAndDelete(key);
+        return isExpired(value) ? Optional.empty() : unwrapCacheData(value, type);
+    }
+
+    private boolean isExpired(Object value) {
+        return value instanceof CacheData<?> cacheData && cacheData.isLogicallyExpired();
+    }
+
     @SuppressWarnings("unchecked")
     private <T> Optional<T> unwrapCacheData(Object raw, Class<T> type) {
+        if (raw == null) {
+            return Optional.empty();
+        }
         if (!(raw instanceof CacheData<?> cd)) {
             if (type.isInstance(raw)) {
                 return Optional.of((T) raw);
@@ -88,6 +109,12 @@ public class RedisCacheService implements CacheService {
         caffeineLocalCache.put(key, cd, randomizedLogical);
     }
 
+    @Override
+    public <T> void putExact(String key, T value, Duration ttl) {
+        redisTemplate.opsForValue().set(key, value, ttl);
+        caffeineLocalCache.put(key, value, ttl);
+    }
+
     private void putNull(String key) {
         long logicExpireNanos = System.nanoTime() + NULL_TTL.toNanos();
         CacheData<?> cd = CacheData.nullMarker(logicExpireNanos);
@@ -98,10 +125,19 @@ public class RedisCacheService implements CacheService {
     private boolean isNullCached(String key) {
         Optional<Object> raw = caffeineLocalCache.getRaw(key);
         if (raw.isPresent() && raw.get() instanceof CacheData<?> cd && cd.isNull()) {
-            return true;
+            if (!cd.isLogicallyExpired()) {
+                return true;
+            }
+            caffeineLocalCache.evict(key);
         }
         Object value = redisTemplate.opsForValue().get(key);
-        return value instanceof CacheData<?> cd && cd.isNull();
+        if (value instanceof CacheData<?> cd && cd.isNull()) {
+            if (!cd.isLogicallyExpired()) {
+                return true;
+            }
+            evict(key);
+        }
+        return false;
     }
 
     private boolean isLogicallyExpired(String key) {

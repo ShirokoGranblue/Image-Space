@@ -104,6 +104,10 @@ class AuditAspectTest {
         assertEquals("203.0.113.8", log.getIp());
         assertEquals("JUnit Browser", log.getUserAgent());
         assertEquals("SUCCESS", log.getResult());
+        assertEquals("SUCCESS", log.getStatus());
+        assertEquals("MEDIUM", log.getRiskLevel());
+        assertTrue(log.getCostTime() >= 0);
+        assertTrue(log.getResponseResult().contains("response-uuid"));
         assertTrue(log.getRequestParams().contains("\"uuid\":\"image-uuid\""));
         assertTrue(log.getRequestParams().contains("\"originalFilename\":\"sample.png\""));
         assertFalse(log.getRequestParams().contains("image bytes"));
@@ -131,6 +135,9 @@ class AuditAspectTest {
         assertEquals("comment", log.getTargetType());
         assertEquals("42", log.getTargetId());
         assertEquals("FAIL", log.getResult());
+        assertEquals("FAILED", log.getStatus());
+        assertEquals("HIGH", log.getRiskLevel());
+        assertTrue(log.getCostTime() >= 0);
         assertTrue(log.getErrorMessage().contains(expected.getMessage()));
     }
 
@@ -203,6 +210,8 @@ class AuditAspectTest {
         assertEquals("COMMENT_ADD", log.getAction());
         assertNull(log.getTargetId());
         assertEquals("FAIL", log.getResult());
+        assertEquals("FAILED", log.getStatus());
+        assertEquals("HIGH", log.getRiskLevel());
         assertTrue(log.getRequestParams().contains("\"imageId\":\"100\""));
     }
 
@@ -220,9 +229,34 @@ class AuditAspectTest {
 
         AuditLog log = capturedLog();
         assertEquals("FAIL", log.getResult());
+        assertEquals("FAILED", log.getStatus());
+        assertEquals("HIGH", log.getRiskLevel());
         assertEquals("code expired", log.getErrorMessage());
         assertTrue(log.getRequestParams().contains("[FILTERED]"));
         assertFalse(log.getRequestParams().contains("oauth-code"));
+    }
+
+
+    @Test
+    void around_shouldSanitizeSensitiveResponseResult() throws Throwable {
+        Audit audit = stubJoinPoint("auditedOAuthExchange", Map.of("username", "alice"));
+        Map<String, String> response = new LinkedHashMap<>();
+        response.put("accessToken", "secret-access-token");
+        response.put("email", "alice@example.com");
+        response.put("displayName", "Alice");
+        when(joinPoint.proceed()).thenReturn(Result.ok(response));
+
+        try (MockedStatic<StpUtil> stpMock = mockStatic(StpUtil.class)) {
+            stpMock.when(StpUtil::isLogin).thenReturn(false);
+            aspect.around(joinPoint, audit);
+        }
+
+        AuditLog log = capturedLog();
+        assertTrue(log.getResponseResult().contains("\"accessToken\":\"[FILTERED]\""));
+        assertTrue(log.getResponseResult().contains("\"email\":\"[FILTERED]\""));
+        assertTrue(log.getResponseResult().contains("\"displayName\":\"Alice\""));
+        assertFalse(log.getResponseResult().contains("secret-access-token"));
+        assertFalse(log.getResponseResult().contains("alice@example.com"));
     }
 
     private Audit stubJoinPoint(String methodName, Object... args) throws NoSuchMethodException {

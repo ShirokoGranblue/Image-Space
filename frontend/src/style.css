@@ -342,7 +342,7 @@ a:hover { opacity: 0.72; }
   color: rgba(4, 44, 83, 0.72); font-family: var(--font-display);
   font-size: 22px; font-weight: 500;
 }
-.empty-state :deep(.el-icon) { font-size: 48px; margin-bottom: var(--space-md); opacity: 0.2; display: block; }
+.empty-state .el-icon { font-size: 48px; margin-bottom: var(--space-md); opacity: 0.2; display: block; }
 
 .skeleton { background: var(--gray1); animation: skPulse 2s ease-in-out infinite; }
 @keyframes skPulse { 0%,100%{opacity:0.5} 50%{opacity:0.8} }

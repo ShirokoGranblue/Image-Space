@@ -1,10 +1,12 @@
 package com.picmgmt.aspect;
 
 import cn.dev33.satoken.stp.StpUtil;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.picmgmt.annotation.Audit;
+import com.picmgmt.audit.AuditLogEventPublisher;
+import com.picmgmt.audit.AuditLogSanitizer;
+import com.picmgmt.audit.AuditRiskEvaluator;
 import com.picmgmt.common.Result;
 import com.picmgmt.entity.AuditLog;
 import com.picmgmt.entity.User;
@@ -19,6 +21,7 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -39,6 +42,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Aspect
@@ -47,6 +51,7 @@ import java.util.Set;
 public class AuditAspect {
 
     private static final int REQUEST_PARAMS_MAX_LENGTH = 4000;
+    private static final int RESPONSE_RESULT_MAX_LENGTH = 4000;
     private static final int USERNAME_MAX_LENGTH = 100;
     private static final int ACTION_MAX_LENGTH = 100;
     private static final int MODULE_MAX_LENGTH = 100;
@@ -57,12 +62,21 @@ public class AuditAspect {
     private static final int IP_MAX_LENGTH = 64;
     private static final int USER_AGENT_MAX_LENGTH = 500;
     private static final int ERROR_MESSAGE_MAX_LENGTH = 1000;
-    private static final String FILTERED = "[FILTERED]";
+    private static final String FILTERED = AuditLogSanitizer.FILTERED;
     private static final List<String> TARGET_KEYS = List.of("uuid", "id", "imageId", "commentId");
 
     private final AuditLogMapper auditLogMapper;
     private final ObjectMapper objectMapper;
     private final UserMapper userMapper;
+
+    @Autowired(required = false)
+    private AuditLogSanitizer auditLogSanitizer;
+
+    @Autowired(required = false)
+    private AuditRiskEvaluator auditRiskEvaluator;
+
+    @Autowired(required = false)
+    private AuditLogEventPublisher auditLogEventPublisher;
 
     @Around("@annotation(audit)")
     public Object around(ProceedingJoinPoint joinPoint, Audit audit) throws Throwable {
@@ -71,6 +85,7 @@ public class AuditAspect {
         UserSnapshot beforeUser = currentUser();
         Object result = null;
         Throwable error = null;
+        long startNanos = System.nanoTime();
 
         try {
             result = joinPoint.proceed();
@@ -79,15 +94,18 @@ public class AuditAspect {
             error = ex;
             throw ex;
         } finally {
+            long costTime = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
             UserSnapshot afterUser = currentUser();
-            AuditLog logEntry = buildLog(audit, request, requestParams, beforeUser, afterUser, result, error);
+            AuditLog logEntry = buildLog(audit, request, requestParams, beforeUser, afterUser, result, error, costTime);
             insertQuietly(logEntry);
         }
     }
 
     private AuditLog buildLog(Audit audit, HttpServletRequest request, Map<String, Object> requestParams,
-                              UserSnapshot beforeUser, UserSnapshot afterUser, Object result, Throwable error) {
+                              UserSnapshot beforeUser, UserSnapshot afterUser, Object result, Throwable error,
+                              Long costTime) {
         UserSnapshot user = chooseUser(beforeUser, afterUser);
+        String status = auditStatus(result, error);
         AuditLog logEntry = new AuditLog();
         logEntry.setUserId(user.userId());
         logEntry.setUsername(truncate(firstNonBlank(
@@ -106,7 +124,11 @@ public class AuditAspect {
         logEntry.setIp(truncate(clientIp(request), IP_MAX_LENGTH));
         logEntry.setUserAgent(truncate(request == null ? null : request.getHeader("User-Agent"), USER_AGENT_MAX_LENGTH));
         logEntry.setRequestParams(toJson(requestParams));
+        logEntry.setResponseResult(auditResponseResult(result));
         logEntry.setResult(auditResult(result, error));
+        logEntry.setStatus(status);
+        logEntry.setRiskLevel(riskEvaluator().evaluate(audit.action(), audit.module(), status, logEntry.getPath()));
+        logEntry.setCostTime(costTime == null ? 0L : Math.max(0L, costTime));
         logEntry.setErrorMessage(auditErrorMessage(result, error));
         logEntry.setCreateTime(LocalDateTime.now());
         return logEntry;
@@ -156,6 +178,16 @@ public class AuditAspect {
         return null;
     }
 
+    private String auditStatus(Object result, Throwable error) {
+        if (error != null) {
+            return "FAILED";
+        }
+        if (result instanceof Result<?> apiResult && apiResult.getCode() != 200) {
+            return "FAILED";
+        }
+        return "SUCCESS";
+    }
+
     private String auditResult(Object result, Throwable error) {
         if (error != null) {
             return "FAIL";
@@ -168,10 +200,10 @@ public class AuditAspect {
 
     private String auditErrorMessage(Object result, Throwable error) {
         if (error != null) {
-            return truncate(error.getMessage(), ERROR_MESSAGE_MAX_LENGTH);
+            return sanitizer().sanitizeText(error.getMessage(), ERROR_MESSAGE_MAX_LENGTH);
         }
         if (result instanceof Result<?> apiResult && apiResult.getCode() != 200) {
-            return truncate(apiResult.getMessage(), ERROR_MESSAGE_MAX_LENGTH);
+            return sanitizer().sanitizeText(apiResult.getMessage(), ERROR_MESSAGE_MAX_LENGTH);
         }
         return null;
     }
@@ -240,97 +272,22 @@ public class AuditAspect {
     }
 
     private Object sanitizeValue(String key, Object value) {
-        if (value == null) {
-            return null;
-        }
-        if (isSensitiveKey(key)) {
-            return FILTERED;
-        }
-        if (value instanceof MultipartFile file) {
-            return fileMetadata(file);
-        }
-        if (value instanceof MultipartFile[] files) {
-            List<Object> list = new ArrayList<>();
-            for (MultipartFile file : files) {
-                list.add(fileMetadata(file));
-            }
-            return list;
-        }
-        if (value instanceof ServletRequest || value instanceof ServletResponse
-                || value instanceof BindingResult || value instanceof InputStream
-                || value instanceof OutputStream) {
-            return null;
-        }
-        if (value instanceof CharSequence || value instanceof Number
-                || value instanceof Boolean || value instanceof Enum<?>) {
-            return value;
-        }
-        if (value instanceof byte[]) {
-            return "[BINARY]";
-        }
-        if (value instanceof Map<?, ?> map) {
-            Map<String, Object> sanitized = new LinkedHashMap<>();
-            for (Map.Entry<?, ?> entry : map.entrySet()) {
-                String childKey = String.valueOf(entry.getKey());
-                sanitized.put(childKey, sanitizeValue(childKey, entry.getValue()));
-            }
-            return sanitized;
-        }
-        if (value instanceof Iterable<?> iterable) {
-            List<Object> sanitized = new ArrayList<>();
-            for (Object item : iterable) {
-                sanitized.add(sanitizeValue(key, item));
-            }
-            return sanitized;
-        }
-        if (value.getClass().isArray()) {
-            int length = Array.getLength(value);
-            List<Object> sanitized = new ArrayList<>(length);
-            for (int i = 0; i < length; i++) {
-                sanitized.add(sanitizeValue(key, Array.get(value, i)));
-            }
-            return sanitized;
-        }
-        return sanitizePojo(key, value);
-    }
-
-    private Object sanitizePojo(String key, Object value) {
-        try {
-            Map<String, Object> map = objectMapper.convertValue(value, new TypeReference<Map<String, Object>>() {});
-            return sanitizeValue(key, map);
-        } catch (IllegalArgumentException ignored) {
-            return value.toString();
-        }
-    }
-
-    private Map<String, Object> fileMetadata(MultipartFile file) {
-        Map<String, Object> metadata = new LinkedHashMap<>();
-        metadata.put("originalFilename", file.getOriginalFilename());
-        metadata.put("contentType", file.getContentType());
-        metadata.put("size", file.getSize());
-        metadata.put("empty", file.isEmpty());
-        return metadata;
+        return sanitizer().sanitizeValue(key, value);
     }
 
     private boolean isSensitiveKey(String key) {
-        if (key == null) {
-            return false;
-        }
-        String lower = key.toLowerCase();
-        return lower.contains("password")
-                || lower.contains("token")
-                || lower.contains("authorization")
-                || lower.contains("code")
-                || lower.contains("captcha");
+        return sanitizer().isSensitiveKey(key);
     }
 
     private String toJson(Map<String, Object> requestParams) {
-        try {
-            return truncate(objectMapper.writeValueAsString(requestParams), REQUEST_PARAMS_MAX_LENGTH);
-        } catch (JsonProcessingException e) {
-            log.warn("Failed to serialize audit request params: {}", e.getMessage());
-            return "{}";
+        return sanitizer().toSanitizedJson(requestParams, REQUEST_PARAMS_MAX_LENGTH);
+    }
+
+    private String auditResponseResult(Object result) {
+        if (result == null) {
+            return null;
         }
+        return sanitizer().toSanitizedJson(result, RESPONSE_RESULT_MAX_LENGTH);
     }
 
     private String findTargetId(Map<String, Object> params) {
@@ -497,9 +454,26 @@ public class AuditAspect {
         return value.substring(0, maxLength);
     }
 
+    private AuditLogSanitizer sanitizer() {
+        if (auditLogSanitizer == null) {
+            auditLogSanitizer = new AuditLogSanitizer(objectMapper);
+        }
+        return auditLogSanitizer;
+    }
+
+    private AuditRiskEvaluator riskEvaluator() {
+        if (auditRiskEvaluator == null) {
+            auditRiskEvaluator = new AuditRiskEvaluator();
+        }
+        return auditRiskEvaluator;
+    }
+
     private void insertQuietly(AuditLog logEntry) {
         try {
             auditLogMapper.insert(logEntry);
+            if (auditLogEventPublisher != null) {
+                auditLogEventPublisher.publishIfImportant(logEntry);
+            }
         } catch (Exception e) {
             log.warn("Failed to insert audit log: {}", e.getMessage());
         }

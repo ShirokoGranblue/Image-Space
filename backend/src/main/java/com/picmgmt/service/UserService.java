@@ -25,6 +25,10 @@ public interface UserService {
 
     UserVO updateProfile(Long userId, String displayName, String email, String phone, String bio);
 
+    UserVO updateProfile(Long userId, String displayName, String email, String phone, String bio, String emailCode);
+
+    void sendEmailChangeCode(Long userId, String email);
+
     void updateAvatar(Long userId, String avatarPath);
 
     void updateBackground(Long userId, String backgroundPath);

@@ -10,8 +10,10 @@ import com.picmgmt.repository.CommentRepository;
 import com.picmgmt.repository.ImageRepository;
 import com.picmgmt.service.CommentService;
 import com.picmgmt.service.NotificationService;
+import com.picmgmt.storage.StorageService;
 import com.picmgmt.vo.CommentVO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -22,6 +24,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CommentServiceImpl implements CommentService {
 
     private final CommentRepository commentRepository;
@@ -29,6 +32,7 @@ public class CommentServiceImpl implements CommentService {
     private final NotificationService notificationService;
     private final CommentLikeMapper commentLikeMapper;
     private final ImagePermissionService imagePermissionService;
+    private final StorageService storageService;
 
     @Override
     public Comment add(Long imageId, String content, String imagePath) {
@@ -56,7 +60,13 @@ public class CommentServiceImpl implements CommentService {
             key = lastSlash >= 0 ? path.substring(lastSlash + 1) : path;
         }
         comment.setImagePath(key);
-        commentRepository.insert(comment);
+        comment.setImageKey(key);
+        try {
+            commentRepository.insert(comment);
+        } catch (RuntimeException e) {
+            safeDeleteCommentImage(key);
+            throw e;
+        }
         if (image.getUserId() != null && !image.getUserId().equals(actorUserId)) {
             notificationService.createCommentNotification(image, actorUserId, comment.getId(), content);
         }
@@ -68,6 +78,11 @@ public class CommentServiceImpl implements CommentService {
         Comment comment = commentRepository.findById(commentId);
         if (comment == null) {
             throw new BusinessException(ErrorCode.COMMENT_NOT_FOUND);
+        }
+        var image = imageRepository.findById(comment.getImageId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
+        if (!imagePermissionService.canView(image)) {
+            throw new BusinessException(ErrorCode.IMAGE_PERMISSION_DENIED);
         }
         return comment;
     }
@@ -83,6 +98,10 @@ public class CommentServiceImpl implements CommentService {
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
         commentRepository.deleteById(commentId);
+        String imageKey = comment.getImageKey() != null && !comment.getImageKey().isBlank()
+                ? comment.getImageKey()
+                : comment.getImagePath();
+        safeDeleteCommentImage(imageKey);
     }
 
     @Override
@@ -140,6 +159,17 @@ public class CommentServiceImpl implements CommentService {
                 vo.setLikeCount(likeCounts.getOrDefault(vo.getId(), 0L));
                 vo.setLikedByMe(likedByMeIds.contains(vo.getId()));
             }
+        }
+    }
+
+    private void safeDeleteCommentImage(String imageKey) {
+        if (imageKey == null || !imageKey.startsWith("comments/")) {
+            return;
+        }
+        try {
+            storageService.deleteObjectIfExists("comments", imageKey);
+        } catch (RuntimeException e) {
+            log.warn("Failed to clean up comment image {}: {}", imageKey, e.getMessage());
         }
     }
 }

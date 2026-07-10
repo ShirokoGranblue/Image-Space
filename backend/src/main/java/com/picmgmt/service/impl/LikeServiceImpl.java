@@ -8,6 +8,7 @@ import com.picmgmt.entity.CommentLike;
 import com.picmgmt.entity.Image;
 import com.picmgmt.entity.ImageLike;
 import com.picmgmt.like.LikeTarget;
+import com.picmgmt.image.ImagePermissionService;
 import com.picmgmt.mapper.CommentLikeMapper;
 import com.picmgmt.mapper.ImageLikeMapper;
 import com.picmgmt.repository.ImageRepository;
@@ -30,14 +31,14 @@ public class LikeServiceImpl implements LikeService {
     private final ImageRepository imageRepository;
     private final CommentService commentService;
     private final NotificationService notificationService;
+    private final ImagePermissionService imagePermissionService;
 
     @Override
     @Transactional
     public LikeStatusVO like(LikeTarget target, Long targetId) {
         long userId = StpUtil.getLoginIdAsLong();
         if (target == LikeTarget.IMAGE) {
-            Image image = imageRepository.findById(targetId)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
+            Image image = requireVisibleImage(targetId);
             ImageLike existing = imageLikeMapper.findByImageIdAndUserId(targetId, userId);
             if (existing == null) {
                 ImageLike like = new ImageLike();
@@ -52,6 +53,7 @@ public class LikeServiceImpl implements LikeService {
             return status(target, targetId, true);
         } else {
             Comment comment = commentService.getById(targetId);
+            requireVisibleImage(comment.getImageId());
             CommentLike existing = commentLikeMapper.findByCommentIdAndUserId(targetId, userId);
             if (existing == null) {
                 CommentLike like = new CommentLike();
@@ -72,11 +74,11 @@ public class LikeServiceImpl implements LikeService {
     public LikeStatusVO unlike(LikeTarget target, Long targetId) {
         long userId = StpUtil.getLoginIdAsLong();
         if (target == LikeTarget.IMAGE) {
-            imageRepository.findById(targetId)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
+            requireVisibleImage(targetId);
             imageLikeMapper.deleteByImageIdAndUserId(targetId, userId);
         } else {
-            commentService.getById(targetId);
+            Comment comment = commentService.getById(targetId);
+            requireVisibleImage(comment.getImageId());
             commentLikeMapper.deleteByCommentIdAndUserId(targetId, userId);
         }
         return status(target, targetId, false);
@@ -97,5 +99,14 @@ public class LikeServiceImpl implements LikeService {
                 ? imageLikeMapper.countByImageId(targetId)
                 : commentLikeMapper.countByCommentId(targetId);
         return new LikeStatusVO(targetId, count == null ? 0L : count, likedByMe);
+    }
+
+    private Image requireVisibleImage(Long imageId) {
+        Image image = imageRepository.findById(imageId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
+        if (!imagePermissionService.canView(image)) {
+            throw new BusinessException(ErrorCode.IMAGE_PERMISSION_DENIED);
+        }
+        return image;
     }
 }

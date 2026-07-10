@@ -11,11 +11,17 @@ CREATE TABLE IF NOT EXISTS audit_log (
     ip VARCHAR(64),
     user_agent VARCHAR(500),
     request_params TEXT,
+    response_result TEXT,
     result VARCHAR(20) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'SUCCESS',
+    risk_level VARCHAR(20) NOT NULL DEFAULT 'LOW',
+    cost_time BIGINT DEFAULT 0,
     error_message VARCHAR(1000),
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_user_id (user_id),
     INDEX idx_action (action),
     INDEX idx_module (module),
+    INDEX idx_status (status),
+    INDEX idx_risk_level (risk_level),
     INDEX idx_create_time (create_time)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

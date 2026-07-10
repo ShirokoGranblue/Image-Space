@@ -10,11 +10,9 @@ describe("R2 media proxy", () => {
     testId += 1;
   });
 
-  it("serves public images from Redis meta with immutable cache headers", async () => {
+  it("serves public images after authoritative metadata validation", async () => {
     const storageKey = uniqueKey("public-hit.png");
-    const redisFetch = redisFetchFor({ [storageKey]: publicMeta(storageKey, 7) });
-    vi.stubGlobal("fetch", redisFetch);
-    const backendFetch = vi.fn();
+    const backendFetch = vi.fn(async () => jsonResponse(publicMeta(storageKey, 7)));
     const env = envWithObject({ backendFetch });
 
     const response = await worker.fetch(
@@ -26,15 +24,12 @@ describe("R2 media proxy", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("Cache-Control")).toBe("public, max-age=31536000, immutable");
     expect(await response.text()).toBe("image-bytes");
-    expect(redisFetch).toHaveBeenCalledOnce();
-    expect(backendFetch).not.toHaveBeenCalled();
+    expect(backendFetch).toHaveBeenCalledOnce();
   });
 
-  it("falls back to backend meta when Redis misses and writes Redis with a TTL", async () => {
+  it("returns 502 when authoritative metadata lookup fails", async () => {
     const storageKey = uniqueKey("backend-fallback.png");
-    const redisFetch = redisFetchFor({});
-    vi.stubGlobal("fetch", redisFetch);
-    const backendFetch = vi.fn(async () => jsonResponse(publicMeta(storageKey, 2)));
+    const backendFetch = vi.fn(async () => new Response(null, { status: 503 }));
     const env = envWithObject({ backendFetch });
 
     const response = await worker.fetch(
@@ -43,24 +38,13 @@ describe("R2 media proxy", () => {
       {},
     );
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(502);
     expect(backendFetch).toHaveBeenCalledOnce();
-    expect(redisFetch).toHaveBeenCalledTimes(2);
-    const setCommand = await requestBodyText(redisFetch.mock.calls[1][1].body);
-    expect(JSON.parse(setCommand)).toEqual([
-      "SET",
-      `media:meta:${storageKey}`,
-      JSON.stringify(publicMeta(storageKey, 2)),
-      "EX",
-      "300",
-    ]);
   });
 
-  it("returns public cache hits without touching Redis, backend, or R2", async () => {
+  it("revalidates public cache hits without reading R2 twice", async () => {
     const storageKey = uniqueKey("cached.png");
-    const redisFetch = redisFetchFor({ [storageKey]: publicMeta(storageKey, 1) });
-    vi.stubGlobal("fetch", redisFetch);
-    const backendFetch = vi.fn();
+    const backendFetch = vi.fn(async () => jsonResponse(publicMeta(storageKey, 1)));
     const getObject = vi.fn(async () => objectBody("cached-bytes"));
     const env = envWithObject({ backendFetch, getObject });
     const request = new Request(`https://cdn.image-space.app/public/${storageKey}?v=1`);
@@ -68,15 +52,31 @@ describe("R2 media proxy", () => {
     expect((await worker.fetch(request, env, {})).status).toBe(200);
     expect((await worker.fetch(request, env, {})).status).toBe(200);
 
-    expect(redisFetch).toHaveBeenCalledOnce();
-    expect(backendFetch).not.toHaveBeenCalled();
+    expect(backendFetch).toHaveBeenCalledTimes(2);
+    expect(getObject).toHaveBeenCalledOnce();
+  });
+
+  it("revalidates cached public responses against authoritative backend metadata", async () => {
+    const storageKey = uniqueKey("revoked.png");
+    const backendFetch = vi.fn()
+      .mockResolvedValueOnce(jsonResponse(publicMeta(storageKey, 1)))
+      .mockResolvedValueOnce(jsonResponse(privateMeta(storageKey, 1)));
+    const getObject = vi.fn(async () => objectBody("cached-bytes"));
+    const env = envWithObject({ backendFetch, getObject });
+    const request = new Request(`https://cdn.image-space.app/public/${storageKey}?v=1`);
+
+    expect((await worker.fetch(request, env, {})).status).toBe(200);
+    const revokedResponse = await worker.fetch(request, env, {});
+
+    expect(revokedResponse.status).toBe(404);
+    expect(backendFetch).toHaveBeenCalledTimes(2);
     expect(getObject).toHaveBeenCalledOnce();
   });
 
   it("returns 404 when public URLs point at private metadata", async () => {
     const storageKey = uniqueKey("private-on-public.png");
-    vi.stubGlobal("fetch", redisFetchFor({ [storageKey]: privateMeta(storageKey, 3) }));
-    const env = envWithObject();
+    const backendFetch = vi.fn(async () => jsonResponse(privateMeta(storageKey, 3)));
+    const env = envWithObject({ backendFetch });
 
     const response = await worker.fetch(
       new Request(`https://cdn.image-space.app/public/${storageKey}?v=3`),
@@ -91,8 +91,8 @@ describe("R2 media proxy", () => {
 
   it("returns 404 for stale public URL versions", async () => {
     const storageKey = uniqueKey("stale.png");
-    vi.stubGlobal("fetch", redisFetchFor({ [storageKey]: publicMeta(storageKey, 9) }));
-    const env = envWithObject();
+    const backendFetch = vi.fn(async () => jsonResponse(publicMeta(storageKey, 9)));
+    const env = envWithObject({ backendFetch });
 
     const response = await worker.fetch(
       new Request(`https://cdn.image-space.app/public/${storageKey}?v=8`),
@@ -168,8 +168,6 @@ function envWithObject({ backendFetch, authFetch, getObject } = {}) {
     BACKEND_META_URL: "https://image-space.app/api/internal/media/meta",
     BACKEND_AUTHORIZE_URL: "https://image-space.app/api/internal/media/authorize",
     BACKEND_INTERNAL_TOKEN: "internal-secret",
-    UPSTASH_REDIS_REST_URL: "https://upstash.example.com",
-    UPSTASH_REDIS_REST_TOKEN: "redis-secret",
     BACKEND_META: backendFetch ? { fetch: backendFetch } : undefined,
     BACKEND_AUTH: authFetch ? { fetch: authFetch } : undefined,
     MY_BUCKET: {
@@ -188,34 +186,11 @@ function objectBody(body) {
   };
 }
 
-function redisFetchFor(metaByStorageKey) {
-  return vi.fn(async (url, init) => {
-    expect(String(url)).toBe("https://upstash.example.com");
-    const command = JSON.parse(await requestBodyText(init.body));
-    if (command[0] === "GET") {
-      const storageKey = command[1].replace("media:meta:", "");
-      const meta = metaByStorageKey[storageKey] || null;
-      return jsonResponse({ result: meta ? JSON.stringify(meta) : null });
-    }
-    if (command[0] === "SET") {
-      return jsonResponse({ result: "OK" });
-    }
-    return jsonResponse({ error: "unsupported" }, 400);
-  });
-}
-
 function jsonResponse(body, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { "Content-Type": "application/json" },
   });
-}
-
-async function requestBodyText(body) {
-  if (typeof body === "string") {
-    return body;
-  }
-  return body.text();
 }
 
 function publicMeta(storageKey, version) {

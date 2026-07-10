@@ -51,9 +51,12 @@ public class CommentController {
     @GetMapping("/image/{id}")
     public ResponseEntity<byte[]> image(@PathVariable Long id) {
         Comment comment = commentService.getById(id);
-        byte[] bytes = storageService.download("comments", comment.getImagePath());
+        String objectKey = comment.getImageKey() != null && !comment.getImageKey().isBlank()
+                ? comment.getImageKey()
+                : comment.getImagePath();
+        byte[] bytes = storageService.download("comments", objectKey);
         return ResponseEntity.ok()
-            .contentType(getMediaType(comment.getImagePath()))
+            .contentType(getMediaType(objectKey))
             .body(bytes);
     }
 

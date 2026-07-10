@@ -9,6 +9,7 @@ import com.picmgmt.image.ImagePermissionService;
 import com.picmgmt.repository.CommentRepository;
 import com.picmgmt.repository.ImageRepository;
 import com.picmgmt.service.NotificationService;
+import com.picmgmt.storage.StorageService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,13 +33,21 @@ class CommentServiceImplTest {
     @Mock private NotificationService notificationService;
     @Mock private CommentLikeMapper commentLikeMapper;
     @Mock private ImagePermissionService imagePermissionService;
+    @Mock private StorageService storageService;
 
     private CommentServiceImpl service;
     private MockedStatic<StpUtil> stpMock;
 
     @BeforeEach
     void setUp() {
-        service = new CommentServiceImpl(commentRepository, imageRepository, notificationService, commentLikeMapper, imagePermissionService);
+        service = new CommentServiceImpl(
+                commentRepository,
+                imageRepository,
+                notificationService,
+                commentLikeMapper,
+                imagePermissionService,
+                storageService
+        );
         stpMock = mockStatic(StpUtil.class);
     }
 
@@ -135,6 +144,50 @@ class CommentServiceImplTest {
     }
 
     @Test
+    void add_shouldStoreUploadedObjectAsImageKey() {
+        stpMock.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
+        Image image = new Image();
+        image.setId(1L);
+        image.setUserId(1L);
+        when(imageRepository.findById(1L)).thenReturn(Optional.of(image));
+        when(imagePermissionService.canView(image)).thenReturn(true);
+
+        Comment result = service.add(1L, "with image", "comments/key.png");
+
+        assertEquals("comments/key.png", result.getImageKey());
+    }
+
+    @Test
+    void add_shouldDeleteUploadedObjectWhenInsertFails() {
+        stpMock.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
+        Image image = new Image();
+        image.setId(1L);
+        image.setUserId(1L);
+        when(imageRepository.findById(1L)).thenReturn(Optional.of(image));
+        when(imagePermissionService.canView(image)).thenReturn(true);
+        doThrow(new RuntimeException("db failed")).when(commentRepository).insert(any(Comment.class));
+
+        assertThrows(RuntimeException.class,
+                () -> service.add(1L, "with image", "comments/key.png"));
+
+        verify(storageService).deleteObjectIfExists("comments", "comments/key.png");
+    }
+
+    @Test
+    void getByIdRejectsCommentImageWhenParentImageIsNotVisible() {
+        Comment comment = new Comment();
+        comment.setId(3L);
+        comment.setImageId(1L);
+        Image image = new Image();
+        image.setId(1L);
+        when(commentRepository.findById(3L)).thenReturn(comment);
+        when(imageRepository.findById(1L)).thenReturn(Optional.of(image));
+        when(imagePermissionService.canView(image)).thenReturn(false);
+
+        assertThrows(BusinessException.class, () -> service.getById(3L));
+    }
+
+    @Test
     void delete_shouldThrowWhenCommentNotFound() {
         stpMock.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
         when(commentRepository.findById(anyLong())).thenReturn(null);
@@ -170,11 +223,13 @@ class CommentServiceImplTest {
 
         Comment comment = new Comment();
         comment.setUserId(1L);
+        comment.setImageKey("comments/key.png");
         when(commentRepository.findById(1L)).thenReturn(comment);
         doNothing().when(commentRepository).deleteById(anyLong());
 
         assertDoesNotThrow(() -> service.delete(1L));
         verify(commentRepository).deleteById(1L);
+        verify(storageService).deleteObjectIfExists("comments", "comments/key.png");
     }
 
     @Test

@@ -8,7 +8,11 @@ public interface CacheService {
 
     <T> Optional<T> get(String key, Class<T> type);
 
+    <T> Optional<T> take(String key, Class<T> type);
+
     <T> void put(String key, T value, Duration logicalTtl);
+
+    <T> void putExact(String key, T value, Duration ttl);
 
     void evict(String key);
 

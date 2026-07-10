@@ -21,6 +21,7 @@ public class User {
     private String avatar;
     private String avatarKey;
     private String email;
+    private Integer emailVerified;
     private String phone;
     private String githubUsername;
     private String bio;

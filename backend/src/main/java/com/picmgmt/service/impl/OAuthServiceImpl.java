@@ -11,11 +11,17 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.picmgmt.cache.BloomFilterService;
+import com.picmgmt.auth.UserRole;
+import com.picmgmt.auth.UserRoleMapper;
+import com.picmgmt.common.BusinessException;
+import com.picmgmt.common.ErrorCode;
 import com.picmgmt.config.GoogleJwtVerifier;
 import com.picmgmt.config.OAuthPooledHttp;
 import com.picmgmt.entity.User;
+import com.picmgmt.entity.UserOauthAccount;
 import com.picmgmt.image.ImageUrlService;
 import com.picmgmt.mapper.UserMapper;
+import com.picmgmt.mapper.UserOauthAccountMapper;
 import com.picmgmt.service.OAuthService;
 import com.picmgmt.storage.StorageService;
 import com.xkcoding.http.config.HttpConfig;
@@ -37,6 +43,7 @@ import okhttp3.Response;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.net.InetSocketAddress;
 import java.net.Proxy;
@@ -55,6 +62,8 @@ public class OAuthServiceImpl implements OAuthService {
     private final StorageService storageService;
     private final StringRedisTemplate redisTemplate;
     private final BloomFilterService bloomFilterService;
+    private final UserOauthAccountMapper oauthAccountMapper;
+    private final UserRoleMapper userRoleMapper;
 
     @Value("${oauth.github.client-id}")
     private String githubClientId;
@@ -82,11 +91,15 @@ public class OAuthServiceImpl implements OAuthService {
 
     private final GoogleJwtVerifier googleJwtVerifier = new GoogleJwtVerifier();
 
-    public OAuthServiceImpl(UserMapper userMapper, StorageService storageService, StringRedisTemplate redisTemplate, BloomFilterService bloomFilterService) {
+    public OAuthServiceImpl(UserMapper userMapper, StorageService storageService,
+                            StringRedisTemplate redisTemplate, BloomFilterService bloomFilterService,
+                            UserOauthAccountMapper oauthAccountMapper, UserRoleMapper userRoleMapper) {
         this.userMapper = userMapper;
         this.storageService = storageService;
         this.redisTemplate = redisTemplate;
         this.bloomFilterService = bloomFilterService;
+        this.oauthAccountMapper = oauthAccountMapper;
+        this.userRoleMapper = userRoleMapper;
     }
 
     @Override
@@ -98,6 +111,7 @@ public class OAuthServiceImpl implements OAuthService {
     }
 
     @Override
+    @Transactional
     public OAuthResult handleCallback(String provider, String code, String state, String baseUrl) {
         AuthRequest authRequest = buildAuthRequest(provider);
 
@@ -125,15 +139,42 @@ public class OAuthServiceImpl implements OAuthService {
         }
 
         AuthUser authUser = response.getData();
+        return loginOrRegister(provider, authUser, redirectDomain);
+    }
+
+    OAuthResult loginOrRegister(String provider, AuthUser authUser, String redirectDomain) {
+        String providerUserId = authUser.getUuid();
+        if (providerUserId == null || providerUserId.isBlank()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "第三方账号缺少稳定用户标识");
+        }
+        UserOauthAccount existingBinding = oauthAccountMapper.selectOne(
+                new LambdaQueryWrapper<UserOauthAccount>()
+                        .eq(UserOauthAccount::getProvider, provider)
+                        .eq(UserOauthAccount::getProviderUserId, providerUserId)
+        );
+        if (existingBinding != null) {
+            User boundUser = requireActiveUser(existingBinding.getUserId());
+            StpUtil.login(boundUser.getId());
+            return new OAuthResult(StpUtil.getTokenValue(), redirectDomain);
+        }
+
         String oauthUsername = authUser.getUsername();
-        String email = authUser.getEmail();
+        String email = authUser.getEmail() == null || authUser.getEmail().isBlank()
+                ? null
+                : authUser.getEmail().trim();
         String avatarUrl = authUser.getAvatar();
         String nickname = authUser.getNickname();
-
         User user = null;
         if (email != null && !email.isEmpty()) {
             user = userMapper.selectOne(new LambdaQueryWrapper<User>().eq(User::getEmail, email));
             if (user != null && (user.getDeleted() == null || user.getDeleted() == 0)) {
+                if (!Integer.valueOf(1).equals(user.getEmailVerified())) {
+                    throw new BusinessException(
+                            ErrorCode.CONFLICT,
+                            "该邮箱已存在但尚未验证，请先使用邮箱验证码登录后再绑定第三方账号"
+                    );
+                }
+                createOAuthBinding(user.getId(), provider, providerUserId, email, oauthUsername, avatarUrl);
                 bindOAuthUsername(user, provider, oauthUsername);
                 StpUtil.login(user.getId());
                 log.info("{} OAuth login: email match, user {}", provider, user.getUsername());
@@ -152,8 +193,14 @@ public class OAuthServiceImpl implements OAuthService {
         user.setPassword(BCrypt.hashpw(UUID.randomUUID().toString(), BCrypt.gensalt()));
         user.setRole("user");
         user.setEmail(email);
+        user.setEmailVerified(email == null ? 0 : 1);
         userMapper.insert(user);
         bloomFilterService.addUser(user.getId());
+        UserRole userRole = new UserRole();
+        userRole.setUserId(user.getId());
+        userRole.setRoleId(3L);
+        userRoleMapper.insert(userRole);
+        createOAuthBinding(user.getId(), provider, providerUserId, email, oauthUsername, avatarUrl);
         bindOAuthUsername(user, provider, oauthUsername);
 
         String avatarKey = downloadAndUploadAvatar(avatarUrl, user.getId());
@@ -165,6 +212,29 @@ public class OAuthServiceImpl implements OAuthService {
         StpUtil.login(user.getId());
         log.info("{} OAuth login: auto-registered user {}", provider, username);
         return new OAuthResult(StpUtil.getTokenValue(), redirectDomain);
+    }
+
+    private User requireActiveUser(Long userId) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
+        if (user.getDeleted() != null && user.getDeleted() == 1) {
+            throw new BusinessException(ErrorCode.USER_DELETED);
+        }
+        return user;
+    }
+
+    private void createOAuthBinding(Long userId, String provider, String providerUserId,
+                                    String email, String username, String avatarUrl) {
+        UserOauthAccount binding = new UserOauthAccount();
+        binding.setUserId(userId);
+        binding.setProvider(provider);
+        binding.setProviderUserId(providerUserId);
+        binding.setProviderEmail(email);
+        binding.setProviderUsername(username);
+        binding.setAvatarUrl(avatarUrl);
+        oauthAccountMapper.insert(binding);
     }
 
     private void bindOAuthUsername(User user, String provider, String oauthUsername) {
@@ -263,11 +333,15 @@ public class OAuthServiceImpl implements OAuthService {
                     String payload = StrUtil.utf8Str(Base64.decode(parts[1]));
                     JSONObject claims = JSONUtil.parseObj(payload);
 
+                    boolean emailVerified = claims.getBool("email_verified", false);
+                    if (!emailVerified) {
+                        log.warn("Google ID token email is not verified; omit it from account linking");
+                    }
                     return AuthUser.builder()
                             .uuid(claims.getStr("sub"))
                             .username(claims.getStr("email"))
                             .nickname(claims.getStr("name"))
-                            .email(claims.getStr("email"))
+                            .email(emailVerified ? claims.getStr("email") : null)
                             .avatar(claims.getStr("picture"))
                             .token(authToken)
                             .source("GOOGLE")

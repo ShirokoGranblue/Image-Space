@@ -4,6 +4,10 @@ import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.crypto.digest.BCrypt;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.picmgmt.cache.BloomFilterService;
+import com.picmgmt.auth.UserRole;
+import com.picmgmt.auth.UserRoleMapper;
+import com.picmgmt.common.BusinessException;
+import com.picmgmt.common.ErrorCode;
 import com.picmgmt.dto.oauth.MicrosoftUserInfo;
 import com.picmgmt.dto.oauth.OAuthLoginResult;
 import com.picmgmt.entity.User;
@@ -29,6 +33,7 @@ public class OAuthLoginServiceImpl implements OAuthLoginService {
     private final UserMapper userMapper;
     private final UserOauthAccountMapper oauthAccountMapper;
     private final BloomFilterService bloomFilterService;
+    private final UserRoleMapper userRoleMapper;
 
     private static final String PROVIDER_MICROSOFT = "microsoft";
 
@@ -91,6 +96,12 @@ public class OAuthLoginServiceImpl implements OAuthLoginService {
         boolean newlyCreated = false;
 
         if (existingUser != null) {
+            if (!Integer.valueOf(1).equals(existingUser.getEmailVerified())) {
+                throw new BusinessException(
+                        ErrorCode.CONFLICT,
+                        "该邮箱已存在但尚未验证，请先使用邮箱验证码登录后再绑定 Microsoft"
+                );
+            }
             // 找到已有用户，创建绑定
             userId = existingUser.getId();
             createOAuthBinding(userId, userInfo);
@@ -100,6 +111,10 @@ public class OAuthLoginServiceImpl implements OAuthLoginService {
             User newUser = createNewUser(userInfo);
             userMapper.insert(newUser);
             bloomFilterService.addUser(newUser.getId());
+            UserRole userRole = new UserRole();
+            userRole.setUserId(newUser.getId());
+            userRole.setRoleId(3L);
+            userRoleMapper.insert(userRole);
             userId = newUser.getId();
             newlyCreated = true;
 
@@ -174,6 +189,7 @@ public class OAuthLoginServiceImpl implements OAuthLoginService {
 
         // 设置已验证邮箱（UPN 优先）
         user.setEmail(userInfo.getVerifiedEmail());
+        user.setEmailVerified(userInfo.getVerifiedEmail() == null ? 0 : 1);
 
         // 设置未删除状态
         user.setDeleted(0);

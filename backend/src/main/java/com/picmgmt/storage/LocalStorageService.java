@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -28,7 +29,7 @@ public class LocalStorageService implements StorageService {
     @Override
     public String upload(String bucket, String objectKey, byte[] bytes, String contentType, String cacheControl) {
         try {
-            Path targetPath = Paths.get(basePath, bucket, objectKey);
+            Path targetPath = resolveForWrite(bucket, objectKey);
             Files.createDirectories(targetPath.getParent());
             Files.write(targetPath, bytes);
             return "/storage/" + bucket + "/" + objectKey;
@@ -40,7 +41,7 @@ public class LocalStorageService implements StorageService {
     @Override
     public byte[] download(String bucket, String objectKey) {
         try {
-            Path targetPath = Paths.get(basePath, bucket, objectKey);
+            Path targetPath = resolveExisting(bucket, objectKey);
             return Files.readAllBytes(targetPath);
         } catch (IOException e) {
             throw new BusinessException(ErrorCode.STORAGE_DOWNLOAD_FAILED, e);
@@ -50,7 +51,9 @@ public class LocalStorageService implements StorageService {
     @Override
     public void delete(String bucket, String objectKey) {
         try {
-            Files.deleteIfExists(Paths.get(basePath, bucket, objectKey));
+            Files.deleteIfExists(resolveExisting(bucket, objectKey));
+        } catch (BusinessException e) {
+            throw e;
         } catch (IOException e) {
             log.warn("本地文件删除失败: {}/{}", bucket, objectKey);
         }
@@ -69,10 +72,12 @@ public class LocalStorageService implements StorageService {
     @Override
     public FileMeta getFileMeta(String bucket, String objectKey) {
         try {
-            Path path = Paths.get(basePath, bucket, objectKey);
+            Path path = resolveExisting(bucket, objectKey);
             long size = Files.size(path);
             String ct = Files.probeContentType(path);
             return new FileMeta(size, ct != null ? ct : "application/octet-stream");
+        } catch (BusinessException e) {
+            throw e;
         } catch (IOException e) {
             return null;
         }
@@ -81,5 +86,61 @@ public class LocalStorageService implements StorageService {
     @Override
     public void updateObjectMetadata(String bucket, String objectKey, String cacheControl, boolean isPublic) {
         // 本地存储不支持自定义元数据，忽略
+    }
+
+    private Path resolveForWrite(String bucket, String objectKey) throws IOException {
+        Path bucketRoot = bucketRoot(bucket);
+        Files.createDirectories(bucketRoot);
+        Path target = lexicalTarget(bucketRoot, objectKey);
+        Files.createDirectories(target.getParent());
+        Path realBucketRoot = bucketRoot.toRealPath();
+        Path realParent = target.getParent().toRealPath();
+        if (!realParent.startsWith(realBucketRoot)
+                || Files.isSymbolicLink(target)
+                || Files.exists(target, LinkOption.NOFOLLOW_LINKS) && !target.toRealPath().startsWith(realBucketRoot)) {
+            throw invalidPath();
+        }
+        return target;
+    }
+
+    private Path resolveExisting(String bucket, String objectKey) throws IOException {
+        Path bucketRoot = bucketRoot(bucket);
+        Path target = lexicalTarget(bucketRoot, objectKey);
+        if (!Files.exists(target, LinkOption.NOFOLLOW_LINKS)) {
+            return target;
+        }
+        Path realBucketRoot = bucketRoot.toRealPath();
+        Path realTarget = target.toRealPath();
+        if (!realTarget.startsWith(realBucketRoot)) {
+            throw invalidPath();
+        }
+        return realTarget;
+    }
+
+    private Path bucketRoot(String bucket) {
+        if (bucket == null || !bucket.matches("[A-Za-z0-9_-]+")) {
+            throw invalidPath();
+        }
+        Path baseRoot = Paths.get(basePath).toAbsolutePath().normalize();
+        Path bucketRoot = baseRoot.resolve(bucket).normalize();
+        if (!bucketRoot.startsWith(baseRoot)) {
+            throw invalidPath();
+        }
+        return bucketRoot;
+    }
+
+    private Path lexicalTarget(Path bucketRoot, String objectKey) {
+        if (objectKey == null || objectKey.isBlank()) {
+            throw invalidPath();
+        }
+        Path target = bucketRoot.resolve(objectKey).normalize();
+        if (!target.startsWith(bucketRoot)) {
+            throw invalidPath();
+        }
+        return target;
+    }
+
+    private BusinessException invalidPath() {
+        return new BusinessException(ErrorCode.BAD_REQUEST, "非法存储路径");
     }
 }

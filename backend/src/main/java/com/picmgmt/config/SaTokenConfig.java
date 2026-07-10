@@ -28,6 +28,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
                                     "/user/oauth/google", "/user/oauth/google/callback",
                                     "/user/oauth/microsoft/login", "/user/oauth/microsoft/callback",
                                     "/system/webhook-url",
+                                    "/admin/audit-log/stream",
                                     "/comment/list/**")
                             .check(r -> StpUtil.checkLogin());
                 }))

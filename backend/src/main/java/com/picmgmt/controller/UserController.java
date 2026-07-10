@@ -42,6 +42,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.Objects;
 
 @Tag(name = "用户模块")
 @Slf4j
@@ -98,7 +99,14 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
     @Operation(summary = "获取用户公开信息")
     @GetMapping("/profile/{uuid}")
     public Result<UserVO> profile(@PathVariable String uuid) {
-        return Result.ok(userService.getUserVOByUuid(uuid));
+        UserVO profile = userService.getUserVOByUuid(uuid);
+        boolean canViewContact = StpUtil.isLogin()
+                && (Objects.equals(profile.getId(), StpUtil.getLoginIdAsLong()) || StpUtil.hasRole("admin"));
+        if (!canViewContact) {
+            profile.setEmail(null);
+            profile.setPhone(null);
+        }
+        return Result.ok(profile);
     }
 
     @Operation(summary = "更新个人资料")
@@ -108,7 +116,15 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
         long userId = StpUtil.getLoginIdAsLong();
         return Result.ok(userService.updateProfile(userId,
                 body.get("displayName"), body.get("email"),
-                body.get("phone"), body.get("bio")));
+                body.get("phone"), body.get("bio"), body.get("emailCode")));
+    }
+
+    @Operation(summary = "发送邮箱变更验证码")
+    @PostMapping("/email-change-code")
+    @Audit(action = "USER_EMAIL_CHANGE_CODE", module = "USER", targetType = "user")
+    public Result<Void> sendEmailChangeCode(@RequestBody Map<String, String> body) {
+        userService.sendEmailChangeCode(StpUtil.getLoginIdAsLong(), body.get("email"));
+        return Result.ok();
     }
 
     @Operation(summary = "上传头像")

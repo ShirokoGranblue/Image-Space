@@ -28,17 +28,9 @@ async function handlePublicRequest(request, env, ctx, storageKey) {
   const cache = caches.default;
   const cacheKey = new Request(request.url, { method: "GET" });
 
-  if (request.method === "GET") {
-    const cached = await cache.match(cacheKey);
-    if (cached) {
-      logEvent("media_public_cache_hit", { storageKey });
-      return cached;
-    }
-  }
-
   let meta;
   try {
-    meta = await getMediaMeta(env, storageKey);
+    meta = await getMetaFromBackend(env, storageKey);
   } catch (error) {
     logEvent("media_meta_lookup_failed", { storageKey, reason: error.message });
     return textResponse("Bad Gateway", 502, NO_STORE_CACHE_CONTROL);
@@ -54,6 +46,14 @@ async function handlePublicRequest(request, env, ctx, storageKey) {
   if (!requestedVersion || requestedVersion !== String(meta.version)) {
     logEvent("media_public_version_mismatch", { storageKey });
     return textResponse("Not Found", 404, NO_STORE_CACHE_CONTROL);
+  }
+
+  if (request.method === "GET") {
+    const cached = await cache.match(cacheKey);
+    if (cached) {
+      logEvent("media_public_cache_hit", { storageKey });
+      return cached;
+    }
   }
 
   const response = await serveFromR2(request, env, storageKey, PUBLIC_CACHE_CONTROL);
@@ -91,64 +91,6 @@ async function handlePrivateRequest(request, env, storageKey) {
     return textResponse("Forbidden", 403, NO_STORE_CACHE_CONTROL);
   }
   return serveFromR2(request, env, storageKey, NO_STORE_CACHE_CONTROL);
-}
-
-async function getMediaMeta(env, storageKey) {
-  const redisKey = metaCacheKey(storageKey);
-  if (hasUpstash(env)) {
-    const cached = await getMetaFromRedis(env, redisKey);
-    if (cached) {
-      return cached;
-    }
-  }
-
-  const meta = await getMetaFromBackend(env, storageKey);
-  if (meta && hasUpstash(env)) {
-    await putMetaToRedis(env, redisKey, meta).catch((error) => {
-      logEvent("media_meta_redis_put_failed", { storageKey, reason: error.message });
-    });
-  }
-  return meta;
-}
-
-async function getMetaFromRedis(env, redisKey) {
-  const value = await upstashCommand(env, ["GET", redisKey]);
-  if (value == null) {
-    return null;
-  }
-  if (typeof value === "object") {
-    return normalizeMeta(value);
-  }
-  try {
-    return normalizeMeta(JSON.parse(value));
-  } catch (error) {
-    logEvent("media_meta_redis_parse_failed", { redisKey, reason: error.message });
-    return null;
-  }
-}
-
-async function putMetaToRedis(env, redisKey, meta) {
-  const ttl = Number(env.MEDIA_META_TTL_SECONDS || 300);
-  await upstashCommand(env, ["SET", redisKey, JSON.stringify(meta), "EX", String(ttl)]);
-}
-
-async function upstashCommand(env, command) {
-  const response = await fetch(env.UPSTASH_REDIS_REST_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.UPSTASH_REDIS_REST_TOKEN}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(command),
-  });
-  if (!response.ok) {
-    throw new Error(`redis_${response.status}`);
-  }
-  const body = await response.json();
-  if (body.error) {
-    throw new Error("redis_command_error");
-  }
-  return body.result;
 }
 
 async function getMetaFromBackend(env, storageKey) {
@@ -285,14 +227,6 @@ function internalHeaders(env) {
     headers.set("X-Internal-Token", env.BACKEND_INTERNAL_TOKEN);
   }
   return headers;
-}
-
-function hasUpstash(env) {
-  return Boolean(env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN);
-}
-
-function metaCacheKey(storageKey) {
-  return `media:meta:${storageKey}`;
 }
 
 function badRoute(message, status, reason) {

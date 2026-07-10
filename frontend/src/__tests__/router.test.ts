@@ -1,28 +1,41 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { createRouter, createWebHistory, type RouteLocationNormalized } from 'vue-router'
+import { isAllowedAdminDomain } from '../utils/adminDomain'
 
-// Build a test router with the same structure as the real one
-function createTestRouter(initialPath = '/') {
+function createTestRouter() {
   return createRouter({
     history: createWebHistory(),
     routes: [
       { path: '/login', name: 'Login', component: { template: '<div>Login</div>' } },
       { path: '/register', name: 'Register', component: { template: '<div>Register</div>' } },
+      { path: '/403', name: 'Forbidden', component: { template: '<div>Forbidden</div>' } },
       { path: '/', redirect: '/home' },
       { path: '/home', name: 'Home', component: { template: '<div>Home</div>' }, meta: { requiresAuth: true } },
       { path: '/square', name: 'ImageSquare', component: { template: '<div>Square</div>' } },
-      { path: '/image/:id', name: 'ImageDetail', component: { template: '<div>Detail</div>' } },
-      { path: '/profile/:id', name: 'Profile', component: { template: '<div>Profile</div>' } },
+      { path: '/image/:uuid', name: 'ImageDetail', component: { template: '<div>Detail</div>' } },
+      { path: '/profile/:uuid', name: 'Profile', component: { template: '<div>Profile</div>' } },
+      {
+        path: '/admin/audit-log',
+        name: 'AuditLogMonitor',
+        component: { template: '<div>Audit</div>' },
+        meta: { requiresAuth: true, requiresAdmin: true, requiresAdminDomain: true },
+      },
     ],
   })
 }
 
-// Mirror the guard logic to test in isolation
-function guardLogic(to: RouteLocationNormalized): string | null {
+function guardLogic(
+  to: RouteLocationNormalized,
+  options: { hostname?: string; isDev?: boolean; userRole?: string | null } = {},
+): string | null {
   const token = sessionStorage.getItem('satoken')
+  if (to.meta.requiresAdminDomain && !isAllowedAdminDomain(options.hostname || 'admin.image-space.app', options.isDev ?? false)) {
+    return '/403'
+  }
   if (to.meta.requiresAuth && !token) return '/login'
   if ((to.path === '/login' || to.path === '/register') && token) return '/home'
-  return null // allow
+  if (to.meta.requiresAdmin && options.userRole !== 'admin') return '/403'
+  return null
 }
 
 describe('Router guard logic', () => {
@@ -30,110 +43,104 @@ describe('Router guard logic', () => {
     sessionStorage.clear()
   })
 
-  describe('Auth-required routes', () => {
-    it('redirects to /login when no token', async () => {
-      const router = createTestRouter()
-
-      router.beforeEach((to, _from, next) => {
-        const result = guardLogic(to)
-        result ? next(result) : next()
-      })
-
-      await router.push('/home')
-      await router.isReady()
-
-      expect(router.currentRoute.value.path).toBe('/login')
+  it('redirects auth-required routes to /login when no token', async () => {
+    const router = createTestRouter()
+    router.beforeEach((to, _from, next) => {
+      const result = guardLogic(to)
+      result ? next(result) : next()
     })
 
-    it('allows navigation when token exists', async () => {
-      sessionStorage.setItem('satoken', 'valid-token')
-      const router = createTestRouter()
+    await router.push('/home')
+    await router.isReady()
 
-      router.beforeEach((to, _from, next) => {
-        const result = guardLogic(to)
-        result ? next(result) : next()
-      })
-
-      await router.push('/home')
-      await router.isReady()
-
-      expect(router.currentRoute.value.path).toBe('/home')
-    })
+    expect(router.currentRoute.value.path).toBe('/login')
   })
 
-  describe('Public routes with existing token', () => {
-    it('redirects /login to /home when already logged in', async () => {
-      sessionStorage.setItem('satoken', 'valid-token')
-      const router = createTestRouter()
-
-      router.beforeEach((to, _from, next) => {
-        const result = guardLogic(to)
-        result ? next(result) : next()
-      })
-
-      await router.push('/login')
-      await router.isReady()
-
-      expect(router.currentRoute.value.path).toBe('/home')
+  it('allows auth-required routes when token exists', async () => {
+    sessionStorage.setItem('satoken', 'valid-token')
+    const router = createTestRouter()
+    router.beforeEach((to, _from, next) => {
+      const result = guardLogic(to)
+      result ? next(result) : next()
     })
 
-    it('redirects /register to /home when already logged in', async () => {
-      sessionStorage.setItem('satoken', 'valid-token')
-      const router = createTestRouter()
+    await router.push('/home')
+    await router.isReady()
 
-      router.beforeEach((to, _from, next) => {
-        const result = guardLogic(to)
-        result ? next(result) : next()
-      })
-
-      await router.push('/register')
-      await router.isReady()
-
-      expect(router.currentRoute.value.path).toBe('/home')
-    })
+    expect(router.currentRoute.value.path).toBe('/home')
   })
 
-  describe('Public routes without token', () => {
-    it('allows /login when no token', async () => {
-      const router = createTestRouter()
-
-      router.beforeEach((to, _from, next) => {
-        const result = guardLogic(to)
-        result ? next(result) : next()
-      })
-
-      await router.push('/login')
-      await router.isReady()
-
-      expect(router.currentRoute.value.path).toBe('/login')
+  it('redirects public auth pages to /home when already logged in', async () => {
+    sessionStorage.setItem('satoken', 'valid-token')
+    const router = createTestRouter()
+    router.beforeEach((to, _from, next) => {
+      const result = guardLogic(to)
+      result ? next(result) : next()
     })
 
-    it('allows /square when no token', async () => {
-      const router = createTestRouter()
+    await router.push('/login')
+    await router.isReady()
+    expect(router.currentRoute.value.path).toBe('/home')
 
-      router.beforeEach((to, _from, next) => {
-        const result = guardLogic(to)
-        result ? next(result) : next()
-      })
+    await router.push('/register')
+    await router.isReady()
+    expect(router.currentRoute.value.path).toBe('/home')
+  })
 
-      await router.push('/square')
-      await router.isReady()
-
-      expect(router.currentRoute.value.path).toBe('/square')
+  it('allows public routes without token', async () => {
+    const router = createTestRouter()
+    router.beforeEach((to, _from, next) => {
+      const result = guardLogic(to)
+      result ? next(result) : next()
     })
 
-    it('allows /image/:uuid when no token', async () => {
-      const router = createTestRouter()
+    await router.push('/square')
+    await router.isReady()
+    expect(router.currentRoute.value.path).toBe('/square')
 
-      router.beforeEach((to, _from, next) => {
-        const result = guardLogic(to)
-        result ? next(result) : next()
-      })
+    await router.push('/image/400a1e49-6990-489e-b4a8-35eb0a02d056')
+    await router.isReady()
+    expect(router.currentRoute.value.path).toBe('/image/400a1e49-6990-489e-b4a8-35eb0a02d056')
+  })
 
-      await router.push('/image/400a1e49-6990-489e-b4a8-35eb0a02d056')
-      await router.isReady()
-
-      expect(router.currentRoute.value.path).toBe('/image/400a1e49-6990-489e-b4a8-35eb0a02d056')
+  it('blocks admin page on a non-admin domain before login checks', async () => {
+    const router = createTestRouter()
+    router.beforeEach((to, _from, next) => {
+      const result = guardLogic(to, { hostname: 'image-space.app', isDev: false, userRole: 'admin' })
+      result ? next(result) : next()
     })
+
+    await router.push('/admin/audit-log')
+    await router.isReady()
+
+    expect(router.currentRoute.value.path).toBe('/403')
+  })
+
+  it('blocks admin page for logged-in non-admin users', async () => {
+    sessionStorage.setItem('satoken', 'valid-token')
+    const router = createTestRouter()
+    router.beforeEach((to, _from, next) => {
+      const result = guardLogic(to, { hostname: 'admin.image-space.app', isDev: false, userRole: 'user' })
+      result ? next(result) : next()
+    })
+
+    await router.push('/admin/audit-log')
+    await router.isReady()
+
+    expect(router.currentRoute.value.path).toBe('/403')
+  })
+
+  it('allows admin page for admin users on the admin domain', async () => {
+    sessionStorage.setItem('satoken', 'valid-token')
+    const router = createTestRouter()
+    router.beforeEach((to, _from, next) => {
+      const result = guardLogic(to, { hostname: 'admin.image-space.app', isDev: false, userRole: 'admin' })
+      result ? next(result) : next()
+    })
+
+    await router.push('/admin/audit-log')
+    await router.isReady()
+
+    expect(router.currentRoute.value.path).toBe('/admin/audit-log')
   })
 })

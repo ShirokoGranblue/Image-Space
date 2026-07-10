@@ -345,6 +345,29 @@ class ImageWriteServiceTest {
         assertEquals("alice,bob", result.getVisibleUsernames());
     }
 
+    @Test
+    void update_shouldClearSpecifiedUsersWhenPublishedAndFieldIsOmitted() {
+        stpMock.when(StpUtil::getLoginIdAsLong).thenReturn(4L);
+        var image = image("SPECIFIED", 2L);
+        image.setVisibleUsernames("alice,bob");
+        when(imageRepository.findById(7L)).thenReturn(java.util.Optional.of(image));
+        doAnswer(invocation -> {
+            var updated = invocation.getArgument(0, com.picmgmt.entity.Image.class);
+            ImageVO vo = new ImageVO();
+            vo.setVisibility(updated.getVisibility());
+            vo.setVisibleUsernames(updated.getVisibleUsernames());
+            return vo;
+        }).when(imageRepository).toVO(any());
+
+        ImageUpdateDTO dto = new ImageUpdateDTO();
+        dto.setVisibility("PUBLIC");
+
+        ImageVO result = service.update(7L, dto);
+
+        assertEquals("PUBLIC", result.getVisibility());
+        org.junit.jupiter.api.Assertions.assertNull(result.getVisibleUsernames());
+    }
+
     private com.picmgmt.entity.Image image(String visibility, Long mediaVersion) {
         com.picmgmt.entity.Image image = new com.picmgmt.entity.Image();
         image.setId(7L);

@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -237,10 +238,12 @@ public class ImageWriteService {
         }
         validateSpecifiedUsers(newVisibility, normalizedVisibleUsernames);
 
-        boolean visibleUsersChanged = false;
-        if (dto.getVisibleUsernames() != null) {
-            visibleUsersChanged = !normalizedVisibleUsernames.equals(image.getVisibleUsernames());
-            image.setVisibleUsernames(normalizedVisibleUsernames);
+        String finalVisibleUsernames = "SPECIFIED".equals(newVisibility)
+                ? normalizedVisibleUsernames
+                : null;
+        boolean visibleUsersChanged = !Objects.equals(finalVisibleUsernames, image.getVisibleUsernames());
+        if (dto.getVisibleUsernames() != null || !"SPECIFIED".equals(newVisibility)) {
+            image.setVisibleUsernames(finalVisibleUsernames);
         }
 
         image.setUploadTime(LocalDateTime.now());

@@ -1,10 +1,12 @@
 package com.picmgmt.cache;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 
 @Getter
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class CacheData<T> {
 
     private final T data;
@@ -27,6 +29,11 @@ public class CacheData<T> {
 
     public static CacheData<?> nullMarker(long logicExpireNanos) {
         return new CacheData<>(null, true, logicExpireNanos);
+    }
+
+    @JsonProperty("isNull")
+    public boolean isNull() {
+        return isNull;
     }
 
     public boolean isLogicallyExpired() {
