@@ -112,13 +112,6 @@
         />
       </div>
 
-      <el-form-item class="agreement-item">
-        <el-checkbox v-model="agreedToTerms" @change="agreementError = false">
-          我已阅读并同意图像空间的服务条款与隐私说明
-        </el-checkbox>
-        <p v-if="agreementError" class="agreement-error" role="alert">请先同意服务条款与隐私说明</p>
-      </el-form-item>
-
       <el-form-item class="submit-row">
         <el-button type="primary" native-type="submit" size="large" class="login-btn" :loading="loading">
           <span>创建账号</span>
@@ -154,8 +147,6 @@ const turnstileRef = ref(null)
 const turnstileToken = ref('')
 const captchaImage = ref('')
 const countdown = ref(0)
-const agreedToTerms = ref(false)
-const agreementError = ref(false)
 let countdownTimer = null
 
 const form = reactive({
@@ -261,11 +252,6 @@ async function handleSendCode() {
 async function handleRegister() {
   const valid = await formRef.value.validate().catch(() => false)
   if (!valid) return
-  if (!agreedToTerms.value) {
-    agreementError.value = true
-    ElMessage.warning('请先同意服务条款与隐私说明')
-    return
-  }
   const token = getTurnstileToken()
   if (!token) {
     ElMessage.warning('请完成人机验证')
@@ -338,34 +324,6 @@ function resetTurnstile() {
 
 .register-turnstile {
   margin-bottom: 0;
-}
-
-.agreement-item {
-  margin-bottom: 12px !important;
-}
-
-.agreement-item :deep(.el-form-item__content) {
-  display: block;
-}
-
-.agreement-item :deep(.el-checkbox) {
-  min-height: var(--control-height-lg);
-  color: var(--color-text-secondary);
-  white-space: normal;
-}
-
-.agreement-item :deep(.el-checkbox__label) {
-  color: var(--color-text-secondary);
-  font-size: 14px;
-  line-height: var(--leading-sm);
-  white-space: normal;
-}
-
-.agreement-error {
-  margin: 6px 0 0;
-  color: var(--color-error);
-  font-size: 13px;
-  line-height: var(--leading-sm);
 }
 
 .auth-footer-copy {

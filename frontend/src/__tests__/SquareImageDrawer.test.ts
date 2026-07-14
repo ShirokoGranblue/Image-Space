@@ -28,6 +28,7 @@ function mountDrawer() {
 }
 
 afterEach(() => {
+  document.querySelectorAll('.drawer-backdrop').forEach(element => element.remove())
   document.querySelectorAll('.image-drawer').forEach(element => element.remove())
 })
 
@@ -54,6 +55,18 @@ describe('SquareImageDrawer', () => {
 
     const drawer = document.body.querySelector('.image-drawer')
     drawer?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+
+    expect(wrapper.emitted('close')).toHaveLength(1)
+    wrapper.unmount()
+  })
+
+  it('emits close when the empty backdrop is pressed', async () => {
+    const wrapper = mountDrawer()
+    await nextTick()
+    await nextTick()
+
+    const backdrop = document.body.querySelector('.drawer-backdrop')
+    backdrop?.dispatchEvent(new Event('pointerdown', { bubbles: true, cancelable: true }))
 
     expect(wrapper.emitted('close')).toHaveLength(1)
     wrapper.unmount()

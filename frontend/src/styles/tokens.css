@@ -16,10 +16,10 @@
   --color-surface-inverse: #12171d;
   --color-text-primary: #1d2326;
   --color-text-secondary: #626a6c;
-  --color-text-muted: #858b8a;
+  --color-text-muted: #6f7776;
   --color-text-inverse: #eef0ec;
-  --color-border-subtle: #d8d0c3;
-  --color-border-strong: #b9afa0;
+  --color-border-subtle: #c9c0b3;
+  --color-border-strong: #a79c8d;
   --color-vermilion: #b64a36;
   --color-vermilion-hover: #973b2a;
   --color-night: #243b53;
@@ -37,8 +37,8 @@
   --font-ui: var(--font-body);
   --font-mono: Consolas, 'Cascadia Mono', 'SFMono-Regular', 'Liberation Mono', monospace;
 
-  --text-xs: 0.75rem;
-  --text-sm: 0.875rem;
+  --text-xs: 0.8125rem;
+  --text-sm: 0.9375rem;
   --text-md: 1rem;
   --text-lg: 1.125rem;
   --text-xl: 1.5rem;
@@ -214,7 +214,7 @@ h5,
 h6 {
   color: var(--color-text-primary);
   font-family: var(--font-title);
-  font-weight: 400;
+  font-weight: 600;
 }
 
 img,

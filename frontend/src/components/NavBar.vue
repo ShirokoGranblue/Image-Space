@@ -183,7 +183,7 @@ async function handleLogout() {
 .logo-mark { width: 28px; height: 28px; object-fit: contain; opacity: .92; }
 
 .logo-copy { display: grid; min-width: 0; gap: 1px; }
-.logo-copy strong { color: var(--color-text-primary); font-family: var(--font-title); font-size: var(--text-md); font-weight: 400; letter-spacing: .16em; white-space: nowrap; }
+.logo-copy strong { color: var(--color-text-primary); font-family: var(--font-title); font-size: var(--text-md); font-weight: 600; letter-spacing: .16em; white-space: nowrap; }
 .logo-copy small { color: var(--color-text-muted); font-family: var(--font-ui); font-size: var(--text-xs); font-weight: 500; line-height: 1; white-space: nowrap; }
 
 .nav-links { display: inline-flex; justify-self: center; align-items: center; gap: var(--space-5); }

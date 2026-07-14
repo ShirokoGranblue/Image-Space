@@ -34,11 +34,13 @@ describe('public square search and sorting contract', () => {
     expect(squareSource).toContain('\u672c\u9875 {{ creator.likeCount }} \u6b21\u559c\u6b22')
   })
 
-  it('keeps pagination in document flow and exposes a filtered-empty recovery action', () => {
-    expect(source).not.toContain('<Teleport to="body">')
+  it('keeps pagination visible at the viewport bottom and exposes one clear-filter action', () => {
+    expect(source).toContain('<Teleport to="body">')
     expect(source).toContain(':pager-count="5"')
-    expect(source).toContain('<template v-if="hasActiveFilters" #emptyAction>')
-    expect(source).toContain('@click="clearFilters">\u6e05\u9664\u7b5b\u9009</button>')
+    expect(source).toContain('.pagination-wrap { position: fixed;')
+    expect(heroSource).toContain('@click="emit(\'clear-all\')">\u6e05\u7a7a\u7b5b\u9009</button>')
+    expect(source).not.toContain('#emptyAction')
+    expect(source).not.toContain('>\u6e05\u9664\u7b5b\u9009</button>')
     expect(source).toMatch(/function clearFilters\(\)[\s\S]*onFilterChange\(\)/)
   })
 

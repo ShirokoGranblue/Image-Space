@@ -103,7 +103,7 @@ defineProps({
   color: var(--color-text-primary);
   font-family: var(--font-title);
   font-size: clamp(40px, 4vw, 56px);
-  font-weight: 400;
+  font-weight: 600;
   line-height: 1.08;
   text-wrap: balance;
 }
@@ -158,6 +158,12 @@ defineProps({
   margin-inline: auto;
 }
 
+.auth-footer {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
 .auth-header :deep(.auth-kicker) {
   display: block;
   color: var(--color-text-secondary);
@@ -170,7 +176,7 @@ defineProps({
   color: var(--color-text-primary);
   font-family: var(--font-title);
   font-size: clamp(40px, 4vw, 56px);
-  font-weight: 400;
+  font-weight: 600;
   line-height: 1.04;
   text-wrap: balance;
 }
@@ -192,7 +198,7 @@ defineProps({
 }
 
 .auth-body :deep(.auth-form .el-form-item) {
-  margin-bottom: 16px;
+  margin-bottom: 28px;
 }
 
 .auth-body :deep(.auth-form .el-form-item__label) {
@@ -204,8 +210,10 @@ defineProps({
 }
 
 .auth-body :deep(.auth-form .el-form-item__error) {
-  position: static;
-  padding-top: 6px;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  padding-top: 4px;
   color: var(--color-error);
   font-size: 13px;
   line-height: var(--leading-sm);

@@ -223,6 +223,10 @@ function openImage() {
 
 @media (hover: hover) and (pointer: fine) {
   .gallery-item:hover .card-img { transform: scale(1.01); }
+  .select-toggle { opacity: 0; transform: translateY(-2px); transition: opacity var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-standard); }
+  .gallery-item:hover .select-toggle,
+  .gallery-item:focus-within .select-toggle,
+  .select-toggle.checked { opacity: 1; transform: none; }
 }
 
 .image-placeholder {

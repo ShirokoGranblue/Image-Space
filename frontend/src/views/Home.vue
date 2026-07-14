@@ -2,7 +2,7 @@
   <div class="asset-page">
     <NavBar />
 
-    <div class="asset-shell">
+    <div class="asset-shell" :class="{ 'has-inspector': inspectedImage }">
       <aside class="workspace-rail" aria-label="图片工作区">
         <section class="rail-section">
           <h2 class="rail-title">图库</h2>
@@ -70,8 +70,8 @@
         <HomeBatchQueue :visible="selectedImageUuids.length > 0" :images="selectedPreviewImages" :selected-count="selectedImageUuids.length" :display-url="getImageDisplayUrl" @toggle="toggleImageSelection" @clear="clearSelection" @delete="handleBatchDelete" />
       </main>
 
-      <aside class="asset-inspector" aria-label="图片信息">
-        <div class="inspector-card" v-if="inspectedImage">
+      <aside v-if="inspectedImage" class="asset-inspector" aria-label="图片信息">
+        <div class="inspector-card">
           <div class="inspect-preview">
             <img v-if="inspectedImageSrc" :src="inspectedImageSrc" :alt="inspectedImageAlt" loading="lazy" decoding="async" />
             <div v-else class="inspect-fallback">
@@ -127,10 +127,6 @@
           </div>
         </div>
 
-        <div class="inspector-card empty-inspector" v-else>
-          <h2>还没有选择图片</h2>
-          <p>选择一张图片后，可以在这里查看信息并处理分享。</p>
-        </div>
       </aside>
     </div>
 
@@ -265,7 +261,7 @@ const displayedImages = computed(() => {
 const visibleImageUuids = computed(() => displayedImages.value.map(img => img.uuid).filter(Boolean))
 const allVisibleSelected = computed(() => visibleImageUuids.value.length > 0 && visibleImageUuids.value.every(uuid => selectedImageUuids.value.includes(uuid)))
 const selectedPreviewImages = computed(() => images.value.filter(img => selectedImageUuids.value.includes(img.uuid)).slice(0, 8))
-const inspectedImage = computed(() => selectedPreviewImages.value[0] || displayedImages.value[0] || null)
+const inspectedImage = computed(() => selectedPreviewImages.value[0] || null)
 const inspectedImageAlt = computed(() => getImageAlt(inspectedImage.value))
 const inspectedImageSrc = computed(() => inspectedImage.value ? getImagePreviewUrl(inspectedImage.value) : '')
 const visibilityStats = computed(() => {
@@ -540,7 +536,8 @@ function formatFileSize(size) {
 
 <style scoped>
 .asset-page { min-height: 100vh; background: var(--color-canvas); color: var(--color-text-primary); }
-.asset-shell { display: grid; width: min(calc(100% - (2 * var(--page-gutter))), var(--page-wide)); grid-template-columns: 212px minmax(0,1fr) 340px; margin-inline: auto; padding: 96px 0 112px; }
+.asset-shell { display: grid; width: min(calc(100% - (2 * var(--page-gutter))), var(--page-wide)); grid-template-columns: 212px minmax(0,1fr); margin-inline: auto; padding: 96px 0 112px; }
+.asset-shell.has-inspector { grid-template-columns: 212px minmax(0,1fr) 340px; }
 .workspace-rail { padding: var(--space-5) var(--space-3); border: 1px solid var(--color-border-subtle); border-right: 0; background: transparent; }
 .rail-section + .rail-section { margin-top: var(--space-6); padding-top: var(--space-5); border-top: 1px solid var(--color-border-subtle); }
 .rail-title { margin: 0 0 var(--space-3); color: var(--color-text-muted); font-family: var(--font-ui); font-size: var(--text-xs); font-weight: 700; letter-spacing: .08em; }
@@ -557,10 +554,9 @@ function formatFileSize(size) {
 .meta-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: var(--space-2); margin-top: var(--space-4); }.meta { min-width: 0; padding: var(--space-3); border: 1px solid var(--color-border-subtle); background: var(--color-surface-2); }.meta span,.route-line span { display: block; color: var(--color-text-muted); font-size: var(--text-xs); }.meta strong { display: block; margin-top: var(--space-1); overflow: hidden; color: var(--color-text-primary); font-size: var(--text-sm); text-overflow: ellipsis; overflow-wrap: anywhere; }
 .route-box { margin-top: var(--space-4); padding: var(--space-3); border: 1px solid var(--color-border-subtle); }.route-line { display: flex; justify-content: space-between; gap: var(--space-3); }.route-line + .route-line { margin-top: var(--space-2); }.route-line code { color: var(--color-vermilion); font-family: var(--font-ui); font-size: var(--text-xs); text-align: right; }
 .inspect-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-4); }.primary-command,.secondary-command { min-height: 40px; padding: 0 var(--space-3); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm); background: var(--color-surface-1); color: var(--color-text-primary); font-family: var(--font-ui); cursor: pointer; }.primary-command { border-color: var(--color-vermilion); background: var(--color-vermilion); color: var(--color-text-inverse); }.primary-command:hover { background: var(--color-vermilion-hover); }.secondary-command:hover { background: var(--color-surface-2); }.danger-text { border-color: var(--color-error); color: var(--color-error); }
-.empty-inspector { padding: var(--space-6); color: var(--color-text-secondary); }.empty-inspector h2 { font-family: var(--font-title); font-size: var(--text-xl); }.empty-inspector p { line-height: var(--leading-md); }
 .pagination-wrap { position: fixed; z-index: var(--layer-floating); right: 0; bottom: 0; left: 0; display: flex; justify-content: center; padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom)); border-top: 1px solid var(--color-border-subtle); background: rgba(248,245,238,.96); }.pagination-wrap :deep(.el-pagination) { max-width: 100%; flex-wrap: wrap; justify-content: center; gap: var(--space-1); }
 .category-row { display: grid; width: 100%; grid-template-columns: 1fr auto; gap: var(--space-2); }
-@media (max-width:1260px) { .asset-shell { grid-template-columns: 196px minmax(0,1fr); }.asset-inspector { display: none; }.workspace-rail { border-right: 0; }.asset-main { border-left: 1px solid var(--color-border-subtle); } }
-@media (max-width:760px) { .asset-shell { width: calc(100% - (2 * var(--page-gutter))); grid-template-columns: minmax(0,1fr); padding-top: 92px; }.workspace-rail { display: none; }.asset-main { border: 1px solid var(--color-border-subtle); }.gallery-stage { padding: var(--space-4); }.primary-command,.secondary-command { min-height: 44px; }.pagination-wrap { padding-inline: var(--space-2); }.pagination-wrap :deep(.el-pagination__total),.pagination-wrap :deep(.el-pagination__sizes) { display: none; } }
+@media (max-width:1260px) { .asset-shell,.asset-shell.has-inspector { grid-template-columns: 196px minmax(0,1fr); }.asset-inspector { display: none; }.workspace-rail { border-right: 0; }.asset-main { border-left: 1px solid var(--color-border-subtle); } }
+@media (max-width:760px) { .asset-shell,.asset-shell.has-inspector { width: calc(100% - (2 * var(--page-gutter))); grid-template-columns: minmax(0,1fr); padding-top: 92px; }.workspace-rail { display: none; }.asset-main { border: 1px solid var(--color-border-subtle); }.gallery-stage { padding: var(--space-4); }.primary-command,.secondary-command { min-height: 44px; }.pagination-wrap { padding-inline: var(--space-2); }.pagination-wrap :deep(.el-pagination__total),.pagination-wrap :deep(.el-pagination__sizes) { display: none; } }
 @media (prefers-reduced-motion:reduce) { .meter span { transition: none; } }
 </style>

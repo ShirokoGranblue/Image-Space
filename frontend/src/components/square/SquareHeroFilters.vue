@@ -18,6 +18,9 @@
       <el-select :model-value="categoryId" clearable placeholder="选择分类" class="square-select" @change="emit('select-category', $event)">
         <el-option v-for="cat in categoryOptions" :key="cat.id" :label="cat.name" :value="cat.id" />
       </el-select>
+      <el-select :model-value="activeTag || null" filterable allow-create default-first-option clearable placeholder="选择或输入标签" class="square-tag-select" @change="emit('select-tag', $event)">
+        <el-option v-for="tag in tagOptions" :key="tag" :label="`#${tag}`" :value="tag" />
+      </el-select>
       <div class="sort-segment" role="group" aria-label="图片排序">
         <button v-for="option in sortOptions" :key="option.value" type="button" :class="{ active: viewMode === option.value }" @click="emit('select-sort', option.value)">{{ option.label }}</button>
       </div>
@@ -29,7 +32,7 @@
       <button v-if="categoryId" type="button" @click="emit('select-category', null)">分类：{{ activeCategoryLabel }} <span aria-hidden="true">×</span><span class="sr-only">清除分类筛选</span></button>
       <button v-if="activeTag" type="button" @click="emit('clear-tag')">标签：#{{ activeTag }} <span aria-hidden="true">×</span><span class="sr-only">清除标签筛选</span></button>
       <button v-if="viewMode !== 'featured'" type="button" @click="emit('select-sort', 'featured')">排序：{{ activeSortLabel }} <span aria-hidden="true">×</span><span class="sr-only">恢复推荐排序</span></button>
-      <button class="active-filters__clear" type="button" @click="emit('clear-all')">全部清除</button>
+      <button class="active-filters__clear" type="button" @click="emit('clear-all')">清空筛选</button>
     </div>
   </div>
 </template>
@@ -39,28 +42,29 @@ import { Search } from '@element-plus/icons-vue'
 
 defineProps({
   total: { type: Number, default: 0 }, keyword: { type: String, default: '' }, categoryId: { type: [Number, String], default: null },
-  categoryOptions: { type: Array, default: () => [] }, viewMode: { type: String, default: 'featured' }, sortOptions: { type: Array, default: () => [] },
+  categoryOptions: { type: Array, default: () => [] }, tagOptions: { type: Array, default: () => [] }, viewMode: { type: String, default: 'featured' }, sortOptions: { type: Array, default: () => [] },
   activeTag: { type: String, default: '' }, activeCategoryLabel: { type: String, default: '不限' }, activeSortLabel: { type: String, default: '推荐' },
   hasActiveFilters: { type: Boolean, default: false },
 })
-const emit = defineEmits(['update:keyword', 'search', 'select-category', 'select-sort', 'clear-keyword', 'clear-tag', 'clear-all'])
+const emit = defineEmits(['update:keyword', 'search', 'select-category', 'select-tag', 'select-sort', 'clear-keyword', 'clear-tag', 'clear-all'])
 </script>
 
 <style scoped>
 .square-hero { min-height: 184px; display: grid; grid-template-columns: minmax(0,1fr) 240px; border: 1px solid var(--color-border-subtle); background: var(--color-surface-1); }
 .square-hero-copy { padding: var(--space-6) var(--space-7); }
 .eyebrow { display: inline-block; margin-bottom: var(--space-4); padding-left: var(--space-3); border-left: 2px solid var(--color-vermilion); color: var(--color-text-secondary); font-size: var(--text-xs); font-weight: 700; letter-spacing: .12em; }
-h1 { max-width: 860px; margin: 0; font-family: var(--font-title); font-size: clamp(40px,4.6vw,64px); font-weight: 400; line-height: 1.02; }
+h1 { max-width: 860px; margin: 0; font-family: var(--font-title); font-size: clamp(40px,4.6vw,64px); font-weight: 600; line-height: 1.02; }
 .square-hero p { max-width: 680px; margin: var(--space-3) 0 0; color: var(--color-text-secondary); line-height: var(--leading-md); }
 .square-hero-metrics { display: grid; border-left: 1px solid var(--color-border-subtle); }
 .metric-cell { display: flex; flex-direction: column; justify-content: center; padding: var(--space-5); }
-.metric-cell strong { color: var(--color-night); font-family: var(--font-title); font-size: 38px; font-weight: 400; line-height: 1; }
+.metric-cell strong { color: var(--color-night); font-family: var(--font-title); font-size: 38px; font-weight: 600; line-height: 1; }
 .metric-cell span { margin-top: 7px; color: var(--color-text-muted); font-size: var(--text-xs); font-weight: 700; letter-spacing: .08em; }
-.square-command { display: grid; grid-template-columns: minmax(260px,1fr) 220px auto; gap: var(--space-3); padding: var(--space-3); border: 1px solid var(--color-border-subtle); border-top: 0; background: var(--color-surface-1); }
-.square-search,.square-select { min-width: 0; }
-.square-command :deep(.el-input__wrapper),.square-command :deep(.el-select__wrapper) { min-height: var(--control-height-md); height: var(--control-height-md); }
-.sort-segment { display: inline-grid; grid-template-columns: repeat(2,minmax(72px,1fr)); gap: 4px; padding: 4px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm); background: var(--color-canvas-muted); }
-.sort-segment button { min-height: 40px; padding: 0 var(--space-3); border: 0; border-radius: var(--radius-xs); background: transparent; color: var(--color-text-secondary); cursor: pointer; }
+.square-command { display: grid; grid-template-columns: minmax(280px,1fr) 190px 190px auto; align-items: center; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--color-border-subtle); border-top: 0; background: var(--color-surface-1); }
+.square-search,.square-select,.square-tag-select { min-width: 0; }
+.square-command :deep(.el-select__placeholder) { pointer-events: none; }
+.square-command :deep(.el-input__wrapper),.square-command :deep(.el-select__wrapper) { min-height: var(--control-height-lg); height: var(--control-height-lg); }
+.sort-segment { display: inline-grid; height: var(--control-height-lg); grid-template-columns: repeat(2,minmax(72px,1fr)); gap: 1px; padding: 0; overflow: hidden; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm); background: var(--color-canvas-muted); }
+.sort-segment button { min-height: 42px; padding: 0 var(--space-3); border: 0; border-radius: 0; background: transparent; color: var(--color-text-secondary); cursor: pointer; }
 .sort-segment button.active,.sort-segment button:hover { background: var(--color-night); color: var(--color-text-inverse); }
 .active-filters { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-5) 0; padding-bottom: var(--space-4); border-bottom: 1px solid var(--color-border-subtle); }
 .active-filters__label { margin-right: var(--space-1); color: var(--color-text-muted); font-size: var(--text-xs); }
