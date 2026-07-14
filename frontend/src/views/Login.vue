@@ -1,8 +1,7 @@
 <template>
   <AuthLayout form-width="narrow">
     <template #aside>
-      <div class="auth-aside-copy">
-        <span class="auth-aside-eyebrow">私人图库</span>
+      <div class="auth-aside-copy auth-aside-copy--plain">
         <h2 class="auth-aside-title">整理灵感，保留图像的来路。</h2>
         <p class="auth-aside-description">上传、分类、分享与回看，都在一个清爽的空间里完成。</p>
       </div>

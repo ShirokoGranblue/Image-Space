@@ -69,6 +69,10 @@ defineProps({
   margin-block: auto;
 }
 
+.auth-aside :deep(.auth-aside-copy--plain .auth-aside-title) {
+  margin-top: 0;
+}
+
 .auth-aside :deep(.auth-aside-eyebrow) {
   color: var(--color-text-primary);
   font-size: 16px;

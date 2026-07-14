@@ -36,6 +36,7 @@ describe('authentication page stage two contract', () => {
     expect(login).toContain('role="tab"')
     expect(login).toContain(':aria-selected="loginMode')
     expect(login).not.toContain('class="auth-brand"')
+    expect(login).not.toContain('私人图库')
     expect(login).not.toMatch(/registerForm|registerLoading|registerRules|registerCaptcha|registerCountdown|handleRegister|loadRegisterCaptcha/)
     expect(login).not.toMatch(/linear-gradient|radial-gradient|background:\s*#0|background:\s*rgba\(/)
   })
