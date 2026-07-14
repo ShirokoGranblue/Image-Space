@@ -23,7 +23,7 @@
   <img src="https://img.shields.io/badge/Vite-5-646CFF?style=flat-square&logo=vite" alt="Vite" />
   <img src="https://img.shields.io/badge/MySQL-8.0-4479A1?style=flat-square&logo=mysql&logoColor=white" alt="MySQL" />
   <img src="https://img.shields.io/badge/Redis-7-DC382D?style=flat-square&logo=redis&logoColor=white" alt="Redis" />
-  <img src="https://img.shields.io/badge/MinIO-Object%20Storage-C72E49?style=flat-square&logo=minio" alt="MinIO" />
+  <img src="https://img.shields.io/badge/Cloudflare-R2-F38020?style=flat-square&logo=cloudflare" alt="Cloudflare R2" />
   <img src="https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker" />
   <img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License" />
 </p>
@@ -51,7 +51,7 @@
 
 ### 🖼 图片管理
 - **上传与存储** — 支持 JPG / PNG / JPEG / WEBP 格式，单文件最大 20MB，多文件批量上传
-- **分类管理** — 创建、编辑、删除图片分类，删除分类时图片自动归为"未分类"
+- **分类管理** — 在图片页、上传和详情流程中创建、编辑、删除分类；删除分类时图片自动归为"未分类"（无独立 `/categories` 页面）
 - **搜索与筛选** — 按名称模糊搜索、按分类筛选、按时间排序
 - **分页浏览** — 支持 30 / 50 / 100 条/页，服务端内存分页
 
@@ -80,7 +80,7 @@
 - **粒子动效背景** — 可配置的动态粒子背景，多种预设效果
 - **通知系统** — 实时通知铃铛、抽屉面板、批量已读/删除
 - **CDN 缓存刷新** — 媒体 URL 附加 SHA256 版本参数，自动刷新 Cloudflare 缓存
-- **自动数据迁移** — 首次启动自动迁移旧版 Base64 / 文件路径数据到 MinIO
+- **自动数据迁移** — Flyway 自动升级旧 Schema，并将旧版 Base64 / 文件路径数据修复到 R2
 
 ---
 
@@ -95,7 +95,8 @@
 | ORM | MyBatis-Plus | 3.5.5 |
 | 认证 | Sa-Token | 1.38.0 |
 | OAuth | JustAuth | 1.4.0 |
-| 对象存储 | MinIO SDK | 8.5.7 |
+| 对象存储 | Cloudflare R2（MinIO S3 SDK） | 8.6.0 |
+| Schema 迁移 | Flyway | 11.7.2 |
 | 缓存 | Caffeine + Redis | 3.1.8 / 7 |
 | API 文档 | SpringDoc + Knife4j | 2.3.0 / 4.4.0 |
 | 工具库 | Hutool | 5.8.25 |
@@ -120,7 +121,7 @@
 |------|------|
 | 数据库 | MySQL 8.0 |
 | 缓存/会话 | Redis 7 |
-| 对象存储 | MinIO |
+| 对象存储 | Cloudflare R2 |
 | 反向代理 | Nginx |
 | 容器化 | Docker Compose |
 | SSL | Cloudflare Origin Certificate |
@@ -142,15 +143,15 @@
                     │                                          │
                     │  /              → Vue SPA (静态文件)       │
                     │  /api/          → Spring Boot (:8088)    │
-                    │  /minio/        → MinIO (:9000)          │
+                    │  public/private → R2 Worker / CDN         │
                     │  /doc.html      → Knife4j API 文档        │
                     └───┬────────────────┬──────────────┬──────┘
                         │                │              │
-              ┌─────────▼──┐    ┌───────▼─────┐  ┌────▼─────┐
-              │  Frontend   │    │   Backend   │  │  MinIO   │
-              │  (Vue SPA)  │    │ Spring Boot │  │  Object  │
-              │             │    │   :8088     │  │  Storage  │
-              └─────────────┘    └──┬────┬────┘  └──────────┘
+              ┌─────────▼──┐    ┌───────▼─────┐  ┌────────────┐
+              │  Frontend   │    │   Backend   │  │ R2/Worker  │
+              │  (Vue SPA)  │    │ Spring Boot │  │ Object CDN │
+              │             │    │   :8088     │  │ (external) │
+              └─────────────┘    └──┬────┬────┘  └────────────┘
                                     │    │
                               ┌─────▼┐  ┌▼──────┐
                               │MySQL │  │ Redis  │
@@ -185,7 +186,7 @@ Entity (@TableName)       ← 数据库实体映射
 - **Node.js 18+** + **npm**
 - **MySQL 8.0**
 - **Redis 7**
-- **MinIO**
+- **Cloudflare R2 凭据和 Worker/CDN 路由**
 
 ### 1️⃣ 克隆项目
 
@@ -194,10 +195,10 @@ git clone https://github.com/ShirokoGranblue/Picture-Managentor.git
 cd Picture-Managentor
 ```
 
-### 2️⃣ 初始化数据库
+### 2️⃣ 创建数据库
 
 ```bash
-mysql -u root -p < docker/mysql/init/schema.sql
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS picture_management CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
 ```
 
 ### 3️⃣ 配置后端
@@ -205,7 +206,7 @@ mysql -u root -p < docker/mysql/init/schema.sql
 ```bash
 cd backend
 cp src/main/resources/application.example.yml src/main/resources/application.yml
-# 编辑 application.yml，配置数据库、Redis、MinIO 连接信息
+# 编辑 application.yml，配置数据库、Redis 和 R2 连接信息
 ```
 
 ### 4️⃣ 启动后端
@@ -213,6 +214,7 @@ cp src/main/resources/application.example.yml src/main/resources/application.yml
 ```bash
 mvn spring-boot:run
 # 后端监听 http://localhost:8088
+# Flyway 会在业务 Bean 初始化前自动创建或升级 Schema
 # API 文档 http://localhost:8088/doc.html
 ```
 
@@ -253,14 +255,13 @@ docker compose ps
 |------|--------|------|------|
 | MySQL 8.0 | `mysql` | 3306 | 主数据库，自动初始化 Schema |
 | Redis 7 | `redis` | 6379 | 会话存储 & 缓存 |
-| MinIO | `minio` | 9000 / 9001 | 对象存储 (API / 控制台) |
 | Spring Boot | `backend` | 8088 | 后端 API 服务 |
 | Vue Frontend | `frontend` | — | 由 Nginx 代理 |
 | Nginx | `nginx` | 80 / 443 | 反向代理 & 静态文件 |
 
 ### 健康检查
 
-Docker Compose 配置了 MySQL、Redis、MinIO 的健康检查，后端服务会在所有依赖服务健康后才启动。
+Docker Compose 配置了 MySQL、Redis 的健康检查，后端服务会在这两个依赖健康后启动。正式对象存储是外部 Cloudflare R2，Compose 不启动本地 MinIO。
 
 ---
 
@@ -284,9 +285,10 @@ Picture-Managentor/
 │       │   ├── entity/               # 数据库实体
 │       │   ├── dto/                  # 请求数据传输对象
 │       │   ├── vo/                   # 响应视图对象
-│       │   └── config/               # 配置类 (Sa-Token, CORS, MinIO...)
+│       │   └── config/               # 配置类 (Sa-Token, CORS, R2...)
 │       └── resources/
 │           ├── application.example.yml  # 配置模板（不含敏感信息）
+│           ├── db/schema.sql         # Flyway 当前 Schema 基线
 │           └── mapper/               # MyBatis XML 映射
 │
 ├── frontend/                         # Vue 3 前端
@@ -326,9 +328,7 @@ Picture-Managentor/
 │       ├── default.conf              # Nginx 服务器配置
 │       └── cloudflare-ips.conf       # Cloudflare IP 白名单
 │
-├── docker/                           # Docker 初始化脚本
-│   └── mysql/init/
-│       └── schema.sql                # 数据库初始化 SQL
+├── docker/                           # Docker 初始化脚本与旧数据导入文件
 │
 ├── docs/                             # 项目文档
 │   └── Introduction.txt              # 需求规格说明书
@@ -496,10 +496,12 @@ users → user_roles → roles
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
-| `MINIO_ROOT_USER` | `minioadmin` | MinIO 管理员用户 |
-| `MINIO_ROOT_PASSWORD` | — | MinIO 管理员密码 |
-| `MINIO_ACCESS_KEY` | `minioadmin` | MinIO 访问密钥 |
-| `MINIO_SECRET_KEY` | — | MinIO 密钥 |
+| `STORAGE_TYPE` | `r2` | 正式环境对象存储类型 |
+| `R2_ENDPOINT` | — | R2 S3 API endpoint |
+| `R2_ACCESS_KEY` | — | R2 access key |
+| `R2_SECRET_KEY` | — | R2 secret key |
+| `R2_BUCKET_NAME` | — | 唯一正式对象存储 bucket |
+| `R2_PUBLIC_URL` | `https://cdn.image-space.app` | Worker/CDN 公开域名 |
 
 ### OAuth
 
@@ -536,6 +538,9 @@ users → user_roles → roles
 |------|--------|------|
 | `APP_PUBLIC_BASE_URL` | `https://image-space.app` | 公开访问基础 URL |
 | `APP_FRONTEND_BASE_URL` | `https://image-space.app` | 前端基础 URL |
+| `APP_ADMIN_ALLOW_LOCAL` | `false` | 后端是否显式允许本地管理员 Host |
+| `VITE_ADMIN_ALLOW_LOCAL` | `false` | 前端是否显式允许本地管理员入口 |
+| `IMAGE_REVISION` | `unknown` | 写入 backend 镜像 OCI revision 标签 |
 
 > ⚠️ **注意**：修改 `.env` 后需要 `docker compose up -d` 重建容器，`docker compose restart` **不会**重新加载 `.env` 文件。
 

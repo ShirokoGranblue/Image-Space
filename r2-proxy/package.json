@@ -4,8 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "deploy": "wrangler deploy",
+    "auth:check": "node --env-file-if-exists=../.env node_modules/wrangler/bin/wrangler.js whoami",
+    "deploy": "node --env-file-if-exists=../.env node_modules/wrangler/bin/wrangler.js deploy",
     "dev": "wrangler dev",
+    "secret:backend": "node --env-file-if-exists=../.env node_modules/wrangler/bin/wrangler.js secret put BACKEND_INTERNAL_TOKEN",
     "start": "wrangler dev",
     "test": "vitest"
   },
