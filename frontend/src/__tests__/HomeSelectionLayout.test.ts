@@ -16,6 +16,6 @@ describe('home selection layout contracts', () => {
   })
 
   it('reserves two description lines so opening the inspector does not move the gallery', () => {
-    expect(homeToolbar).toMatch(/p\{min-height:3\.2em;/)
+    expect(homeToolbar).toMatch(/p\{min-height:3\.3em;/)
   })
 })
