@@ -3,6 +3,7 @@
     :model-value="visible"
     title="编辑头像"
     width="760px"
+    :lock-scroll="false"
     class="profile-dialog avatar-dialog"
     @update:model-value="emit('update:visible', $event)"
   >

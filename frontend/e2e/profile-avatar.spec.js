@@ -56,11 +56,18 @@ test.describe('Profile 头像编辑器阶段四回归门禁', () => {
     const requests = await installProfileMocks(page)
     await page.goto('/profile/e2e-profile-user')
     await expect(page.getByRole('heading', { name: '阶段四用户' })).toBeVisible()
+    const header = page.locator('.profile-header')
+    const documentGeometry = () => header.evaluate(element => {
+      const rect = element.getBoundingClientRect()
+      return { x: rect.x + window.scrollX, y: rect.y + window.scrollY, width: rect.width, height: rect.height }
+    })
 
+    const beforeAvatarEditor = await documentGeometry()
     await page.getByRole('button', { name: '编辑头像' }).click()
     const dialog = page.locator('.avatar-dialog')
     await expect(dialog).toBeVisible()
     await expect(dialog.locator('.crop-frame')).toBeVisible()
+    expect(await documentGeometry()).toEqual(beforeAvatarEditor)
 
     const slider = dialog.locator('input[type="range"]')
     if (await slider.count()) await slider.fill('0.5')
@@ -77,8 +84,10 @@ test.describe('Profile 头像编辑器阶段四回归门禁', () => {
     await dialog.getByRole('button', { name: '取消' }).click()
     await expect(dialog).toBeHidden()
 
+    const beforeAvatarRetry = await documentGeometry()
     await page.getByRole('button', { name: '编辑头像' }).click()
     await expect(dialog).toBeVisible()
+    expect(await documentGeometry()).toEqual(beforeAvatarRetry)
     await dialog.locator('input[type="file"]').setInputFiles({ name: 'replacement.png', mimeType: 'image/png', buffer: replacementPng })
     await expect(dialog.locator('.upload-hint')).toContainText('replacement.png')
 
@@ -91,15 +100,11 @@ test.describe('Profile 头像编辑器阶段四回归门禁', () => {
     await expect.poll(() => requests.avatarUploads).toBe(2)
     await expect(dialog).toBeHidden()
 
-    const header = page.locator('.profile-header')
-    const documentGeometry = () => header.evaluate(element => {
-      const rect = element.getBoundingClientRect()
-      return { x: rect.x + window.scrollX, y: rect.y + window.scrollY, width: rect.width, height: rect.height }
-    })
     const beforeBackgroundUpload = await documentGeometry()
     await page.getByRole('button', { name: '编辑背景' }).click()
     const backgroundDialog = page.locator('.bg-dialog')
     await expect(backgroundDialog).toBeVisible()
+    expect(await documentGeometry()).toEqual(beforeBackgroundUpload)
     await backgroundDialog.locator('input[type="file"]').setInputFiles({ name: 'background.gif', mimeType: 'image/gif', buffer: replacementGif })
     await expect(backgroundDialog.locator('.upload-hint')).toContainText('background.gif')
     await backgroundDialog.getByRole('button', { name: '应用' }).click()

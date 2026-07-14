@@ -47,6 +47,7 @@ describe('ProfileAvatarEditor', () => {
     expect(page).toContain('uploadAvatar')
     expect(page).toContain('writeCachedAvatarOriginal')
     expect(page).not.toContain('function cropImage')
+    expect(editor).toContain(':lock-scroll="false"')
     expect(editor).toContain('visible: { type: Boolean')
     expect(editor).toContain('sourceUrl: { type: String')
     expect(editor).toContain("emit('submit', {")
