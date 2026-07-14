@@ -59,7 +59,15 @@ test.describe('Profile 头像编辑器阶段四回归门禁', () => {
     const header = page.locator('.profile-header')
     const documentGeometry = () => header.evaluate(element => {
       const rect = element.getBoundingClientRect()
-      return { x: rect.x + window.scrollX, y: rect.y + window.scrollY, width: rect.width, height: rect.height }
+      return {
+        x: rect.x + window.scrollX,
+        y: rect.y + window.scrollY,
+        viewportX: rect.x,
+        viewportY: rect.y,
+        width: rect.width,
+        height: rect.height,
+        scrollY: window.scrollY,
+      }
     })
 
     const beforeAvatarEditor = await documentGeometry()

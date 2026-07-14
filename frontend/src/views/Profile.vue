@@ -33,7 +33,7 @@
         ref="backgroundEditorRef" :visible="bgDialogVisible" :preview-url="bgPreviewUrl" :crop-img-style="bgCropImgStyle" :crop-frame-style="bgCropFrameStyle"
         :crop-grid-style="bgCropGridStyle" :crop-ratio="bgCropRatio" :file-name="bgFileName" :mini-banner-style="miniBannerPreviewStyle"
         :avatar-url="avatarDisplayUrl" :display-name="user.displayName || user.username" :saving="bgSaving" :handle-position="bgHPos"
-        @update:visible="bgDialogVisible = $event" @update:crop-ratio="bgCropRatio = $event" @drag-start="startDragBgCrop" @drag-move="onDragBgCrop" @drag-end="stopDragBgCrop"
+        @update:visible="setBackgroundDialogVisible" @update:crop-ratio="bgCropRatio = $event" @drag-start="startDragBgCrop" @drag-move="onDragBgCrop" @drag-end="stopDragBgCrop"
         @resize-start="startBgResize" @slider-change="onBgSliderChange" @file-change="onBgFileChange" @save="saveBackground"
       />
 
@@ -41,7 +41,7 @@
         :visible="avatarDialogVisible"
         :source-url="avatarEditorSourceUrl"
         :saving="avatarSaving"
-        @update:visible="avatarDialogVisible = $event"
+        @update:visible="setAvatarDialogVisible"
         @submit="submitAvatar"
       />
 
@@ -732,6 +732,31 @@ function cropBackgroundImage() {
 const avatarDialogVisible = ref(false)
 const avatarEditorSourceUrl = ref('')
 const avatarSaving = ref(false)
+const profileDialogScrollY = ref(null)
+
+function restoreProfileDialogScroll() {
+  const scrollY = profileDialogScrollY.value
+  if (scrollY === null) return
+  nextTick(() => requestAnimationFrame(() => window.scrollTo({ top: scrollY, left: window.scrollX, behavior: 'auto' })))
+}
+
+watch([bgDialogVisible, avatarDialogVisible], ([backgroundVisible, avatarVisible]) => {
+  if (backgroundVisible || avatarVisible) {
+    if (profileDialogScrollY.value === null) profileDialogScrollY.value = window.scrollY
+    restoreProfileDialogScroll()
+    return
+  }
+  restoreProfileDialogScroll()
+  profileDialogScrollY.value = null
+})
+
+function setBackgroundDialogVisible(value) {
+  bgDialogVisible.value = value
+}
+
+function setAvatarDialogVisible(value) {
+  avatarDialogVisible.value = value
+}
 
 // Module-level cache — survives component remount during SPA navigation.
 // sessionStorage is too small for Data URLs (images often >5 MB).
