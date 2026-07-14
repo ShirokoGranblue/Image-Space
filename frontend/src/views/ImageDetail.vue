@@ -13,183 +13,60 @@
             <span>{{ visibilityText(image.visibility) }}</span>
             <span>{{ formatTime(image.uploadTime) }}</span>
           </div>
-          <div class="detail-image" @click="openMainViewer" @mouseenter="imgHover = true" @mouseleave="imgHover = false">
-            <img :src="detailImageSrc" :alt="image.imageName" :class="{ zoomed: imgHover }" />
+          <button
+            class="detail-image"
+            type="button"
+            :aria-label="detailImageStatus === 'error' ? `重新加载图片：${imageAlt}` : `沉浸查看：${imageAlt}`"
+            @click="handleMainImageAction"
+            @mouseenter="imgHover = true"
+            @mouseleave="imgHover = false"
+          >
+            <span v-if="detailImageStatus === 'loading'" class="detail-image-loading" role="status">正在加载图片</span>
+            <img
+              v-if="detailImageStatus !== 'error'"
+              :key="detailImageRevision"
+              :src="detailImageSrc"
+              :alt="imageAlt"
+              :width="image.width || undefined"
+              :height="image.height || undefined"
+              :class="{ zoomed: imgHover }"
+              loading="eager"
+              fetchpriority="high"
+              decoding="async"
+              @load="detailImageStatus = 'loaded'"
+              @error="detailImageStatus = 'error'"
+            />
+            <span v-else class="detail-image-error" role="alert">
+              <el-icon><PictureFilled /></el-icon>
+              <strong>图片加载失败</strong>
+              <small>点击重新加载</small>
+            </span>
             <transition name="fade">
-              <div class="img-hover-overlay" v-if="imgHover">
+              <div class="img-hover-overlay" v-if="imgHover && detailImageStatus === 'loaded'">
                 <el-icon :size="34"><ZoomIn /></el-icon>
                 <span>查看原图</span>
               </div>
             </transition>
-          </div>
+          </button>
         </div>
 
-        <aside class="detail-info">
-          <div class="detail-title-block">
-            <span class="section-label">图片信息</span>
-            <h1 class="img-title">{{ image.imageName }}</h1>
-            <p class="desc-text" v-if="image.description">{{ image.description }}</p>
-            <p class="desc-text muted" v-else>暂无描述</p>
-          </div>
-
-          <div class="action-bar" id="like-activity" :class="{ 'notification-highlight': highlightedTarget === 'like' }">
-            <el-button class="like-button" :class="{ liked: image.likedByMe }" @click="handleToggleLike" :loading="liking">
-              <el-icon><StarFilled /></el-icon>
-              {{ image.likedByMe ? '已点赞' : '点赞' }}
-            </el-button>
-            <el-button type="primary" class="download-btn" @click="handleDownload()" :loading="downloading" :disabled="image.deleted">
-              <el-icon><Download /></el-icon>
-              下载图片
-            </el-button>
-            <el-dropdown trigger="click" class="format-download-menu" @command="handleDownloadFormat">
-              <el-button class="format-download-trigger" :disabled="image.deleted || downloading">格式</el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item command="jpg">下载 JPG</el-dropdown-item>
-                  <el-dropdown-item command="png">下载 PNG</el-dropdown-item>
-                  <el-dropdown-item command="gif">下载 GIF</el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-            <el-dropdown v-if="canEdit" trigger="click" class="more-actions">
-              <el-button circle class="more-trigger" aria-label="更多操作">
-                <el-icon><MoreFilled /></el-icon>
-              </el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item @click="openEditDialog">
-                    <el-icon><Edit /></el-icon>
-                    编辑信息
-                  </el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-          </div>
-
-          <div class="count-strip">
-            <div>
-              <strong>{{ image.likeCount || 0 }}</strong>
-              <span>点赞</span>
-            </div>
-            <div>
-              <strong>{{ comments.length }}</strong>
-              <span>评论</span>
-            </div>
-          </div>
-
-          <div class="meta-grid">
-            <div class="meta-item">
-              <span class="meta-label"><el-icon><User /></el-icon> 上传者</span>
-              <router-link :to="'/profile/' + (image.userUuid || image.userId)" class="uploader-link">
-                {{ image.displayName || image.username }}
-              </router-link>
-            </div>
-            <div class="meta-item">
-              <span class="meta-label"><el-icon><FolderOpened /></el-icon> 分类</span>
-              <span class="meta-value">{{ image.categoryName || '未分类' }}</span>
-            </div>
-            <div class="meta-item">
-              <span class="meta-label"><el-icon><Document /></el-icon> 文件大小</span>
-              <span class="meta-value">{{ formatSize(image.fileSize) }}</span>
-            </div>
-            <div class="meta-item">
-              <span class="meta-label"><el-icon><PictureRounded /></el-icon> 类型</span>
-              <span class="meta-value">{{ image.imageType || '--' }}</span>
-            </div>
-          </div>
-
-          <div class="tag-panel">
-            <span class="section-label">标签</span>
-            <div class="detail-tag-list" v-if="tagList.length">
-              <el-tag v-for="(tag, i) in tagList" :key="i" size="small" effect="plain" class="flat-tag">
-                {{ tag }}
-              </el-tag>
-            </div>
-            <p v-else>暂无标签</p>
-          </div>
-        </aside>
+        <ImageDetailInfoPanel :image="image" :tags="tagList" :comment-count="comments.length" :liking="liking" :downloading="downloading" :can-edit="canEdit" :highlighted-target="highlightedTarget" @like="handleToggleLike" @download="handleDownload()" @download-format="handleDownloadFormat" @edit="openEditDialog" />
       </section>
+
+      <ErrorState
+        v-else-if="loadError"
+        title="图片暂时无法显示"
+        description="图片详情请求失败，请检查连接后重试。"
+        retry-label="重新加载"
+        @retry="loadImageDetail"
+      />
 
       <section class="empty-state deleted-state" v-if="image.deleted">
         <span class="section-label">无法查看</span>
         <p>图片已删除或不可用</p>
       </section>
 
-      <section class="comments-section" v-if="image.id && !image.deleted">
-        <div class="comments-head">
-          <span class="section-label">交流</span>
-          <h2>评论区</h2>
-        </div>
-
-        <div class="comment-input">
-          <el-popover placement="top" :width="340" trigger="click">
-            <template #reference>
-              <el-button circle size="small" class="emoji-btn" aria-label="插入表情">
-                <el-icon><ChatDotRound /></el-icon>
-              </el-button>
-            </template>
-            <div class="emoji-grid">
-              <span v-for="e in emojis" :key="e" class="emoji-item" @click="insertEmoji(e)">{{ e }}</span>
-            </div>
-          </el-popover>
-          <el-input
-            v-model="commentText"
-            placeholder="写下你的评论..."
-            maxlength="500"
-            class="comment-text-input"
-            @keyup.enter="handleAddComment"
-          />
-          <el-upload :auto-upload="false" :show-file-list="false" :on-change="onCmtFileChange" accept="image/jpeg,image/png,image/webp,image/gif">
-            <el-button size="small" circle class="upload-btn" aria-label="上传评论图片">
-              <el-icon><PictureFilled /></el-icon>
-            </el-button>
-          </el-upload>
-          <span class="upload-hint" v-if="cmtFile">{{ cmtFile.name }}</span>
-          <el-button type="primary" @click="handleAddComment" :loading="sending">发表</el-button>
-        </div>
-
-        <div class="comment-list" v-if="comments.length > 0">
-          <article
-            class="comment-item"
-            v-for="c in comments"
-            :key="c.id"
-            :id="'comment-' + c.id"
-            :class="{ 'notification-highlight': highlightedTarget === 'comment-' + c.id }"
-          >
-            <div class="comment-header">
-              <router-link :to="'/profile/' + (c.userUuid || c.userId)" class="comment-user">
-                {{ c.displayName || c.username }}
-              </router-link>
-              <span class="comment-time">{{ formatTime(c.createTime) }}</span>
-            </div>
-            <p class="comment-content">{{ c.content }}</p>
-            <img v-if="c.imageUrl" :src="c.imageUrl" class="comment-img" @click="viewCmtImg(c.imageUrl)" />
-            <div class="comment-footer">
-              <el-button :class="{ liked: c.likedByMe }" size="small" text @click="handleToggleCommentLike(c)">
-                <el-icon class="comment-like-heart"><StarFilled /></el-icon>
-                <span v-if="c.likeCount > 0" class="comment-like-count">{{ c.likeCount }}</span>
-              </el-button>
-              <el-dropdown v-if="c.userId === currentUserId" trigger="click" class="comment-more">
-                <el-button text size="small" class="comment-more-trigger" aria-label="评论操作">
-                  <el-icon><MoreFilled /></el-icon>
-                </el-button>
-                <template #dropdown>
-                  <el-dropdown-menu>
-                    <el-dropdown-item @click="handleDeleteComment(c.id)">
-                      <el-icon><Delete /></el-icon>
-                      删除
-                    </el-dropdown-item>
-                  </el-dropdown-menu>
-                </template>
-              </el-dropdown>
-            </div>
-          </article>
-        </div>
-
-        <div class="comment-empty" v-else>
-          <p>暂无评论，来写下第一条观察。</p>
-        </div>
-      </section>
+      <ImageCommentsSection v-if="image.id && !image.deleted" :comments="comments" :text="commentText" :emojis="emojis" :file-name="cmtFile?.name || ''" :sending="sending" :current-user-id="currentUserId" :highlighted-target="highlightedTarget" :format-time="formatTime" @update:text="commentText = $event" @insert-emoji="insertEmoji" @file-change="onCmtFileChange" @submit="handleAddComment" @view-image="viewCmtImg" @toggle-like="handleToggleCommentLike" @delete="handleDeleteComment" />
 
       <el-dialog v-model="editVisible" title="编辑图片信息" width="520px" class="asset-dialog">
         <el-form :model="editForm" label-position="top" v-if="editForm.uuid">
@@ -240,25 +117,29 @@
       </el-dialog>
     </main>
 
-    <ImageViewer ref="viewerRef" :src="viewerSrc" />
+    <ImageViewer ref="viewerRef" :src="viewerSrc" :title="imageAlt" :alt="imageAlt" />
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, nextTick, onMounted, watch } from 'vue'
+import { ref, reactive, computed, nextTick, onBeforeUnmount, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { ArrowLeft, PictureFilled, ZoomIn } from '@element-plus/icons-vue'
 import NavBar from '../components/NavBar.vue'
 import ImageViewer from '../components/ImageViewer.vue'
+import ImageDetailInfoPanel from '../components/detail/ImageDetailInfoPanel.vue'
+import ImageCommentsSection from '../components/detail/ImageCommentsSection.vue'
 import TagInput from '../components/TagInput.vue'
+import ErrorState from '../components/states/ErrorState.vue'
 import { downloadImage, downloadImageAs, getImageDetail, likeImage, unlikeImage, updateImage } from '../api/image'
 import { getImageResourceStatus, refreshImageAccessUrl } from '../api/resource'
-import { getComments, addComment, deleteComment, uploadCommentImage, likeComment, unlikeComment } from '../api/comment'
+import { getComments, addComment, deleteComment, uploadCommentImage, fetchCommentImage, likeComment, unlikeComment } from '../api/comment'
 import { getCategoryList, createCategory } from '../api/category'
 import { useUserStore } from '../store/user'
 import { getToken } from '../utils/token'
-import { formatSize, formatTime } from '../utils/format'
-import { getImagePreviewUrl } from '../utils/imageRequests'
+import { formatTime } from '../utils/format'
+import { getImageAlt, getImagePreviewUrl, getImageViewerUrl } from '../utils/imageRequests'
 import { applyImageAccessUrl, applyImageStatus, imageToPollingResource } from '../utils/resourceAdapters'
 import { isAccessUrlExpiring, parseAccessUrlMetadata } from '../utils/resourceAccess'
 import { hasSpecifiedUsers } from '../utils/visibility'
@@ -270,10 +151,14 @@ const viewerRef = ref(null)
 const viewerSrc = ref('')
 const image = ref({})
 const comments = ref([])
+const commentImageObjectUrls = new Map()
 const commentText = ref('')
 const cmtFile = ref(null)
 const imgHover = ref(false)
+const detailImageStatus = ref('loading')
+const detailImageRevision = ref(0)
 const loading = ref(false)
+const loadError = ref(false)
 const sending = ref(false)
 const downloading = ref(false)
 const liking = ref(false)
@@ -293,8 +178,6 @@ const editForm = reactive({
   visibleUsernames: ''
 })
 
-const tagTypes = ['', 'success', 'warning', 'danger', 'info']
-
 const emojis = [
   '😀','😄','😂','🤣','😊','😍','🥰','😘','😎','🤩','🥳','😭','😢','😡','😤','😴',
   '👍','👎','👏','🙏','💪','🤝','👀','✨','❤️','💙','💜','🔥','⭐','🌟','💯','✅',
@@ -308,6 +191,7 @@ const tagList = computed(() => {
 
 const currentUserId = computed(() => userStore.userInfo?.id)
 const canEdit = computed(() => image.value.ownedByMe === true)
+const imageAlt = computed(() => getImageAlt(image.value))
 const detailImageSrc = computed(() => getImagePreviewUrl(image.value))
 const detailPollingResource = computed(() => imageToPollingResource(image.value))
 const commentsPollingResource = computed(() => {
@@ -341,10 +225,11 @@ useResourcePolling({
   },
   onAccessUrl: (access, status) => {
     const previousUrl = detailImageSrc.value
+    const previousViewerUrl = getImageViewerUrl(image.value)
     applyImageAccessUrl(image.value, access, status)
     const nextUrl = detailImageSrc.value
-    if (!viewerSrc.value || viewerSrc.value === previousUrl) {
-      viewerSrc.value = nextUrl
+    if (!viewerSrc.value || viewerSrc.value === previousUrl || viewerSrc.value === previousViewerUrl) {
+      viewerSrc.value = viewerSrc.value === previousViewerUrl ? getImageViewerUrl(image.value) : nextUrl
     }
   },
   onDeleted: () => {
@@ -368,7 +253,7 @@ useResourcePolling({
   }),
   getAccessUrl: async () => {
     const res = await getComments(image.value.uuid)
-    comments.value = res.data || []
+    await replaceComments(res.data || [])
     return {
       url: commentsPollingResource.value?.url || '',
       version: commentsPollingResource.value?.version || null,
@@ -379,15 +264,22 @@ useResourcePolling({
 })
 
 onMounted(loadImageDetail)
+onBeforeUnmount(releaseAllCommentImages)
 
 watch(() => route.params.uuid, () => {
   loadImageDetail()
 })
 
+watch(detailImageSrc, src => {
+  detailImageStatus.value = src ? 'loading' : 'error'
+})
+
 async function loadImageDetail() {
   loading.value = true
+  loadError.value = false
   try {
     image.value = {}
+    releaseAllCommentImages()
     comments.value = []
     editVisible.value = false
     viewerSrc.value = ''
@@ -396,18 +288,20 @@ async function loadImageDetail() {
       getComments(route.params.uuid)
     ])
     image.value = imgRes.data
-    comments.value = cmtRes.data || []
+    await replaceComments(cmtRes.data || [])
     viewerSrc.value = getImagePreviewUrl(imgRes.data)
     await nextTick()
     highlightFromNotification()
-  } catch {} finally {
+  } catch {
+    loadError.value = true
+  } finally {
     loading.value = false
   }
 }
 
 function openMainViewer() {
-  viewerSrc.value = detailImageSrc.value
-  viewerRef.value.open()
+  viewerSrc.value = getImageViewerUrl(image.value)
+  viewerRef.value.open({ trigger: document.activeElement })
 }
 
 function insertEmoji(emoji) {
@@ -438,7 +332,7 @@ async function handleAddComment() {
     commentText.value = ''
     cmtFile.value = null
     const res = await getComments(image.value.uuid)
-    comments.value = res.data || []
+    await replaceComments(res.data || [])
   } catch {} finally {
     sending.value = false
   }
@@ -465,6 +359,7 @@ async function handleDeleteComment(id) {
   try {
     await deleteComment(id)
     ElMessage.success('已删除')
+    releaseCommentImage(id)
     comments.value = comments.value.filter(c => c.id !== id)
   } catch {}
 }
@@ -597,7 +492,48 @@ async function downloadFromUrl(downloadUrl) {
 
 function viewCmtImg(src) {
   viewerSrc.value = src
-  viewerRef.value.open()
+  viewerRef.value.open({ trigger: document.activeElement })
+}
+
+async function replaceComments(nextComments) {
+  releaseAllCommentImages()
+  comments.value = nextComments.map(comment => ({
+    ...comment,
+    displayImageUrl: '',
+    imageLoadError: false,
+  }))
+  await Promise.all(comments.value.map(async comment => {
+    if (!comment.imageUrl) return
+    try {
+      const blob = await fetchCommentImage(comment.imageUrl)
+      const displayUrl = typeof URL.createObjectURL === 'function'
+        ? URL.createObjectURL(blob)
+        : comment.imageUrl
+      comment.displayImageUrl = displayUrl
+      if (displayUrl !== comment.imageUrl) commentImageObjectUrls.set(comment.id, displayUrl)
+    } catch {
+      comment.imageLoadError = true
+    }
+  }))
+}
+
+function releaseCommentImage(id) {
+  const url = commentImageObjectUrls.get(id)
+  if (url && typeof URL.revokeObjectURL === 'function') URL.revokeObjectURL(url)
+  commentImageObjectUrls.delete(id)
+}
+
+function releaseAllCommentImages() {
+  for (const id of commentImageObjectUrls.keys()) releaseCommentImage(id)
+}
+
+function handleMainImageAction() {
+  if (detailImageStatus.value === 'error') {
+    detailImageRevision.value += 1
+    detailImageStatus.value = detailImageSrc.value ? 'loading' : 'error'
+    return
+  }
+  openMainViewer()
 }
 
 function visibilityText(visibility) {
@@ -632,407 +568,26 @@ function highlightFromNotification() {
 </script>
 
 <style scoped>
-.detail-page {
-  min-height: 100vh;
-  color: var(--ad-text);
-  background: var(--ad-bg);
-}
-
-.detail-container {
-  width: min(100%, 1640px);
-  padding: 96px 24px 64px;
-}
-
-.desk-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 38px;
-  margin-bottom: 18px;
-  padding: 0 14px;
-  border: 1px solid var(--ad-line);
-  color: var(--ad-text-soft);
-  background: rgba(244, 241, 232, 0.045);
-  font-family: var(--ad-font);
-  cursor: pointer;
-}
-
-.detail-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 410px;
-  min-height: 720px;
-  border: 1px solid var(--ad-line);
-  background: rgba(17, 23, 34, 0.66);
-  box-shadow: var(--ad-shadow-soft);
-}
-
-.detail-main {
-  min-width: 0;
-  display: grid;
-  grid-template-rows: auto 1fr;
-  border-right: 1px solid var(--ad-line);
-}
-
-.stage-topline {
-  min-height: 54px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 18px;
-  border-bottom: 1px solid var(--ad-line);
-  color: var(--ad-muted);
-  font-size: 12px;
-}
-
-.detail-image {
-  position: relative;
-  min-height: 520px;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  cursor: zoom-in;
-  background:
-    linear-gradient(90deg, rgba(244,241,232,0.035) 1px, transparent 1px),
-    linear-gradient(rgba(244,241,232,0.035) 1px, transparent 1px),
-    #0b0f15;
-  background-size: 46px 46px;
-}
-
-.detail-image::before {
-  content: '';
-  position: absolute;
-  inset: 20px;
-  border: 1px solid rgba(244, 241, 232, 0.08);
-  pointer-events: none;
-}
-
-.detail-image img {
-  max-width: min(92%, 1100px);
-  max-height: min(82vh, 820px);
-  object-fit: contain;
-  transition: transform 0.42s var(--ad-ease), filter 0.24s ease;
-}
-
-.detail-image img.zoomed {
-  transform: scale(1.035);
-  filter: brightness(0.72);
-}
-
-.img-hover-overlay {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  align-content: center;
-  gap: 8px;
-  color: var(--ad-text);
-  background: rgba(7, 10, 14, 0.34);
-  pointer-events: none;
-}
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity .18s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-.detail-info {
-  min-width: 0;
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.section-label {
-  color: var(--ad-muted);
-  font-size: 11px;
-  letter-spacing: 0;
-}
-
-.img-title {
-  margin: 12px 0 14px;
-  color: var(--ad-text);
-  font-size: clamp(36px, 4vw, 62px);
-  line-height: 0.95;
-  font-weight: 340;
-  overflow-wrap: anywhere;
-}
-
-.desc-text {
-  color: var(--ad-text-soft);
-  font-size: 15px;
-  line-height: 1.8;
-}
-
-.desc-text.muted,
-.tag-panel p {
-  color: var(--ad-muted);
-}
-
-.action-bar {
-  display: grid;
-  grid-template-columns: 1fr 1.2fr auto auto;
-  gap: 10px;
-}
-
-.like-button.liked,
-.comment-footer :deep(.el-button.liked) {
-  color: #071014;
-  background: var(--ad-green);
-  border-color: var(--ad-green);
-}
-
-.download-btn {
-  min-width: 138px;
-}
-
-.format-download-trigger {
-  min-width: 64px;
-}
-
-.more-trigger {
-  width: 40px;
-  height: 40px;
-}
-
-.count-strip {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  border: 1px solid var(--ad-line);
-}
-
-.count-strip div {
-  padding: 16px;
-}
-
-.count-strip div + div {
-  border-left: 1px solid var(--ad-line);
-}
-
-.count-strip strong {
-  display: block;
-  color: var(--ad-green);
-  font-size: 26px;
-  font-weight: 420;
-}
-
-.count-strip span {
-  color: var(--ad-muted);
-  font-size: 12px;
-}
-
-.meta-grid {
-  display: grid;
-  border-top: 1px solid var(--ad-line);
-}
-
-.meta-item {
-  display: grid;
-  grid-template-columns: 118px minmax(0, 1fr);
-  gap: 14px;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--ad-line);
-}
-
-.meta-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--ad-muted);
-  font-size: 12px;
-}
-
-.meta-value,
-.uploader-link {
-  color: var(--ad-text);
-  overflow-wrap: anywhere;
-}
-
-.tag-panel {
-  margin-top: auto;
-  padding: 16px;
-  border: 1px solid var(--ad-line);
-  background: rgba(244, 241, 232, 0.035);
-}
-
-.detail-tag-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.flat-tag {
-  --el-tag-bg-color: rgba(244, 241, 232, 0.04);
-  --el-tag-border-color: var(--ad-line);
-  --el-tag-text-color: var(--ad-text-soft);
-  border-radius: 6px;
-}
-
-.comments-section {
-  margin-top: 24px;
-  padding: 24px;
-  border: 1px solid var(--ad-line);
-  background: rgba(17, 23, 34, 0.66);
-}
-
-.comments-head {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 18px;
-}
-
-.comments-head h2 {
-  color: var(--ad-text);
-  font-size: 30px;
-  font-weight: 340;
-}
-
-.comment-input {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
-  gap: 10px;
-  align-items: center;
-  padding: 12px;
-  border: 1px solid var(--ad-line);
-  background: rgba(244, 241, 232, 0.035);
-}
-
-.emoji-grid {
-  display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  gap: 6px;
-}
-
-.emoji-item {
-  cursor: pointer;
-  text-align: center;
-  line-height: 30px;
-}
-
-.upload-hint {
-  max-width: 140px;
-  color: var(--ad-muted);
-  font-size: 12px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.comment-list {
-  display: grid;
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.comment-item {
-  padding: 16px;
-  border: 1px solid var(--ad-line);
-  background: rgba(13, 16, 22, 0.72);
-}
-
-.comment-header,
-.comment-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.comment-user {
-  color: var(--ad-text);
-}
-
-.comment-time {
-  color: var(--ad-muted);
-  font-size: 12px;
-}
-
-.comment-content {
-  margin: 12px 0;
-  color: var(--ad-text-soft);
-  line-height: 1.7;
-}
-
-.comment-img {
-  max-width: 260px;
-  max-height: 180px;
-  object-fit: cover;
-  border: 1px solid var(--ad-line);
-  cursor: zoom-in;
-}
-
-.comment-empty,
-.empty-state {
-  padding: 42px;
-  text-align: center;
-  border: 1px solid var(--ad-line);
-  color: var(--ad-muted);
-  background: rgba(17, 23, 34, 0.62);
-}
-
-.deleted-state p {
-  margin-top: 12px;
-  color: var(--ad-text);
-  font-size: 28px;
-}
-
-.notification-highlight {
-  outline: 2px solid var(--ad-green);
-  outline-offset: 3px;
-}
-
-.category-row {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 10px;
-  width: 100%;
-}
-
-.category-row :deep(.el-select) {
-  width: 100%;
-}
-
-@media (max-width: 1120px) {
-  .detail-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .detail-main {
-    border-right: 0;
-    border-bottom: 1px solid var(--ad-line);
-  }
-
-  .detail-image {
-    min-height: 460px;
-  }
-}
-
-@media (max-width: 700px) {
-  .detail-container {
-    padding: 82px 14px 40px;
-  }
-
-  .detail-info,
-  .comments-section {
-    padding: 16px;
-  }
-
-  .action-bar,
-  .comment-input,
-  .meta-item {
-    grid-template-columns: 1fr;
-  }
-
-  .detail-image {
-    min-height: 320px;
-  }
-}
+.detail-page { min-height: 100vh; background: var(--color-canvas); color: var(--color-text-primary); }
+.detail-container { width: min(calc(100% - (2 * var(--page-gutter))), var(--page-standard)); padding: 104px 0 var(--space-8); }
+.desk-back { display: inline-flex; align-items: center; gap: var(--space-2); min-height: 44px; margin-bottom: var(--space-5); padding: 0 var(--space-3); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm); background: transparent; color: var(--color-text-secondary); font-family: var(--font-body); cursor: pointer; }
+.desk-back:hover,.desk-back:focus-visible { border-color: var(--color-border-strong); background: var(--color-surface-2); outline: 2px solid var(--color-urban); outline-offset: 2px; }
+.detail-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 380px); align-items: start; gap: var(--space-5); }
+.detail-main { min-width: 0; display: grid; grid-template-rows: auto 1fr; border: 1px solid var(--color-border-subtle); background: var(--color-surface-inverse); }
+.stage-topline { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: 0 var(--space-4); border-bottom: 1px solid rgba(238,240,236,.14); color: rgba(238,240,236,.68); font-size: var(--text-xs); }
+.detail-image { position: relative; display: grid; min-height: 520px; padding: var(--space-4); overflow: hidden; place-items: center; border: 0; background: var(--color-viewer-bg); color: var(--color-text-inverse); cursor: zoom-in; }
+.detail-image img { display: block; max-width: min(92%,1100px); max-height: min(82vh,820px); object-fit: contain; transition: transform var(--duration-overlay) var(--ease-standard),filter var(--duration-standard) var(--ease-standard); }
+.detail-image img.zoomed { transform: scale(1.02); filter: brightness(.78); }
+.detail-image-loading,.detail-image-error { position: absolute; z-index: 2; display: grid; place-items: center; gap: var(--space-2); color: rgba(238,240,236,.74); font-family: var(--font-ui); }
+.detail-image-error strong { color: var(--color-text-inverse); }.detail-image-error small { color: rgba(238,240,236,.6); }
+.img-hover-overlay { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: var(--space-2); background: rgba(14,18,22,.32); color: var(--color-text-inverse); pointer-events: none; }
+.fade-enter-active,.fade-leave-active { transition: opacity var(--duration-standard) var(--ease-standard); }.fade-enter-from,.fade-leave-to { opacity: 0; }
+.detail-container :deep(.comments-section) { margin-top: var(--space-6); }
+.empty-state { padding: var(--space-7); border: 1px solid var(--color-border-subtle); background: var(--color-surface-1); color: var(--color-text-muted); text-align: center; }
+.section-label { color: var(--color-vermilion); font-size: var(--text-xs); font-weight: 700; letter-spacing: .08em; }
+.deleted-state p { margin-top: var(--space-3); color: var(--color-text-primary); font-family: var(--font-title); font-size: var(--text-2xl); }
+.category-row { display: grid; grid-template-columns: 1fr auto; gap: var(--space-2); width: 100%; }.category-row :deep(.el-select) { width: 100%; }
+@media (max-width:1120px) { .detail-layout { grid-template-columns: 1fr; } .detail-image { min-height: 460px; } }
+@media (max-width:700px) { .detail-container { padding-top: 82px; } .detail-image { min-height: 320px; } .stage-topline { min-height: 48px; } }
+@media (prefers-reduced-motion:reduce) { .detail-image img,.fade-enter-active,.fade-leave-active { transition: none; } }
 </style>

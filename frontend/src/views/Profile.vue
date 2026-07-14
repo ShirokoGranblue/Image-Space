@@ -12,7 +12,7 @@
           ></div>
         </div>
         <div class="banner-overlay"></div>
-        <div class="banner-edit" v-if="isOwner">
+        <div class="banner-edit" v-if="isOwner" :class="{ 'banner-edit--active': editing }">
           <el-button size="small" @click="openBackgroundEditor">
             <el-icon><Edit /></el-icon>
             编辑背景
@@ -20,257 +20,30 @@
         </div>
       </section>
 
-      <section class="profile-header">
-        <div class="avatar-column">
-          <div class="avatar-wrap">
-            <el-avatar :size="122" :src="avatarDisplayUrl" class="avatar">
-              <el-icon :size="48"><UserFilled /></el-icon>
-            </el-avatar>
-            <button v-if="isOwner" class="avatar-upload" type="button" @click="openAvatarEditor" aria-label="编辑头像">
-              <el-icon><Camera /></el-icon>
-            </button>
-          </div>
-          <div class="profile-stats" v-if="!editing">
-            <div class="stat-item">
-              <strong class="stat-num">{{ animStats.works }}</strong>
-              <span class="stat-label">作品</span>
-            </div>
-            <div class="stat-item">
-              <strong class="stat-num">{{ animStats.likes }}</strong>
-              <span class="stat-label">获赞</span>
-            </div>
-            <div class="stat-item">
-              <strong class="stat-num">{{ animStats.followers }}</strong>
-              <span class="stat-label">关注者</span>
-            </div>
-            <div class="stat-item">
-              <strong class="stat-num">{{ animStats.favorites }}</strong>
-              <span class="stat-label">收藏</span>
-            </div>
-          </div>
-        </div>
+      <ProfileHeader
+        :user="user" :avatar-url="avatarDisplayUrl" :owner="isOwner" :editing="editing" :stats="profileHeaderStats" :show-meta="showProfileMeta" :joined-at="joinedAt"
+        :form="form" :field-errors="fieldErrors" :email-changed="emailChanged" :sending-email-code="sendingEmailCode" :email-code-countdown="emailCodeCountdown" :saving="saving"
+        @edit-avatar="openAvatarEditor" @edit-profile="startEdit" @delete-account="handleDeleteAccount" @update-form-field="updateProfileFormField"
+        @email-blur="onEmailBlur" @phone-blur="onPhoneBlur" @send-email-code="handleSendEmailChangeCode" @save="saveProfile" @cancel="cancelEdit"
+      />
 
-        <div class="profile-main">
-          <template v-if="!editing">
-            <div class="profile-name-row">
-              <div>
-                <span class="section-label">个人主页</span>
-                <h1>{{ user.displayName || user.username }}</h1>
-              </div>
-              <el-dropdown v-if="isOwner" trigger="click">
-                <button class="dropdown-trigger" type="button" aria-label="更多操作">
-                  <el-icon><MoreFilled /></el-icon>
-                </button>
-                <template #dropdown>
-                  <el-dropdown-menu>
-                    <el-dropdown-item @click="startEdit">编辑资料</el-dropdown-item>
-                    <el-dropdown-item @click="handleDeleteAccount">注销账号</el-dropdown-item>
-                  </el-dropdown-menu>
-                </template>
-              </el-dropdown>
-            </div>
+      <ProfileWorksSection :items="works" :loading="worksLoading" :error="worksError" :owner="isOwner" :selected-uuids="selectedWorkUuids" :all-selected="allWorksSelected" :partially-selected="partiallyWorksSelected" @toggle-all="toggleSelectAllWorks" @clear="clearWorkSelection" @batch-delete="handleBatchWorkDelete" @retry="fetchWorks" @delete="handleWorkDelete" @edit="handleWorkEdit" @copy="copyWorkLink" @toggle="toggleWorkSelection" />
 
-            <div class="profile-meta" v-if="showProfileMeta">
-              <p v-if="user.bio" class="bio">{{ user.bio }}</p>
-              <div class="contact" v-if="isOwner && (user.email || user.phone)">
-                <span v-if="user.email"><el-icon><Message /></el-icon> {{ user.email }}</span>
-                <span v-if="user.phone"><el-icon><Phone /></el-icon> {{ user.phone }}</span>
-              </div>
-              <span v-if="joinedAt" class="joined"><el-icon><Calendar /></el-icon> {{ joinedAt }}</span>
-            </div>
-          </template>
+      <ProfileBackgroundEditor
+        ref="backgroundEditorRef" :visible="bgDialogVisible" :preview-url="bgPreviewUrl" :crop-img-style="bgCropImgStyle" :crop-frame-style="bgCropFrameStyle"
+        :crop-grid-style="bgCropGridStyle" :crop-ratio="bgCropRatio" :file-name="bgFileName" :mini-banner-style="miniBannerPreviewStyle"
+        :avatar-url="avatarDisplayUrl" :display-name="user.displayName || user.username" :saving="bgSaving" :handle-position="bgHPos"
+        @update:visible="bgDialogVisible = $event" @update:crop-ratio="bgCropRatio = $event" @drag-start="startDragBgCrop" @drag-move="onDragBgCrop" @drag-end="stopDragBgCrop"
+        @resize-start="startBgResize" @slider-change="onBgSliderChange" @file-change="onBgFileChange" @save="saveBackground"
+      />
 
-          <div class="profile-edit" v-else>
-            <span class="section-label">编辑资料</span>
-            <el-form label-position="top">
-              <div class="form-columns">
-                <el-form-item label="展示名称">
-                  <el-input v-model="form.displayName" maxlength="50" />
-                </el-form-item>
-                <el-form-item label="邮箱" :error="fieldErrors.email">
-                  <el-input v-model="form.email" @blur="onEmailBlur" />
-                </el-form-item>
-                <el-form-item v-if="emailChanged" label="邮箱验证码">
-                  <div class="email-code-row">
-                    <el-input v-model="form.emailCode" maxlength="6" placeholder="输入新邮箱收到的验证码" />
-                    <el-button
-                      :loading="sendingEmailCode"
-                      :disabled="emailCodeCountdown > 0 || !!fieldErrors.email"
-                      @click="handleSendEmailChangeCode"
-                    >
-                      {{ emailCodeCountdown > 0 ? `${emailCodeCountdown}s` : '发送验证码' }}
-                    </el-button>
-                  </div>
-                </el-form-item>
-              </div>
-              <el-form-item label="手机号" :error="fieldErrors.phone">
-                <el-input v-model="form.phone" maxlength="20" @blur="onPhoneBlur" />
-              </el-form-item>
-              <el-form-item label="个人介绍">
-                <el-input v-model="form.bio" type="textarea" :rows="3" maxlength="200" show-word-limit />
-              </el-form-item>
-              <div class="edit-actions">
-                <el-button type="primary" @click="saveProfile" :loading="saving">保存</el-button>
-                <el-button @click="cancelEdit">取消</el-button>
-              </div>
-            </el-form>
-          </div>
-        </div>
-      </section>
-
-      <section class="user-works">
-        <div class="works-heading">
-          <div>
-            <span class="section-label">作品集</span>
-            <h2>作品</h2>
-          </div>
-          <div v-if="isOwner && works.length > 0" class="works-actions">
-            <el-checkbox
-              :model-value="allWorksSelected"
-              :indeterminate="partiallyWorksSelected"
-              @change="toggleSelectAllWorks"
-            >
-              全选本页
-            </el-checkbox>
-            <el-button v-if="selectedWorkUuids.length > 0" @click="clearWorkSelection">取消选择</el-button>
-            <el-button v-if="selectedWorkUuids.length > 0" type="danger" @click="handleBatchWorkDelete">
-              删除选中 {{ selectedWorkUuids.length }}
-            </el-button>
-          </div>
-        </div>
-
-        <div v-if="works.length === 0" class="empty-state">
-          <p>暂无作品</p>
-        </div>
-        <div v-else class="card-grid">
-          <ImageCard
-            v-for="img in works"
-            :key="img.uuid || img.id"
-            :image="img"
-            :show-actions="isOwner"
-            :selectable="isOwner"
-            :selected="selectedWorkUuids.includes(img.uuid)"
-            @delete="handleWorkDelete"
-            @edit="handleWorkEdit"
-            @copy="copyWorkLink"
-            @toggle-select="toggleWorkSelection"
-          />
-        </div>
-      </section>
-
-      <el-dialog v-model="bgDialogVisible" title="编辑个人背景" width="860px" class="profile-dialog bg-dialog">
-        <div class="background-editor">
-          <div class="background-editor-layout">
-            <div class="bg-crop-side">
-              <div
-                class="bg-crop-container"
-                ref="bgCropContainer"
-                @mousedown="startDragBgCrop"
-                @mousemove="onDragBgCrop"
-                @mouseup="stopDragBgCrop"
-                @mouseleave="stopDragBgCrop"
-              >
-                <img v-if="bgPreviewUrl" :src="bgPreviewUrl" class="bg-crop-img" :style="bgCropImgStyle" draggable="false" />
-                <el-icon v-else :size="72" class="bg-placeholder"><PictureFilled /></el-icon>
-                <div class="bg-crop-frame" v-if="bgPreviewUrl" :style="bgCropFrameStyle"></div>
-                <div class="bg-crop-grid" v-if="bgPreviewUrl" :style="bgCropGridStyle"></div>
-                <template v-if="bgPreviewUrl">
-                  <div class="bg-handle bg-handle-ns" :style="bgHPos('top')" @mousedown.stop="startBgResize($event, 'top')"></div>
-                  <div class="bg-handle bg-handle-ns" :style="bgHPos('bottom')" @mousedown.stop="startBgResize($event, 'bottom')"></div>
-                  <div class="bg-handle bg-handle-ew" :style="bgHPos('left')" @mousedown.stop="startBgResize($event, 'left')"></div>
-                  <div class="bg-handle bg-handle-ew" :style="bgHPos('right')" @mousedown.stop="startBgResize($event, 'right')"></div>
-                  <div class="bg-handle bg-handle-corner bg-handle-nwse" :style="bgHPos('tl')" @mousedown.stop="startBgResize($event, 'tl')"></div>
-                  <div class="bg-handle bg-handle-corner bg-handle-nesw" :style="bgHPos('tr')" @mousedown.stop="startBgResize($event, 'tr')"></div>
-                  <div class="bg-handle bg-handle-corner bg-handle-nesw" :style="bgHPos('bl')" @mousedown.stop="startBgResize($event, 'bl')"></div>
-                  <div class="bg-handle bg-handle-corner bg-handle-nwse" :style="bgHPos('br')" @mousedown.stop="startBgResize($event, 'br')"></div>
-                </template>
-              </div>
-              <div class="bg-controls">
-                <span class="slider-label">裁剪尺寸</span>
-                <el-slider v-model="bgCropRatio" :min="0.45" :max="1" :step="0.01" @input="onBgSliderChange" />
-                <span class="slider-val">{{ Math.round(bgCropRatio * 100) }}%</span>
-              </div>
-              <el-upload :auto-upload="false" :show-file-list="false" :on-change="onBgFileChange" accept="image/jpeg,image/png,image/webp,image/gif" class="bg-upload">
-                <el-button type="primary">选择图片</el-button>
-              </el-upload>
-              <p class="upload-hint" v-if="bgFileName">{{ bgFileName }}</p>
-            </div>
-            <div class="bg-preview-side">
-              <p class="preview-label">预览</p>
-              <div class="profile-mini-card">
-                <div class="profile-mini-banner" :style="miniBannerPreviewStyle" />
-                <div class="profile-mini-header">
-                  <div class="profile-mini-avatar">
-                    <el-avatar :size="22" :src="avatarDisplayUrl">
-                      <el-icon :size="10"><UserFilled /></el-icon>
-                    </el-avatar>
-                  </div>
-                  <div class="profile-mini-name">{{ user.displayName || user.username }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <template #footer>
-          <el-button @click="bgDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="saveBackground" :loading="bgSaving" :disabled="!bgPreviewUrl">应用</el-button>
-        </template>
-      </el-dialog>
-
-      <el-dialog v-model="avatarDialogVisible" title="编辑头像" width="760px" class="profile-dialog avatar-dialog">
-        <div class="avatar-editor">
-          <div class="avatar-editor-layout">
-            <div class="avatar-crop-side">
-              <div
-                class="crop-container"
-                ref="cropContainer"
-                @mousedown="startDragCrop"
-                @mousemove="onDragCrop"
-                @mouseup="stopDragCrop"
-                @mouseleave="stopDragCrop"
-              >
-                <img v-if="avatarPreviewUrl" :src="avatarPreviewUrl" class="crop-img" :style="cropImgStyle" draggable="false" />
-                <el-icon v-else :size="80" class="avatar-empty"><UserFilled /></el-icon>
-                <div class="crop-frame" v-if="avatarPreviewUrl" :style="cropFrameStyle"></div>
-                <div class="crop-grid" v-if="avatarPreviewUrl" :style="cropGridStyle"></div>
-                <template v-if="avatarPreviewUrl">
-                  <div class="crop-handle crop-handle-ns" :style="hPos('top')" @mousedown.stop="startResize($event, 'top')"></div>
-                  <div class="crop-handle crop-handle-ns" :style="hPos('bottom')" @mousedown.stop="startResize($event, 'bottom')"></div>
-                  <div class="crop-handle crop-handle-ew" :style="hPos('left')" @mousedown.stop="startResize($event, 'left')"></div>
-                  <div class="crop-handle crop-handle-ew" :style="hPos('right')" @mousedown.stop="startResize($event, 'right')"></div>
-                  <div class="crop-handle crop-handle-corner crop-handle-nwse" :style="hPos('tl')" @mousedown.stop="startResize($event, 'tl')"></div>
-                  <div class="crop-handle crop-handle-corner crop-handle-nesw" :style="hPos('tr')" @mousedown.stop="startResize($event, 'tr')"></div>
-                  <div class="crop-handle crop-handle-corner crop-handle-nesw" :style="hPos('bl')" @mousedown.stop="startResize($event, 'bl')"></div>
-                  <div class="crop-handle crop-handle-corner crop-handle-nwse" :style="hPos('br')" @mousedown.stop="startResize($event, 'br')"></div>
-                </template>
-              </div>
-              <div class="crop-controls">
-                <span class="slider-label">裁剪尺寸</span>
-                <el-slider v-model="cropRatio" :min="0.25" :max="1" :step="0.01" @input="onSliderChange" />
-                <span class="slider-val">{{ Math.round(cropRatio * 100) }}%</span>
-              </div>
-            </div>
-            <div class="avatar-preview-side">
-              <p class="preview-label">头像预览</p>
-              <div class="preview-circle-lg">
-                <img v-if="avatarPreviewUrl" :src="avatarPreviewUrl" class="preview-img" :style="previewLgImgStyle" />
-                <el-icon v-else :size="48" class="avatar-empty"><UserFilled /></el-icon>
-              </div>
-              <div class="preview-circle-sm">
-                <img v-if="avatarPreviewUrl" :src="avatarPreviewUrl" class="preview-img" :style="previewSmImgStyle" />
-                <el-icon v-else :size="24" class="avatar-empty"><UserFilled /></el-icon>
-              </div>
-            </div>
-          </div>
-          <el-upload :auto-upload="false" :show-file-list="false" :on-change="onAvatarFileChange" accept="image/jpeg,image/png,image/webp,image/gif" class="avatar-replace-upload">
-            <el-button>更换图片</el-button>
-          </el-upload>
-        </div>
-        <template #footer>
-          <el-button @click="avatarDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="confirmAvatar" :loading="avatarSaving" :disabled="!avatarPreviewUrl">确认</el-button>
-        </template>
-      </el-dialog>
+      <ProfileAvatarEditor
+        :visible="avatarDialogVisible"
+        :source-url="avatarEditorSourceUrl"
+        :saving="avatarSaving"
+        @update:visible="avatarDialogVisible = $event"
+        @submit="submitAvatar"
+      />
 
       <el-dialog v-model="imageEditVisible" title="编辑图片信息" width="520px" class="profile-dialog">
         <el-form :model="imageEditForm" label-position="top" v-if="imageEditForm.uuid">
@@ -328,7 +101,7 @@
           :page-size="workLimit"
           :page-sizes="IMAGE_PAGE_SIZES"
           :total="workTotal"
-          :disabled="loading"
+          :disabled="loading || worksLoading"
           layout="total, sizes, prev, pager, next"
           @size-change="onWorkPageSizeChange"
           @current-change="fetchWorks"
@@ -342,8 +115,12 @@
 import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Edit } from '@element-plus/icons-vue'
 import NavBar from '../components/NavBar.vue'
-import ImageCard from '../components/ImageCard.vue'
+import ProfileWorksSection from '../components/profile/ProfileWorksSection.vue'
+import ProfileHeader from '../components/profile/ProfileHeader.vue'
+import ProfileBackgroundEditor from '../components/profile/ProfileBackgroundEditor.vue'
+import ProfileAvatarEditor from '../components/profile/ProfileAvatarEditor.vue'
 import TagInput from '../components/TagInput.vue'
 import { useUserStore } from '../store/user'
 import { getUserProfile, updateProfile, uploadAvatar, uploadBackground, checkField, deleteAccount, sendEmailChangeCode } from '../api/user'
@@ -392,6 +169,8 @@ const workPage = ref(1)
 const workLimit = ref(DEFAULT_IMAGE_PAGE_SIZE)
 const workTotal = ref(0)
 const loading = ref(false)
+const worksLoading = ref(false)
+const worksError = ref(false)
 const editing = ref(false)
 const saving = ref(false)
 const sendingEmailCode = ref(false)
@@ -412,34 +191,28 @@ const joinedAt = computed(() => formatProfileDate(user.value.createTime || user.
 const showProfileMeta = computed(() => {
   if (editing.value) return false
   const hasContactInfo = isOwner.value && (user.value.email || user.value.phone)
-  return hasContactInfo || user.value.bio || joinedAt.value
+  return Boolean(hasContactInfo || user.value.bio || joinedAt.value)
 })
 
-const BLUE_TONES = ['#151922', '#202633', '#2a3140', '#38d5ff', '#9b8cff']
-const PAPER_TONES = ['#b7ff3c', '#d7ff83', '#f5b84b', '#ff6b57', '#f4f1e8']
+const BANNER_TONES = ['#d8d0c3', '#c5beb2', '#aab1ad', '#8d9a9b', '#596f79', '#31495f', '#aa6a58', '#ece6dc']
 const bannerCells = ref([])
 const animStats = reactive({
   works: 0,
   likes: 0,
-  followers: 8,
-  favorites: 17
 })
+const profileHeaderStats = computed(() => [
+  { label: '作品（本页）', value: animStats.works },
+  { label: '获赞（本页）', value: animStats.likes },
+])
 
 function initBannerCells() {
-  const combined = [...BLUE_TONES, ...PAPER_TONES]
-  const cells = []
-  for (let i = 0; i < 15; i++) {
-    cells.push(combined[Math.floor(Math.random() * combined.length)])
-  }
-  bannerCells.value = cells
+  bannerCells.value = Array.from({ length: 15 }, (_, index) => BANNER_TONES[index % BANNER_TONES.length])
 }
 
 function animateCounts() {
   const targets = {
     works: workTotal.value || works.value.length || 0,
     likes: works.value.reduce((sum, img) => sum + Number(img.likeCount || 0), 0),
-    followers: 8,
-    favorites: 17
   }
 
   Object.keys(targets).forEach(key => {
@@ -455,6 +228,9 @@ function animateCounts() {
 }
 
 const form = reactive({ displayName: '', email: '', emailCode: '', phone: '', bio: '' })
+function updateProfileFormField({ field, value }) {
+  if (Object.prototype.hasOwnProperty.call(form, field)) form[field] = value
+}
 const emailChanged = computed(() =>
   form.email.trim() !== String(user.value.email || '').trim()
 )
@@ -485,6 +261,10 @@ function isSameMediaUrl(a, b) {
   const left = canonicalMediaUrl(a)
   const right = canonicalMediaUrl(b)
   return !!left && left === right
+}
+
+function isGifFile(file) {
+  return !!file && (file.type === 'image/gif' || /\.gif$/i.test(file.name || ''))
 }
 
 function currentAvatarUrl() {
@@ -555,7 +335,7 @@ function applyUserMediaAccessUrl(kind, url) {
 
 const bannerStyle = computed(() => {
   const bg = backgroundDisplayUrl.value
-  if (!bg) return { background: 'linear-gradient(135deg, #03192f 0%, #06213c 58%, #1d5d9b 100%)' }
+  if (!bg) return { backgroundColor: 'var(--color-night)' }
   if (bg.startsWith('#') || bg.startsWith('rgb')) return { backgroundColor: bg }
   return { backgroundImage: `url(${bg})`, backgroundSize: '100% auto', backgroundPosition: 'top' }
 })
@@ -566,7 +346,8 @@ const bgPreviewUrl = ref('')
 const bgFile = ref(null)
 const bgFileName = ref('')
 const bgSaving = ref(false)
-const bgCropContainer = ref(null)
+const backgroundEditorRef = ref(null)
+function backgroundCropElement() { return backgroundEditorRef.value?.cropContainer || null }
 const bgCrop = reactive({ x: 0, y: 0, w: 320, h: 180 })
 const bgCropRatio = ref(1)
 const bgStageW = ref(640)
@@ -624,14 +405,14 @@ function openBackgroundEditor() {
 let bgResizeObserver = null
 
 function updateBgCropBounds() {
-  const el = bgCropContainer.value
+  const el = backgroundCropElement()
   if (!el) return
   bgStageW.value = el.clientWidth
   bgStageH.value = el.clientHeight
 }
 
 function setupBgResizeObserver() {
-  const el = bgCropContainer.value
+  const el = backgroundCropElement()
   if (!el || bgResizeObserver) return
   bgResizeObserver = new ResizeObserver(() => {
     updateBgCropBounds()
@@ -676,7 +457,7 @@ function onBgSliderChange() {
 const bgImageDisplay = computed(() => {
   const nw = bgImgNatural.value.w || 1
   const nh = bgImgNatural.value.h || 1
-  const el = bgCropContainer.value
+  const el = backgroundCropElement()
   const cw = (el ? el.clientWidth : bgStageW.value) || 1
   const ch = (el ? el.clientHeight : bgStageH.value) || 1
   const scale = Math.max(cw / nw, ch / nh)
@@ -723,19 +504,6 @@ const bgCropGridStyle = computed(() => ({
     'linear-gradient(to bottom, transparent 66.666%, rgba(255,255,255,0.55) 66.666%, rgba(255,255,255,0.55) calc(66.666% + 1px), transparent calc(66.666% + 1px))'
   ].join(', ')
 }))
-
-const bgPreviewImgStyle = computed(() => {
-  if (!bgPreviewUrl.value) return { display: 'none' }
-  const previewW = 240
-  const scale = previewW / bgCrop.w
-  const display = bgImageDisplay.value
-  return {
-    width: `${display.width * scale}px`,
-    height: `${display.height * scale}px`,
-    left: `${(display.left - bgCropBox.value.left) * scale}px`,
-    top: `${(display.top - bgCropBox.value.top) * scale}px`
-  }
-})
 
 function loadBackgroundSource(source) {
   bgPreviewUrl.value = source || ''
@@ -931,7 +699,7 @@ function cropBackgroundImage() {
     img.onload = () => {
       const nw = bgImgNatural.value.w || img.naturalWidth
       const nh = bgImgNatural.value.h || img.naturalHeight
-      const el = bgCropContainer.value
+      const el = backgroundCropElement()
       const cw = el ? el.clientWidth : bgStageW.value
       const ch = el ? el.clientHeight : bgStageH.value
       const scale = Math.max(cw / nw, ch / nh)
@@ -960,209 +728,14 @@ function cropBackgroundImage() {
   })
 }
 
-// Avatar cropper
+// Avatar upload state stays in the page; the private editor owns only crop interaction.
 const avatarDialogVisible = ref(false)
-const avatarPreviewUrl = ref('')
-const avatarFile = ref(null)
+const avatarEditorSourceUrl = ref('')
 const avatarSaving = ref(false)
-const cropContainer = ref(null)
-const avatarSourceKind = ref('current')
 
 // Module-level cache — survives component remount during SPA navigation.
 // sessionStorage is too small for Data URLs (images often >5 MB).
 const _originalStore = new Map() // userId -> { avatarPath, source }
-
-// Crop state
-const crop = reactive({ x: 0, y: 0, size: 200 }) // square crop center and size
-const cropRatio = ref(0.8) // crop size as fraction of container (0.25–1.0)
-const imgW = ref(400); const imgH = ref(400) // container size
-const imgNatural = ref({ w: 1, h: 1 }) // original image dimensions
-
-let dragging = false, resizing = false
-let dragStart = { x: 0, y: 0, cx: 0, cy: 0, cSize: 0 }
-let resizeDir = ''
-
-function syncSizeFromRatio() {
-  const max = Math.min(imgW.value, imgH.value)
-  crop.size = Math.round(cropRatio.value * max)
-  clampCrop()
-}
-
-function syncRatioFromSize() {
-  const max = Math.min(imgW.value, imgH.value)
-  cropRatio.value = Math.round(crop.size / max * 100) / 100
-}
-
-function clampCrop() {
-  const r = crop.size / 2
-  crop.x = Math.max(r, Math.min(imgW.value - r, crop.x))
-  crop.y = Math.max(r, Math.min(imgH.value - r, crop.y))
-}
-
-const imageDisplay = computed(() => {
-  const nw = imgNatural.value.w || 1
-  const nh = imgNatural.value.h || 1
-  const cw = imgW.value || 1
-  const ch = imgH.value || 1
-  const scale = Math.max(cw / nw, ch / nh)
-  const width = nw * scale
-  const height = nh * scale
-  return {
-    width,
-    height,
-    left: (cw - width) / 2,
-    top: (ch - height) / 2
-  }
-})
-
-const cropBox = computed(() => {
-  const r = crop.size / 2
-  return {
-    left: crop.x - r,
-    top: crop.y - r,
-    size: crop.size
-  }
-})
-
-const cropImgStyle = computed(() => {
-  const display = imageDisplay.value
-  return {
-    width: `${display.width}px`,
-    height: `${display.height}px`,
-    left: `${display.left}px`,
-    top: `${display.top}px`
-  }
-})
-
-const cropFrameStyle = computed(() => ({
-  left: `${cropBox.value.left}px`,
-  top: `${cropBox.value.top}px`,
-  width: `${cropBox.value.size}px`,
-  height: `${cropBox.value.size}px`
-}))
-
-const cropGridStyle = computed(() => ({
-  ...cropFrameStyle.value,
-  backgroundImage: [
-    'linear-gradient(to right, transparent 33.333%, rgba(255,255,255,0.55) 33.333%, rgba(255,255,255,0.55) calc(33.333% + 1px), transparent calc(33.333% + 1px))',
-    'linear-gradient(to right, transparent 66.666%, rgba(255,255,255,0.55) 66.666%, rgba(255,255,255,0.55) calc(66.666% + 1px), transparent calc(66.666% + 1px))',
-    'linear-gradient(to bottom, transparent 33.333%, rgba(255,255,255,0.55) 33.333%, rgba(255,255,255,0.55) calc(33.333% + 1px), transparent calc(33.333% + 1px))',
-    'linear-gradient(to bottom, transparent 66.666%, rgba(255,255,255,0.55) 66.666%, rgba(255,255,255,0.55) calc(66.666% + 1px), transparent calc(66.666% + 1px))'
-  ].join(', ')
-}))
-
-function previewImgStyle(previewSize) {
-  if (!avatarPreviewUrl.value) return { display: 'none' }
-  const display = imageDisplay.value
-  const scale = previewSize / crop.size
-  return {
-    width: `${display.width * scale}px`,
-    height: `${display.height * scale}px`,
-    left: `${(display.left - cropBox.value.left) * scale}px`,
-    top: `${(display.top - cropBox.value.top) * scale}px`
-  }
-}
-
-const previewLgImgStyle = computed(() => previewImgStyle(120))
-const previewSmImgStyle = computed(() => previewImgStyle(56))
-
-function hPos(dir) {
-  const r = crop.size / 2
-  const map = {
-    top:    { left: crop.x + 'px', top: (crop.y - r) + 'px' },
-    bottom: { left: crop.x + 'px', top: (crop.y + r) + 'px' },
-    left:   { left: (crop.x - r) + 'px', top: crop.y + 'px' },
-    right:  { left: (crop.x + r) + 'px', top: crop.y + 'px' },
-    tl:     { left: (crop.x - r) + 'px', top: (crop.y - r) + 'px' },
-    tr:     { left: (crop.x + r) + 'px', top: (crop.y - r) + 'px' },
-    bl:     { left: (crop.x - r) + 'px', top: (crop.y + r) + 'px' },
-    br:     { left: (crop.x + r) + 'px', top: (crop.y + r) + 'px' },
-  }
-  return map[dir]
-}
-
-function initCrop() {
-  crop.x = imgW.value / 2
-  crop.y = imgH.value / 2
-  cropRatio.value = 0.8
-  syncSizeFromRatio()
-}
-
-function onSliderChange() {
-  syncSizeFromRatio()
-}
-
-function onResize(e) {
-  const dx = e.clientX - dragStart.x
-  const dy = e.clientY - dragStart.y
-  let newSize = dragStart.cSize
-  let newX = dragStart.cx
-  let newY = dragStart.cy
-  const fromLeft = ['left', 'tl', 'bl'].includes(resizeDir)
-  const fromRight = ['right', 'tr', 'br'].includes(resizeDir)
-  const fromTop = ['top', 'tl', 'tr'].includes(resizeDir)
-  const fromBottom = ['bottom', 'bl', 'br'].includes(resizeDir)
-
-  if (fromRight) newSize = dragStart.cSize + dx * 2
-  if (fromLeft) newSize = dragStart.cSize - dx * 2
-  if (fromBottom) newSize = Math.max(newSize, dragStart.cSize + dy * 2)
-  if (fromTop) newSize = Math.max(newSize, dragStart.cSize - dy * 2)
-
-  newSize = Math.max(80, Math.min(Math.min(imgW.value, imgH.value), newSize))
-  const r = newSize / 2
-  crop.size = newSize
-  syncRatioFromSize()
-  if (fromLeft) newX = dragStart.cx + (dragStart.cSize - newSize) / 2
-  if (fromRight) newX = dragStart.cx - (dragStart.cSize - newSize) / 2
-  if (fromTop) newY = dragStart.cy + (dragStart.cSize - newSize) / 2
-  if (fromBottom) newY = dragStart.cy - (dragStart.cSize - newSize) / 2
-  crop.x = Math.max(r, Math.min(imgW.value - r, newX))
-  crop.y = Math.max(r, Math.min(imgH.value - r, newY))
-}
-
-function startDragCrop(e) {
-  if (resizing) return
-  if (e.target.classList.contains('crop-handle')) return
-  dragging = true
-  document.body.style.cursor = 'move'
-  document.body.style.userSelect = 'none'
-  dragStart = { x: e.clientX, y: e.clientY, cx: crop.x, cy: crop.y, cSize: crop.size }
-}
-
-function onDragCrop(e) {
-  if (!dragging) return
-  const dx = e.clientX - dragStart.x
-  const dy = e.clientY - dragStart.y
-  const r = crop.size / 2
-  crop.x = Math.max(r, Math.min(imgW.value - r, dragStart.cx + dx))
-  crop.y = Math.max(r, Math.min(imgH.value - r, dragStart.cy + dy))
-}
-
-function stopDragCrop() {
-  dragging = false
-  document.body.style.cursor = ''
-  document.body.style.userSelect = ''
-}
-
-const cursorMap = { top: 'ns-resize', bottom: 'ns-resize', left: 'ew-resize', right: 'ew-resize', tl: 'nwse-resize', br: 'nwse-resize', tr: 'nesw-resize', bl: 'nesw-resize' }
-
-function startResize(e, dir) {
-  resizing = true
-  resizeDir = dir
-  dragStart = { x: e.clientX, y: e.clientY, cx: crop.x, cy: crop.y, cSize: crop.size }
-  document.body.style.cursor = cursorMap[dir]
-  document.body.style.userSelect = 'none'
-  window.addEventListener('mousemove', onResize)
-  window.addEventListener('mouseup', stopResize)
-}
-
-function stopResize() {
-  resizing = false
-  document.body.style.cursor = ''
-  document.body.style.userSelect = ''
-  window.removeEventListener('mousemove', onResize)
-  window.removeEventListener('mouseup', stopResize)
-}
 
 function avatarCacheKey() {
   const id = user.value.id || userStore.userInfo?.id
@@ -1199,68 +772,20 @@ function writeCachedAvatarOriginal(avatarPath, source) {
   }
 }
 
-function updateCropBounds() {
-  if (!cropContainer.value) return
-  imgW.value = cropContainer.value.clientWidth
-  imgH.value = cropContainer.value.clientHeight
-}
-
-function loadAvatarSource(source, kind = 'current') {
-  avatarPreviewUrl.value = source || ''
-  avatarSourceKind.value = kind
-  if (!source) {
-    imgNatural.value = { w: 1, h: 1 }
-    nextTick(() => {
-      updateCropBounds()
-      initCrop()
-    })
-    return
-  }
-
-  const img = new Image()
-  img.onload = async () => {
-    imgNatural.value = { w: img.naturalWidth, h: img.naturalHeight }
-    await nextTick()
-    updateCropBounds()
-    initCrop()
-  }
-  img.onerror = () => {
-    avatarPreviewUrl.value = ''
-    ElMessage.error('图片加载失败')
-  }
-  img.src = source
-}
-
 function openAvatarEditor() {
-  avatarFile.value = null
+  avatarEditorSourceUrl.value = currentAvatarUrl()
   avatarDialogVisible.value = true
   nextTick(async () => {
     const originalSource = await readCachedAvatarOriginal()
-    loadAvatarSource(originalSource || currentAvatarUrl() || '', originalSource ? 'original' : 'current')
+    if (avatarDialogVisible.value && originalSource) avatarEditorSourceUrl.value = originalSource
   })
 }
 
-function onAvatarFileChange(file) {
-  if (!file?.raw) return
-  avatarFile.value = file.raw
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    loadAvatarSource(e.target.result, 'new')
-  }
-  reader.readAsDataURL(file.raw)
-}
-
-async function confirmAvatar() {
-  if (!avatarPreviewUrl.value) return
+async function submitAvatar({ blob, filename, sourceUrl }) {
   avatarSaving.value = true
   try {
-    let originalSource = avatarSourceKind.value === 'new' || avatarSourceKind.value === 'original'
-      ? avatarPreviewUrl.value
-      : await readCachedAvatarOriginal()
-    if (!originalSource) originalSource = currentAvatarUrl()
-    const croppedBlob = isGifFile(avatarFile.value) ? avatarFile.value : await cropImage()
     const fd = new FormData()
-    fd.append('file', croppedBlob, isGifFile(avatarFile.value) ? 'avatar.gif' : 'avatar.png')
+    fd.append('file', blob, filename)
     const res = await uploadAvatar(fd)
     const avatarPath = typeof res.data === 'string' ? res.data : res.data?.avatar
     if (!avatarPath) throw new Error('头像上传失败')
@@ -1270,45 +795,12 @@ async function confirmAvatar() {
       userStore.userInfo.avatar = avatarPath
       userStore.userInfo.avatarUrl = avatarPath
     }
+    const originalSource = sourceUrl || avatarEditorSourceUrl.value || currentAvatarUrl()
     if (originalSource) writeCachedAvatarOriginal(avatarPath, originalSource)
     ElMessage.success('头像已更新'); avatarDialogVisible.value = false
   } catch (error) {
     if (error?.message === '头像上传失败') ElMessage.error(error.message)
   } finally { avatarSaving.value = false }
-}
-
-function cropImage() {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
-    img.onload = () => {
-      const nw = imgNatural.value.w || img.naturalWidth
-      const nh = imgNatural.value.h || img.naturalHeight
-      const display = imageDisplay.value
-      const sx = (cropBox.value.left - display.left) / display.width * nw
-      const sy = (cropBox.value.top - display.top) / display.height * nh
-      const sw = crop.size / display.width * nw
-      const sh = crop.size / display.height * nh
-      const size = 400
-      const canvas = document.createElement('canvas')
-      canvas.width = size
-      canvas.height = size
-      const ctx = canvas.getContext('2d')
-      ctx.imageSmoothingEnabled = true
-      ctx.imageSmoothingQuality = 'high'
-      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, size, size)
-      canvas.toBlob(blob => {
-        if (blob) resolve(blob)
-        else reject(new Error('Canvas toBlob failed'))
-      }, 'image/png')
-    }
-    img.onerror = reject
-    img.src = avatarPreviewUrl.value
-  })
-}
-
-function isGifFile(file) {
-  return !!file && (file.type === 'image/gif' || /\.gif$/i.test(file.name || ''))
 }
 
 onMounted(() => {
@@ -1340,6 +832,8 @@ async function loadProfile() {
 }
 
 async function fetchWorks() {
+  worksLoading.value = true
+  worksError.value = false
   try {
     const params = buildImageListParams({
       page: workPage.value,
@@ -1354,7 +848,11 @@ async function fetchWorks() {
     selectedWorkUuids.value = selectedWorkUuids.value.filter(uuid => works.value.some(img => img.uuid === uuid))
     
     animateCounts()
-  } catch {}
+  } catch {
+    worksError.value = true
+  } finally {
+    worksLoading.value = false
+  }
 }
 
 async function fetchCategories() {
@@ -1571,556 +1069,13 @@ async function saveProfile() {
 </script>
 
 <style scoped>
-.profile-page {
-  min-height: 100vh;
-  color: var(--ad-text);
-  background: var(--ad-bg);
-}
-
-.profile-container {
-  width: min(100%, 1500px);
-  padding: 96px 24px 118px;
-}
-
-.profile-banner {
-  position: relative;
-  min-height: 260px;
-  overflow: hidden;
-  border: 1px solid var(--ad-line);
-  border-bottom: 0;
-  background-color: #101620;
-  background-size: cover;
-  background-position: center;
-}
-
-.banner-grid {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-  gap: 8px;
-  padding: 20px;
-}
-
-.banner-cell {
-  border: 1px solid rgba(244, 241, 232, 0.12);
-  opacity: 0.72;
-}
-
-.banner-overlay {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(180deg, rgba(13, 16, 22, 0.1), rgba(13, 16, 22, 0.88)),
-    linear-gradient(90deg, rgba(13, 16, 22, 0.8), transparent 56%);
-}
-
-.banner-edit {
-  position: absolute;
-  right: 18px;
-  top: 18px;
-  z-index: 2;
-}
-
-.banner-edit :deep(.el-button) {
-  border-color: var(--ad-line);
-  color: var(--ad-text);
-  background: rgba(13, 16, 22, 0.82);
-  box-shadow: none;
-}
-
-.profile-header {
-  display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
-  gap: 0;
-  min-height: 270px;
-  border: 1px solid var(--ad-line);
-  background: rgba(17, 23, 34, 0.72);
-  box-shadow: var(--ad-shadow-soft);
-}
-
-.avatar-column {
-  display: grid;
-  align-content: start;
-  gap: 24px;
-  padding: 28px;
-  border-right: 1px solid var(--ad-line);
-}
-
-.avatar-wrap {
-  position: relative;
-  width: max-content;
-  margin-top: -90px;
-}
-
-.avatar {
-  border: 1px solid var(--ad-line-strong);
-  background: var(--ad-surface-2);
-}
-
-.avatar-upload,
-.dropdown-trigger {
-  display: inline-grid;
-  place-items: center;
-  border: 1px solid var(--ad-line);
-  color: var(--ad-text);
-  background: rgba(244, 241, 232, 0.06);
-  cursor: pointer;
-}
-
-.avatar-upload {
-  position: absolute;
-  right: 2px;
-  bottom: 2px;
-  width: 36px;
-  height: 36px;
-}
-
-.profile-stats {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  border: 1px solid var(--ad-line);
-}
-
-.stat-item {
-  padding: 16px;
-  border-bottom: 1px solid var(--ad-line);
-}
-
-.stat-item:nth-child(odd) {
-  border-right: 1px solid var(--ad-line);
-}
-
-.stat-item:nth-last-child(-n + 2) {
-  border-bottom: 0;
-}
-
-.stat-num {
-  display: block;
-  color: var(--ad-green);
-  font-size: 26px;
-  font-weight: 420;
-  line-height: 1;
-}
-
-.stat-label {
-  display: block;
-  margin-top: 8px;
-  color: var(--ad-muted);
-  font-size: 12px;
-}
-
-.profile-main {
-  min-width: 0;
-  display: grid;
-  align-content: center;
-  padding: 34px;
-}
-
-.profile-name-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 20px;
-}
-
-.section-label {
-  color: var(--ad-muted);
-  font-size: 11px;
-  letter-spacing: 0;
-}
-
-.profile-name-row h1 {
-  margin: 12px 0 0;
-  color: var(--ad-text);
-  font-size: clamp(46px, 6vw, 88px);
-  line-height: 0.92;
-  font-weight: 340;
-  overflow-wrap: anywhere;
-}
-
-.dropdown-trigger {
-  width: 40px;
-  height: 40px;
-}
-
-.profile-meta {
-  margin-top: 22px;
-  display: grid;
-  gap: 12px;
-  color: var(--ad-text-soft);
-}
-
-.bio {
-  max-width: 760px;
-  font-size: 16px;
-  line-height: 1.8;
-}
-
-.contact,
-.joined {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  color: var(--ad-muted);
-  font-size: 13px;
-}
-
-.contact span,
-.joined {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.profile-edit {
-  max-width: 760px;
-}
-
-.form-columns {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.email-code-row {
-  width: 100%;
-  display: flex;
-  gap: 10px;
-}
-
-.edit-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.user-works {
-  margin-top: 24px;
-  padding: 24px;
-  border: 1px solid var(--ad-line);
-  background: rgba(17, 23, 34, 0.62);
-}
-
-.works-heading {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 18px;
-  margin-bottom: 20px;
-}
-
-.works-heading h2 {
-  margin-top: 8px;
-  color: var(--ad-text);
-  font-size: 34px;
-  line-height: 1;
-  font-weight: 340;
-}
-
-.works-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.works-actions :deep(.el-checkbox__label) {
-  color: var(--ad-text-soft);
-}
-
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 16px;
-}
-
-.empty-state {
-  display: grid;
-  place-items: center;
-  min-height: 240px;
-  border: 1px solid var(--ad-line);
-  color: var(--ad-muted);
-  background: rgba(13, 16, 22, 0.66);
-}
-
-.pagination-wrap {
-  position: fixed;
-  left: 50%;
-  bottom: 18px;
-  z-index: 40;
-  transform: translateX(-50%);
-  padding: 10px 14px;
-  border: 1px solid var(--ad-line);
-  background: rgba(13, 16, 22, 0.94);
-  box-shadow: var(--ad-shadow-soft);
-}
-
-.pagination-wrap :deep(.el-pagination) {
-  --el-pagination-bg-color: transparent;
-  --el-pagination-button-bg-color: rgba(244, 241, 232, 0.06);
-  --el-pagination-button-color: var(--ad-text-soft);
-  --el-pagination-hover-color: var(--ad-green);
-  color: var(--ad-text-soft);
-}
-
-.pagination-wrap :deep(.el-pagination button),
-.pagination-wrap :deep(.el-pager li),
-.pagination-wrap :deep(.el-select__wrapper) {
-  border: 1px solid var(--ad-line) !important;
-  background: rgba(21, 25, 34, 0.92) !important;
-  color: var(--ad-text-soft) !important;
-  box-shadow: none !important;
-}
-
-.pagination-wrap :deep(.el-pager li.is-active) {
-  border-color: var(--ad-green) !important;
-  background: var(--ad-green) !important;
-  color: #071014 !important;
-}
-
-.background-editor-layout,
-.avatar-editor-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 220px;
-  gap: 18px;
-}
-
-.bg-crop-container,
-.crop-container {
-  position: relative;
-  overflow: hidden;
-  border: 1px solid var(--ad-line);
-  background:
-    linear-gradient(90deg, rgba(244,241,232,0.035) 1px, transparent 1px),
-    linear-gradient(rgba(244,241,232,0.035) 1px, transparent 1px),
-    #0b0f15;
-  background-size: 32px 32px;
-}
-
-.bg-crop-container {
-  height: 360px;
-}
-
-.crop-container {
-  width: 400px;
-  height: 400px;
-  max-width: 100%;
-}
-
-.bg-crop-img,
-.crop-img,
-.preview-img {
-  position: absolute;
-  user-select: none;
-  pointer-events: none;
-}
-
-.bg-placeholder,
-.avatar-empty {
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  color: var(--ad-muted);
-}
-
-.bg-crop-frame,
-.crop-frame {
-  position: absolute;
-  border: 2px solid var(--ad-green);
-  box-shadow: 0 0 0 999px rgba(0,0,0,0.45);
-  cursor: move;
-}
-
-.bg-crop-grid,
-.crop-grid {
-  position: absolute;
-  pointer-events: none;
-  background:
-    linear-gradient(90deg, transparent 33.333%, rgba(255,255,255,0.42) 33.333%, rgba(255,255,255,0.42) 34%, transparent 34%, transparent 66.666%, rgba(255,255,255,0.42) 66.666%, rgba(255,255,255,0.42) 67.333%, transparent 67.333%),
-    linear-gradient(transparent 33.333%, rgba(255,255,255,0.42) 33.333%, rgba(255,255,255,0.42) 34%, transparent 34%, transparent 66.666%, rgba(255,255,255,0.42) 66.666%, rgba(255,255,255,0.42) 67.333%, transparent 67.333%);
-}
-
-.bg-handle,
-.crop-handle {
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  border: 2px solid #071014;
-  background: var(--ad-green);
-  z-index: 2;
-}
-
-.bg-handle-ns,
-.crop-handle-ns {
-  cursor: ns-resize;
-}
-
-.bg-handle-ew,
-.crop-handle-ew {
-  cursor: ew-resize;
-}
-
-.bg-handle-nwse,
-.crop-handle-nwse {
-  cursor: nwse-resize;
-}
-
-.bg-handle-nesw,
-.crop-handle-nesw {
-  cursor: nesw-resize;
-}
-
-.bg-controls,
-.crop-controls {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
-  margin-top: 14px;
-  color: var(--ad-muted);
-  font-size: 12px;
-}
-
-.bg-upload,
-.avatar-replace-upload {
-  margin-top: 14px;
-}
-
-.upload-hint {
-  margin-top: 10px;
-  color: var(--ad-muted);
-  font-size: 12px;
-  overflow-wrap: anywhere;
-}
-
-.preview-label {
-  margin-bottom: 10px;
-  color: var(--ad-muted);
-  font-size: 12px;
-}
-
-.profile-mini-card {
-  overflow: hidden;
-  border: 1px solid var(--ad-line);
-  background: var(--ad-surface);
-}
-
-.profile-mini-banner {
-  height: 82px;
-  background-size: cover;
-  background-position: center;
-}
-
-.profile-mini-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px;
-  color: var(--ad-text-soft);
-  font-size: 12px;
-}
-
-.preview-circle-lg,
-.preview-circle-sm {
-  position: relative;
-  overflow: hidden;
-  border-radius: 50%;
-  border: 1px solid var(--ad-line);
-  background: var(--ad-surface-2);
-}
-
-.preview-circle-lg {
-  width: 120px;
-  height: 120px;
-  margin-bottom: 16px;
-}
-
-.preview-circle-sm {
-  width: 56px;
-  height: 56px;
-}
-
-.category-row {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 10px;
-  width: 100%;
-}
-
-.category-row :deep(.el-select) {
-  width: 100%;
-}
-
-@media (max-width: 1020px) {
-  .profile-header {
-    grid-template-columns: 1fr;
-  }
-
-  .avatar-column {
-    border-right: 0;
-    border-bottom: 1px solid var(--ad-line);
-  }
-
-  .profile-stats {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  .stat-item,
-  .stat-item:nth-child(odd),
-  .stat-item:nth-last-child(-n + 2) {
-    border-right: 1px solid var(--ad-line);
-    border-bottom: 0;
-  }
-
-  .stat-item:last-child {
-    border-right: 0;
-  }
-
-  .background-editor-layout,
-  .avatar-editor-layout {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 700px) {
-  .profile-container {
-    padding: 82px 14px 104px;
-  }
-
-  .profile-banner {
-    min-height: 200px;
-  }
-
-  .profile-main,
-  .avatar-column,
-  .user-works {
-    padding: 18px;
-  }
-
-  .profile-stats,
-  .form-columns,
-  .works-heading {
-    grid-template-columns: 1fr;
-  }
-
-  .profile-stats {
-    display: grid;
-  }
-
-  .works-heading {
-    display: grid;
-    align-items: start;
-  }
-
-  .profile-name-row {
-    align-items: flex-start;
-  }
-
-  .pagination-wrap {
-    width: calc(100vw - 24px);
-    overflow-x: auto;
-  }
-}
+.profile-page { min-height: 100vh; background: var(--color-canvas); color: var(--color-text-primary); }
+.profile-container { width: min(calc(100% - (2 * var(--page-gutter))), var(--page-wide)); padding: 96px 0 112px; }
+.profile-banner { position: relative; min-height: 220px; overflow: hidden; border: 1px solid var(--color-border-subtle); border-bottom: 0; background-color: var(--color-night); background-position: center; background-size: cover; }
+.banner-grid { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(5,1fr); grid-template-rows: repeat(3,1fr); gap: 1px; }.banner-cell { opacity: .82; }.banner-overlay { position: absolute; inset: 0; background: rgba(14,18,22,.12); }.banner-edit { position: absolute; z-index: 2; top: var(--space-4); right: var(--space-4); opacity: .64; transition: opacity var(--duration-fast) var(--ease-standard); }.banner-edit--active { opacity: 1; }.banner-edit :deep(.el-button) { min-height: var(--control-height-md); border-color: var(--color-border-subtle); background: rgba(248,245,238,.9); color: var(--color-text-primary); box-shadow: none; }
+.profile-container :deep(.profile-header),.profile-container :deep(.user-works) { border-color: var(--color-border-subtle); }.profile-container :deep(.user-works) { border-top: 0; }
+.category-row { display: grid; width: 100%; grid-template-columns: 1fr auto; gap: var(--space-2); }.category-row :deep(.el-select) { width: 100%; }
+.pagination-wrap { position: fixed; z-index: var(--layer-floating); right: 0; bottom: 0; left: 0; display: flex; justify-content: center; padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom)); border-top: 1px solid var(--color-border-subtle); background: rgba(248,245,238,.96); }.pagination-wrap :deep(.el-pagination) { max-width: 100%; flex-wrap: wrap; justify-content: center; gap: var(--space-1); }
+@media (max-width:820px) { .profile-container { padding-top: 82px; }.profile-banner { min-height: 180px; } }
+@media (max-width:520px) { .profile-container { width: calc(100% - (2 * var(--page-gutter))); }.profile-banner { min-height: 150px; }.banner-grid { grid-template-columns: repeat(3,1fr); grid-template-rows: repeat(5,1fr); }.banner-edit :deep(.el-button) { min-height: 44px; }.pagination-wrap { padding-inline: var(--space-2); }.pagination-wrap :deep(.el-pagination__total),.pagination-wrap :deep(.el-pagination__sizes) { display: none; } }
 </style>

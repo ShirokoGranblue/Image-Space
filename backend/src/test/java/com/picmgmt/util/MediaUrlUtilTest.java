@@ -25,4 +25,14 @@ class MediaUrlUtilTest {
                 util.userBackgroundUrl("user-uuid", "4/background.jpg")
         );
     }
+
+    @Test
+    void commentImageUrl_shouldUseAuthorizedBackendEndpointWithStorageKeyVersion() {
+        MediaUrlUtil util = new MediaUrlUtil();
+
+        assertEquals(
+                "/api/comment/image/42?v=64537f941595",
+                util.commentImageUrl(42L, "comments/example.png")
+        );
+    }
 }

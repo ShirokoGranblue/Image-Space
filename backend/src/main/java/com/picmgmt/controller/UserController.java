@@ -18,6 +18,7 @@ import com.picmgmt.service.CaptchaService;
 import com.picmgmt.service.OAuthService;
 import com.picmgmt.service.TurnstileService;
 import com.picmgmt.service.UserService;
+import com.picmgmt.storage.LegacyDataUri;
 import com.picmgmt.storage.StorageService;
 import com.picmgmt.vo.UserVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -159,22 +160,14 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
     @GetMapping("/avatar/{uuid}")
     public ResponseEntity<byte[]> avatar(@PathVariable String uuid) {
         User user = getExistingUserByUuid(uuid);
-        String objectKey = resolveObjectKey("avatars", user.getAvatarKey(), user.getAvatar());
-        return ResponseEntity.ok()
-                .cacheControl(CacheControl.noStore())
-                .contentType(mediaType(objectKey))
-                .body(storageService.download("avatars", objectKey));
+        return userMedia("avatars", user.getAvatarKey(), user.getAvatar());
     }
 
     @Operation(summary = "下载背景")
     @GetMapping("/background/{uuid}")
     public ResponseEntity<byte[]> background(@PathVariable String uuid) {
         User user = getExistingUserByUuid(uuid);
-        String objectKey = resolveObjectKey("backgrounds", user.getBackgroundKey(), user.getBackground());
-        return ResponseEntity.ok()
-                .cacheControl(CacheControl.noStore())
-                .contentType(mediaType(objectKey))
-                .body(storageService.download("backgrounds", objectKey));
+        return userMedia("backgrounds", user.getBackgroundKey(), user.getBackground());
     }
 
     @Operation(summary = "管理员获取用户列表")
@@ -360,8 +353,47 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
         return Result.ok(Map.of("satoken", token));
     }
 
-    private String resolveObjectKey(String bucket, String storageKey, String legacyValue) {
-        String key = storageKey != null && !storageKey.isBlank() ? storageKey : legacyValue;
+    private ResponseEntity<byte[]> userMedia(String bucket, String storageKey, String legacyValue) {
+        LegacyDataUri legacyData = LegacyDataUri.parse(legacyValue).orElse(null);
+        if (legacyData == null && legacyValue != null
+                && legacyValue.regionMatches(true, 0, "data:", 0, 5)) {
+            throw new BusinessException(ErrorCode.NOT_FOUND);
+        }
+        String objectValue = storageKey != null && !storageKey.isBlank()
+                ? storageKey
+                : legacyData == null ? legacyValue : null;
+
+        if (objectValue != null && !objectValue.isBlank()) {
+            String objectKey = resolveObjectKey(bucket, objectValue);
+            try {
+                MediaType contentType = mediaType(objectKey);
+                if (MediaType.APPLICATION_OCTET_STREAM.equals(contentType) && legacyData != null) {
+                    contentType = MediaType.parseMediaType(legacyData.contentType());
+                }
+                return mediaResponse(contentType, storageService.download(bucket, objectKey));
+            } catch (BusinessException e) {
+                if (legacyData == null) {
+                    throw new BusinessException(ErrorCode.NOT_FOUND, e);
+                }
+                log.warn("Object storage media unavailable for bucket={}, using legacy data", bucket);
+            }
+        }
+
+        if (legacyData != null) {
+            return mediaResponse(MediaType.parseMediaType(legacyData.contentType()), legacyData.bytes());
+        }
+        throw new BusinessException(ErrorCode.NOT_FOUND);
+    }
+
+    private ResponseEntity<byte[]> mediaResponse(MediaType contentType, byte[] bytes) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .contentType(contentType)
+                .body(bytes);
+    }
+
+    private String resolveObjectKey(String bucket, String value) {
+        String key = value;
         if (key == null || key.isBlank()) {
             throw new BusinessException(ErrorCode.NOT_FOUND);
         }

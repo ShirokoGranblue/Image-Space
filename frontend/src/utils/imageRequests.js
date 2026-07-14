@@ -20,12 +20,31 @@ export function getImageDisplayUrl(imageOrId) {
     : ''
 }
 
+export function getImageAlt(image) {
+  const imageName = typeof image?.imageName === 'string' ? image.imageName.trim() : ''
+  if (imageName) return imageName
+  const originalFilename = typeof image?.originalFilename === 'string' ? image.originalFilename.trim() : ''
+  return originalFilename || '未命名图片'
+}
+
 export function getImagePreviewUrl(imageOrId) {
   if (!imageOrId) return ''
   if (typeof imageOrId === 'object') {
     if (imageOrId.mediumUrl) return imageOrId.mediumUrl
     const original = originalCompatibleUrl(imageOrId)
     if (original) return original
+    return imageOrId.uuid ? `/api/image/download/${imageOrId.uuid}` : ''
+  }
+  return getImageDisplayUrl(imageOrId)
+}
+
+export function getImageViewerUrl(imageOrId) {
+  if (!imageOrId) return ''
+  if (typeof imageOrId === 'object') {
+    const original = originalCompatibleUrl(imageOrId)
+    if (original) return original
+    if (imageOrId.mediumUrl) return imageOrId.mediumUrl
+    if (imageOrId.thumbUrl) return imageOrId.thumbUrl
     return imageOrId.uuid ? `/api/image/download/${imageOrId.uuid}` : ''
   }
   return getImageDisplayUrl(imageOrId)

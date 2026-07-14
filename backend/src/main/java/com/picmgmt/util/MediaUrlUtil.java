@@ -48,6 +48,13 @@ public class MediaUrlUtil {
         return userMediaEndpoint("background", userUuid, storageKey);
     }
 
+    public String commentImageUrl(Long commentId, String storageKey) {
+        if (commentId == null || storageKey == null || storageKey.isBlank()) {
+            return null;
+        }
+        return withVersion("/api/comment/image/" + commentId, storageKey);
+    }
+
     private String userMediaEndpoint(String kind, String userUuid, String storageKey) {
         if (storageKey == null || storageKey.isBlank()) {
             return null;

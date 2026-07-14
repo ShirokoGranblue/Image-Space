@@ -6,16 +6,24 @@ import {
   saveSquareSession,
 } from '../utils/squareFilters'
 
-function createStorage() {
+function createStorage(): Storage {
   const values = new Map<string, string>()
   return {
     getItem: (key: string) => values.get(key) ?? null,
-    setItem: (key: string, value: string) => values.set(key, value),
-    removeItem: (key: string) => values.delete(key),
+    setItem: (key: string, value: string) => { values.set(key, value) },
+    removeItem: (key: string) => { values.delete(key) },
+    clear: () => { values.clear() },
+    key: (index: number) => [...values.keys()][index] ?? null,
+    get length() { return values.size },
   }
 }
 
 describe('square filters', () => {
+  it('passes a real category id to the existing square query', () => {
+    const params = buildSquareParams({ page: 1, limit: 50, keyword: '', categoryId: 7, tags: [], sortField: '', randomSeed: 'seed-category' })
+    expect(params.categoryId).toBe(7)
+  })
+
   it('uses hidden random mode when no visible sort is selected', () => {
     const params = buildSquareParams({
       page: 2,
@@ -30,6 +38,7 @@ describe('square filters', () => {
       page: 2,
       limit: 50,
       keyword: '1',
+      categoryId: undefined,
       tags: 'cat#blue',
       sortMode: 'random',
       sortField: 'upload_time',
@@ -43,6 +52,7 @@ describe('square filters', () => {
       page: 1,
       limit: 50,
       keyword: '',
+      categoryId: undefined,
       tags: [],
       sortField: 'file_size',
       randomSeed: 'seed-2',
@@ -52,6 +62,7 @@ describe('square filters', () => {
       page: 1,
       limit: 50,
       keyword: '',
+      categoryId: undefined,
       tags: '',
       sortMode: 'latest',
       sortField: 'file_size',
@@ -74,6 +85,7 @@ describe('square filters', () => {
       page: 1,
       limit: 50,
       keyword: '',
+      categoryId: undefined,
       tags: '',
       sortMode: 'latest',
       sortField: 'image_name',
@@ -89,6 +101,7 @@ describe('square filters', () => {
       page: 3,
       limit: 100,
       keyword: 'exact-name.jpg',
+      categoryId: 7,
       tags: ['tag-a'],
       sortField: '',
       randomSeed: 'old-seed',
@@ -98,6 +111,7 @@ describe('square filters', () => {
       page: 3,
       limit: 100,
       keyword: 'exact-name.jpg',
+      categoryId: 7,
       tags: ['tag-a'],
       sortField: '',
     })
@@ -110,6 +124,7 @@ describe('square filters', () => {
       page: 2,
       limit: 30,
       keyword: '',
+      categoryId: null,
       tags: [],
       sortField: 'image_name',
       randomSeed: 'old-seed',
@@ -119,6 +134,7 @@ describe('square filters', () => {
       page: 2,
       limit: 30,
       keyword: '',
+      categoryId: null,
       tags: [],
       sortField: '',
     })

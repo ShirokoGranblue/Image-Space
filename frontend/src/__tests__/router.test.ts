@@ -20,16 +20,17 @@ function createTestRouter() {
         component: { template: '<div>Audit</div>' },
         meta: { requiresAuth: true, requiresAdmin: true, requiresAdminDomain: true },
       },
+      { path: '/:pathMatch(.*)*', name: 'NotFound', component: { template: '<div>Not Found</div>' } },
     ],
   })
 }
 
 function guardLogic(
   to: RouteLocationNormalized,
-  options: { hostname?: string; isDev?: boolean; userRole?: string | null } = {},
+  options: { hostname?: string; allowLocal?: boolean; userRole?: string | null } = {},
 ): string | null {
   const token = sessionStorage.getItem('satoken')
-  if (to.meta.requiresAdminDomain && !isAllowedAdminDomain(options.hostname || 'admin.image-space.app', options.isDev ?? false)) {
+  if (to.meta.requiresAdminDomain && !isAllowedAdminDomain(options.hostname || 'admin.image-space.app', options.allowLocal ?? false)) {
     return '/403'
   }
   if (to.meta.requiresAuth && !token) return '/login'
@@ -106,7 +107,7 @@ describe('Router guard logic', () => {
   it('blocks admin page on a non-admin domain before login checks', async () => {
     const router = createTestRouter()
     router.beforeEach((to, _from, next) => {
-      const result = guardLogic(to, { hostname: 'image-space.app', isDev: false, userRole: 'admin' })
+      const result = guardLogic(to, { hostname: 'image-space.app', allowLocal: false, userRole: 'admin' })
       result ? next(result) : next()
     })
 
@@ -120,7 +121,7 @@ describe('Router guard logic', () => {
     sessionStorage.setItem('satoken', 'valid-token')
     const router = createTestRouter()
     router.beforeEach((to, _from, next) => {
-      const result = guardLogic(to, { hostname: 'admin.image-space.app', isDev: false, userRole: 'user' })
+      const result = guardLogic(to, { hostname: 'admin.image-space.app', allowLocal: false, userRole: 'user' })
       result ? next(result) : next()
     })
 
@@ -134,7 +135,7 @@ describe('Router guard logic', () => {
     sessionStorage.setItem('satoken', 'valid-token')
     const router = createTestRouter()
     router.beforeEach((to, _from, next) => {
-      const result = guardLogic(to, { hostname: 'admin.image-space.app', isDev: false, userRole: 'admin' })
+      const result = guardLogic(to, { hostname: 'admin.image-space.app', allowLocal: false, userRole: 'admin' })
       result ? next(result) : next()
     })
 
@@ -142,5 +143,14 @@ describe('Router guard logic', () => {
     await router.isReady()
 
     expect(router.currentRoute.value.path).toBe('/admin/audit-log')
+  })
+
+  it('renders the explicit not-found route for /categories', async () => {
+    const router = createTestRouter()
+
+    await router.push('/categories')
+    await router.isReady()
+
+    expect(router.currentRoute.value.name).toBe('NotFound')
   })
 })

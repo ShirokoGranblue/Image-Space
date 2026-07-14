@@ -3,8 +3,17 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { nextTick, reactive } from 'vue'
 
 import ImageDetail from '../views/ImageDetail.vue'
-import { getImageDetail, updateImage } from '../api/image'
-import { getComments } from '../api/comment'
+import { getImageDetail as getImageDetailApi, updateImage as updateImageApi } from '../api/image'
+import { getComments as getCommentsApi } from '../api/comment'
+
+type ResultMock = {
+  mockResolvedValue: (value: { data: unknown }) => void
+  mockRejectedValue: (value: unknown) => void
+}
+
+const getImageDetail = vi.mocked(getImageDetailApi) as unknown as ResultMock
+const updateImage = vi.mocked(updateImageApi) as unknown as ResultMock
+const getComments = vi.mocked(getCommentsApi) as unknown as ResultMock
 
 const routeState = reactive({
   params: { uuid: '400a1e49-6990-489e-b4a8-35eb0a02d056' },
@@ -59,6 +68,7 @@ vi.mock('../api/resource', () => ({
 
 vi.mock('../api/comment', () => ({
   getComments: vi.fn(),
+  fetchCommentImage: vi.fn(() => Promise.resolve(new Blob(['image'], { type: 'image/jpeg' }))),
   addComment: vi.fn(),
   deleteComment: vi.fn(),
   uploadCommentImage: vi.fn(),
@@ -142,13 +152,13 @@ describe('ImageDetail edit entry', () => {
     routeState.query = {}
     userStore.token = 'token'
     userStore.userInfo = { id: 99, uuid: 'viewer-uuid', role: 'admin' }
-    vi.mocked(getComments).mockResolvedValue({ data: [] })
+    getComments.mockResolvedValue({ data: [] })
     pollingMocks.options.length = 0
     pollingMocks.useResourcePolling.mockClear()
   })
 
   it('hides the edit menu for another user image even when editableByMe is true', async () => {
-    vi.mocked(getImageDetail).mockResolvedValue({ data: imageDetail({ ownedByMe: false, editableByMe: true }) })
+    getImageDetail.mockResolvedValue({ data: imageDetail({ ownedByMe: false, editableByMe: true }) })
 
     const wrapper = mountDetail()
     await flushPromises()
@@ -158,7 +168,7 @@ describe('ImageDetail edit entry', () => {
   })
 
   it('shows the edit menu for the image owner', async () => {
-    vi.mocked(getImageDetail).mockResolvedValue({ data: imageDetail({ userId: 99, ownedByMe: true, editableByMe: true }) })
+    getImageDetail.mockResolvedValue({ data: imageDetail({ userId: 99, ownedByMe: true, editableByMe: true }) })
 
     const wrapper = mountDetail()
     await flushPromises()
@@ -167,7 +177,7 @@ describe('ImageDetail edit entry', () => {
   })
 
   it('updates the displayed image URL from the resource polling access-url callback', async () => {
-    vi.mocked(getImageDetail).mockResolvedValue({ data: imageDetail({
+    getImageDetail.mockResolvedValue({ data: imageDetail({
       visibility: 'PRIVATE',
       privateUrl: 'https://cdn.image-space.app/private/images/a.png?auth=old&expires=1893456000&v=1',
     }) })
@@ -190,7 +200,7 @@ describe('ImageDetail edit entry', () => {
   })
 
   it('renders medium preview URL before original-compatible imageUrl', async () => {
-    vi.mocked(getImageDetail).mockResolvedValue({ data: imageDetail({
+    getImageDetail.mockResolvedValue({ data: imageDetail({
       mediumUrl: 'https://cdn.image-space.app/public/images/a/medium.jpg?v=2',
       imageUrl: 'https://cdn.image-space.app/public/images/a/original.png?v=2',
     }) })
@@ -199,10 +209,22 @@ describe('ImageDetail edit entry', () => {
     await flushPromises()
 
     expect(wrapper.find('.detail-image img').attributes('src')).toBe('https://cdn.image-space.app/public/images/a/medium.jpg?v=2')
+    expect(wrapper.find('.detail-image img').attributes('loading')).toBe('eager')
+    expect(wrapper.find('.detail-image img').attributes('fetchpriority')).toBe('high')
+  })
+
+  it('uses originalFilename as the image alternative-text fallback', async () => {
+    getImageDetail.mockResolvedValue({ data: imageDetail({ imageName: '', originalFilename: 'camera-original.png' }) })
+
+    const wrapper = mountDetail()
+    await flushPromises()
+
+    expect(wrapper.find('.detail-image img').attributes('alt')).toBe('camera-original.png')
+    expect(wrapper.find('.detail-image').attributes('aria-label')).toBe('沉浸查看：camera-original.png')
   })
 
   it('downloads through the original download endpoint instead of the preview URL', async () => {
-    vi.mocked(getImageDetail).mockResolvedValue({ data: imageDetail({
+    getImageDetail.mockResolvedValue({ data: imageDetail({
       mediumUrl: 'https://cdn.image-space.app/public/images/a/medium.jpg?v=2',
       imageUrl: 'https://cdn.image-space.app/public/images/a/original.png?v=2',
     }) })
@@ -234,13 +256,13 @@ describe('ImageDetail edit entry', () => {
   })
 
   it('replaces stale preview variant URLs after saving image edits', async () => {
-    vi.mocked(getImageDetail).mockResolvedValue({ data: imageDetail({
+    getImageDetail.mockResolvedValue({ data: imageDetail({
       ownedByMe: true,
       visibility: 'PUBLIC',
       mediumUrl: 'https://cdn.image-space.app/public/images/a/medium.jpg?v=1',
       imageUrl: 'https://cdn.image-space.app/public/images/a/original.png?v=1',
     }) })
-    vi.mocked(updateImage).mockResolvedValue({ data: imageDetail({
+    updateImage.mockResolvedValue({ data: imageDetail({
       ownedByMe: true,
       visibility: 'PRIVATE',
       mediaVersion: 2,
@@ -268,7 +290,7 @@ describe('ImageDetail edit entry', () => {
   })
 
   it('disables the resource display when polling reports deletion', async () => {
-    vi.mocked(getImageDetail).mockResolvedValue({ data: imageDetail({ ownedByMe: true }) })
+    getImageDetail.mockResolvedValue({ data: imageDetail({ ownedByMe: true }) })
 
     const wrapper = mountDetail()
     await flushPromises()
@@ -278,5 +300,76 @@ describe('ImageDetail edit entry', () => {
 
     expect(wrapper.find('.detail-layout').exists()).toBe(false)
     expect(wrapper.text()).toContain('图片已删除或不可用')
+  })
+
+  it('progressively discloses only real technical metadata', async () => {
+    getImageDetail.mockResolvedValue({ data: imageDetail({
+      width: 1600,
+      height: 900,
+      originalFilename: '真实原始文件名.png',
+      originalContentType: 'image/png',
+      description: '一段真实描述',
+      tags: '风景#夜色',
+    }) })
+
+    const wrapper = mountDetail()
+    await flushPromises()
+
+    expect(wrapper.find('details.image-metadata').exists()).toBe(true)
+    expect(wrapper.text()).toContain('1600 × 900')
+    expect(wrapper.text()).toContain('真实原始文件名.png')
+    expect(wrapper.text()).toContain('一段真实描述')
+    expect(wrapper.text()).toContain('风景')
+    expect(wrapper.text()).not.toContain('EXIF')
+    expect(wrapper.text()).not.toContain('拍摄时间')
+    expect(wrapper.text()).not.toContain('来源')
+  })
+
+  it('shows a retryable error state when detail loading fails', async () => {
+    getImageDetail.mockRejectedValue(new Error('offline'))
+
+    const wrapper = mountDetail()
+    await flushPromises()
+
+    expect(wrapper.find('[role="alert"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('图片详情请求失败')
+    expect(wrapper.text()).toContain('重新加载')
+    expect(wrapper.find('.detail-layout').exists()).toBe(false)
+  })
+
+  it('makes comment images keyboard-operable and lazy-loaded', async () => {
+    getImageDetail.mockResolvedValue({ data: imageDetail() })
+    getComments.mockResolvedValue({ data: [{
+      id: 10,
+      userId: 51,
+      displayName: '观者甲',
+      content: '附图评论',
+      imageUrl: 'https://cdn.test/comment.jpg',
+      createTime: '2026-06-01T13:00:00',
+      likeCount: 0,
+    }] })
+
+    const wrapper = mountDetail()
+    await flushPromises()
+
+    expect(wrapper.get('.comment-image-button').attributes('aria-label')).toBe('查看评论图片：观者甲')
+    expect(wrapper.get('.comment-img').attributes('loading')).toBe('lazy')
+    expect(wrapper.get('.comment-img').attributes('decoding')).toBe('async')
+    expect(wrapper.get('.comment-footer button').attributes('aria-label')).toBe('喜欢评论：观者甲')
+  })
+
+  it('shows a stable main-image failure state and retries in place', async () => {
+    getImageDetail.mockResolvedValue({ data: imageDetail() })
+    const wrapper = mountDetail()
+    await flushPromises()
+
+    await wrapper.get('.detail-image img').trigger('error')
+    expect(wrapper.get('.detail-image-error').attributes('role')).toBe('alert')
+    expect(wrapper.get('.detail-image').attributes('aria-label')).toContain('重新加载图片')
+
+    await wrapper.get('.detail-image').trigger('click')
+    await nextTick()
+    expect(wrapper.find('.detail-image img').exists()).toBe(true)
+    expect(wrapper.find('.detail-image-loading').exists()).toBe(true)
   })
 })

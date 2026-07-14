@@ -23,6 +23,7 @@
             <el-checkbox
               class="notification-checkbox"
               :model-value="selectedIds.has(item.id)"
+              :aria-label="`选择通知：${item.imageName || '图片'}`"
               @change="toggleSelect(item.id)"
               @click.stop
             />
@@ -31,7 +32,7 @@
               type="button"
               @click="openNotification(item)"
             >
-              <img :src="item.imagePreviewUrl || fallbackImage" alt="" class="notification-thumb" />
+              <img :src="item.imagePreviewUrl || fallbackImage" alt="" class="notification-thumb" loading="lazy" decoding="async" />
               <span class="notification-body">
                 <span class="notification-title">
                   <strong>{{ item.actorName || '用户' }}</strong>
@@ -184,19 +185,19 @@ async function handleDeleteSelected() {
   position: fixed;
   top: 0;
   right: 0;
-  z-index: 2000;
+  z-index: var(--layer-notification);
   width: var(--notification-drawer-width, 420px);
   height: 100dvh;
-  background: #f0eee6;
-  border-left: 1px solid var(--gray2);
-  box-shadow: -8px 0 30px rgba(0, 0, 0, 0.08), -2px 0 8px rgba(0, 0, 0, 0.04);
+  background: var(--color-surface-1);
+  border-left: 1px solid var(--color-border-subtle);
+  box-shadow: var(--shadow-dialog);
   display: flex;
   flex-direction: column;
 }
 
 .notification-header {
-  padding: 24px 24px 16px;
-  border-bottom: 1px solid var(--gray2);
+  padding: var(--space-6) var(--space-6) var(--space-4);
+  border-bottom: 1px solid var(--color-border-subtle);
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -205,18 +206,18 @@ async function handleDeleteSelected() {
 
 .notification-header h2 {
   margin: 0;
-  font-family: var(--font-display);
-  color: var(--black);
-  font-size: 32px;
+  font-family: var(--font-title);
+  color: var(--color-text-primary);
+  font-size: var(--text-2xl);
   letter-spacing: 0.03em;
   line-height: 1;
   font-weight: 500;
 }
 
 .notification-header p {
-  margin: 6px 0 0;
-  color: var(--gray3);
-  font-size: 18px;
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
   font-weight: 500;
 }
 
@@ -228,23 +229,24 @@ async function handleDeleteSelected() {
 }
 
 .drawer-close {
-  width: 32px;
-  height: 32px;
+  width: var(--control-height-lg);
+  height: var(--control-height-lg);
   border: none;
   background: transparent;
-  color: var(--gray3);
+  color: var(--color-text-muted);
   cursor: pointer;
-  font-size: 22px;
+  font-size: var(--text-xl);
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s ease;
+  transition: color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard);
   padding: 0;
 }
 
 .drawer-close:hover {
-  color: var(--black);
+  background: var(--color-surface-2);
+  color: var(--color-text-primary);
 }
 
 .notification-list {
@@ -255,17 +257,17 @@ async function handleDeleteSelected() {
 .notification-item {
   display: flex;
   align-items: stretch;
-  gap: 12px;
-  padding: 16px 24px;
-  border-bottom: 1px solid var(--gray2);
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--color-border-subtle);
   border-left: 2px solid transparent;
   background: transparent;
-  transition: background 0.2s ease, border-left-color 0.2s ease, transform 0.2s ease;
+  transition: background-color var(--duration-fast) var(--ease-standard), border-left-color var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-standard);
 }
 
 .notification-item:hover {
-  background: #f0eee6;
-  border-left-color: var(--accent);
+  background: var(--color-surface-2);
+  border-left-color: var(--color-vermilion);
   transform: translateX(-4px);
 }
 
@@ -275,7 +277,7 @@ async function handleDeleteSelected() {
 
 .notification-item.unread:hover {
   background: rgba(17, 26, 53, 0.04);
-  border-left-color: var(--accent);
+  border-left-color: var(--color-vermilion);
   transform: translateX(-4px);
 }
 
@@ -293,7 +295,7 @@ async function handleDeleteSelected() {
   background: transparent;
   display: grid;
   grid-template-columns: 64px 1fr;
-  gap: 14px;
+  gap: var(--space-3);
   padding: 0;
   cursor: pointer;
   text-align: left;
@@ -305,20 +307,20 @@ async function handleDeleteSelected() {
   width: 64px;
   height: 64px;
   object-fit: cover;
-  background: rgba(17, 26, 53, 0.06);
+  background: var(--color-surface-2);
 }
 
 .notification-body {
   min-width: 0;
   display: grid;
   grid-template-rows: auto 1fr auto;
-  gap: 4px;
+  gap: var(--space-1);
   padding: 2px 0;
 }
 
 .notification-title {
-  color: var(--black);
-  font-size: 15px;
+  color: var(--color-text-primary);
+  font-size: var(--text-sm);
   line-height: 1.4;
   overflow: hidden;
   display: -webkit-box;
@@ -331,8 +333,8 @@ async function handleDeleteSelected() {
 }
 
 .notification-preview {
-  color: var(--gray3);
-  font-size: 18px;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
   line-height: 1.3;
   overflow: hidden;
   white-space: nowrap;
@@ -340,21 +342,21 @@ async function handleDeleteSelected() {
 }
 
 .notification-time {
-  color: var(--gray3);
-  font-size: 16px;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
 .notification-empty {
-  padding: 80px 24px;
+  padding: var(--space-9) var(--space-6);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  color: var(--gray3);
-  font-size: 18px;
+  gap: var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--text-md);
   font-family: var(--font-body);
 }
 
@@ -365,17 +367,17 @@ async function handleDeleteSelected() {
 }
 
 .notification-footer {
-  padding: 12px 24px;
-  border-top: 1px solid var(--gray2);
+  padding: var(--space-3) var(--space-6);
+  border-top: 1px solid var(--color-border-subtle);
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .notification-slide-enter-active,
 .notification-slide-leave-active {
-  transition: transform 0.25s var(--ease-out), opacity 0.25s var(--ease-out);
+  transition: transform var(--duration-overlay) var(--ease-standard), opacity var(--duration-overlay) var(--ease-standard);
 }
 
 .notification-slide-enter-from,

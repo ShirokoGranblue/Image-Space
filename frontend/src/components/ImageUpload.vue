@@ -109,6 +109,7 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
+import { UploadFilled } from '@element-plus/icons-vue'
 import { uploadImage } from '../api/image'
 import { getCategoryList, createCategory } from '../api/category'
 import { hasSpecifiedUsers } from '../utils/visibility'
@@ -289,37 +290,37 @@ defineExpose({ open })
   width: 100%;
   box-sizing: border-box;
   padding: 36px 18px;
-  background: var(--gray1);
-  border: 2px dashed var(--gray2);
+  background: var(--color-canvas-muted);
+  border: 2px dashed var(--color-border-subtle);
   border-radius: 18px;
   transition: border-color 0.2s ease, background 0.2s ease;
 }
 
 .upload-area :deep(.el-upload-dragger:hover) {
-  border-color: var(--accent);
-  background: var(--blue-soft);
+  border-color: var(--color-vermilion);
+  background: var(--color-surface-2);
 }
 
 .upload-icon {
   font-size: 40px;
-  color: var(--gray3);
+  color: var(--color-text-muted);
   margin-bottom: 8px;
 }
 
 .upload-text {
-  color: var(--gray3);
+  color: var(--color-text-muted);
   font-family: var(--font-body);
   font-size: 19px;
   font-weight: 500;
 }
 .upload-text em {
-  color: var(--accent);
+  color: var(--color-vermilion);
   font-style: normal;
   font-weight: 600;
 }
 
 .upload-tip {
-  color: var(--gray3);
+  color: var(--color-text-muted);
   font-family: var(--font-body);
   font-size: 18px;
   margin-top: 4px;
@@ -370,8 +371,8 @@ defineExpose({ open })
   gap: 10px;
   padding: 10px;
   border-radius: 16px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-subtle);
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border-subtle);
 }
 
 .upload-progress {
@@ -384,7 +385,7 @@ defineExpose({ open })
 }
 
 .upload-progress :deep(.el-progress-bar__inner) {
-  background: var(--accent);
+  background: var(--color-vermilion);
   border-radius: 999px;
 }
 
@@ -397,7 +398,7 @@ defineExpose({ open })
 
 .rename-original {
   min-width: 0;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   font-size: 18px;
   overflow: hidden;
   text-overflow: ellipsis;

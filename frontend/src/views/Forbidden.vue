@@ -15,22 +15,22 @@
   display: grid;
   place-items: center;
   padding: 24px;
-  color: var(--ad-text);
+  color: var(--color-text-primary);
 }
 
 .forbidden-panel {
   width: min(100%, 520px);
   padding: 34px;
-  border: 1px solid var(--ad-line);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 8px;
   background: rgba(21, 25, 34, 0.92);
-  box-shadow: var(--ad-shadow-soft);
+  box-shadow: var(--shadow-float);
   text-align: center;
 }
 
 .code {
   margin: 0 0 10px;
-  color: var(--ad-coral);
+  color: var(--color-error);
   font-size: 54px;
   font-weight: 820;
   line-height: 1;
@@ -38,12 +38,12 @@
 
 h1 {
   margin: 0 0 12px;
-  color: var(--ad-text);
+  color: var(--color-text-primary);
   font-size: 24px;
 }
 
 p {
   margin: 0 0 22px;
-  color: var(--ad-text-soft);
+  color: var(--color-text-secondary);
 }
 </style>

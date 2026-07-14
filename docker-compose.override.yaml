@@ -1,10 +1,14 @@
 services:
+  backend:
+    ports:
+      - "8088:8088"
   frontend:
     build:
       context: ./frontend
       args:
         VITE_TURNSTILE_ENABLED: ${VITE_TURNSTILE_ENABLED:-false}
         VITE_TURNSTILE_SITE_KEY: ${VITE_TURNSTILE_SITE_KEY:-}
+        VITE_ADMIN_ALLOW_LOCAL: ${VITE_ADMIN_ALLOW_LOCAL:-false}
   nginx:
     volumes:
       - ./deploy/nginx/cloudflare-ips.conf:/etc/nginx/cloudflare-ips.conf:ro

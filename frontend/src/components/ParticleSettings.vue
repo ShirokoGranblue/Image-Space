@@ -1,11 +1,8 @@
 <script setup>
-import { ref } from 'vue'
 import { useParticles } from '../composables/useParticles'
 import { presets } from '../particle/presets'
 
 const { presetName, explosionParams, trailParams, settingsVisible, changePreset } = useParticles()
-const expanded = ref(true)
-
 const explosionSliders = [
   { key: 'particleCount', label: '粒子数量', min: 10, max: 200, step: 5 },
   { key: 'speed', label: '爆发速度', min: 50, max: 600, step: 10 },
@@ -81,7 +78,7 @@ const trailSliders = [
 <style scoped>
 .settings-body {
   padding: 0 4px;
-  font-family: var(--font-display);
+  font-family: var(--font-title);
 }
 
 .preset-row {
@@ -100,7 +97,7 @@ const trailSliders = [
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   margin: 0 0 10px 0;
 }
 
@@ -113,7 +110,7 @@ const trailSliders = [
 
 .slider-label {
   font-size: 16px;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
   min-width: 52px;
   text-align: right;
   flex-shrink: 0;
@@ -121,7 +118,7 @@ const trailSliders = [
 
 .slider-value {
   font-size: 16px;
-  color: var(--text-muted);
+  color: var(--color-text-muted);
   min-width: 32px;
   text-align: right;
   font-variant-numeric: tabular-nums;

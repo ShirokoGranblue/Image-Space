@@ -17,7 +17,7 @@ export const POLLING_INTERVALS = {
 } as const
 
 export function useResourcePolling(options: ResourcePollingOptions) {
-  const timer = ref<ReturnType<typeof window.setInterval> | null>(null)
+  const timer = ref<number | null>(null)
   const isChecking = ref(false)
 
   const enabled = computed(() => {

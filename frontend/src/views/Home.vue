@@ -2,7 +2,7 @@
   <div class="asset-page">
     <NavBar />
 
-    <div class="asset-shell">
+    <div class="asset-shell" :class="{ 'has-inspector': inspectedImage }">
       <aside class="workspace-rail" aria-label="图片工作区">
         <section class="rail-section">
           <h2 class="rail-title">图库</h2>
@@ -55,121 +55,25 @@
       </aside>
 
       <main class="asset-main">
-        <header class="main-head">
-          <div class="headline-block">
-            <h1>在一个页面整理、筛选和分享图片。</h1>
-            <p>上传新图片，按分类和可见范围快速筛选，也可以批量选择、编辑信息或复制分享链接。</p>
-          </div>
-          <div class="stats" aria-label="图片统计">
-            <div class="stat">
-              <strong>{{ total }}</strong>
-              <span>全部图片</span>
-            </div>
-            <div class="stat">
-              <strong>{{ categories.length }}</strong>
-              <span>分类</span>
-            </div>
-            <div class="stat">
-              <strong>{{ selectedImageUuids.length }}</strong>
-              <span>已选择</span>
-            </div>
-          </div>
-        </header>
-
-        <section class="command-panel" aria-label="搜索和筛选">
-          <el-input
-            v-model="query.keyword"
-            placeholder="按图片名称搜索"
-            clearable
-            class="command-search"
-            @clear="onFilterChange"
-            @keyup.enter="onFilterChange"
-          >
-            <template #prefix>
-              <el-icon><Search /></el-icon>
-            </template>
-          </el-input>
-
-          <el-select v-model="query.categoryId" placeholder="选择分类" clearable class="command-select" @change="onFilterChange">
-            <el-option v-for="cat in categories" :key="cat.id" :label="cat.categoryName" :value="cat.id" />
-          </el-select>
-
-          <el-select v-model="query.sortField" class="command-select" @change="onFilterChange">
-            <el-option label="最新上传" value="upload_time" />
-            <el-option label="名称" value="image_name" />
-            <el-option label="文件大小" value="file_size" />
-          </el-select>
-
-          <button class="select-all" type="button" :class="{ active: allVisibleSelected }" @click="toggleSelectAll(!allVisibleSelected)">
-            {{ allVisibleSelected ? '取消本页' : '选择本页' }}
-          </button>
-
-          <button class="primary-command" type="button" @click="uploadRef.open()">
-            <el-icon><Plus /></el-icon>
-            上传
-          </button>
-        </section>
-
-        <section class="filter-strip" aria-label="快速筛选">
-          <button class="filter-chip" :class="{ active: !query.visibility }" type="button" @click="setVisibilityFilter('')">全部</button>
-          <button class="filter-chip" :class="{ active: query.visibility === 'PUBLIC' }" type="button" @click="setVisibilityFilter('PUBLIC')">公开</button>
-          <button class="filter-chip" :class="{ active: query.visibility === 'SPECIFIED' }" type="button" @click="setVisibilityFilter('SPECIFIED')">指定用户</button>
-          <button class="filter-chip" :class="{ active: query.visibility === 'PRIVATE' }" type="button" @click="setVisibilityFilter('PRIVATE')">仅自己</button>
-          <button class="filter-chip danger" v-if="selectedImageUuids.length > 0" type="button" @click="handleBatchDelete">
-            删除 {{ selectedImageUuids.length }}
-          </button>
-        </section>
-
+        <HomeToolbar
+          :total="total" :category-count="categories.length" :selected-count="selectedImageUuids.length" :categories="categories"
+          :keyword="query.keyword" :category-id="query.categoryId" :sort-field="query.sortField" :visibility="query.visibility" :all-visible-selected="allVisibleSelected"
+          @update:keyword="query.keyword = $event" @update:category-id="query.categoryId = $event" @update:sort-field="query.sortField = $event"
+          @filter="onFilterChange" @toggle-select-all="toggleSelectAll" @upload="uploadRef.open()" @select-visibility="setVisibilityFilter" @batch-delete="handleBatchDelete"
+        />
         <section class="gallery-stage">
-          <div v-if="loading" class="skeleton-grid">
-            <div class="asset-skeleton" v-for="n in 8" :key="n"></div>
-          </div>
-
-          <div v-else-if="displayedImages.length === 0" class="empty-state asset-empty">
-            <el-icon><PictureFilled /></el-icon>
-            <p>没有符合条件的图片。</p>
-          </div>
-
-          <div v-else class="asset-grid">
-            <ImageCard
-              v-for="img in displayedImages"
-              :key="img.uuid || img.id"
-              :image="img"
-              :show-actions="true"
-              :selectable="true"
-              :selected="selectedImageUuids.includes(img.uuid)"
-              @delete="handleDelete"
-              @copy="copyImageLink"
-              @toggle-select="toggleImageSelection"
-            />
-          </div>
+          <GalleryGrid :items="displayedImages" :loading="loading" :error="loadError" :loading-count="8" :initial-eager-count="4" density="compact" empty-title="没有符合条件的图片" empty-description="可以调整筛选条件，或上传一张新图片。" error-description="图片列表请求失败，请检查连接后重试。" @retry="fetchList">
+            <template #item="{ item, priority }"><ImageCard :image="item" :priority="priority" :show-actions="true" :selectable="true" :selected="selectedImageUuids.includes(item.uuid)" @delete="handleDelete" @copy="copyImageLink" @toggle-select="toggleImageSelection" /></template>
+          </GalleryGrid>
         </section>
 
-        <footer class="batch-queue" v-if="displayedImages.length > 0">
-          <span>已选图片</span>
-          <div class="queue-strip">
-            <button
-              v-for="img in selectedPreviewImages"
-              :key="img.uuid"
-              class="queue-thumb"
-              type="button"
-              :title="img.imageName"
-              @click="toggleImageSelection(img.uuid)"
-            >
-              <img v-if="getImageDisplayUrl(img)" :src="getImageDisplayUrl(img)" :alt="img.imageName" />
-            </button>
-          </div>
-          <div class="queue-actions">
-            <button class="secondary-command" type="button" @click="clearSelection" :disabled="selectedImageUuids.length === 0">清空</button>
-            <button class="primary-command compact" type="button" @click="handleBatchDelete" :disabled="selectedImageUuids.length === 0">删除</button>
-          </div>
-        </footer>
+        <HomeBatchQueue :visible="selectedImageUuids.length > 0" :images="selectedPreviewImages" :selected-count="selectedImageUuids.length" :display-url="getImageDisplayUrl" @toggle="toggleImageSelection" @clear="clearSelection" @delete="handleBatchDelete" />
       </main>
 
-      <aside class="asset-inspector" aria-label="图片信息">
-        <div class="inspector-card" v-if="inspectedImage">
+      <aside v-if="inspectedImage" class="asset-inspector" aria-label="图片信息">
+        <div class="inspector-card">
           <div class="inspect-preview">
-            <img v-if="inspectedImageSrc" :src="inspectedImageSrc" :alt="inspectedImage.imageName" />
+            <img v-if="inspectedImageSrc" :src="inspectedImageSrc" :alt="inspectedImageAlt" loading="lazy" decoding="async" />
             <div v-else class="inspect-fallback">
               <el-icon><PictureFilled /></el-icon>
             </div>
@@ -223,10 +127,6 @@
           </div>
         </div>
 
-        <div class="inspector-card empty-inspector" v-else>
-          <h2>还没有选择图片</h2>
-          <p>选择一张图片后，可以在这里查看信息并处理分享。</p>
-        </div>
       </aside>
     </div>
 
@@ -301,14 +201,18 @@
 import { ref, reactive, computed, onMounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { PictureFilled } from '@element-plus/icons-vue'
 import NavBar from '../components/NavBar.vue'
 import ImageCard from '../components/ImageCard.vue'
+import GalleryGrid from '../components/gallery/GalleryGrid.vue'
+import HomeToolbar from '../components/home/HomeToolbar.vue'
+import HomeBatchQueue from '../components/home/HomeBatchQueue.vue'
 import ImageUpload from '../components/ImageUpload.vue'
 import TagInput from '../components/TagInput.vue'
 import { getImageList, deleteImage, updateImage } from '../api/image'
 import { getImageResourceStatus, refreshImageAccessUrl } from '../api/resource'
 import { getCategoryList, createCategory } from '../api/category'
-import { DEFAULT_IMAGE_PAGE_SIZE, IMAGE_PAGE_SIZES, buildImageListParams, getImageDisplayUrl, getImageDownloadUrl, getImagePreviewUrl } from '../utils/imageRequests'
+import { DEFAULT_IMAGE_PAGE_SIZE, IMAGE_PAGE_SIZES, buildImageListParams, getImageAlt, getImageDisplayUrl, getImageDownloadUrl, getImagePreviewUrl } from '../utils/imageRequests'
 import { applyImageAccessUrl, applyImageStatus, imageToPollingResource } from '../utils/resourceAdapters'
 import { isAccessUrlExpiring } from '../utils/resourceAccess'
 import { hasSpecifiedUsers } from '../utils/visibility'
@@ -322,6 +226,7 @@ const images = ref([])
 const categories = ref([])
 const total = ref(0)
 const loading = ref(false)
+const loadError = ref(false)
 const editVisible = ref(false)
 const categoryDialogVisible = ref(false)
 const newCategoryName = ref('')
@@ -356,7 +261,8 @@ const displayedImages = computed(() => {
 const visibleImageUuids = computed(() => displayedImages.value.map(img => img.uuid).filter(Boolean))
 const allVisibleSelected = computed(() => visibleImageUuids.value.length > 0 && visibleImageUuids.value.every(uuid => selectedImageUuids.value.includes(uuid)))
 const selectedPreviewImages = computed(() => images.value.filter(img => selectedImageUuids.value.includes(img.uuid)).slice(0, 8))
-const inspectedImage = computed(() => selectedPreviewImages.value[0] || displayedImages.value[0] || null)
+const inspectedImage = computed(() => selectedPreviewImages.value[0] || null)
+const inspectedImageAlt = computed(() => getImageAlt(inspectedImage.value))
 const inspectedImageSrc = computed(() => inspectedImage.value ? getImagePreviewUrl(inspectedImage.value) : '')
 const visibilityStats = computed(() => {
   const stats = { PUBLIC: 0, SPECIFIED: 0, PRIVATE: 0 }
@@ -413,6 +319,7 @@ useResourcePolling({
 
 async function fetchList() {
   loading.value = true
+  loadError.value = false
   try {
     const res = await getImageList(buildImageListParams({
       page: query.page,
@@ -425,7 +332,9 @@ async function fetchList() {
     images.value = res.data.records || []
     total.value = res.data.total || 0
     selectedImageUuids.value = selectedImageUuids.value.filter(uuid => images.value.some(img => img.uuid === uuid))
-  } catch {} finally {
+  } catch {
+    loadError.value = true
+  } finally {
     loading.value = false
   }
 }
@@ -626,590 +535,29 @@ function formatFileSize(size) {
 </script>
 
 <style scoped>
-.asset-page {
-  min-height: 100vh;
-  color: var(--ad-text);
-}
-
-.asset-shell {
-  width: min(100% - 28px, 1600px);
-  min-height: calc(100vh - 28px);
-  margin: 0 auto;
-  padding: 96px 0 96px;
-  display: grid;
-  grid-template-columns: 212px minmax(0, 1fr) 340px;
-  gap: 0;
-}
-
-.workspace-rail,
-.asset-main,
-.asset-inspector {
-  border-top: 1px solid var(--ad-line);
-  border-bottom: 1px solid var(--ad-line);
-  background: rgba(17, 23, 34, 0.62);
-}
-
-.workspace-rail {
-  padding: 18px 14px;
-  border-left: 1px solid var(--ad-line);
-  border-right: 1px solid var(--ad-line);
-  border-radius: 18px 0 0 18px;
-}
-
-.rail-section + .rail-section {
-  margin-top: 24px;
-  padding-top: 18px;
-  border-top: 1px solid var(--ad-line);
-}
-
-.rail-title,
-.queue-title {
-  margin: 0 0 10px;
-  color: rgba(244, 241, 232, 0.46);
-  font-size: 11px;
-  font-weight: 860;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.rail-item {
-  width: 100%;
-  display: grid;
-  grid-template-columns: 20px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 9px;
-  min-height: 38px;
-  padding: 0 10px;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--ad-text-soft);
-  font-size: 13px;
-  font-weight: 720;
-  text-align: left;
-}
-
-.rail-item:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.rail-item.active,
-.rail-item:hover:not(:disabled) {
-  border-color: rgba(183, 255, 60, 0.26);
-  background: rgba(183, 255, 60, 0.1);
-  color: var(--ad-text);
-}
-
-.rail-item strong {
-  color: var(--ad-muted);
-  font-size: 11px;
-  font-weight: 760;
-}
-
-.dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--ad-muted);
-}
-
-.dot.green { background: var(--ad-green); }
-.dot.cyan { background: var(--ad-cyan); }
-.dot.amber { background: var(--ad-amber); }
-.dot.coral { background: var(--ad-coral); }
-.dot.violet { background: var(--ad-violet); }
-
-.meter-card {
-  padding: 12px;
-  border: 1px solid var(--ad-line);
-  border-radius: 12px;
-  background: rgba(13, 16, 22, 0.52);
-}
-
-.meter-top {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  color: var(--ad-text-soft);
-  font-size: 12px;
-  font-weight: 720;
-}
-
-.meter {
-  overflow: hidden;
-  height: 7px;
-  margin-top: 10px;
-  border-radius: 999px;
-  background: rgba(244, 241, 232, 0.08);
-}
-
-.meter span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--ad-green), var(--ad-cyan));
-  transition: width 0.24s var(--ad-ease);
-}
-
-.asset-main {
-  min-width: 0;
-  display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
-  border-right: 1px solid var(--ad-line);
-  background: rgba(13, 16, 22, 0.36);
-}
-
-.main-head {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 18px;
-  align-items: end;
-  padding: 24px 24px 18px;
-  border-bottom: 1px solid var(--ad-line);
-}
-
-.headline-block h1 {
-  max-width: 760px;
-  margin: 0;
-  color: var(--ad-text);
-  font-size: clamp(42px, 5.2vw, 80px);
-  font-weight: 340;
-  line-height: 0.95;
-  letter-spacing: 0;
-}
-
-.headline-block p {
-  max-width: 720px;
-  margin: 14px 0 0;
-  color: var(--ad-text-soft);
-  font-size: 15px;
-  line-height: 1.7;
-}
-
-.stats {
-  display: grid;
-  grid-template-columns: repeat(3, 112px);
-  gap: 8px;
-}
-
-.stat {
-  min-height: 82px;
-  padding: 12px;
-  border: 1px solid var(--ad-line);
-  border-radius: 12px;
-  background: rgba(21, 25, 34, 0.84);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.14);
-}
-
-.stat strong {
-  display: block;
-  color: var(--ad-text);
-  font-size: 24px;
-  font-weight: 820;
-  line-height: 1;
-}
-
-.stat span {
-  display: block;
-  margin-top: 8px;
-  color: var(--ad-muted);
-  font-size: 12px;
-  font-weight: 720;
-}
-
-.command-panel {
-  display: grid;
-  grid-template-columns: minmax(240px, 1fr) 170px 140px auto auto;
-  gap: 10px;
-  align-items: center;
-  padding: 16px 24px 0;
-}
-
-.command-search,
-.command-select {
-  width: 100%;
-}
-
-.select-all,
-.primary-command,
-.secondary-command,
-.filter-chip {
-  min-height: 40px;
-  border: 1px solid var(--ad-line);
-  border-radius: 10px;
-  background: rgba(21, 25, 34, 0.86);
-  color: var(--ad-text);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 0 13px;
-  font-family: var(--ad-font);
-  font-size: 13px;
-  font-weight: 780;
-  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.16s var(--ad-ease);
-}
-
-.select-all:hover,
-.secondary-command:hover,
-.filter-chip:hover {
-  border-color: var(--ad-line-strong);
-  background: var(--ad-surface-2);
-}
-
-.select-all.active,
-.filter-chip.active,
-.primary-command {
-  background: var(--ad-green);
-  border-color: var(--ad-green);
-  color: #071014;
-}
-
-.primary-command:hover {
-  background: var(--ad-green-2);
-  border-color: var(--ad-green-2);
-  transform: translateY(-1px);
-}
-
-.primary-command:disabled,
-.secondary-command:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.primary-command.compact {
-  min-height: 38px;
-}
-
-.danger-text,
-.filter-chip.danger {
-  color: #fff;
-  border-color: rgba(255, 107, 87, 0.48);
-  background: rgba(255, 107, 87, 0.14);
-}
-
-.filter-strip {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 14px 24px 0;
-}
-
-.filter-chip {
-  min-height: 32px;
-  border-radius: 999px;
-  padding: 0 11px;
-  color: var(--ad-muted);
-  font-size: 12px;
-}
-
-.gallery-stage {
-  min-width: 0;
-  padding: 18px 24px 24px;
-}
-
-.asset-grid,
-.skeleton-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(214px, 1fr));
-  gap: 12px;
-}
-
-.asset-skeleton {
-  min-height: 260px;
-  border: 1px solid var(--ad-line);
-  border-radius: 14px;
-  background: linear-gradient(135deg, rgba(244, 241, 232, 0.08), rgba(244, 241, 232, 0.02));
-  animation: skPulse 1.8s ease-in-out infinite;
-}
-
-.asset-empty {
-  min-height: 360px;
-  border: 1px solid var(--ad-line);
-  border-radius: 16px;
-  background: rgba(21, 25, 34, 0.58);
-  color: var(--ad-text-soft);
-}
-
-.batch-queue {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 14px;
-  padding: 13px 18px;
-  border-top: 1px solid var(--ad-line);
-  background: rgba(17, 23, 34, 0.86);
-}
-
-.batch-queue > span {
-  color: rgba(244, 241, 232, 0.46);
-  font-size: 11px;
-  font-weight: 860;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.queue-strip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.queue-thumb {
-  width: 52px;
-  height: 40px;
-  flex: 0 0 auto;
-  overflow: hidden;
-  border: 1px solid var(--ad-line);
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--ad-cyan), var(--ad-violet));
-  padding: 0;
-}
-
-.queue-thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.queue-actions,
-.inspect-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.asset-inspector {
-  padding: 18px;
-  border-right: 1px solid var(--ad-line);
-  border-radius: 0 18px 18px 0;
-}
-
-.inspector-card {
-  overflow: hidden;
-  border: 1px solid var(--ad-line);
-  border-radius: 16px;
-  background: rgba(21, 25, 34, 0.94);
-  box-shadow: var(--ad-shadow-soft);
-}
-
-.inspect-preview {
-  min-height: 244px;
-  background:
-    linear-gradient(180deg, rgba(244, 241, 232, 0.08), transparent 38%),
-    linear-gradient(135deg, rgba(56, 213, 255, 0.56), rgba(155, 140, 255, 0.5), rgba(13, 16, 22, 0.94));
-}
-
-.inspect-preview img {
-  width: 100%;
-  height: 244px;
-  display: block;
-  object-fit: cover;
-}
-
-.inspect-fallback {
-  min-height: 244px;
-  display: grid;
-  place-items: center;
-  color: var(--ad-text-soft);
-}
-
-.inspect-body {
-  display: grid;
-  gap: 16px;
-  padding: 16px;
-}
-
-.inspect-head {
-  display: flex;
-  gap: 12px;
-  justify-content: space-between;
-  align-items: start;
-}
-
-.inspect-head h2,
-.empty-inspector h2 {
-  margin: 0;
-  color: var(--ad-text);
-  font-size: 26px;
-  line-height: 1;
-  font-weight: 420;
-}
-
-.inspect-head p,
-.empty-inspector p {
-  margin: 6px 0 0;
-  color: var(--ad-muted);
-  font-size: 12px;
-  word-break: break-all;
-}
-
-.inspect-status {
-  min-height: 24px;
-  padding: 5px 8px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 860;
-  white-space: nowrap;
-}
-
-.inspect-status.public { background: var(--ad-green); color: #071014; }
-.inspect-status.private { background: var(--ad-coral); color: #fff; }
-.inspect-status.specified { background: var(--ad-amber); color: #17100a; }
-
-.meta-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.meta {
-  padding: 10px;
-  border: 1px solid var(--ad-line);
-  border-radius: 10px;
-  background: rgba(13, 16, 22, 0.44);
-}
-
-.meta span {
-  display: block;
-  color: var(--ad-muted);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.meta strong {
-  display: block;
-  margin-top: 5px;
-  color: var(--ad-text);
-  font-size: 13px;
-  font-weight: 760;
-  word-break: break-word;
-}
-
-.route-box {
-  display: grid;
-  gap: 9px;
-  padding: 12px;
-  border: 1px solid rgba(183, 255, 60, 0.22);
-  border-radius: 12px;
-  background: rgba(183, 255, 60, 0.08);
-}
-
-.route-line {
-  display: grid;
-  grid-template-columns: 66px minmax(0, 1fr);
-  gap: 8px;
-  align-items: center;
-  color: var(--ad-text-soft);
-  font-size: 11px;
-}
-
-.route-line code {
-  min-width: 0;
-  color: var(--ad-green);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.empty-inspector {
-  padding: 18px;
-}
-
-.pagination-wrap {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 150;
-  display: flex;
-  justify-content: center;
-  padding: 12px 24px calc(12px + env(safe-area-inset-bottom));
-  border-top: 1px solid var(--ad-line);
-  background: rgba(13, 16, 22, 0.88);
-  backdrop-filter: blur(18px);
-}
-
-.pagination-wrap :deep(.el-pagination) {
-  color: var(--ad-text);
-}
-
-.category-row {
-  width: 100%;
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.category-row :deep(.el-select) {
-  flex: 1;
-}
-
-@media (max-width: 1260px) {
-  .asset-shell {
-    grid-template-columns: 76px minmax(0, 1fr);
-  }
-  .asset-inspector {
-    display: none;
-  }
-  .workspace-rail {
-    border-radius: 18px 0 0 18px;
-  }
-  .asset-main {
-    border-radius: 0 18px 18px 0;
-  }
-  .rail-title,
-  .rail-item span:not(.dot),
-  .rail-item strong,
-  .meter-card {
-    display: none;
-  }
-  .rail-item {
-    grid-template-columns: 1fr;
-    justify-items: center;
-  }
-}
-
-@media (max-width: 980px) {
-  .asset-shell {
-    width: min(100% - 20px, 1600px);
-    grid-template-columns: 1fr;
-    padding-top: 92px;
-  }
-  .workspace-rail {
-    display: none;
-  }
-  .asset-main {
-    border: 1px solid var(--ad-line);
-    border-radius: 18px;
-  }
-  .main-head,
-  .command-panel {
-    grid-template-columns: 1fr;
-  }
-  .stats {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .batch-queue {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 620px) {
-  .headline-block h1 {
-    font-size: 42px;
-  }
-  .stats {
-    grid-template-columns: 1fr;
-  }
-  .asset-grid,
-  .skeleton-grid {
-    grid-template-columns: 1fr;
-  }
-}
+.asset-page { min-height: 100vh; background: var(--color-canvas); color: var(--color-text-primary); }
+.asset-shell { display: grid; width: min(calc(100% - (2 * var(--page-gutter))), var(--page-wide)); grid-template-columns: 212px minmax(0,1fr); margin-inline: auto; padding: 96px 0 112px; }
+.asset-shell.has-inspector { grid-template-columns: 212px minmax(0,1fr) 360px; }
+.workspace-rail { padding: var(--space-5) var(--space-3); border: 1px solid var(--color-border-subtle); border-right: 0; background: transparent; }
+.rail-section + .rail-section { margin-top: var(--space-6); padding-top: var(--space-5); border-top: 1px solid var(--color-border-subtle); }
+.rail-title { margin: 0 0 var(--space-3); color: var(--color-text-muted); font-family: var(--font-ui); font-size: var(--text-xs); font-weight: 700; letter-spacing: .08em; }
+.rail-item { display: grid; width: 100%; min-height: 42px; grid-template-columns: 10px minmax(0,1fr) auto; align-items: center; gap: var(--space-2); padding: 0 var(--space-2); border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-secondary); text-align: left; cursor: pointer; }
+.rail-item:hover { background: var(--color-surface-2); color: var(--color-text-primary); }.rail-item.active { background: var(--color-night); color: var(--color-text-inverse); }.rail-item:disabled { opacity: .45; cursor: not-allowed; }.rail-item strong { font-size: var(--text-xs); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-text-muted); }.dot.green { background: var(--color-success); }.dot.cyan { background: var(--color-urban); }.dot.amber { background: var(--color-warning); }.dot.coral { background: var(--color-error); }.dot.violet { background: var(--color-night); }
+.meter-card { padding: var(--space-3); border: 1px solid var(--color-border-subtle); background: var(--color-surface-1); }.meter-top { display: flex; justify-content: space-between; gap: var(--space-2); color: var(--color-text-muted); font-size: var(--text-xs); }.meter { height: 6px; margin-top: var(--space-3); overflow: hidden; background: var(--color-canvas-muted); }.meter span { display: block; height: 100%; background: var(--color-vermilion); transition: width var(--duration-overlay) var(--ease-standard); }
+.asset-main { min-width: 0; border: 1px solid var(--color-border-subtle); background: var(--color-surface-1); }
+.gallery-stage { min-width: 0; padding: var(--space-5); background: var(--color-surface-1); }
+.gallery-stage :deep(.gallery-grid[data-density='compact']) { grid-template-columns: repeat(auto-fill,minmax(min(100%,206px),238px)); justify-content: start; }
+.asset-inspector { padding: var(--space-4); border: 1px solid var(--color-border-subtle); border-left: 0; background: transparent; }
+.inspector-card { overflow: hidden; border: 1px solid var(--color-border-subtle); background: var(--color-surface-1); }.inspect-preview { display: grid; min-height: 244px; place-items: center; background: #e2e2df; }.inspect-preview img { display: block; width: 100%; height: 244px; object-fit: contain; }.inspect-fallback { display: grid; min-height: 244px; place-items: center; color: var(--color-text-muted); font-size: 40px; }
+.inspect-body { padding: var(--space-5); }.inspect-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }.inspect-head > div { min-width: 0; flex: 1; }.inspect-head h2 { margin: 0; font-family: var(--font-title); font-size: var(--text-xl); font-weight: 500; line-height: var(--leading-sm); overflow-wrap: anywhere; text-wrap: pretty; }.inspect-head p { margin: var(--space-2) 0 0; color: var(--color-text-muted); font-size: var(--text-sm); }
+.inspect-status { flex: 0 0 auto; padding: var(--space-1) var(--space-2); border: 1px solid currentColor; border-radius: var(--radius-round); font-size: var(--text-xs); font-weight: 700; }.inspect-status.public { color: var(--color-success); }.inspect-status.private { color: var(--color-error); }.inspect-status.specified { color: var(--color-warning); }
+.meta-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: var(--space-2); margin-top: var(--space-4); }.meta { min-width: 0; padding: var(--space-3); border: 1px solid var(--color-border-subtle); background: var(--color-surface-2); }.meta span,.route-line span { display: block; color: var(--color-text-muted); font-size: var(--text-xs); }.meta strong { display: block; margin-top: var(--space-1); overflow: hidden; color: var(--color-text-primary); font-size: var(--text-sm); text-overflow: ellipsis; overflow-wrap: anywhere; }
+.route-box { margin-top: var(--space-4); padding: var(--space-3); border: 1px solid var(--color-border-subtle); }.route-line { display: flex; justify-content: space-between; gap: var(--space-3); }.route-line + .route-line { margin-top: var(--space-2); }.route-line code { min-width: 0; color: var(--color-vermilion); font-family: var(--font-ui); font-size: var(--text-xs); text-align: right; overflow-wrap: anywhere; }
+.inspect-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-4); }.primary-command,.secondary-command { min-height: 40px; padding: 0 var(--space-3); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm); background: var(--color-surface-1); color: var(--color-text-primary); font-family: var(--font-ui); cursor: pointer; }.primary-command { border-color: var(--color-vermilion); background: var(--color-vermilion); color: var(--color-text-inverse); }.primary-command:hover { background: var(--color-vermilion-hover); }.secondary-command:hover { background: var(--color-surface-2); }.danger-text { border-color: var(--color-error); color: var(--color-error); }
+.pagination-wrap { position: fixed; z-index: var(--layer-floating); right: 0; bottom: 0; left: 0; display: flex; justify-content: center; padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom)); border-top: 1px solid var(--color-border-subtle); background: rgba(248,245,238,.96); }.pagination-wrap :deep(.el-pagination) { max-width: 100%; flex-wrap: wrap; justify-content: center; gap: var(--space-1); }
+.category-row { display: grid; width: 100%; grid-template-columns: 1fr auto; gap: var(--space-2); }
+@media (max-width:1260px) { .asset-shell,.asset-shell.has-inspector { grid-template-columns: 196px minmax(0,1fr); }.asset-inspector { display: none; }.workspace-rail { border-right: 0; }.asset-main { border-left: 1px solid var(--color-border-subtle); } }
+@media (max-width:760px) { .asset-shell,.asset-shell.has-inspector { width: calc(100% - (2 * var(--page-gutter))); grid-template-columns: minmax(0,1fr); padding-top: 92px; }.workspace-rail { display: none; }.asset-main { border: 1px solid var(--color-border-subtle); }.gallery-stage { padding: var(--space-4); }.primary-command,.secondary-command { min-height: 44px; }.pagination-wrap { padding-inline: var(--space-2); }.pagination-wrap :deep(.el-pagination__total),.pagination-wrap :deep(.el-pagination__sizes) { display: none; } }
+@media (prefers-reduced-motion:reduce) { .meter span { transition: none; } }
 </style>

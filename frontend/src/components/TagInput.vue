@@ -166,19 +166,19 @@ function focusInput() {
   flex-wrap: wrap;
   gap: 6px;
   padding: 5px 9px;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
-  background: var(--bg-elevated);
+  background: var(--color-surface-1);
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
   cursor: text;
 }
 
 .tag-input:hover {
-  border-color: var(--border-visible);
+  border-color: var(--color-border-strong);
 }
 
 .tag-input.focused {
-  border-color: var(--accent);
+  border-color: var(--color-vermilion);
   box-shadow: var(--shadow-focus);
   background: #fff;
 }
@@ -192,7 +192,7 @@ function focusInput() {
   padding: 3px 8px;
   border-radius: 8px;
   background: rgba(37, 99, 235, 0.12);
-  color: var(--accent-dim);
+  color: var(--color-night);
   font-size: 18px;
   font-weight: 700;
   line-height: 1;
@@ -217,7 +217,7 @@ function focusInput() {
   border: 0;
   border-radius: 50%;
   background: rgba(37, 99, 235, 0.14);
-  color: var(--accent-dim);
+  color: var(--color-night);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -228,7 +228,7 @@ function focusInput() {
 }
 
 .tag-remove:hover {
-  background: var(--accent);
+  background: var(--color-vermilion);
   color: #fff;
 }
 
@@ -239,7 +239,7 @@ function focusInput() {
   border: 0;
   outline: none;
   background: transparent;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   font: inherit;
   line-height: 26px;
 }
@@ -252,11 +252,11 @@ function focusInput() {
 .tag-edit-field {
   min-width: 80px;
   padding: 0;
-  color: var(--accent-dim);
+  color: var(--color-night);
   font-weight: 700;
 }
 
 .tag-field::placeholder {
-  color: var(--text-muted);
+  color: var(--color-text-muted);
 }
 </style>

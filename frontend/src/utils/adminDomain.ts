@@ -3,13 +3,13 @@ const DEV_DOMAINS = new Set(['localhost', '127.0.0.1'])
 
 export function isAllowedAdminDomain(
   hostname = window.location.hostname,
-  isDev = import.meta.env.DEV,
+  allowLocal = import.meta.env.VITE_ADMIN_ALLOW_LOCAL === 'true',
 ): boolean {
   const normalized = normalizeHost(hostname)
   if (normalized === ADMIN_DOMAIN) {
     return true
   }
-  return isDev && DEV_DOMAINS.has(normalized)
+  return allowLocal && DEV_DOMAINS.has(normalized)
 }
 
 function normalizeHost(hostname: string): string {
