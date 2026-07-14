@@ -6,6 +6,7 @@ import com.picmgmt.entity.User;
 import com.picmgmt.mapper.CommentMapper;
 import com.picmgmt.mapper.ImageMapper;
 import com.picmgmt.mapper.UserMapper;
+import com.picmgmt.storage.LegacyDataUri;
 import com.picmgmt.storage.StorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +38,7 @@ public class StorageMigrationRunner implements CommandLineRunner {
             return;
         }
 
-        log.info("===== 开始迁移 Base64 → MinIO =====");
+        log.info("===== 开始迁移 Base64 → 对象存储 =====");
         int imageCount = migrateImages();
         int avatarCount = migrateAvatars();
         int bgCount = migrateBackgrounds();
@@ -83,15 +84,19 @@ public class StorageMigrationRunner implements CommandLineRunner {
         List<User> users = userMapper.selectList(null);
         int count = 0;
         for (User user : users) {
-            if (user.getAvatar() == null || !user.getAvatar().startsWith("data:")) continue;
-            if (user.getAvatarKey() != null) continue;
+            LegacyDataUri legacyData = LegacyDataUri.parse(user.getAvatar()).orElse(null);
+            if (legacyData == null) continue;
+            String storageKey = user.getAvatarKey();
+            if (storageKey != null && !storageKey.isBlank()
+                    && storageService.objectExists("avatars", storageKey)) continue;
             try {
-                String base64Data = user.getAvatar().substring(user.getAvatar().indexOf(',') + 1);
-                byte[] bytes = Base64.getDecoder().decode(base64Data);
-                String storageKey = user.getId() + "/avatar";
-                storageService.upload("avatars", storageKey, bytes, "image/png");
-                user.setAvatarKey(storageKey);
-                userMapper.updateById(user);
+                boolean needsKeyUpdate = storageKey == null || storageKey.isBlank();
+                if (needsKeyUpdate) storageKey = user.getId() + "/avatar";
+                storageService.upload("avatars", storageKey, legacyData.bytes(), legacyData.contentType());
+                if (needsKeyUpdate) {
+                    user.setAvatarKey(storageKey);
+                    userMapper.updateById(user);
+                }
                 count++;
             } catch (Exception e) {
                 log.warn("迁移用户头像 {} 失败: {}", user.getId(), e.getMessage());
@@ -104,15 +109,19 @@ public class StorageMigrationRunner implements CommandLineRunner {
         List<User> users = userMapper.selectList(null);
         int count = 0;
         for (User user : users) {
-            if (user.getBackground() == null || !user.getBackground().startsWith("data:")) continue;
-            if (user.getBackgroundKey() != null) continue;
+            LegacyDataUri legacyData = LegacyDataUri.parse(user.getBackground()).orElse(null);
+            if (legacyData == null) continue;
+            String storageKey = user.getBackgroundKey();
+            if (storageKey != null && !storageKey.isBlank()
+                    && storageService.objectExists("backgrounds", storageKey)) continue;
             try {
-                String base64Data = user.getBackground().substring(user.getBackground().indexOf(',') + 1);
-                byte[] bytes = Base64.getDecoder().decode(base64Data);
-                String storageKey = user.getId() + "/background";
-                storageService.upload("backgrounds", storageKey, bytes, "image/jpeg");
-                user.setBackgroundKey(storageKey);
-                userMapper.updateById(user);
+                boolean needsKeyUpdate = storageKey == null || storageKey.isBlank();
+                if (needsKeyUpdate) storageKey = user.getId() + "/background";
+                storageService.upload("backgrounds", storageKey, legacyData.bytes(), legacyData.contentType());
+                if (needsKeyUpdate) {
+                    user.setBackgroundKey(storageKey);
+                    userMapper.updateById(user);
+                }
                 count++;
             } catch (Exception e) {
                 log.warn("迁移用户背景 {} 失败: {}", user.getId(), e.getMessage());

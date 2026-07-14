@@ -2,12 +2,11 @@ package com.picmgmt.config;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.core.env.Environment;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Locale;
 
 @Component
@@ -15,10 +14,10 @@ public class AdminDomainInterceptor implements HandlerInterceptor {
 
     private static final String ADMIN_HOST = "admin.image-space.app";
 
-    private final Environment environment;
+    private final boolean allowLocal;
 
-    public AdminDomainInterceptor(Environment environment) {
-        this.environment = environment;
+    public AdminDomainInterceptor(@Value("${app.admin.allow-local:false}") boolean allowLocal) {
+        this.allowLocal = allowLocal;
     }
 
     @Override
@@ -37,13 +36,7 @@ public class AdminDomainInterceptor implements HandlerInterceptor {
         if (ADMIN_HOST.equals(host)) {
             return true;
         }
-        return isDevProfile() && ("localhost".equals(host) || "127.0.0.1".equals(host));
-    }
-
-    private boolean isDevProfile() {
-        return Arrays.stream(environment.getActiveProfiles())
-                .map(profile -> profile.toLowerCase(Locale.ROOT))
-                .noneMatch(profile -> profile.equals("prod") || profile.equals("production") || profile.equals("docker"));
+        return allowLocal && ("localhost".equals(host) || "127.0.0.1".equals(host));
     }
 
     private String normalizeHost(String host) {

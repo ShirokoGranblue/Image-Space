@@ -29,7 +29,7 @@ public interface ImageMapper extends BaseMapper<Image> {
             LEFT JOIN categories c ON i.category_id = c.id
             <where>
                 <if test='userId != null'>AND i.user_id = #{userId}</if>
-                <if test='keyword != null and keyword != \"\"'>AND BINARY i.image_name = #{keyword}</if>
+                <if test='keyword != null and keyword != \"\"'>AND LOWER(i.image_name) LIKE CONCAT('%', LOWER(#{keyword}), '%')</if>
                 <if test='categoryId != null'>AND i.category_id = #{categoryId}</if>
                 <if test='visibility != null and visibility != \"\"'>AND i.visibility = #{visibility}</if>
                 <if test='tagFilters != null and tagFilters.size > 0'>
@@ -77,7 +77,7 @@ public interface ImageMapper extends BaseMapper<Image> {
             LEFT JOIN categories c ON i.category_id = c.id
             <where>
                 <if test='userId != null'>AND i.user_id = #{userId}</if>
-                <if test='keyword != null and keyword != \"\"'>AND BINARY i.image_name = #{keyword}</if>
+                <if test='keyword != null and keyword != \"\"'>AND LOWER(i.image_name) LIKE CONCAT('%', LOWER(#{keyword}), '%')</if>
                 <if test='categoryId != null'>AND i.category_id = #{categoryId}</if>
                 <if test='visibility != null and visibility != \"\"'>AND i.visibility = #{visibility}</if>
                 <if test='tagFilters != null and tagFilters.size > 0'>

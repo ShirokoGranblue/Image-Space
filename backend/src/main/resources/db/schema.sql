@@ -1,15 +1,9 @@
 -- Picture Management System Database Schema
 
-CREATE DATABASE IF NOT EXISTS picture_management
-    DEFAULT CHARACTER SET utf8mb4
-    DEFAULT COLLATE utf8mb4_unicode_ci;
-
-USE picture_management;
-
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    uuid VARCHAR(36) NOT NULL DEFAULT '' UNIQUE,
+    uuid VARCHAR(36) NOT NULL UNIQUE,
     username VARCHAR(50) NOT NULL UNIQUE,
     display_name VARCHAR(50),
     password VARCHAR(255) NOT NULL,
@@ -54,7 +48,7 @@ CREATE TABLE IF NOT EXISTS categories (
 -- Images table (image_path stores Base64 Data URL)
 CREATE TABLE IF NOT EXISTS images (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    uuid VARCHAR(36) NOT NULL DEFAULT '' UNIQUE,
+    uuid VARCHAR(36) NOT NULL UNIQUE,
     user_id BIGINT NOT NULL,
     category_id BIGINT,
     image_name VARCHAR(255) NOT NULL,
@@ -90,6 +84,7 @@ CREATE TABLE IF NOT EXISTS comments (
     user_id BIGINT NOT NULL,
     content TEXT NOT NULL,
     image_path LONGTEXT,
+    image_key VARCHAR(500),
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_image_id (image_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

@@ -1,9 +1,0 @@
-ALTER TABLE images ADD COLUMN IF NOT EXISTS original_key VARCHAR(500) AFTER storage_key;
-ALTER TABLE images ADD COLUMN IF NOT EXISTS original_filename VARCHAR(255) AFTER original_key;
-ALTER TABLE images ADD COLUMN IF NOT EXISTS original_content_type VARCHAR(100) AFTER original_filename;
-ALTER TABLE images ADD COLUMN IF NOT EXISTS original_ext VARCHAR(20) AFTER original_content_type;
-ALTER TABLE images ADD COLUMN IF NOT EXISTS original_size BIGINT AFTER original_ext;
-ALTER TABLE images ADD COLUMN IF NOT EXISTS width INT AFTER original_size;
-ALTER TABLE images ADD COLUMN IF NOT EXISTS height INT AFTER width;
-ALTER TABLE images ADD COLUMN IF NOT EXISTS medium_key VARCHAR(500) AFTER height;
-ALTER TABLE images ADD COLUMN IF NOT EXISTS thumb_key VARCHAR(500) AFTER medium_key;
