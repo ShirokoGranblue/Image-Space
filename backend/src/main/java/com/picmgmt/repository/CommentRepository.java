@@ -39,7 +39,7 @@ public class CommentRepository {
         List<CommentVO> list = commentMapper.selectCommentVOList(imageId);
         for (CommentVO vo : list) {
             if (vo.getImagePath() != null) {
-                vo.setImageUrl(mediaUrlUtil.userMediaUrl(vo.getImagePath()));
+                vo.setImageUrl(mediaUrlUtil.commentImageUrl(vo.getId(), vo.getImagePath()));
             }
         }
         return list;

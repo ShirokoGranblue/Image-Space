@@ -1,4 +1,5 @@
 import api from './index'
+import { getToken } from '../utils/token'
 
 function requireUuid(value) {
   const uuid = typeof value === 'object' && value !== null ? value?.uuid : value
@@ -35,6 +36,16 @@ export function uploadCommentImage(formData) {
   return api.post('/comment/upload-image', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   })
+}
+
+export async function fetchCommentImage(url) {
+  const token = getToken()
+  const headers = token ? { satoken: token } : {}
+  const response = await fetch(url, { headers, credentials: 'same-origin' })
+  if (!response.ok) {
+    throw new Error(`评论图片加载失败 (${response.status})`)
+  }
+  return response.blob()
 }
 
 export async function likeComment(id) {

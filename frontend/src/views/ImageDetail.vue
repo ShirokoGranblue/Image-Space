@@ -122,7 +122,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, nextTick, onMounted, watch } from 'vue'
+import { ref, reactive, computed, nextTick, onBeforeUnmount, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ArrowLeft, PictureFilled, ZoomIn } from '@element-plus/icons-vue'
@@ -134,7 +134,7 @@ import TagInput from '../components/TagInput.vue'
 import ErrorState from '../components/states/ErrorState.vue'
 import { downloadImage, downloadImageAs, getImageDetail, likeImage, unlikeImage, updateImage } from '../api/image'
 import { getImageResourceStatus, refreshImageAccessUrl } from '../api/resource'
-import { getComments, addComment, deleteComment, uploadCommentImage, likeComment, unlikeComment } from '../api/comment'
+import { getComments, addComment, deleteComment, uploadCommentImage, fetchCommentImage, likeComment, unlikeComment } from '../api/comment'
 import { getCategoryList, createCategory } from '../api/category'
 import { useUserStore } from '../store/user'
 import { getToken } from '../utils/token'
@@ -151,6 +151,7 @@ const viewerRef = ref(null)
 const viewerSrc = ref('')
 const image = ref({})
 const comments = ref([])
+const commentImageObjectUrls = new Map()
 const commentText = ref('')
 const cmtFile = ref(null)
 const imgHover = ref(false)
@@ -252,7 +253,7 @@ useResourcePolling({
   }),
   getAccessUrl: async () => {
     const res = await getComments(image.value.uuid)
-    comments.value = res.data || []
+    await replaceComments(res.data || [])
     return {
       url: commentsPollingResource.value?.url || '',
       version: commentsPollingResource.value?.version || null,
@@ -263,6 +264,7 @@ useResourcePolling({
 })
 
 onMounted(loadImageDetail)
+onBeforeUnmount(releaseAllCommentImages)
 
 watch(() => route.params.uuid, () => {
   loadImageDetail()
@@ -277,6 +279,7 @@ async function loadImageDetail() {
   loadError.value = false
   try {
     image.value = {}
+    releaseAllCommentImages()
     comments.value = []
     editVisible.value = false
     viewerSrc.value = ''
@@ -285,7 +288,7 @@ async function loadImageDetail() {
       getComments(route.params.uuid)
     ])
     image.value = imgRes.data
-    comments.value = cmtRes.data || []
+    await replaceComments(cmtRes.data || [])
     viewerSrc.value = getImagePreviewUrl(imgRes.data)
     await nextTick()
     highlightFromNotification()
@@ -329,7 +332,7 @@ async function handleAddComment() {
     commentText.value = ''
     cmtFile.value = null
     const res = await getComments(image.value.uuid)
-    comments.value = res.data || []
+    await replaceComments(res.data || [])
   } catch {} finally {
     sending.value = false
   }
@@ -356,6 +359,7 @@ async function handleDeleteComment(id) {
   try {
     await deleteComment(id)
     ElMessage.success('已删除')
+    releaseCommentImage(id)
     comments.value = comments.value.filter(c => c.id !== id)
   } catch {}
 }
@@ -489,6 +493,38 @@ async function downloadFromUrl(downloadUrl) {
 function viewCmtImg(src) {
   viewerSrc.value = src
   viewerRef.value.open({ trigger: document.activeElement })
+}
+
+async function replaceComments(nextComments) {
+  releaseAllCommentImages()
+  comments.value = nextComments.map(comment => ({
+    ...comment,
+    displayImageUrl: '',
+    imageLoadError: false,
+  }))
+  await Promise.all(comments.value.map(async comment => {
+    if (!comment.imageUrl) return
+    try {
+      const blob = await fetchCommentImage(comment.imageUrl)
+      const displayUrl = typeof URL.createObjectURL === 'function'
+        ? URL.createObjectURL(blob)
+        : comment.imageUrl
+      comment.displayImageUrl = displayUrl
+      if (displayUrl !== comment.imageUrl) commentImageObjectUrls.set(comment.id, displayUrl)
+    } catch {
+      comment.imageLoadError = true
+    }
+  }))
+}
+
+function releaseCommentImage(id) {
+  const url = commentImageObjectUrls.get(id)
+  if (url && typeof URL.revokeObjectURL === 'function') URL.revokeObjectURL(url)
+  commentImageObjectUrls.delete(id)
+}
+
+function releaseAllCommentImages() {
+  for (const id of commentImageObjectUrls.keys()) releaseCommentImage(id)
 }
 
 function handleMainImageAction() {

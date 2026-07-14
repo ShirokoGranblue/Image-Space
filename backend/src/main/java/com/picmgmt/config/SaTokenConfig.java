@@ -29,7 +29,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
                                     "/user/oauth/microsoft/login", "/user/oauth/microsoft/callback",
                                     "/system/webhook-url",
                                     "/admin/audit-log/stream",
-                                    "/comment/list/**")
+                                    "/comment/list/**", "/comment/image/**")
                             .check(r -> StpUtil.checkLogin());
                 }))
                 .addPathPatterns("/**");

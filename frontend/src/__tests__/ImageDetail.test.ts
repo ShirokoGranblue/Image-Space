@@ -68,6 +68,7 @@ vi.mock('../api/resource', () => ({
 
 vi.mock('../api/comment', () => ({
   getComments: vi.fn(),
+  fetchCommentImage: vi.fn(() => Promise.resolve(new Blob(['image'], { type: 'image/jpeg' }))),
   addComment: vi.fn(),
   deleteComment: vi.fn(),
   uploadCommentImage: vi.fn(),
