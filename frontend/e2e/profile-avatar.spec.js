@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test'
 const API_RESULT = data => ({ code: 200, message: 'success', data })
 const avatarSvg = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="100%" height="100%" fill="#617a8b"/><circle cx="200" cy="150" r="90" fill="#b64a36"/></svg>')}`
 const replacementPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64')
+const replacementGif = Buffer.from('R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==', 'base64')
 
 const profile = {
   id: 1,
@@ -18,7 +19,7 @@ const profile = {
 }
 
 async function installProfileMocks(page) {
-  const requests = { avatarUploads: 0 }
+  const requests = { avatarUploads: 0, backgroundUploads: 0 }
 
   await page.addInitScript(() => sessionStorage.setItem('satoken', 'e2e-profile-token'))
   await page.route(url => url.pathname.startsWith('/api/'), async route => {
@@ -39,6 +40,10 @@ async function installProfileMocks(page) {
         return route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ code: 500, message: 'mock upload failure' }) })
       }
       return route.fulfill({ json: API_RESULT({ avatar: avatarSvg }) })
+    }
+    if (requestUrl.pathname === '/api/user/background' && route.request().method() === 'POST') {
+      requests.backgroundUploads += 1
+      return route.fulfill({ json: API_RESULT({ background: '#4f6474' }) })
     }
     return route.fulfill({ json: API_RESULT(null) })
   })
@@ -85,5 +90,21 @@ test.describe('Profile 头像编辑器阶段四回归门禁', () => {
     await dialog.getByRole('button', { name: '确认' }).click()
     await expect.poll(() => requests.avatarUploads).toBe(2)
     await expect(dialog).toBeHidden()
+
+    const header = page.locator('.profile-header')
+    const documentGeometry = () => header.evaluate(element => {
+      const rect = element.getBoundingClientRect()
+      return { x: rect.x + window.scrollX, y: rect.y + window.scrollY, width: rect.width, height: rect.height }
+    })
+    const beforeBackgroundUpload = await documentGeometry()
+    await page.getByRole('button', { name: '编辑背景' }).click()
+    const backgroundDialog = page.locator('.bg-dialog')
+    await expect(backgroundDialog).toBeVisible()
+    await backgroundDialog.locator('input[type="file"]').setInputFiles({ name: 'background.gif', mimeType: 'image/gif', buffer: replacementGif })
+    await expect(backgroundDialog.locator('.upload-hint')).toContainText('background.gif')
+    await backgroundDialog.getByRole('button', { name: '应用' }).click()
+    await expect.poll(() => requests.backgroundUploads).toBe(1)
+    await expect(backgroundDialog).toBeHidden()
+    expect(await documentGeometry()).toEqual(beforeBackgroundUpload)
   })
 })
