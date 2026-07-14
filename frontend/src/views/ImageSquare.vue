@@ -321,7 +321,7 @@ function goDetail(image) {
 async function handleLike(image) {
   if (!image?.uuid) return
   if (!userStore.token) {
-    ElMessage.warning('请先登录后再喜欢')
+    ElMessage.warning('请先登录后再进行操作')
     return
   }
   try {

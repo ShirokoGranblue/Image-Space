@@ -7,16 +7,16 @@
       </div>
 
       <ul class="auth-capabilities" data-auth-capabilities aria-label="图像空间能力">
-        <li>把图片集中保存</li>
-        <li>按分类和标签归档</li>
-        <li>控制每张图的可见范围</li>
+        <li>存放、管理你的图片</li>
+        <li>自定义分类、归档你的图片</li>
+        <li>和社区一起分享</li>
       </ul>
     </template>
 
     <template #header>
       <span class="auth-kicker">账户登录</span>
       <h1 class="auth-title">欢迎回来</h1>
-      <p class="auth-description">继续整理图片、分类和分享范围。</p>
+      <p class="auth-description">继续保存、整理和分享</p>
     </template>
 
     <div class="login-method-switch" role="tablist" aria-label="登录方式">
