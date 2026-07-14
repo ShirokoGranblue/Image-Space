@@ -66,6 +66,10 @@ Thumbs.db
 
 # skills log
 docs/superpowers/
+# Local design planning documents
+docs/design/implementation-plan.md
+docs/design/stage-six-remediation-plan.md
+docs/design/stage-six-runtime-issues-handoff.md
 # codex pets
 pets/
 
