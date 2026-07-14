@@ -4,14 +4,23 @@ import {
   DEFAULT_IMAGE_PAGE_SIZE,
   IMAGE_PAGE_SIZES,
   buildImageListParams,
+  getImageAlt,
   getImageDisplayUrl,
   getImageDownloadUrl,
   getImagePreviewUrl,
+  getImageViewerUrl,
   getOriginalDownloadUrl,
   normalizeImagePageSize,
 } from '../utils/imageRequests'
 
 describe('image request helpers', () => {
+  it('uses only real image fields for image alternative text', () => {
+    expect(getImageAlt({ imageName: '展示名称.jpg', originalFilename: '原文件.png' })).toBe('展示名称.jpg')
+    expect(getImageAlt({ imageName: '  ', originalFilename: '原文件.png' })).toBe('原文件.png')
+    expect(getImageAlt({ imageName: '', originalFilename: '' })).toBe('未命名图片')
+    expect(getImageAlt(null)).toBe('未命名图片')
+  })
+
   it('uses backend download endpoint for image rendering', () => {
     expect(getImageDownloadUrl('400a1e49-6990-489e-b4a8-35eb0a02d056')).toBe('/api/image/download/400a1e49-6990-489e-b4a8-35eb0a02d056')
     expect(getImageDownloadUrl(9)).toBe('')
@@ -69,6 +78,19 @@ describe('image request helpers', () => {
 
     expect(getImagePreviewUrl(image)).toBe(image.mediumUrl)
     expect(getImagePreviewUrl({ ...image, mediumUrl: '' })).toBe(image.imageUrl)
+  })
+
+  it('uses original-compatible URLs before medium for the immersive viewer', () => {
+    const image = {
+      uuid: '400a1e49-6990-489e-b4a8-35eb0a02d056',
+      visibility: 'PUBLIC',
+      thumbUrl: 'https://cdn.image-space.app/public/images/a/thumb.jpg?v=2',
+      mediumUrl: 'https://cdn.image-space.app/public/images/a/medium.jpg?v=2',
+      publicUrl: 'https://cdn.image-space.app/public/images/a/original.png?v=2',
+    }
+
+    expect(getImageViewerUrl(image)).toBe(image.publicUrl)
+    expect(getImageViewerUrl({ ...image, publicUrl: '' })).toBe(image.mediumUrl)
   })
 
   it('keeps original download URL separate from display URLs', () => {

@@ -14,6 +14,7 @@ export function buildSquareParams(query) {
     page: query.page,
     limit: normalizeImagePageSize(query.limit),
     keyword: String(query.keyword || '').trim(),
+    categoryId: query.categoryId || undefined,
     tags: Array.isArray(query.tags) ? query.tags.join('#') : '',
     sortMode: hasExplicitSort ? 'latest' : 'random',
     sortField: hasExplicitSort ? query.sortField : 'upload_time',
@@ -36,6 +37,7 @@ export function loadSquareSession(storage = getSessionStorage()) {
       page: normalizePage(parsed.page),
       limit: normalizeImagePageSize(parsed.limit),
       keyword: typeof parsed.keyword === 'string' ? parsed.keyword : '',
+      categoryId: normalizeCategoryId(parsed.categoryId),
       tags: Array.isArray(parsed.tags) ? parsed.tags.filter(Boolean) : [],
       sortField: ''
     }
@@ -53,6 +55,7 @@ export function saveSquareSession(query, storage = getSessionStorage()) {
     page: normalizePage(query.page),
     limit: normalizeImagePageSize(query.limit),
     keyword: String(query.keyword || ''),
+    categoryId: normalizeCategoryId(query.categoryId),
     tags: Array.isArray(query.tags) ? query.tags : [],
     sortField: ''
   }
@@ -62,6 +65,11 @@ export function saveSquareSession(query, storage = getSessionStorage()) {
 function normalizePage(page) {
   const value = Number(page)
   return Number.isInteger(value) && value > 0 ? value : 1
+}
+
+function normalizeCategoryId(categoryId) {
+  const value = Number(categoryId)
+  return Number.isInteger(value) && value > 0 ? value : null
 }
 
 function getSessionStorage() {

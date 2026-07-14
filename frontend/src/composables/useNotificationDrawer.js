@@ -4,6 +4,7 @@ const state = reactive({
   open: false,
   unreadCount: 0,
 })
+let triggerElement = null
 
 export function useNotificationDrawer() {
   return {
@@ -15,16 +16,21 @@ export function useNotificationDrawer() {
   }
 }
 
-export function openNotificationDrawer() {
+export function openNotificationDrawer(element) {
+  triggerElement = element && typeof element.focus === 'function' ? element : null
   state.open = true
 }
 
 export function closeNotificationDrawer() {
   state.open = false
+  const trigger = triggerElement
+  triggerElement = null
+  if (trigger?.isConnected) queueMicrotask(() => trigger.focus())
 }
 
-export function toggleNotificationDrawer() {
-  state.open = !state.open
+export function toggleNotificationDrawer(element) {
+  if (state.open) closeNotificationDrawer()
+  else openNotificationDrawer(element)
 }
 
 export function setUnreadCount(count) {

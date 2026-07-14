@@ -5,7 +5,7 @@
         <p class="section-label">ADMIN CONSOLE</p>
         <h1>审计日志监控</h1>
       </div>
-      <el-tag :type="connectionTagType" effect="dark">{{ connectionLabel }}</el-tag>
+      <el-tag :type="connectionTagType" effect="plain">{{ connectionLabel }}</el-tag>
     </section>
 
     <section class="stat-grid">
@@ -74,12 +74,12 @@
         <el-table-column prop="ip" label="IP 地址" min-width="132" />
         <el-table-column label="状态" width="104">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'SUCCESS' ? 'success' : 'danger'" effect="dark">{{ row.status }}</el-tag>
+            <el-tag :type="row.status === 'SUCCESS' ? 'success' : 'danger'" effect="plain">{{ row.status }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="风险等级" width="112">
           <template #default="{ row }">
-            <el-tag :type="riskTagType(row.riskLevel)" effect="dark">{{ row.riskLevel }}</el-tag>
+            <el-tag :type="riskTagType(row.riskLevel)" effect="plain">{{ row.riskLevel }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="costTime" label="耗时(ms)" width="110" />
@@ -138,6 +138,7 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElNotification } from 'element-plus'
 import {
   createAuditLogEventSource,
@@ -146,6 +147,8 @@ import {
   pageAuditLogs,
 } from '../../api/auditLog'
 import { maskSensitiveText } from '../../utils/sensitiveMask'
+
+const router = useRouter()
 
 const filters = reactive({
   username: '',
@@ -178,6 +181,7 @@ let reconnectTimer = null
 let eventSource = null
 let reconnectAttempts = 0
 let unmounted = false
+let accessBlocked = false
 
 const statCards = computed(() => [
   { label: '今日操作次数', value: statistics.todayOperationCount },
@@ -200,6 +204,7 @@ const connectionTagType = computed(() => {
 
 onMounted(async () => {
   await Promise.all([fetchStatistics(), fetchLogs()])
+  if (accessBlocked) return
   refreshTimer = window.setInterval(handleRefreshTick, 10000)
   connectSse()
 })
@@ -215,7 +220,8 @@ async function fetchStatistics() {
   try {
     const res = await getAuditLogStatistics()
     Object.assign(statistics, res.data || {})
-  } catch {
+  } catch (error) {
+    if (handleAccessBlocked(error)) return
     connectionState.value = connectionState.value === 'connected' ? 'connected' : 'fallback'
   }
 }
@@ -229,6 +235,7 @@ async function fetchLogs() {
     logs.value = page.records || []
     pagination.total = Number(page.total || 0)
   } catch (error) {
+    if (handleAccessBlocked(error)) return
     ElMessage.error(error?.message || '审计日志加载失败')
   } finally {
     loading.value = false
@@ -236,7 +243,7 @@ async function fetchLogs() {
 }
 
 async function handleRefreshTick() {
-  if (connectionState.value === 'connected') return
+  if (accessBlocked || connectionState.value === 'connected') return
   await fetchStatistics()
   if (canRefreshTable()) {
     await fetchLogs()
@@ -297,6 +304,7 @@ function buildQueryParams() {
 }
 
 async function connectSse() {
+  if (accessBlocked) return
   closeEventSource()
   try {
     eventSource = await createAuditLogEventSource()
@@ -315,6 +323,7 @@ async function connectSse() {
       scheduleReconnect()
     }
   } catch (error) {
+    if (handleAccessBlocked(error)) return
     connectionState.value = 'fallback'
     const status = error?.response?.status
     if (status !== 401 && status !== 403) {
@@ -324,7 +333,7 @@ async function connectSse() {
 }
 
 function scheduleReconnect() {
-  if (unmounted || reconnectTimer) return
+  if (unmounted || accessBlocked || reconnectTimer) return
   const delay = Math.min(30000, 1000 * (2 ** reconnectAttempts))
   reconnectAttempts += 1
   reconnectTimer = window.setTimeout(() => {
@@ -366,6 +375,21 @@ function closeEventSource() {
   eventSource = null
 }
 
+function handleAccessBlocked(error) {
+  if (error?.response?.status !== 403) return false
+  if (!accessBlocked) {
+    accessBlocked = true
+    connectionState.value = 'disconnected'
+    if (refreshTimer) window.clearInterval(refreshTimer)
+    refreshTimer = null
+    if (reconnectTimer) window.clearTimeout(reconnectTimer)
+    reconnectTimer = null
+    closeEventSource()
+    router.replace('/403')
+  }
+  return true
+}
+
 function parseEventData(data) {
   try {
     return JSON.parse(data)
@@ -390,174 +414,42 @@ function riskTagType(level) {
 </script>
 
 <style scoped>
-.audit-page {
-  min-height: 100vh;
-  padding: 96px 24px 48px;
-  color: var(--ad-text);
-}
-
-.audit-header {
-  width: min(100%, 1560px);
-  margin: 0 auto 20px;
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.section-label {
-  margin: 0 0 8px;
-  color: var(--ad-green);
-  font-size: 12px;
-  font-weight: 820;
-  letter-spacing: 0.16em;
-}
-
-.audit-header h1 {
-  margin: 0;
-  color: var(--ad-text);
-  font-size: 34px;
-  font-weight: 820;
-}
-
-.stat-grid,
-.filter-panel,
-.table-panel {
-  width: min(100%, 1560px);
-  margin: 0 auto;
-}
-
-.stat-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-  margin-bottom: 16px;
-}
-
-.stat-card,
-.filter-panel,
-.table-panel {
-  border: 1px solid var(--ad-line);
-  border-radius: 8px;
-  background: rgba(21, 25, 34, 0.88);
-  box-shadow: var(--ad-shadow-soft);
-}
-
-.stat-card {
-  min-height: 104px;
-  padding: 18px;
-  display: grid;
-  align-content: space-between;
-}
-
-.stat-card span {
-  color: var(--ad-muted);
-  font-size: 13px;
-  font-weight: 720;
-}
-
-.stat-card strong {
-  color: var(--ad-text);
-  font-size: 28px;
-  line-height: 1;
-}
-
-.filter-panel {
-  padding: 16px;
-  margin-bottom: 16px;
-}
-
-.filter-form {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(180px, 1fr));
-  gap: 10px 14px;
-}
-
-.filter-form :deep(.el-form-item) {
-  margin-bottom: 0;
-}
-
-.filter-form :deep(.el-select),
-.time-range :deep(.el-date-editor) {
-  width: 100%;
-}
-
-.filter-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 14px;
-}
-
-.table-panel {
-  padding: 12px;
-}
-
-.audit-table {
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.pagination-row {
-  display: flex;
-  justify-content: flex-end;
-  padding: 14px 4px 2px;
-}
-
-.detail-descriptions {
-  margin-bottom: 18px;
-}
-
-.detail-blocks {
-  display: grid;
-  gap: 16px;
-}
-
-.detail-blocks h2 {
-  margin: 0 0 8px;
-  color: var(--ad-text);
-  font-size: 16px;
-}
-
-pre {
-  max-height: 260px;
-  overflow: auto;
-  margin: 0;
-  padding: 14px;
-  border: 1px solid var(--ad-line);
-  border-radius: 8px;
-  background: rgba(13, 16, 22, 0.94);
-  color: var(--ad-text-soft);
-  white-space: pre-wrap;
-  word-break: break-word;
-  font-family: Consolas, 'Courier New', monospace;
-  font-size: 12px;
-  line-height: 1.6;
-}
+.audit-page { min-height: 100vh; padding: calc(var(--nav-height) + var(--space-5)) var(--page-gutter) var(--space-8); color: var(--color-text-primary); }
+.audit-header,.stat-grid,.filter-panel,.table-panel { width: min(100%, var(--page-wide)); margin-inline: auto; }
+.audit-header { display: flex; align-items: end; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); }
+.section-label { margin: 0 0 var(--space-2); color: var(--color-vermilion); font-size: var(--text-xs); font-weight: 700; letter-spacing: .12em; }
+.audit-header h1 { margin: 0; font-family: var(--font-title); font-size: var(--text-2xl); font-weight: 500; }
+.stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4); }
+.stat-card,.filter-panel,.table-panel { border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm); background: var(--color-surface-1); box-shadow: none; }
+.stat-card { min-height: 96px; display: grid; align-content: space-between; padding: var(--space-4); }
+.stat-card span { color: var(--color-text-muted); font-size: var(--text-xs); font-weight: 700; }
+.stat-card strong { color: var(--color-text-primary); font-family: var(--font-title); font-size: var(--text-xl); line-height: 1; }
+.filter-panel { margin-bottom: var(--space-4); padding: var(--space-4); }
+.filter-form { display: grid; grid-template-columns: repeat(4, minmax(180px, 1fr)); gap: var(--space-3) var(--space-4); }
+.filter-form :deep(.el-form-item) { margin-bottom: 0; }
+.filter-form :deep(.el-input__wrapper),.filter-form :deep(.el-select__wrapper),.time-range :deep(.el-date-editor) { min-height: var(--control-height-md); height: var(--control-height-md); }
+.filter-form :deep(.el-select),.time-range :deep(.el-date-editor) { width: 100%; }
+.filter-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-4); }
+.filter-actions :deep(.el-button) { min-height: var(--control-height-md); }
+.table-panel { padding: var(--space-3); }
+.audit-table { overflow: hidden; border-radius: var(--radius-sm); }
+.pagination-row { display: flex; justify-content: flex-end; padding: var(--space-3) var(--space-1) var(--space-1); }
+.detail-descriptions { margin-bottom: var(--space-5); }
+.detail-blocks { display: grid; gap: var(--space-5); }
+.detail-blocks h2 { margin: 0 0 var(--space-2); color: var(--color-text-primary); font-size: var(--text-md); font-weight: 700; }
+pre { max-height: 260px; overflow: auto; margin: 0; padding: var(--space-4); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm); background: var(--color-viewer-bg); color: var(--color-text-inverse); white-space: pre-wrap; word-break: break-word; font-family: var(--font-mono); font-size: var(--text-xs); line-height: var(--leading-md); }
 
 @media (max-width: 1100px) {
-  .stat-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .filter-form {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+  .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .filter-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 640px) {
-  .audit-page {
-    padding: 82px 12px 32px;
-  }
-
-  .audit-header {
-    align-items: start;
-    flex-direction: column;
-  }
-
-  .stat-grid,
-  .filter-form {
-    grid-template-columns: 1fr;
-  }
+  .audit-page { padding: calc(var(--nav-height) + var(--space-4)) var(--page-gutter) var(--space-6); }
+  .audit-header { align-items: start; flex-direction: column; }
+  .stat-grid,.filter-form { grid-template-columns: 1fr; }
+  .filter-actions { justify-content: stretch; }
+  .filter-actions :deep(.el-button) { flex: 1; min-height: var(--control-height-lg); }
+  .filter-form :deep(.el-input__wrapper),.filter-form :deep(.el-select__wrapper),.time-range :deep(.el-date-editor) { min-height: var(--control-height-lg); height: var(--control-height-lg); }
 }
 </style>

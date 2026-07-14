@@ -9,7 +9,7 @@ describe('admin domain utility', () => {
     expect(isAllowedAdminDomain('127.0.0.1', false)).toBe(false)
   })
 
-  it('allows localhost and 127.0.0.1 in development', () => {
+  it('allows localhost and 127.0.0.1 only with explicit opt-in', () => {
     expect(isAllowedAdminDomain('admin.image-space.app', true)).toBe(true)
     expect(isAllowedAdminDomain('localhost', true)).toBe(true)
     expect(isAllowedAdminDomain('127.0.0.1', true)).toBe(true)
