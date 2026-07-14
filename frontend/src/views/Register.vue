@@ -132,6 +132,7 @@ import { ElMessage } from 'element-plus'
 import { ArrowRight } from '@element-plus/icons-vue'
 import AuthLayout from '../components/auth/AuthLayout.vue'
 import TurnstileWidget from '../components/TurnstileWidget.vue'
+import { fireBigSideCannons } from '../utils/confettiEffect'
 
 const router = useRouter()
 const formRef = ref(null)
@@ -258,6 +259,7 @@ async function handleRegister() {
     const { confirmPassword, captchaId, captchaCode, ...payload } = form
     await register({ ...payload, turnstileToken: token })
     ElMessage.success('注册成功，请登录')
+    fireBigSideCannons()
     router.push('/login')
   } catch {
     // The axios interceptor already reports the API error.
