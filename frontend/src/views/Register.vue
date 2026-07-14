@@ -1,11 +1,6 @@
 <template>
   <AuthLayout form-width="wide">
     <template #aside>
-      <router-link to="/home" class="auth-brand" aria-label="图像空间首页">
-        <span class="brand-mark">图</span>
-        <span>图像空间</span>
-      </router-link>
-
       <div class="auth-aside-copy">
         <span class="auth-aside-eyebrow">开始收藏</span>
         <h2 class="auth-aside-title">先建立账户，再认真保存每一张图。</h2>

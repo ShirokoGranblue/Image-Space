@@ -1,11 +1,6 @@
 <template>
   <AuthLayout form-width="narrow">
     <template #aside>
-      <router-link to="/home" class="auth-brand" aria-label="图像空间首页">
-        <span class="brand-mark">图</span>
-        <span>图像空间</span>
-      </router-link>
-
       <div class="auth-aside-copy">
         <span class="auth-aside-eyebrow">私人图库</span>
         <h2 class="auth-aside-title">整理灵感，保留图像的来路。</h2>

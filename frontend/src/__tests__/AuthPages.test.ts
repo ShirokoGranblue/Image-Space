@@ -17,6 +17,8 @@ describe('authentication page stage two contract', () => {
     expect(authLayout).not.toMatch(/from ['"].*router|from ['"].*api|from ['"].*pinia|useRouter|useUserStore/)
     expect(authLayout).not.toMatch(/linear-gradient|radial-gradient/)
     expect([...authLayout.matchAll(/box-shadow:\s*([^;]+)/g)].map(match => match[1].trim())).toEqual(['none', 'none'])
+    expect(authLayout).not.toContain('.auth-brand')
+    expect(authLayout).toContain('font-size: clamp(48px, 4.6vw, 64px)')
   })
 
   it('keeps Login focused on login flows and preserves every real entry point', () => {
@@ -33,6 +35,7 @@ describe('authentication page stage two contract', () => {
     expect(login).toContain('autocomplete="one-time-code"')
     expect(login).toContain('role="tab"')
     expect(login).toContain(':aria-selected="loginMode')
+    expect(login).not.toContain('class="auth-brand"')
     expect(login).not.toMatch(/registerForm|registerLoading|registerRules|registerCaptcha|registerCountdown|handleRegister|loadRegisterCaptcha/)
     expect(login).not.toMatch(/linear-gradient|radial-gradient|background:\s*#0|background:\s*rgba\(/)
   })
@@ -49,6 +52,7 @@ describe('authentication page stage two contract', () => {
     expect(register).toContain('autocomplete="new-password"')
     expect(register).toContain('autocomplete="email"')
     expect(register).toContain('autocomplete="one-time-code"')
+    expect(register).not.toContain('class="auth-brand"')
     expect(register).not.toMatch(/linear-gradient|radial-gradient|background:\s*#0|background:\s*rgba\(/)
   })
 

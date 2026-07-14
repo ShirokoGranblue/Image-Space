@@ -65,36 +65,14 @@ defineProps({
   background: var(--color-canvas-muted);
 }
 
-.auth-aside :deep(.auth-brand) {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  width: max-content;
-  color: var(--color-text-primary);
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.auth-aside :deep(.brand-mark) {
-  width: 34px;
-  height: 34px;
-  display: inline-grid;
-  place-items: center;
-  border: 1px solid var(--color-border-strong);
-  background: var(--color-surface-1);
-  color: var(--color-vermilion);
-  font-family: var(--font-title);
-  font-size: 18px;
-}
-
 .auth-aside :deep(.auth-aside-copy) {
   margin-block: auto;
 }
 
 .auth-aside :deep(.auth-aside-eyebrow) {
   color: var(--color-text-primary);
-  font-size: 14px;
+  font-size: 16px;
+  font-weight: 600;
 }
 
 .auth-aside :deep(.auth-aside-title) {
@@ -102,7 +80,7 @@ defineProps({
   margin: 14px 0 18px;
   color: var(--color-text-primary);
   font-family: var(--font-title);
-  font-size: clamp(40px, 4vw, 56px);
+  font-size: clamp(48px, 4.6vw, 64px);
   font-weight: 600;
   line-height: 1.08;
   text-wrap: balance;
@@ -111,7 +89,7 @@ defineProps({
 .auth-aside :deep(.auth-aside-description) {
   max-width: 24rem;
   color: var(--color-text-primary);
-  font-size: 16px;
+  font-size: 18px;
   line-height: var(--leading-lg);
 }
 
@@ -121,7 +99,7 @@ defineProps({
   margin: 0;
   padding: 0;
   color: var(--color-text-primary);
-  font-size: 14px;
+  font-size: 16px;
   list-style: none;
 }
 
@@ -322,7 +300,7 @@ defineProps({
 
   .auth-aside :deep(.auth-aside-title) {
     max-width: 32rem;
-    font-size: clamp(32px, 5vw, 44px);
+    font-size: clamp(38px, 5.5vw, 50px);
   }
 
   .auth-aside :deep(.auth-aside-description) {
@@ -357,7 +335,7 @@ defineProps({
 
   .auth-aside :deep(.auth-aside-title) {
     margin-top: 8px;
-    font-size: 36px;
+    font-size: 40px;
     line-height: 1.08;
   }
 
