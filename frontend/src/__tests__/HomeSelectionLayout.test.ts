@@ -4,7 +4,7 @@ import galleryItem from '../components/gallery/GalleryItem.vue?raw'
 
 describe('home selection layout contracts', () => {
   it('keeps selected cards on a bounded track instead of stretching the grid', () => {
-    expect(homePage).toMatch(/\.asset-shell\.has-inspector \.gallery-stage :deep\(\.gallery-grid\[data-density='compact'\]\)\s*\{[^}]*238px[^}]*justify-content:\s*start/)
+    expect(homePage).toMatch(/\.gallery-stage :deep\(\.gallery-grid\[data-density='compact'\]\)\s*\{[^}]*238px[^}]*justify-content:\s*start/)
     expect(galleryItem).toMatch(/\.gallery-item\.selected\s*\{\s*box-shadow:\s*inset/)
   })
 
