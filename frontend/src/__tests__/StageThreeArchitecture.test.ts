@@ -104,6 +104,8 @@ describe('stage three design-system and page-boundary contract', () => {
     expect(detailComments).toContain('>表情<')
     expect(detailComments).toContain('>图片<')
     expect(profileHeader).toContain('.profile-edit :deep(.el-textarea__inner)')
+    expect(profileHeader).toMatch(/\.avatar-wrap\{[^}]*width:122px;height:122px;[^}]*flex:0 0 122px/)
+    expect(profileHeader).toMatch(/\.stat-item strong\{[^}]*min-width:3ch;[^}]*font-variant-numeric:tabular-nums/)
     expect(globalStyles).toContain('.el-input__inner:focus-visible')
   })
 })
