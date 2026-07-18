@@ -23,6 +23,7 @@ import com.picmgmt.image.ImageUrlService;
 import com.picmgmt.mapper.UserMapper;
 import com.picmgmt.mapper.UserOauthAccountMapper;
 import com.picmgmt.service.OAuthService;
+import com.picmgmt.service.oauth.OAuthUsernameGenerator;
 import com.picmgmt.storage.StorageService;
 import com.xkcoding.http.config.HttpConfig;
 import lombok.extern.slf4j.Slf4j;
@@ -183,13 +184,22 @@ public class OAuthServiceImpl implements OAuthService {
         }
 
         user = new User();
-        String username = provider + "_" + (oauthUsername != null ? oauthUsername : UUID.randomUUID().toString().substring(0, 8));
-        if (userMapper.selectCount(new LambdaQueryWrapper<User>().eq(User::getUsername, username)) > 0) {
-            username = username + "_" + UUID.randomUUID().toString().substring(0, 4);
-        }
+        String baseUsername = OAuthUsernameGenerator.createBaseUsername(
+                provider,
+                nickname,
+                oauthUsername,
+                email,
+                providerUserId
+        );
+        String username = OAuthUsernameGenerator.ensureUnique(
+                baseUsername,
+                candidate -> userMapper.selectCount(
+                        new LambdaQueryWrapper<User>().eq(User::getUsername, candidate)
+                ) > 0
+        );
         user.setUuid(java.util.UUID.randomUUID().toString());
         user.setUsername(username);
-        user.setDisplayName(nickname != null ? nickname : oauthUsername);
+        user.setDisplayName(nickname == null || nickname.isBlank() ? username : nickname.trim());
         user.setPassword(BCrypt.hashpw(UUID.randomUUID().toString(), BCrypt.gensalt()));
         user.setRole("user");
         user.setEmail(email);

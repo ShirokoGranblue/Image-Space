@@ -15,6 +15,7 @@ const profile = {
   bio: '用于头像编辑器真实浏览器回归。',
   createTime: '2026-06-01T12:00:00',
   email: 'profile@example.com',
+  publicLikeCount: 137,
 }
 
 async function installProfileMocks(page) {
@@ -51,6 +52,7 @@ test.describe('Profile 头像编辑器阶段四回归门禁', () => {
     const requests = await installProfileMocks(page)
     await page.goto('/profile/e2e-profile-user')
     await expect(page.getByRole('heading', { name: '阶段四用户' })).toBeVisible()
+    await expect(page.locator('.stat-item').filter({ hasText: '获赞' })).toContainText('137')
 
     await page.getByRole('button', { name: '编辑头像' }).click()
     const dialog = page.locator('.avatar-dialog')

@@ -2,8 +2,8 @@
   <main class="audit-page">
     <section class="audit-header">
       <div>
-        <p class="section-label">ADMIN CONSOLE</p>
-        <h1>审计日志监控</h1>
+        <p class="section-label">ADMIN / AUDIT</p>
+        <h1>审计事件总览</h1>
       </div>
       <el-tag :type="connectionTagType" effect="plain">{{ connectionLabel }}</el-tag>
     </section>
@@ -102,7 +102,7 @@
       </div>
     </section>
 
-    <el-drawer v-model="detailOpen" title="审计日志详情" size="46%">
+    <el-drawer v-model="detailOpen" title="审计记录详情" size="46%">
       <el-descriptions v-if="selectedLog" :column="1" border class="detail-descriptions">
         <el-descriptions-item label="用户ID">{{ selectedLog.userId || '-' }}</el-descriptions-item>
         <el-descriptions-item label="用户名">{{ selectedLog.username || '-' }}</el-descriptions-item>
@@ -191,9 +191,9 @@ const statCards = computed(() => [
 ])
 
 const connectionLabel = computed(() => {
-  if (connectionState.value === 'connected') return '已连接'
-  if (connectionState.value === 'fallback') return '实时连接不可用，已启用轮询'
-  return '未连接'
+  if (connectionState.value === 'connected') return '实时通道已连接'
+  if (connectionState.value === 'fallback') return '实时通道不可用，已启用轮询'
+  return '实时通道未连接'
 })
 
 const connectionTagType = computed(() => {
@@ -356,7 +356,7 @@ async function handleSseMessage(event) {
   const payload = parseEventData(event.data)
   if (payload?.riskLevel === 'HIGH') {
     ElNotification({
-      title: '高风险审计日志',
+      title: '高风险审计事件',
       message: `${payload.username || '未知用户'} ${payload.operationType || payload.action || ''}`,
       type: 'warning',
       position: 'top-right',

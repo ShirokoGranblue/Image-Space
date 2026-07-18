@@ -128,9 +128,9 @@ function mountDetail() {
         'el-button': { props: ['loading'], template: '<button :class="$attrs.class"><slot /></button>' },
         'el-icon': { template: '<span><slot /></span>' },
         'el-tag': { template: '<span><slot /></span>' },
-        'el-dropdown': { template: '<div :class="$attrs.class"><slot /><slot name="dropdown" /></div>' },
+        'el-dropdown': { name: 'ElDropdown', template: '<div :class="$attrs.class"><slot /><slot name="dropdown" /></div>' },
         'el-dropdown-menu': { template: '<div><slot /></div>' },
-        'el-dropdown-item': { template: '<button><slot /></button>' },
+        'el-dropdown-item': { props: ['command'], template: '<button><slot /></button>' },
         'el-dialog': { props: ['modelValue'], template: '<div v-if="modelValue"><slot /><slot name="footer" /></div>' },
         'el-form': { template: '<form><slot /></form>' },
         'el-form-item': { template: '<div><slot /></div>' },
@@ -242,7 +242,9 @@ describe('ImageDetail edit entry', () => {
       const wrapper = mountDetail()
       await flushPromises()
 
-      await wrapper.find('.download-btn').trigger('click')
+      const downloadMenu = wrapper.findAllComponents({ name: 'ElDropdown' }).find(item => item.find('.download-btn').exists())
+      expect(downloadMenu).toBeTruthy()
+      downloadMenu!.vm.$emit('command', 'original')
       await flushPromises()
 
       expect(fetchMock).toHaveBeenCalledWith(
@@ -253,6 +255,20 @@ describe('ImageDetail edit entry', () => {
       Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: originalCreateObjectURL })
       Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: originalRevokeObjectURL })
     }
+  })
+
+  it('offers one download menu for original, JPG, PNG, and GIF formats', async () => {
+    getImageDetail.mockResolvedValue({ data: imageDetail() })
+    const wrapper = mountDetail()
+    await flushPromises()
+
+    const downloadMenu = wrapper.findAllComponents({ name: 'ElDropdown' }).find(item => item.find('.download-btn').exists())
+    expect(downloadMenu).toBeTruthy()
+    expect(downloadMenu!.text()).toContain('原始格式')
+    expect(downloadMenu!.text()).toContain('JPG')
+    expect(downloadMenu!.text()).toContain('PNG')
+    expect(downloadMenu!.text()).toContain('GIF')
+    expect(wrapper.find('.format-download-trigger').exists()).toBe(false)
   })
 
   it('replaces stale preview variant URLs after saving image edits', async () => {
@@ -318,6 +334,9 @@ describe('ImageDetail edit entry', () => {
     expect(wrapper.find('details.image-metadata').exists()).toBe(true)
     expect(wrapper.text()).toContain('1600 × 900')
     expect(wrapper.text()).toContain('真实原始文件名.png')
+    expect(wrapper.text()).toContain('属性')
+    expect(wrapper.text()).toContain('可见范围')
+    expect(wrapper.text()).toContain('公开')
     expect(wrapper.text()).toContain('一段真实描述')
     expect(wrapper.text()).toContain('风景')
     expect(wrapper.text()).not.toContain('EXIF')
@@ -342,6 +361,8 @@ describe('ImageDetail edit entry', () => {
     getComments.mockResolvedValue({ data: [{
       id: 10,
       userId: 51,
+      userUuid: 'viewer-author-uuid',
+      username: 'viewer_author',
       displayName: '观者甲',
       content: '附图评论',
       imageUrl: 'https://cdn.test/comment.jpg',
@@ -353,9 +374,13 @@ describe('ImageDetail edit entry', () => {
     await flushPromises()
 
     expect(wrapper.get('.comment-image-button').attributes('aria-label')).toBe('查看评论图片：观者甲')
+    expect(wrapper.get('.comment-avatar').attributes('src')).toBe('/api/user/avatar/viewer-author-uuid')
+    expect(wrapper.get('.comment-header').text()).toContain('观者甲')
+    expect(wrapper.get('.comment-header').text()).toContain('@viewer_author')
+    expect(wrapper.get('.comment-header').text()).toContain('天前')
     expect(wrapper.get('.comment-img').attributes('loading')).toBe('lazy')
     expect(wrapper.get('.comment-img').attributes('decoding')).toBe('async')
-    expect(wrapper.get('.comment-footer button').attributes('aria-label')).toBe('喜欢评论：观者甲')
+    expect(wrapper.get('.comment-footer button').attributes('aria-label')).toBe('点赞评论：观者甲')
   })
 
   it('shows a stable main-image failure state and retries in place', async () => {

@@ -14,5 +14,6 @@ class DockerProfileConfigTest {
         String config = Files.readString(Path.of("src/main/resources/application-docker.yml"));
 
         assertTrue(config.contains("password: ${REDIS_PASSWORD:}"));
+        assertTrue(config.contains("dateformat: \"yyyy-MM-dd'T'HH:mm:ss.SSSXXX,UTC\""));
     }
 }

@@ -141,6 +141,7 @@ import {
 } from '../utils/squareFilters'
 import { fireSmallSideCannons } from '../utils/confettiEffect'
 import { DEFAULT_IMAGE_PAGE_SIZE, IMAGE_PAGE_SIZES, getImageDisplayUrl, getImagePreviewUrl } from '../utils/imageRequests'
+import { collectPageCreators, collectPageTags, selectFeaturedImage } from '../utils/squareDiscovery'
 import { useUserStore } from '../store/user'
 
 const router = useRouter()
@@ -172,7 +173,6 @@ const sortOptions = [
   { label: '推荐', value: 'featured' },
   { label: '最新', value: 'latest' }
 ]
-const CREATOR_TONES = ['#38d5ff', '#b7ff3c', '#f5b84b', '#9b8cff', '#ff6b57']
 const demoImages = [
   {
     id: 'demo-1',
@@ -236,17 +236,7 @@ const categoryOptions = computed(() => {
   return Array.from(categories, ([id, name]) => ({ id, name }))
 })
 
-const tagOptions = computed(() => {
-  const tags = new Set()
-  for (const image of squareImages.value) {
-    String(image.tags || '')
-      .split('#')
-      .map(tag => tag.trim())
-      .filter(Boolean)
-      .forEach(tag => tags.add(tag))
-  }
-  return Array.from(tags).slice(0, 14)
-})
+const tagOptions = computed(() => collectPageTags(squareImages.value))
 
 const displayedImages = computed(() => {
   let list = squareImages.value
@@ -258,29 +248,7 @@ const displayedImages = computed(() => {
   }
   return list
 })
-const activeCreators = computed(() => {
-  const map = {}
-  for (const img of squareImages.value) {
-    const username = img.username || 'unknown'
-    const uuidOrId = img.userUuid || img.userId
-    if (!map[username] && uuidOrId) {
-      const toneIndex = Math.abs(hashString(username)) % CREATOR_TONES.length
-      const name = img.displayName || img.username || '?'
-      map[username] = {
-        username,
-        displayName: img.displayName || img.username,
-        uuidOrId,
-        likeCount: 0,
-        avatarColor: CREATOR_TONES[toneIndex],
-        initial: String(name).charAt(0).toUpperCase()
-      }
-    }
-    if (map[username]) {
-      map[username].likeCount += Number(img.likeCount || 0)
-    }
-  }
-  return Object.values(map).sort((a, b) => b.likeCount - a.likeCount).slice(0, 5)
-})
+const activeCreators = computed(() => collectPageCreators(squareImages.value))
 
 const squareStats = computed(() => ({
   totalLikes: squareImages.value.reduce((sum, image) => sum + Number(image.likeCount || 0), 0)
@@ -289,7 +257,7 @@ const squareStats = computed(() => ({
 const activeSortLabel = computed(() => sortOptions.find(option => option.value === viewMode.value)?.label || '推荐')
 const activeCategoryLabel = computed(() => categoryOptions.value.find(option => option.id === categoryFilter.value)?.name || '不限')
 const hasActiveFilters = computed(() => Boolean(query.keyword || categoryFilter.value || query.tags.length || viewMode.value !== 'featured'))
-const featuredImage = computed(() => displayedImages.value[0] || squareImages.value[0] || null)
+const featuredImage = computed(() => selectFeaturedImage(displayedImages.value))
 const featuredImageSrc = computed(() => featuredImage.value ? getImageDisplayUrl(featuredImage.value) : '')
 const drawerImageSrc = computed(() => activeImage.value ? getImagePreviewUrl(activeImage.value) : '')
 const activeTags = computed(() => String(activeImage.value?.tags || '').split('#').map(tag => tag.trim()).filter(Boolean))
@@ -396,7 +364,7 @@ function goDetail(image) {
 async function handleLike(image) {
   if (!image?.uuid) return
   if (!userStore.token) {
-    ElMessage.warning('请先登录后再进行操作')
+    ElMessage.warning('请先登录后再点赞')
     return
   }
   try {
@@ -404,7 +372,7 @@ async function handleLike(image) {
     const res = image.likedByMe ? await unlikeImage(image.uuid) : await likeImage(image.uuid)
     image.likeCount = res.data.likeCount
     image.likedByMe = res.data.likedByMe
-    ElMessage.success(image.likedByMe ? '已喜欢' : '已取消喜欢')
+    ElMessage.success(image.likedByMe ? '已点赞' : '已取消点赞')
     if (shouldCelebrate && image.likedByMe) fireSmallSideCannons()
   } catch {}
 }
@@ -415,9 +383,6 @@ function goCreatorProfile(uuidOrId) {
   }
 }
 
-function hashString(value) {
-  return String(value).split('').reduce((hash, char) => ((hash << 5) - hash) + char.charCodeAt(0), 0)
-}
 </script>
 
 <style scoped>

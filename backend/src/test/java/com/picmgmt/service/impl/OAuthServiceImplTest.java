@@ -84,6 +84,9 @@ class OAuthServiceImplTest {
         var result = invokeLoginOrRegister("google", authUser(), "https://image-space.app");
 
         assertEquals("token", result.token());
+        verify(userMapper).insert(org.mockito.ArgumentMatchers.argThat(user ->
+                "A".equals(user.getUsername()) && "A".equals(user.getDisplayName())
+        ));
         verify(userRoleMapper).insert(org.mockito.ArgumentMatchers.argThat(role ->
                 role.getUserId().equals(9L) && role.getRoleId().equals(3L)
         ));
@@ -120,9 +123,9 @@ class OAuthServiceImplTest {
     private AuthUser authUser() {
         return AuthUser.builder()
                 .uuid("provider-subject")
-                .username("provider-user")
-                .nickname("Provider User")
-                .email("victim@example.com")
+                .username("123@gmail.com")
+                .nickname("A")
+                .email("123@gmail.com")
                 .source("GOOGLE")
                 .build();
     }

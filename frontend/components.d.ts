@@ -69,6 +69,7 @@ declare module 'vue' {
     SquareImageDrawer: typeof import('./src/components/square/SquareImageDrawer.vue')['default']
     TagInput: typeof import('./src/components/TagInput.vue')['default']
     TurnstileWidget: typeof import('./src/components/TurnstileWidget.vue')['default']
+    UserIdentity: typeof import('./src/components/ui/UserIdentity.vue')['default']
   }
   export interface GlobalDirectives {
     vLoading: typeof import('element-plus/es')['ElLoadingDirective']

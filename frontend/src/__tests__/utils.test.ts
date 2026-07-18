@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { formatSize, formatTime } from '../utils/format'
+import { formatRelativeTime, formatSize, formatTime } from '../utils/format'
 import { getToken, setToken, removeToken } from '../utils/token'
 import { isSafeOAuthUrl, ALLOWED_OAUTH_DOMAINS } from '../utils/oauth'
 import { prepareRegisterPayload } from '../utils/auth'
@@ -45,6 +45,32 @@ describe('formatTime', () => {
 
   it('handles already-formatted datetime strings', () => {
     expect(formatTime('2026-05-17 14:30:00')).toBe('2026-05-17 14:30')
+  })
+})
+
+describe('formatRelativeTime', () => {
+  const now = new Date('2026-07-16T12:00:00.000Z')
+
+  it('uses minute, hour, and day boundaries without printing a full date', () => {
+    expect(formatRelativeTime('2026-07-16T11:59:31.000Z', now)).toBe('刚刚')
+    expect(formatRelativeTime('2026-07-16T11:59:00.000Z', now)).toBe('1分钟前')
+    expect(formatRelativeTime('2026-07-16T11:01:00.000Z', now)).toBe('59分钟前')
+    expect(formatRelativeTime('2026-07-16T11:00:00.000Z', now)).toBe('1小时前')
+    expect(formatRelativeTime('2026-07-15T13:00:00.000Z', now)).toBe('23小时前')
+    expect(formatRelativeTime('2026-07-15T12:00:00.000Z', now)).toBe('1天前')
+    expect(formatRelativeTime('2026-05-30T12:00:00.000Z', now)).toBe('47天前')
+  })
+
+  it('degrades safely for missing, invalid, and future timestamps', () => {
+    expect(formatRelativeTime('', now)).toBe('')
+    expect(formatRelativeTime('invalid', now)).toBe('')
+    expect(formatRelativeTime('2026-07-16T12:05:00.000Z', now)).toBe('刚刚')
+  })
+
+  it('treats equivalent UTC and local-offset values as the same instant', () => {
+    expect(formatRelativeTime('2026-07-16T12:00:00.000Z', now)).toBe('刚刚')
+    expect(formatRelativeTime('2026-07-16T20:00:00.000+08:00', now)).toBe('刚刚')
+    expect(formatRelativeTime('2026-07-16T08:00:00.000-04:00', now)).toBe('刚刚')
   })
 })
 
@@ -102,33 +128,29 @@ describe('oauth utility', () => {
 })
 
 describe('auth utility', () => {
-  it('prepareRegisterPayload removes confirmPassword field', () => {
+  it('prepareRegisterPayload keeps the backend-required confirmation and captcha fields', () => {
     const form = {
       username: 'testuser',
       password: 'password123',
       confirmPassword: 'password123',
       email: 'test@example.com',
-      phone: '1234567890'
+      phone: '1234567890',
+      code: '123456',
+      captchaId: 'captcha-id',
+      captchaCode: 'A7K2'
     }
     const payload = prepareRegisterPayload(form)
-    expect(payload).not.toHaveProperty('confirmPassword')
-    expect(payload).toEqual({
-      username: 'testuser',
-      password: 'password123',
-      email: 'test@example.com',
-      phone: '1234567890'
-    })
+    expect(payload).toEqual(form)
   })
 
-  it('prepareRegisterPayload preserves all other fields', () => {
+  it('prepareRegisterPayload returns a separate payload object', () => {
     const form = {
       username: 'testuser',
       password: 'password123',
       confirmPassword: 'different'
     }
     const payload = prepareRegisterPayload(form)
-    expect(payload.username).toBe('testuser')
-    expect(payload.password).toBe('password123')
-    expect(payload).not.toHaveProperty('confirmPassword')
+    expect(payload).toEqual(form)
+    expect(payload).not.toBe(form)
   })
 })

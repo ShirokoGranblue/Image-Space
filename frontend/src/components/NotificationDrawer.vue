@@ -8,7 +8,7 @@
             <p>{{ unreadText }}</p>
           </div>
           <div class="notification-header-actions">
-            <el-button text size="small" @click="handleReadAll" :disabled="unreadCount === 0">全部已读</el-button>
+            <el-button text size="small" @click="handleReadAll" :disabled="unreadCount === 0">全部标为已读</el-button>
             <button class="drawer-close" type="button" @click="close" aria-label="关闭通知">×</button>
           </div>
         </header>
@@ -35,14 +35,13 @@
               <img :src="item.imagePreviewUrl || fallbackImage" alt="" class="notification-thumb" loading="lazy" decoding="async" />
               <span class="notification-body">
                 <span class="notification-title">
-                  <strong>{{ item.actorName || '用户' }}</strong>
-                  {{ actionText(item) }}
-                  <strong>{{ item.imageName || '图片' }}</strong>
+                  <UserIdentity :display-name="item.actorName" :username="item.actorUsername" :time="formatRelativeTime(item.createTime)" />
+                  <span>{{ actionText(item) }}</span>
+                  <strong>《{{ item.imageName || '图片' }}》</strong>
                 </span>
                 <span v-if="(item.type === 'COMMENT' || item.type === 'COMMENT_LIKE') && item.contentPreview" class="notification-preview">
                   {{ item.contentPreview }}
                 </span>
-                <span class="notification-time">{{ formatTime(item.createTime) }}</span>
               </span>
             </button>
           </div>
@@ -58,13 +57,13 @@
             size="small"
             :disabled="selectedIds.size === 0"
             @click="clearSelection"
-          >取消</el-button>
+          >取消选择</el-button>
           <el-button
             size="small"
             type="danger"
             :disabled="selectedIds.size === 0"
             @click="handleDeleteSelected"
-          >删除选中({{ selectedIds.size }})</el-button>
+          >删除已选（{{ selectedIds.size }}）</el-button>
         </footer>
       </aside>
     </transition>
@@ -76,7 +75,8 @@ import { computed, nextTick, onBeforeUnmount, watch, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { getNotifications, getUnreadNotificationCount, markAllNotificationsRead, markNotificationRead, deleteNotification, deleteNotifications } from '../api/notification'
 import { useNotificationDrawer, closeNotificationDrawer, setUnreadCount } from '../composables/useNotificationDrawer'
-import { formatTime } from '../utils/format'
+import { formatRelativeTime } from '../utils/format'
+import UserIdentity from './ui/UserIdentity.vue'
 
 const router = useRouter()
 const { state } = useNotificationDrawer()
@@ -85,7 +85,7 @@ const loading = ref(false)
 const selectedIds = ref(new Set())
 const fallbackImage = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='
 const unreadCount = computed(() => state.unreadCount)
-const unreadText = computed(() => unreadCount.value > 0 ? `${unreadCount.value} 条未读` : '全部已读')
+const unreadText = computed(() => unreadCount.value > 0 ? `${unreadCount.value} 条未读` : '暂无未读通知')
 
 watch(() => state.open, async (open) => {
   shiftApp(open)
@@ -146,9 +146,9 @@ function shiftApp(open) {
 }
 
 function actionText(item) {
-  if (item.type === 'LIKE') return ' 点赞了你的图片 '
-  if (item.type === 'COMMENT_LIKE') return ' 点赞了你的评论 '
-  return ' 评论了你的图片 '
+  if (item.type === 'LIKE') return '点赞了你的图片'
+  if (item.type === 'COMMENT_LIKE') return '点赞了你的评论'
+  return '评论了你的图片'
 }
 
 function toggleSelect(id) {
@@ -211,7 +211,7 @@ async function handleDeleteSelected() {
   font-size: var(--text-2xl);
   letter-spacing: 0.03em;
   line-height: 1;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .notification-header p {
@@ -313,24 +313,22 @@ async function handleDeleteSelected() {
 .notification-body {
   min-width: 0;
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto auto;
   gap: var(--space-1);
   padding: 2px 0;
 }
 
 .notification-title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: .28em;
   color: var(--color-text-primary);
   font-size: var(--text-sm);
   line-height: 1.4;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
 }
 
-.notification-title strong {
-  font-weight: 700;
-}
+.notification-title :deep(.user-identity) { max-width: 100%; }
 
 .notification-preview {
   color: var(--color-text-muted);
@@ -344,8 +342,7 @@ async function handleDeleteSelected() {
 .notification-time {
   color: var(--color-text-muted);
   font-size: var(--text-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  white-space: nowrap;
 }
 
 .notification-empty {

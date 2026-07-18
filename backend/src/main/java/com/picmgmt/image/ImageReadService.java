@@ -77,7 +77,7 @@ public class ImageReadService {
         Page<ImageVO> result = imageMapper.selectImageVOPage(
                 pageParam, userId, normalizeKeyword(dto.getKeyword()), dto.getCategoryId(), null, null, sortField, sortOrder, "latest", null);
         decorateUrls(result.getRecords());
-        decorateViewerInfoBatch(result.getRecords());
+        decorateViewerInfoBatch(result.getRecords(), false);
         return result;
     }
 
@@ -95,7 +95,7 @@ public class ImageReadService {
                 pageParam, null, normalizeKeyword(keyword), null, "PUBLIC", tagFilters,
                 safeSortField, safeSortOrder, safeSortMode, safeRandomSeed);
         decorateUrls(result.getRecords());
-        decorateViewerInfoBatch(result.getRecords());
+        decorateViewerInfoBatch(result.getRecords(), true);
         return result;
     }
 
@@ -123,7 +123,7 @@ public class ImageReadService {
                 pageParam, user.getId(), normalizeKeyword(keyword), null, "PUBLIC", tagFilters,
                 safeSortField, safeSortOrder, safeSortMode, safeRandomSeed);
         decorateUrls(result.getRecords());
-        decorateViewerInfoBatch(result.getRecords());
+        decorateViewerInfoBatch(result.getRecords(), false);
         return result;
     }
 
@@ -325,7 +325,7 @@ public class ImageReadService {
         return imageUrlService.getPrivateImageUrl(storageKey);
     }
 
-    private void decorateViewerInfoBatch(List<ImageVO> records) {
+    private void decorateViewerInfoBatch(List<ImageVO> records, boolean includeCommentCounts) {
         if (records == null || records.isEmpty()) return;
 
         List<Long> imageIds = records.stream().map(ImageVO::getId).filter(id -> id != null).toList();
@@ -342,6 +342,21 @@ public class ImageReadService {
             ));
         } catch (Exception e) {
             likeCounts = Collections.emptyMap();
+        }
+
+        // Batch fetch comment counts: 1 query
+        Map<Long, Long> commentCounts = Collections.emptyMap();
+        if (includeCommentCounts) {
+            try {
+                List<Map<String, Object>> counts = imageMapper.countCommentsByImageIds(imageIds);
+                commentCounts = counts.stream().collect(Collectors.toMap(
+                        m -> ((Number) m.get("image_id")).longValue(),
+                        m -> ((Number) m.get("cnt")).longValue(),
+                        (a, b) -> a
+                ));
+            } catch (Exception ignored) {
+                // Keep the Explore page available even if interaction counts cannot be loaded.
+            }
         }
 
         // Batch fetch user-liked status: 1 query (only if logged in)
@@ -362,6 +377,9 @@ public class ImageReadService {
         for (ImageVO vo : records) {
             if (vo.getId() != null) {
                 vo.setLikeCount(likeCounts.getOrDefault(vo.getId(), 0L));
+                if (includeCommentCounts) {
+                    vo.setCommentCount(commentCounts.getOrDefault(vo.getId(), 0L));
+                }
                 vo.setLikedByMe(likedByMeIds.contains(vo.getId()));
             }
             vo.setOwnedByMe(permissionService.isOwner(vo.getUserId()));

@@ -23,7 +23,7 @@ import { formatSize, formatTime } from '../../utils/format'
 const props = defineProps({
   image: { type: Object, required: true },
   open: { type: Boolean, default: false },
-  eyebrow: { type: String, default: '技术信息' },
+  eyebrow: { type: String, default: '属性' },
   title: { type: String, default: '文件与图像数据' },
 })
 
@@ -34,9 +34,18 @@ const rows = computed(() => {
     { label: '文件大小', value: image.fileSize || image.originalSize ? formatSize(image.fileSize || image.originalSize) : '' },
     { label: '文件类型', value: image.imageType || image.originalContentType || '' },
     { label: '原始文件名', value: image.originalFilename || '' },
+    { label: '可见范围', value: visibilityText(image.visibility) },
     { label: '上传时间', value: image.uploadTime ? formatTime(image.uploadTime) : '' },
   ].filter(row => row.value)
 })
+
+function visibilityText(value) {
+  return {
+    PUBLIC: '公开',
+    SPECIFIED: '指定用户',
+    PRIVATE: '仅自己',
+  }[value] || ''
+}
 </script>
 
 <style scoped>
@@ -61,7 +70,7 @@ const rows = computed(() => {
 .image-metadata summary::after { content: '＋'; flex: none; color: var(--color-text-muted); font-size: 18px; }
 .image-metadata[open] summary::after { content: '−'; }
 .image-metadata summary > span:first-child { display: grid; gap: var(--space-1); }
-.image-metadata small { color: var(--color-text-muted); font-size: var(--text-xs); }
+.image-metadata small { color: var(--color-text-secondary); font-size: var(--text-sm); font-weight: 700; letter-spacing: .06em; }
 .image-metadata strong { font: 500 var(--text-md)/var(--leading-md) var(--font-body); }
 .image-metadata__count { margin-left: auto; color: var(--color-text-muted); font-size: var(--text-xs); }
 .image-metadata dl { margin: 0; padding-bottom: var(--space-3); }

@@ -45,6 +45,10 @@ spring:
             enable: true
             required: true
 
+logging:
+  pattern:
+    dateformat: "yyyy-MM-dd'T'HH:mm:ss.SSSXXX,UTC"
+
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true

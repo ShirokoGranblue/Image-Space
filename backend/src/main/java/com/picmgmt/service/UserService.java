@@ -5,6 +5,7 @@ import com.picmgmt.dto.LoginDTO;
 import com.picmgmt.dto.RegisterDTO;
 import com.picmgmt.entity.User;
 import com.picmgmt.dto.CodeLoginDTO;
+import com.picmgmt.vo.UserProfileVO;
 import com.picmgmt.vo.UserVO;
 
 public interface UserService {
@@ -22,6 +23,8 @@ public interface UserService {
     UserVO getUserVOById(Long id);
 
     UserVO getUserVOByUuid(String uuid);
+
+    UserProfileVO getUserProfileByUuid(String uuid);
 
     UserVO updateProfile(Long userId, String displayName, String email, String phone, String bio);
 

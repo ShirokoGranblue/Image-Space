@@ -3,7 +3,6 @@
     <div
       ref="containerRef"
       class="turnstile-wrap"
-      :class="{ 'is-empty': !rendered }"
     ></div>
     <div v-if="loading" class="turnstile-status">人机验证加载中</div>
     <div v-else-if="loadFailed" class="turnstile-status is-error">
@@ -121,24 +120,27 @@ onUnmounted(() => {
 
 <style scoped>
 .turnstile-shell {
+  min-height: 65px;
+  display: grid;
+  place-items: center;
   margin: 4px 0 14px;
 }
 
 .turnstile-wrap {
+  width: 100%;
   min-height: 65px;
   display: flex;
   justify-content: center;
-}
-
-.turnstile-wrap.is-empty {
-  min-height: 0;
+  grid-area: 1 / 1;
 }
 
 .turnstile-status {
-  min-height: 48px;
+  width: 100%;
+  min-height: 65px;
   display: flex;
   align-items: center;
   justify-content: center;
+  grid-area: 1 / 1;
   border: 1px dashed #cbd5e1;
   border-radius: 6px;
   background: #f8fafc;

@@ -11,7 +11,7 @@
         <div class="bg-controls"><span>裁剪尺寸</span><el-slider :model-value="cropRatio" :min="0.45" :max="1" :step="0.01" @update:model-value="emit('update:crop-ratio',$event)" @input="emit('slider-change',$event)" /><span>{{ Math.round(cropRatio * 100) }}%</span></div>
         <el-upload :auto-upload="false" :show-file-list="false" :on-change="file => emit('file-change',file)" accept="image/jpeg,image/png,image/webp,image/gif"><el-button type="primary">选择图片</el-button></el-upload><p v-if="fileName" class="upload-hint">{{ fileName }}</p>
       </div>
-      <div class="bg-preview-side"><p class="preview-label">预览</p><div class="profile-mini-card"><div class="profile-mini-banner" :style="miniBannerStyle"></div><div class="profile-mini-header"><el-avatar :size="22" :src="avatarUrl"><el-icon :size="10"><UserFilled /></el-icon></el-avatar><div>{{ displayName }}</div></div></div></div>
+      <div class="bg-preview-side"><p class="preview-label">预览</p><div class="profile-mini-card"><div class="profile-mini-banner" :style="miniBannerStyle"></div><div class="profile-mini-header"><el-avatar :size="22" :src="avatarUrl"><el-icon :size="10"><UserFilled /></el-icon></el-avatar><UserIdentity :display-name="displayName" :username="username" /></div></div></div>
     </div>
     <template #footer><el-button @click="emit('update:visible',false)">取消</el-button><el-button type="primary" :loading="saving" :disabled="!previewUrl" @click="emit('save')">应用</el-button></template>
   </el-dialog>
@@ -20,7 +20,8 @@
 <script setup>
 import { ref } from 'vue'
 import { PictureFilled, UserFilled } from '@element-plus/icons-vue'
-defineProps({ visible:{type:Boolean,default:false}, previewUrl:{type:String,default:''}, cropImgStyle:{type:Object,default:()=>({})}, cropFrameStyle:{type:Object,default:()=>({})}, cropGridStyle:{type:Object,default:()=>({})}, cropRatio:{type:Number,default:1}, fileName:{type:String,default:''}, miniBannerStyle:{type:Object,default:()=>({})}, avatarUrl:{type:String,default:''}, displayName:{type:String,default:''}, saving:{type:Boolean,default:false}, handlePosition:{type:Function,required:true} })
+import UserIdentity from '../ui/UserIdentity.vue'
+defineProps({ visible:{type:Boolean,default:false}, previewUrl:{type:String,default:''}, cropImgStyle:{type:Object,default:()=>({})}, cropFrameStyle:{type:Object,default:()=>({})}, cropGridStyle:{type:Object,default:()=>({})}, cropRatio:{type:Number,default:1}, fileName:{type:String,default:''}, miniBannerStyle:{type:Object,default:()=>({})}, avatarUrl:{type:String,default:''}, displayName:{type:String,default:''}, username:{type:String,default:''}, saving:{type:Boolean,default:false}, handlePosition:{type:Function,required:true} })
 const emit=defineEmits(['update:visible','update:crop-ratio','drag-start','drag-move','drag-end','resize-start','slider-change','file-change','save'])
 const cropContainer=ref(null)
 defineExpose({ cropContainer })

@@ -92,6 +92,9 @@ class OAuthLoginServiceImplTest {
         var result = service.loginOrRegisterByMicrosoft(userInfo());
 
         assertEquals(9L, result.getUserId());
+        verify(userMapper).insert(org.mockito.ArgumentMatchers.argThat(user ->
+                "Victim".equals(user.getUsername()) && "Victim".equals(user.getDisplayName())
+        ));
         verify(userRoleMapper).insert(org.mockito.ArgumentMatchers.argThat(role ->
                 role.getUserId().equals(9L) && role.getRoleId().equals(3L)
         ));

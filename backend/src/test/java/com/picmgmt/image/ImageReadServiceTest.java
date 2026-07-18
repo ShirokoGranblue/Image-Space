@@ -23,6 +23,7 @@ import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -132,6 +133,41 @@ class ImageReadServiceTest {
         assertEquals(cdnUrl, result.getRecords().get(0).getPublicUrl());
         verify(imageUrlService).getPublicImageUrl("images/4/summer.png", 5L);
         verify(storageService, never()).getPresignedUrl(any(), any(), any());
+    }
+
+    @Test
+    void getSquare_shouldDecorateLikeAndCommentCountsInBatches() {
+        Page<ImageVO> page = new Page<>(1, 30);
+        ImageVO first = new ImageVO();
+        first.setId(7L);
+        first.setVisibility("PUBLIC");
+        ImageVO second = new ImageVO();
+        second.setId(8L);
+        second.setVisibility("PUBLIC");
+        page.setRecords(List.of(first, second));
+        when(imageMapper.selectImageVOPage(any(), isNull(), isNull(), isNull(), eq("PUBLIC"),
+                isNull(), eq("upload_time"), eq("desc"), eq("random"), eq("square")))
+                .thenReturn(page);
+        when(imageMapper.countByImageIds(List.of(7L, 8L))).thenReturn(List.of(
+                Map.<String, Object>of("image_id", 7L, "cnt", 3L)
+        ));
+        when(imageMapper.countCommentsByImageIds(List.of(7L, 8L))).thenReturn(List.of(
+                Map.<String, Object>of("image_id", 7L, "cnt", 2L),
+                Map.<String, Object>of("image_id", 8L, "cnt", 5L)
+        ));
+
+        Page<ImageVO> result;
+        try (MockedStatic<StpUtil> stpMock = org.mockito.Mockito.mockStatic(StpUtil.class)) {
+            stpMock.when(StpUtil::isLogin).thenReturn(false);
+            result = service.getSquare(1, 30, null, null, null, null, null, null);
+        }
+
+        assertEquals(3L, result.getRecords().get(0).getLikeCount());
+        assertEquals(2L, result.getRecords().get(0).getCommentCount());
+        assertEquals(0L, result.getRecords().get(1).getLikeCount());
+        assertEquals(5L, result.getRecords().get(1).getCommentCount());
+        verify(imageMapper).countByImageIds(List.of(7L, 8L));
+        verify(imageMapper).countCommentsByImageIds(List.of(7L, 8L));
     }
 
     @Test

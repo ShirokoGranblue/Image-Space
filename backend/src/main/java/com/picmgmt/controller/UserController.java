@@ -20,6 +20,7 @@ import com.picmgmt.service.TurnstileService;
 import com.picmgmt.service.UserService;
 import com.picmgmt.storage.LegacyDataUri;
 import com.picmgmt.storage.StorageService;
+import com.picmgmt.vo.UserProfileVO;
 import com.picmgmt.vo.UserVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -99,8 +100,8 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
 
     @Operation(summary = "获取用户公开信息")
     @GetMapping("/profile/{uuid}")
-    public Result<UserVO> profile(@PathVariable String uuid) {
-        UserVO profile = userService.getUserVOByUuid(uuid);
+    public Result<UserProfileVO> profile(@PathVariable String uuid) {
+        UserProfileVO profile = userService.getUserProfileByUuid(uuid);
         boolean canViewContact = StpUtil.isLogin()
                 && (Objects.equals(profile.getId(), StpUtil.getLoginIdAsLong()) || StpUtil.hasRole("admin"));
         if (!canViewContact) {

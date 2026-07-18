@@ -5,12 +5,17 @@ import com.picmgmt.cache.BloomFilterService;
 import com.picmgmt.cache.RedisCacheService;
 import com.picmgmt.common.BusinessException;
 import com.picmgmt.common.ErrorCode;
+import com.picmgmt.dto.CodeLoginDTO;
+import com.picmgmt.dto.LoginDTO;
+import com.picmgmt.dto.RegisterDTO;
 import com.picmgmt.entity.User;
+import com.picmgmt.mapper.ImageLikeMapper;
 import com.picmgmt.mapper.UserMapper;
 import com.picmgmt.repository.UserRepository;
 import com.picmgmt.service.CaptchaService;
 import com.picmgmt.service.EmailService;
 import com.picmgmt.storage.StorageService;
+import com.picmgmt.vo.UserProfileVO;
 import com.picmgmt.vo.UserVO;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,8 +49,113 @@ class UserServiceImplTest {
     @Mock private UserRoleMapper userRoleMapper;
     @Mock private BloomFilterService bloomFilterService;
     @Mock private StorageService storageService;
+    @Mock private ImageLikeMapper imageLikeMapper;
 
     @InjectMocks private UserServiceImpl service;
+
+    @Test
+    void registrationCodeSendDoesNotConsumeGraphicalCaptcha() {
+        when(userMapper.selectCount(any())).thenReturn(0L);
+        when(redisCacheService.setIfAbsent(
+                "code:cooldown:register:new@example.com",
+                "1",
+                Duration.ofSeconds(60)
+        )).thenReturn(true);
+
+        service.sendCode("new@example.com", null, null, "register");
+
+        verify(captchaService, never()).verify(any(), any());
+        verify(emailService).sendVerificationCode(eq("new@example.com"), any(String.class));
+    }
+
+    @Test
+    void loginCodeSendDoesNotConsumeGraphicalCaptcha() {
+        when(userMapper.selectOne(any())).thenReturn(user("member@example.com"));
+        when(redisCacheService.setIfAbsent(
+                "code:cooldown:login:member@example.com",
+                "1",
+                Duration.ofSeconds(60)
+        )).thenReturn(true);
+
+        service.sendCode("member@example.com", null, null, "login");
+
+        verify(captchaService, never()).verify(any(), any());
+        verify(emailService).sendVerificationCode(eq("member@example.com"), any(String.class));
+    }
+
+    @Test
+    void registerVerifiesGraphicalCaptchaOnFinalSubmission() {
+        RegisterDTO dto = new RegisterDTO();
+        dto.setPassword("secret123");
+        dto.setConfirmPassword("secret123");
+        dto.setCaptchaId("register-captcha");
+        dto.setCaptchaCode("A7K2");
+        doThrow(new BusinessException(ErrorCode.CAPTCHA_INVALID))
+                .when(captchaService).verify("register-captcha", "A7K2");
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> service.register(dto));
+
+        assertEquals(ErrorCode.CAPTCHA_INVALID, exception.getErrorCode());
+        verify(userMapper, never()).selectCount(any());
+    }
+
+    @Test
+    void passwordLoginVerifiesGraphicalCaptchaOnFinalSubmission() {
+        LoginDTO dto = new LoginDTO();
+        dto.setCaptchaId("password-captcha");
+        dto.setCaptchaCode("B8M3");
+        doThrow(new BusinessException(ErrorCode.CAPTCHA_INVALID))
+                .when(captchaService).verify("password-captcha", "B8M3");
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> service.login(dto));
+
+        assertEquals(ErrorCode.CAPTCHA_INVALID, exception.getErrorCode());
+        verify(userMapper, never()).selectOne(any());
+    }
+
+    @Test
+    void emailLoginVerifiesGraphicalCaptchaOnFinalSubmission() {
+        CodeLoginDTO dto = new CodeLoginDTO();
+        dto.setCaptchaId("email-captcha");
+        dto.setCaptchaCode("C9N4");
+        doThrow(new BusinessException(ErrorCode.CAPTCHA_INVALID))
+                .when(captchaService).verify("email-captcha", "C9N4");
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> service.loginByCode(dto));
+
+        assertEquals(ErrorCode.CAPTCHA_INVALID, exception.getErrorCode());
+        verify(userMapper, never()).selectOne(any());
+    }
+
+    @Test
+    void getUserProfileByUuidReturnsPublicLikeCount() {
+        User user = user("owner@example.com");
+        user.setUuid("user-uuid");
+        UserVO base = new UserVO();
+        base.setId(7L);
+        base.setUuid("user-uuid");
+        when(userRepository.findByUuid("user-uuid")).thenReturn(Optional.of(user));
+        when(userRepository.toVO(user)).thenReturn(base);
+        when(imageLikeMapper.countPublicLikesByOwnerId(7L)).thenReturn(42L);
+
+        UserProfileVO result = service.getUserProfileByUuid("user-uuid");
+
+        assertEquals(7L, result.getId());
+        assertEquals(42L, result.getPublicLikeCount());
+    }
+
+    @Test
+    void getUserProfileByUuidReturnsZeroWhenAggregateIsNull() {
+        User user = user("owner@example.com");
+        user.setUuid("user-uuid");
+        when(userRepository.findByUuid("user-uuid")).thenReturn(Optional.of(user));
+        when(userRepository.toVO(user)).thenReturn(new UserVO());
+        when(imageLikeMapper.countPublicLikesByOwnerId(7L)).thenReturn(null);
+
+        UserProfileVO result = service.getUserProfileByUuid("user-uuid");
+
+        assertEquals(0L, result.getPublicLikeCount());
+    }
 
     @Test
     void updateProfileRejectsEmailChangeWithoutVerificationCode() {

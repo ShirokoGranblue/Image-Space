@@ -17,8 +17,9 @@ describe('stage four image delivery and bundle contract', () => {
     expect(viteConfig).toContain('ElementPlusResolver')
   })
 
-  it('keeps navigation and favicon on the compact derived logo asset', () => {
-    expect(navBar).toContain("../logo/logo-nav.webp")
+  it('keeps the navigation text-only while retaining the compact favicon asset', () => {
+    expect(navBar).not.toContain("../logo/logo-nav.webp")
+    expect(navBar).toContain('class="logo-wordmark">AstralSpace</strong>')
     expect(indexHtml).toContain('/src/logo/logo-nav.webp')
     expect(statSync('src/logo/logo-nav.webp').size).toBeLessThan(100 * 1024)
   })

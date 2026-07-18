@@ -9,6 +9,7 @@ import com.picmgmt.common.BusinessException;
 import com.picmgmt.common.ErrorCode;
 import com.picmgmt.entity.User;
 import com.picmgmt.storage.StorageService;
+import com.picmgmt.vo.UserProfileVO;
 import com.picmgmt.vo.UserVO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -69,24 +70,26 @@ class UserControllerTest {
     @Test
     void publicProfileDoesNotExposeEmailOrPhone() {
         stpMock.when(StpUtil::isLogin).thenReturn(false);
-        when(userService.getUserVOByUuid("user-uuid")).thenReturn(user(7L));
+        when(userService.getUserProfileByUuid("user-uuid")).thenReturn(user(7L));
 
-        UserVO result = controller.profile("user-uuid").getData();
+        UserProfileVO result = controller.profile("user-uuid").getData();
 
         assertNull(result.getEmail());
         assertNull(result.getPhone());
+        assertEquals(42L, result.getPublicLikeCount());
     }
 
     @Test
     void ownerProfileKeepsEmailAndPhone() {
         stpMock.when(StpUtil::isLogin).thenReturn(true);
         stpMock.when(StpUtil::getLoginIdAsLong).thenReturn(7L);
-        when(userService.getUserVOByUuid("user-uuid")).thenReturn(user(7L));
+        when(userService.getUserProfileByUuid("user-uuid")).thenReturn(user(7L));
 
-        UserVO result = controller.profile("user-uuid").getData();
+        UserProfileVO result = controller.profile("user-uuid").getData();
 
         assertEquals("owner@example.com", result.getEmail());
         assertEquals("13800000000", result.getPhone());
+        assertEquals(42L, result.getPublicLikeCount());
     }
 
     @Test
@@ -171,12 +174,13 @@ class UserControllerTest {
                 + Base64.getEncoder().encodeToString(value.getBytes(StandardCharsets.UTF_8));
     }
 
-    private UserVO user(Long id) {
-        UserVO user = new UserVO();
+    private UserProfileVO user(Long id) {
+        UserProfileVO user = new UserProfileVO();
         user.setId(id);
         user.setUuid("user-uuid");
         user.setEmail("owner@example.com");
         user.setPhone("13800000000");
+        user.setPublicLikeCount(42L);
         return user;
     }
 }

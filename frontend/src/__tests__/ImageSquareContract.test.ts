@@ -3,6 +3,7 @@ import source from '../views/ImageSquare.vue?raw'
 import heroSource from '../components/square/SquareHeroFilters.vue?raw'
 import asideSource from '../components/square/SquareDiscoveryAside.vue?raw'
 import drawerSource from '../components/square/SquareImageDrawer.vue?raw'
+import toolbarSource from '../components/home/HomeToolbar.vue?raw'
 
 const squareSource = `${source}\n${heroSource}\n${asideSource}`
 
@@ -21,7 +22,7 @@ describe('public square search and sorting contract', () => {
   })
 
   it('only presents the backend total as a square-wide hero metric', () => {
-    expect(squareSource).toContain('aria-label="\u516c\u5f00\u5e7f\u573a\u56fe\u7247\u603b\u6570"')
+    expect(squareSource).toContain('aria-label="\u516c\u5f00\u56fe\u7247\u603b\u6570"')
     expect(squareSource).toContain('<strong>{{ total }}</strong>')
     expect(squareSource).not.toContain('squareStats.totalLikes')
     expect(squareSource).not.toContain('<strong>{{ categoryOptions.length }}</strong>')
@@ -31,7 +32,25 @@ describe('public square search and sorting contract', () => {
     expect(source).toContain('\u672c\u9875\u5206\u7c7b')
     expect(squareSource).toContain('\u672c\u9875\u6807\u7b7e')
     expect(squareSource).toContain('\u672c\u9875\u4f5c\u8005')
-    expect(squareSource).toContain('\u672c\u9875 {{ creator.likeCount }} \u6b21\u559c\u6b22')
+    expect(squareSource).toContain('\u672c\u9875 {{ creator.likeCount }} \u6b21\u70b9\u8d5e')
+  })
+
+  it('centers image metrics and only constrains discovery lists after overflow', () => {
+    expect(toolbarSource).toMatch(/\.stat\{[^}]*align-items:center[^}]*text-align:center/)
+    expect(heroSource).toMatch(/\.metric-cell \{[^}]*align-items: center[^}]*text-align: center/)
+    expect(asideSource).toContain("activeCreators.length > 4")
+    expect(asideSource).toContain('.creator-list.is-scrollable')
+    expect(asideSource).toContain('overflow-y: auto')
+    expect(asideSource).toContain('flex-wrap: nowrap')
+    expect(asideSource).toContain('overflow-x: auto')
+    expect(asideSource).toContain(':key="creator.key"')
+  })
+
+  it('uses the approved Explore copy and like terminology', () => {
+    expect(heroSource).toContain('<span class="eyebrow">EXPLORE</span>')
+    expect(heroSource).toContain('发现不同的创作、设计与灵感')
+    expect(heroSource).toContain('在这里分享你的作品，与创作者们共同构建 AstralSpace')
+    expect(drawerSource).toContain("image.likedByMe ? '取消点赞' : '点赞'")
   })
 
   it('keeps pagination visible at the viewport bottom and exposes one clear-filter action', () => {

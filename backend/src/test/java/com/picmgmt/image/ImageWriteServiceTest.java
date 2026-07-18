@@ -3,14 +3,18 @@ package com.picmgmt.image;
 import cn.dev33.satoken.stp.StpUtil;
 import com.picmgmt.common.BusinessException;
 import com.picmgmt.common.ErrorCode;
+import com.picmgmt.like.LikeTarget;
 import com.picmgmt.mapper.CategoryMapper;
 import com.picmgmt.repository.ImageRepository;
+import com.picmgmt.service.LikeService;
 import com.picmgmt.storage.StorageService;
 import com.picmgmt.vo.ImageVO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -27,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
@@ -43,6 +48,7 @@ class ImageWriteServiceTest {
     @Mock private ImageUrlService imageUrlService;
     @Mock private MediaMetaCacheService mediaMetaCacheService;
     @Mock private CloudflareCachePurgeService cloudflareCachePurgeService;
+    @Mock private LikeService likeService;
 
     private ImageWriteService service;
     private MockedStatic<StpUtil> stpMock;
@@ -56,7 +62,8 @@ class ImageWriteServiceTest {
                 permissionService,
                 imageUrlService,
                 mediaMetaCacheService,
-                cloudflareCachePurgeService
+                cloudflareCachePurgeService,
+                likeService
         );
         stpMock = mockStatic(StpUtil.class);
     }
@@ -343,6 +350,42 @@ class ImageWriteServiceTest {
 
         assertEquals("SPECIFIED", result.getVisibility());
         assertEquals("alice,bob", result.getVisibleUsernames());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"PUBLIC", "PRIVATE", "SPECIFIED"})
+    void deleteShouldRemoveAllImageLikesForEveryVisibility(String visibility) {
+        var image = image(visibility, 2L);
+        when(imageRepository.findById(7L)).thenReturn(java.util.Optional.of(image));
+
+        service.delete(7L);
+
+        verify(likeService).deleteAllByTarget(LikeTarget.IMAGE, 7L);
+        verify(imageRepository).deleteById(7L);
+    }
+
+    @Test
+    void deleteByUuidShouldRemoveAllImageLikes() {
+        var image = image("SPECIFIED", 2L);
+        when(imageRepository.findByUuid("img-uuid")).thenReturn(java.util.Optional.of(image));
+
+        service.deleteByUuid("img-uuid");
+
+        verify(likeService).deleteAllByTarget(LikeTarget.IMAGE, 7L);
+        verify(imageRepository).deleteById(7L);
+    }
+
+    @Test
+    void deleteShouldNotRemoveLikesWhenPermissionIsDenied() {
+        var image = image("PUBLIC", 2L);
+        when(imageRepository.findById(7L)).thenReturn(java.util.Optional.of(image));
+        doThrow(new BusinessException(ErrorCode.FORBIDDEN))
+                .when(permissionService).validateOwnershipOrAdmin(image);
+
+        assertThrows(BusinessException.class, () -> service.delete(7L));
+
+        verify(likeService, never()).deleteAllByTarget(any(), any());
+        verify(imageRepository, never()).deleteById(any());
     }
 
     @Test

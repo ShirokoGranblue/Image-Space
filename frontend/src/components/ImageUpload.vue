@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" title="上传图片" width="640px" @close="resetForm" class="upload-dialog">
+  <el-dialog v-model="visible" title="上传图片并归档" width="640px" @close="resetForm" class="upload-dialog">
     <el-form :model="form" label-width="86px">
       <el-form-item label="选择图片">
         <el-upload
@@ -17,9 +17,9 @@
           drag
         >
           <el-icon class="upload-icon"><UploadFilled /></el-icon>
-          <div class="upload-text">将图片拖到此处，或<em>点击上传</em></div>
+          <div class="upload-text">将图片拖到这里，或<em>点击选择</em></div>
           <template #tip>
-            <div class="upload-tip">支持 JPG/PNG/WEBP/GIF，单文件 ≤ 20MB</div>
+            <div class="upload-tip">支持 JPG / PNG / WEBP / GIF，单文件不超过 20MB</div>
           </template>
         </el-upload>
       </el-form-item>
@@ -62,12 +62,12 @@
       </el-form-item>
 
       <el-form-item label="描述">
-        <el-input v-model="form.description" type="textarea" :rows="2" placeholder="添加描述" />
+        <el-input v-model="form.description" type="textarea" :rows="2" placeholder="为这组图片补充说明" />
       </el-form-item>
       <el-form-item label="标签">
-        <TagInput v-model="form.tags" placeholder="多个标签用 # 分隔" />
+        <TagInput v-model="form.tags" placeholder="用 # 分隔多个标签" />
       </el-form-item>
-      <el-form-item label="可见权限">
+      <el-form-item label="可见范围">
         <el-select v-model="form.visibility" style="width: 100%">
           <el-option label="仅自己" value="PRIVATE" />
           <el-option label="公开" value="PUBLIC" />
@@ -188,12 +188,12 @@ function getFileBody(filename) {
 function handleFileChange(file, uploadFiles) {
   const ext = getFileExt(file.name)
   if (!ext || !ALLOWED_EXT.includes(ext)) {
-    ElMessage.error(`文件 ${file.name} 格式不支持，仅允许 JPG/PNG/WEBP/GIF`)
+    ElMessage.error(`文件 ${file.name} 格式不支持，仅允许 JPG / PNG / WEBP / GIF`)
     fileList.value = uploadFiles.filter(f => f.uid !== file.uid)
     return
   }
   if (file.size > 20 * 1024 * 1024) {
-    ElMessage.warning(`文件 ${file.name} 超过20MB限制`)
+    ElMessage.warning(`文件 ${file.name} 超过 20MB 限制`)
     fileList.value = uploadFiles.filter(f => f.uid !== file.uid)
     return
   }
@@ -207,7 +207,7 @@ function handleFileRemove(file) {
 }
 
 function handleExceed() {
-  ElMessage.warning('最多选择10张图片')
+  ElMessage.warning('最多选择 10 张图片')
 }
 
 function getUploadName(file) {
@@ -253,7 +253,7 @@ async function handleUpload() {
   if (errors.length) {
     ElMessage.error(errors.join('; '))
   }
-  ElMessage.success(`成功上传 ${success} / ${fileList.value.length} 张图片`)
+  ElMessage.success(`已上传 ${success} / ${fileList.value.length} 张图片`)
   if (success > 0) fireMediumSideCannons()
   visible.value = false
   emit('uploaded', uploadedImages)

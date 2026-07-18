@@ -137,6 +137,7 @@
 import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { ArrowLeft, ArrowRight, Close, FullScreen, InfoFilled, PictureFilled, ZoomIn, ZoomOut } from '@element-plus/icons-vue'
 import { getImageAlt, getImageViewerUrl } from '../utils/imageRequests'
+import { formatUserIdentityText } from '../utils/userIdentity'
 
 const MIN_SCALE = 1
 const MAX_SCALE = 5
@@ -192,7 +193,7 @@ const imageTransform = computed(() => ({ transform: `translate3d(${translation.x
 const activeMetadata = computed(() => {
   const item = activeItem.value
   const rows = [
-    ['作者', item.displayName || item.username],
+    ['作者', formatUserIdentityText(item, '')],
     ['分类', item.categoryName],
     ['尺寸', item.width && item.height ? `${item.width} × ${item.height}` : ''],
     ['描述', item.description],

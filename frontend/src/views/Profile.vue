@@ -32,7 +32,7 @@
       <ProfileBackgroundEditor
         ref="backgroundEditorRef" :visible="bgDialogVisible" :preview-url="bgPreviewUrl" :crop-img-style="bgCropImgStyle" :crop-frame-style="bgCropFrameStyle"
         :crop-grid-style="bgCropGridStyle" :crop-ratio="bgCropRatio" :file-name="bgFileName" :mini-banner-style="miniBannerPreviewStyle"
-        :avatar-url="avatarDisplayUrl" :display-name="user.displayName || user.username" :saving="bgSaving" :handle-position="bgHPos"
+        :avatar-url="avatarDisplayUrl" :display-name="user.displayName || user.username" :username="user.username" :saving="bgSaving" :handle-position="bgHPos"
         @update:visible="bgDialogVisible = $event" @update:crop-ratio="bgCropRatio = $event" @drag-start="startDragBgCrop" @drag-move="onDragBgCrop" @drag-end="stopDragBgCrop"
         @resize-start="startBgResize" @slider-change="onBgSliderChange" @file-change="onBgFileChange" @save="saveBackground"
       />
@@ -62,9 +62,9 @@
             <el-input v-model="imageEditForm.description" type="textarea" :rows="3" />
           </el-form-item>
           <el-form-item label="标签">
-            <TagInput v-model="imageEditForm.tags" placeholder="多个标签用 # 分隔" />
+            <TagInput v-model="imageEditForm.tags" placeholder="用 # 分隔多个标签" />
           </el-form-item>
-          <el-form-item label="可见权限">
+          <el-form-item label="可见范围">
             <el-select v-model="imageEditForm.visibility">
               <el-option label="仅自己" value="PRIVATE" />
               <el-option label="公开" value="PUBLIC" />
@@ -126,6 +126,7 @@ import { useUserStore } from '../store/user'
 import { getUserProfile, updateProfile, uploadAvatar, uploadBackground, checkField, deleteAccount, sendEmailChangeCode } from '../api/user'
 import { getImageList, getUserPublicImages, deleteImage, updateImage } from '../api/image'
 import { getUserMediaResourceStatus, refreshUserMediaAccessUrl } from '../api/resource'
+import { confirmImageDelete } from '../utils/deleteConfirmation'
 import { getCategoryList, createCategory } from '../api/category'
 import { DEFAULT_IMAGE_PAGE_SIZE, IMAGE_PAGE_SIZES, buildImageListParams, getImageDownloadUrl } from '../utils/imageRequests'
 import { userMediaToPollingResource } from '../utils/resourceAdapters'
@@ -201,8 +202,8 @@ const animStats = reactive({
   likes: 0,
 })
 const profileHeaderStats = computed(() => [
-  { label: '作品（本页）', value: animStats.works },
-  { label: '获赞（本页）', value: animStats.likes },
+  { label: '累计创作', value: animStats.works },
+  { label: '获赞', value: animStats.likes },
 ])
 
 function initBannerCells() {
@@ -212,7 +213,7 @@ function initBannerCells() {
 function animateCounts() {
   const targets = {
     works: workTotal.value || works.value.length || 0,
-    likes: works.value.reduce((sum, img) => sum + Number(img.likeCount || 0), 0),
+    likes: Number(user.value.publicLikeCount || 0),
   }
 
   Object.keys(targets).forEach(key => {
@@ -888,7 +889,7 @@ async function handleBatchWorkDelete() {
   if (uuids.length === 0) return
   try {
     await ElMessageBox.confirm(
-      `确定删除选中的 ${uuids.length} 张图片吗？`,
+      `删除后无法恢复。确定删除选中的 ${uuids.length} 张图片吗？`,
       '批量删除图片',
       { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' }
     )
@@ -903,7 +904,7 @@ async function handleBatchWorkDelete() {
 
 async function handleWorkDelete(image) {
   const uuid = typeof image === 'object' ? image?.uuid : image
-  if (!uuid) return
+  if (!uuid || !(await confirmImageDelete(image))) return
   try {
     await deleteImage(uuid)
     selectedWorkUuids.value = selectedWorkUuids.value.filter(item => item !== uuid)
@@ -915,14 +916,14 @@ async function handleWorkDelete(image) {
 async function copyWorkLink(img) {
   const url = getImageDownloadUrl(img)
   if (!url) {
-    ElMessage.warning('暂无可复制链接')
+    ElMessage.warning('暂时没有可复制的分享链接')
     return
   }
   try {
     await navigator.clipboard.writeText(new URL(url, window.location.origin).href)
-    ElMessage.success('链接已复制')
+    ElMessage.success('分享链接已复制')
   } catch {
-    ElMessage.warning('当前浏览器不支持自动复制')
+    ElMessage.warning('无法自动复制，请手动复制分享链接')
   }
 }
 

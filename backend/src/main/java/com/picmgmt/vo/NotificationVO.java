@@ -1,7 +1,9 @@
 package com.picmgmt.vo;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Data
@@ -12,6 +14,7 @@ public class NotificationVO {
     private Long recipientUserId;
     private Long actorUserId;
     private String actorName;
+    private String actorUsername;
     private String actorAvatarUrl;
     private Long imageId;
     private String imageUuid;
@@ -21,6 +24,8 @@ public class NotificationVO {
     private Long commentId;
     private String contentPreview;
     private Boolean read;
-    private LocalDateTime createTime;
+    @JsonIgnore
+    private LocalDateTime storedCreateTime;
+    private Instant createTime;
     private String targetUrl;
 }

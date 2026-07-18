@@ -1,16 +1,16 @@
 <template>
   <aside class="detail-info">
     <div class="detail-title-block">
-      <span class="section-label">图片信息</span>
+      <span class="detail-kicker">图片信息</span>
       <h1>{{ image.imageName }}</h1>
       <div class="uploader-row">
         <span class="meta-label"><el-icon><User /></el-icon> 上传者</span>
         <router-link v-if="image.userUuid || image.userId" :to="`/profile/${image.userUuid || image.userId}`" class="uploader-link">
-          {{ image.displayName || image.username || '未知上传者' }}
+          <UserIdentity :display-name="image.displayName" :username="image.username" fallback="未知上传者" />
         </router-link>
-        <span v-else>{{ image.displayName || image.username || '未知上传者' }}</span>
+        <UserIdentity v-else :display-name="image.displayName" :username="image.username" fallback="未知上传者" />
       </div>
-      <p class="desc-text" :class="{ muted: !image.description }">{{ image.description || '暂无描述' }}</p>
+      <p class="desc-text" :class="{ muted: !image.description }">{{ image.description || '尚未填写描述' }}</p>
     </div>
 
     <div class="meta-grid">
@@ -28,7 +28,7 @@
     </div>
 
     <div class="tag-panel">
-      <span class="section-label">标签</span>
+      <span class="section-label">内容标签</span>
       <div v-if="tags.length" class="detail-tag-list">
         <el-tag v-for="tag in tags" :key="tag" size="small" effect="plain">{{ tag }}</el-tag>
       </div>
@@ -37,21 +37,21 @@
 
     <div id="like-activity" class="action-bar" :class="{ 'notification-highlight': highlightedTarget === 'like' }">
       <div class="action-group">
-        <span class="action-group__label">浏览操作</span>
+        <span class="action-group__label">查看与下载</span>
         <div class="action-group__controls">
           <el-button class="like-button" :class="{ liked: image.likedByMe }" :loading="liking" @click="emit('like')">
             <el-icon><StarFilled /></el-icon>{{ image.likedByMe ? '已点赞' : '点赞' }}
           </el-button>
-          <el-button type="primary" class="download-btn" :loading="downloading" :disabled="image.deleted" @click="emit('download')">
-            <el-icon><Download /></el-icon>下载图片
-          </el-button>
-          <el-dropdown trigger="click" @command="emit('download-format', $event)">
-            <el-button class="format-download-trigger" :disabled="image.deleted || downloading">格式</el-button>
+          <el-dropdown trigger="click" @command="handleDownloadCommand">
+            <el-button type="primary" class="download-btn" :loading="downloading" :disabled="image.deleted">
+              <el-icon><Download /></el-icon>下载图片<el-icon><ArrowDown /></el-icon>
+            </el-button>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="jpg">下载 JPG</el-dropdown-item>
-                <el-dropdown-item command="png">下载 PNG</el-dropdown-item>
-                <el-dropdown-item command="gif">下载 GIF</el-dropdown-item>
+                <el-dropdown-item command="original">原始格式</el-dropdown-item>
+                <el-dropdown-item command="jpg">JPG</el-dropdown-item>
+                <el-dropdown-item command="png">PNG</el-dropdown-item>
+                <el-dropdown-item command="gif">GIF</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -59,7 +59,7 @@
       </div>
 
       <div v-if="canEdit" class="action-group action-group--owner">
-        <span class="action-group__label">所有者操作</span>
+        <span class="action-group__label">编辑与管理</span>
         <el-dropdown trigger="click" class="more-actions">
           <el-button circle class="more-trigger" aria-label="更多操作"><el-icon><MoreFilled /></el-icon></el-button>
           <template #dropdown>
@@ -74,8 +74,9 @@
 </template>
 
 <script setup>
-import { Download, Edit, FolderOpened, MoreFilled, StarFilled, User } from '@element-plus/icons-vue'
+import { ArrowDown, Download, Edit, FolderOpened, MoreFilled, StarFilled, User } from '@element-plus/icons-vue'
 import ImageMetadata from '../gallery/ImageMetadata.vue'
+import UserIdentity from '../ui/UserIdentity.vue'
 
 defineProps({
   image: { type: Object, required: true },
@@ -88,21 +89,37 @@ defineProps({
 })
 
 const emit = defineEmits(['like', 'download', 'download-format', 'edit'])
+
+function handleDownloadCommand(command) {
+  if (command === 'original') {
+    emit('download')
+    return
+  }
+  emit('download-format', command)
+}
 </script>
 
 <style scoped>
 .detail-info {
   min-width: 0;
   padding: var(--space-6);
-  border: 1px solid var(--color-border-subtle);
+  border: 0;
   background: var(--color-surface-1);
 }
 
-.section-label {
+.detail-kicker {
   color: var(--color-vermilion);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   font-weight: 700;
   letter-spacing: .08em;
+}
+
+.section-label,
+.action-group__label {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  letter-spacing: .06em;
 }
 
 h1 {
@@ -206,13 +223,6 @@ h1 {
 .action-group + .action-group {
   padding-top: var(--space-4);
   border-top: 1px solid var(--color-border-subtle);
-}
-
-.action-group__label {
-  color: var(--color-text-muted);
-  font-size: var(--text-xs);
-  font-weight: 700;
-  letter-spacing: .06em;
 }
 
 .action-group__controls {

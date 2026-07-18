@@ -1,22 +1,23 @@
 <template>
   <AuthLayout form-width="narrow">
     <template #aside>
-      <div class="auth-aside-copy auth-aside-copy--plain">
-        <h2 class="auth-aside-title">整理灵感，保留图像的来路。</h2>
-        <p class="auth-aside-description">上传、分类、分享与回看，都在一个清爽的空间里完成。</p>
+      <div class="auth-aside-copy">
+        <span class="auth-aside-eyebrow">继续整理、分享</span>
+        <h2 class="auth-aside-title">留住喜欢的画面，也留住再次回看的理由</h2>
+        <p class="auth-aside-description">日常发现和长期收藏，都可以放在同一个空间里。</p>
       </div>
 
-      <ul class="auth-capabilities" data-auth-capabilities aria-label="图像空间能力">
-        <li>存放、管理你的图片</li>
-        <li>自定义分类、归档你的图片</li>
-        <li>和社区一起分享</li>
+      <ul class="auth-capabilities" data-auth-capabilities aria-label="AstralSpace 图片管理能力">
+        <li>保留值得回看的图片</li>
+        <li>整理分类与标签</li>
+        <li>分享愿意公开的内容</li>
       </ul>
     </template>
 
     <template #header>
-      <span class="auth-kicker">账户登录</span>
-      <h1 class="auth-title">欢迎回来</h1>
-      <p class="auth-description">继续保存、整理和分享</p>
+      <span class="auth-kicker">登录 AstralSpace</span>
+      <h1 class="auth-title">回到已经留下的内容</h1>
+      <p class="auth-description">登录后继续浏览和整理收藏。</p>
     </template>
 
     <div class="login-method-switch" role="tablist" aria-label="登录方式">
@@ -48,146 +49,159 @@
       </button>
     </div>
 
-    <el-form
-      v-if="loginMode === 'password'"
-      id="password-login-panel"
-      ref="formRef"
-      :model="form"
-      :rules="rules"
-      label-position="top"
-      class="auth-form login-form login-form--password"
-      role="tabpanel"
-      aria-labelledby="password-login-tab"
-      @submit.prevent="handleLogin"
-    >
-      <el-form-item label="用户名" prop="username">
-        <el-input
-          v-model="form.username"
-          placeholder="输入用户名"
-          autocomplete="username"
-          size="large"
-        />
-      </el-form-item>
-      <el-form-item label="密码" prop="password">
-        <el-input
-          v-model="form.password"
-          type="password"
-          placeholder="输入密码"
-          autocomplete="current-password"
-          size="large"
-          show-password
-        />
-      </el-form-item>
-      <TurnstileWidget
-        ref="turnstileRef"
-        @verified="turnstileToken = $event"
-        @expired="turnstileToken = ''"
-        @error="turnstileToken = ''"
-      />
-      <el-form-item class="submit-row">
-        <el-button type="primary" native-type="submit" size="large" class="login-btn" :loading="loading">
-          <span>登录</span>
-          <el-icon><ArrowRight /></el-icon>
-        </el-button>
-      </el-form-item>
-    </el-form>
-
-    <el-form
-      v-else
-      id="email-login-panel"
-      ref="emailFormRef"
-      :model="emailForm"
-      :rules="emailRules"
-      label-position="top"
-      class="auth-form login-form login-form--email"
-      role="tabpanel"
-      aria-labelledby="email-login-tab"
-      @submit.prevent="handleEmailLogin"
-    >
-      <el-form-item label="邮箱" prop="email">
-        <el-input
-          v-model="emailForm.email"
-          placeholder="name@example.com"
-          autocomplete="email"
-          size="large"
-        />
-      </el-form-item>
-      <el-form-item label="图形验证码" prop="captchaCode">
-        <div class="captcha-row-inline">
+    <div class="login-form-stage">
+      <el-form
+        v-if="loginMode === 'password'"
+        id="password-login-panel"
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        label-position="top"
+        class="auth-form login-form login-form--password"
+        role="tabpanel"
+        aria-labelledby="password-login-tab"
+        @submit.prevent="handleLogin"
+      >
+        <el-form-item label="用户名" prop="username">
           <el-input
-            v-model="emailForm.captchaCode"
-            placeholder="输入图形验证码"
-            autocomplete="off"
+            v-model="form.username"
+            placeholder="输入用户名"
+            autocomplete="username"
             size="large"
           />
-          <button
-            class="captcha-image"
-            type="button"
-            aria-label="刷新图形验证码"
-            :disabled="captchaLoading"
-            @click="loadCaptcha"
-          >
-            <img v-if="captchaImage" :src="captchaImage" alt="图形验证码" />
-            <span v-else>{{ captchaLoading ? '加载中' : '刷新' }}</span>
-          </button>
-        </div>
-      </el-form-item>
-      <el-form-item label="邮箱验证码" prop="code">
-        <div class="code-row">
+        </el-form-item>
+        <el-form-item label="密码" prop="password">
           <el-input
-            v-model="emailForm.code"
-            placeholder="输入邮箱验证码"
-            autocomplete="one-time-code"
+            v-model="form.password"
+            type="password"
+            placeholder="输入密码"
+            autocomplete="current-password"
             size="large"
+            show-password
           />
-          <el-button
-            class="send-code-btn"
-            native-type="button"
-            :loading="sendCodeLoading"
-            :disabled="countdown > 0"
-            @click="handleSendCode"
-          >
-            {{ countdown > 0 ? countdown + 's' : '发送验证码' }}
+        </el-form-item>
+        <el-form-item label="图形验证码" prop="captchaCode">
+          <div class="captcha-row-inline">
+            <el-input
+              v-model="form.captchaCode"
+              placeholder="输入图形验证码"
+              autocomplete="off"
+              size="large"
+            />
+            <button
+              class="captcha-image"
+              type="button"
+              aria-label="刷新图形验证码"
+              :disabled="captchaLoading"
+              @click="loadCaptcha"
+            >
+              <img v-if="captchaImage" :src="captchaImage" alt="图形验证码" />
+              <span v-else>{{ captchaLoading ? '加载中' : '刷新' }}</span>
+            </button>
+          </div>
+        </el-form-item>
+        <TurnstileWidget
+          ref="turnstileRef"
+          @verified="turnstileToken = $event"
+          @expired="turnstileToken = ''"
+          @error="turnstileToken = ''"
+        />
+        <el-form-item class="submit-row">
+          <el-button type="primary" native-type="submit" size="large" class="login-btn" :loading="loading">
+            <span>登录</span>
+            <el-icon><ArrowRight /></el-icon>
           </el-button>
-        </div>
-      </el-form-item>
-      <TurnstileWidget
-        ref="turnstileRef"
-        @verified="turnstileToken = $event"
-        @expired="turnstileToken = ''"
-        @error="turnstileToken = ''"
-      />
-      <el-form-item class="submit-row">
-        <el-button type="primary" native-type="submit" size="large" class="login-btn" :loading="codeLoginLoading">
-          <span>邮箱登录</span>
-          <el-icon><ArrowRight /></el-icon>
-        </el-button>
-      </el-form-item>
-    </el-form>
+        </el-form-item>
+      </el-form>
+
+      <el-form
+        v-else
+        id="email-login-panel"
+        ref="emailFormRef"
+        :model="emailForm"
+        :rules="emailRules"
+        label-position="top"
+        class="auth-form login-form login-form--email"
+        role="tabpanel"
+        aria-labelledby="email-login-tab"
+        @submit.prevent="handleEmailLogin"
+      >
+        <el-form-item label="邮箱" prop="email">
+          <el-input
+            v-model="emailForm.email"
+            placeholder="name@example.com"
+            autocomplete="email"
+            size="large"
+          />
+        </el-form-item>
+        <el-form-item label="图形验证码" prop="captchaCode">
+          <div class="captcha-row-inline">
+            <el-input
+              v-model="emailForm.captchaCode"
+              placeholder="输入图形验证码"
+              autocomplete="off"
+              size="large"
+            />
+            <button
+              class="captcha-image"
+              type="button"
+              aria-label="刷新图形验证码"
+              :disabled="captchaLoading"
+              @click="loadCaptcha"
+            >
+              <img v-if="captchaImage" :src="captchaImage" alt="图形验证码" />
+              <span v-else>{{ captchaLoading ? '加载中' : '刷新' }}</span>
+            </button>
+          </div>
+        </el-form-item>
+        <el-form-item label="邮箱验证码" prop="code">
+          <div class="code-row">
+            <el-input
+              v-model="emailForm.code"
+              placeholder="输入邮箱验证码"
+              autocomplete="one-time-code"
+              size="large"
+            />
+            <el-button
+              class="send-code-btn"
+              native-type="button"
+              :loading="sendCodeLoading"
+              :disabled="countdown > 0"
+              @click="handleSendCode"
+            >
+              {{ countdown > 0 ? countdown + 's' : '发送验证码' }}
+            </el-button>
+          </div>
+        </el-form-item>
+        <TurnstileWidget
+          ref="turnstileRef"
+          @verified="turnstileToken = $event"
+          @expired="turnstileToken = ''"
+          @error="turnstileToken = ''"
+        />
+        <el-form-item class="submit-row">
+          <el-button type="primary" native-type="submit" size="large" class="login-btn" :loading="codeLoginLoading">
+            <span>邮箱登录</span>
+            <el-icon><ArrowRight /></el-icon>
+          </el-button>
+        </el-form-item>
+      </el-form>
+    </div>
 
     <div class="auth-supplemental">
-      <div class="or-row"><span>或使用第三方账户</span></div>
+      <div class="or-row"><span>或使用第三方账号登录</span></div>
       <div class="oauth-row" aria-label="第三方登录">
-        <button class="oauth-btn" type="button" :disabled="githubLoading" @click="handleGithubLogin">
-          <svg class="oauth-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path fill="currentColor" d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
-          </svg>
-          <span>GitHub</span>
-        </button>
         <button class="oauth-btn" type="button" :disabled="googleLoading" @click="handleGoogleLogin">
-          <svg class="oauth-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path fill="#EA4335" d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114A5.56 5.56 0 0 1 8.35 13c0-3.076 2.488-5.571 5.557-5.571 1.48 0 2.81.579 3.8 1.527l3.056-3.056C18.847 2.057 16.518 1 13.907 1 7.855 1 2.923 5.932 2.923 12s4.932 11 10.984 11c6.305 0 10.485-4.429 10.485-10.667 0-.742-.067-1.428-.19-2.048H12.24Z" />
-          </svg>
-          <span>Google</span>
+          <img class="oauth-icon" :src="googleLogo" alt="" aria-hidden="true" />
+          <span>使用 Google 继续</span>
+        </button>
+        <button class="oauth-btn" type="button" :disabled="githubLoading" @click="handleGithubLogin">
+          <img class="oauth-icon" :src="githubLogo" alt="" aria-hidden="true" />
+          <span>使用 GitHub 继续</span>
         </button>
         <button class="oauth-btn" type="button" :disabled="microsoftLoading" @click="handleMicrosoftLogin">
-          <svg class="oauth-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path fill="#F25022" d="M11.4 2H2v9.4h9.4V2z" />
-            <path fill="#7FBA00" d="M22 2h-9.4v9.4H22V2z" />
-            <path fill="#00A4EF" d="M11.4 12.6H2V22h9.4v-9.4z" />
-            <path fill="#FFB900" d="M22 12.6h-9.4V22H22v-9.4z" />
-          </svg>
-          <span>Microsoft</span>
+          <img class="oauth-icon" :src="microsoftLogo" alt="" aria-hidden="true" />
+          <span>使用 Microsoft 继续</span>
         </button>
       </div>
     </div>
@@ -212,6 +226,9 @@ import { useUserStore } from '../store/user'
 import AuthLayout from '../components/auth/AuthLayout.vue'
 import TurnstileWidget from '../components/TurnstileWidget.vue'
 import { isSafeOAuthUrl } from '../utils/oauth'
+import googleLogo from '../assets/brands/google.svg'
+import githubLogo from '../assets/brands/github.svg'
+import microsoftLogo from '../assets/brands/microsoft.svg'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -231,12 +248,13 @@ const captchaImage = ref('')
 const countdown = ref(0)
 let countdownTimer = null
 
-const form = reactive({ username: '', password: '' })
+const form = reactive({ username: '', password: '', captchaId: '', captchaCode: '' })
 const emailForm = reactive({ email: '', code: '', captchaId: '', captchaCode: '' })
 
 const rules = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
+  captchaCode: [{ required: true, message: '请输入图形验证码', trigger: 'blur' }],
 }
 
 const emailRules = {
@@ -266,7 +284,6 @@ onMounted(async () => {
       login_failed: '登录失败，请重试',
     }
     ElMessage.error(errorMessages[oauthError] || '登录失败，请重试')
-    return
   }
 
   if (oauthCode) {
@@ -274,12 +291,15 @@ onMounted(async () => {
       const res = await api.post('/user/oauth/exchange', { code: oauthCode })
       userStore.setToken(res.data.satoken)
       await userStore.fetchUserInfo()
-      ElMessage.success('欢迎回来')
+      ElMessage.success('登录成功')
       router.push('/home')
+      return
     } catch {
       ElMessage.error('登录失败，请重试')
     }
   }
+
+  await loadCaptcha()
 })
 
 onUnmounted(() => {
@@ -289,7 +309,7 @@ onUnmounted(() => {
 async function setLoginMode(mode) {
   loginMode.value = mode
   resetTurnstile()
-  if (mode === 'email' && !captchaImage.value) await loadCaptcha()
+  if (!captchaImage.value) await loadCaptcha()
   await nextTick()
   document.querySelector(`.login-form--${mode} input`)?.focus()
 }
@@ -307,10 +327,11 @@ async function handleLogin() {
     const res = await login({ ...form, turnstileToken: token })
     userStore.setToken(res.data)
     await userStore.fetchUserInfo()
-    ElMessage.success('欢迎回来')
+    ElMessage.success('登录成功')
     router.push('/home')
   } catch {
-    // The axios interceptor already reports the API error.
+    form.captchaCode = ''
+    await loadCaptcha()
   } finally {
     resetTurnstile()
     loading.value = false
@@ -321,7 +342,11 @@ async function loadCaptcha() {
   captchaLoading.value = true
   try {
     const res = await getCaptcha()
-    emailForm.captchaId = res.data?.captchaId || ''
+    const captchaId = res.data?.captchaId || ''
+    form.captchaId = captchaId
+    emailForm.captchaId = captchaId
+    form.captchaCode = ''
+    emailForm.captchaCode = ''
     captchaImage.value = res.data?.captchaImage || ''
   } catch {
     // The axios interceptor already reports the API error.
@@ -332,8 +357,7 @@ async function loadCaptcha() {
 
 async function handleSendCode() {
   const emailOk = await emailFormRef.value.validateField('email').then(() => true).catch(() => false)
-  const captchaOk = await emailFormRef.value.validateField('captchaCode').then(() => true).catch(() => false)
-  if (!emailOk || !captchaOk) return
+  if (!emailOk) return
   const token = getTurnstileToken()
   if (!token) {
     ElMessage.warning('请完成人机验证')
@@ -343,16 +367,15 @@ async function handleSendCode() {
   try {
     await sendCode({
       email: emailForm.email,
-      captchaId: emailForm.captchaId,
-      captchaCode: emailForm.captchaCode,
+      purpose: 'login',
       turnstileToken: token,
     })
     ElMessage.success('验证码已发送')
     startCountdown()
-    resetTurnstile()
   } catch {
-    await loadCaptcha()
+    // The axios interceptor already reports the API error.
   } finally {
+    resetTurnstile()
     sendCodeLoading.value = false
   }
 }
@@ -367,13 +390,14 @@ async function handleEmailLogin() {
   }
   codeLoginLoading.value = true
   try {
-    const res = await loginByCode({ email: emailForm.email, code: emailForm.code, turnstileToken: token })
+    const res = await loginByCode({ ...emailForm, turnstileToken: token })
     userStore.setToken(res.data)
     await userStore.fetchUserInfo()
-    ElMessage.success('欢迎回来')
+    ElMessage.success('登录成功')
     router.push('/home')
   } catch {
-    // The axios interceptor already reports the API error.
+    emailForm.captchaCode = ''
+    await loadCaptcha()
   } finally {
     resetTurnstile()
     codeLoginLoading.value = false
@@ -478,15 +502,19 @@ function resetTurnstile() {
   color: var(--color-text-primary);
 }
 
+.login-form-stage {
+  min-height: 0;
+}
+
 .auth-supplemental {
-  margin-top: 8px;
+  padding-top: 24px;
 }
 
 .or-row {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 12px 0 14px;
+  margin: 0 0 14px;
   color: var(--color-text-secondary);
   font-size: 13px;
 }
@@ -501,18 +529,30 @@ function resetTurnstile() {
 
 .oauth-row {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: 1fr;
+  gap: 12px;
 }
 
 .oauth-btn {
+  width: 100%;
   min-width: 0;
-  min-height: var(--control-height-lg);
+  min-height: 62px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  transition: background var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard);
+  gap: 12px;
+  padding: 0 24px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-1);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-float);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1;
+  transition: background var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard);
 }
 
 .oauth-btn:hover:not(:disabled),
@@ -521,10 +561,22 @@ function resetTurnstile() {
   background: var(--color-surface-1);
 }
 
+.oauth-btn:focus-visible {
+  outline: none;
+  border-color: var(--color-urban);
+  box-shadow: var(--shadow-focus);
+}
+
+.oauth-btn:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
 .oauth-icon {
-  width: 16px;
-  height: 16px;
-  flex: 0 0 16px;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  object-fit: contain;
 }
 
 .auth-footer-copy {

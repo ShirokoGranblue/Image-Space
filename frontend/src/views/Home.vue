@@ -3,9 +3,9 @@
     <NavBar />
 
     <div class="asset-shell" :class="{ 'has-inspector': inspectedImage }">
-      <aside class="workspace-rail" aria-label="图片工作区">
+      <aside class="workspace-rail" aria-label="个人图片工作区">
         <section class="rail-section">
-          <h2 class="rail-title">图库</h2>
+          <h2 class="rail-title">图片</h2>
           <button class="rail-item" :class="{ active: !query.visibility }" type="button" @click="setVisibilityFilter('')">
             <span class="dot green"></span>
             <span>全部图片</span>
@@ -43,10 +43,10 @@
         </section>
 
         <section class="rail-section">
-          <h2 class="rail-title">状态</h2>
+          <h2 class="rail-title">工作区</h2>
           <div class="meter-card">
             <div class="meter-top">
-              <span>页面状态</span>
+              <span>加载状态</span>
               <strong>{{ loading ? '加载中' : '已就绪' }}</strong>
             </div>
             <div class="meter"><span :style="{ width: loading ? '38%' : '74%' }"></span></div>
@@ -62,15 +62,15 @@
           @filter="onFilterChange" @toggle-select-all="toggleSelectAll" @upload="uploadRef.open()" @select-visibility="setVisibilityFilter" @batch-delete="handleBatchDelete"
         />
         <section class="gallery-stage">
-          <GalleryGrid :items="displayedImages" :loading="loading" :error="loadError" :loading-count="8" :initial-eager-count="4" density="compact" empty-title="没有符合条件的图片" empty-description="可以调整筛选条件，或上传一张新图片。" error-description="图片列表请求失败，请检查连接后重试。" @retry="fetchList">
-            <template #item="{ item, priority }"><ImageCard :image="item" :priority="priority" :show-actions="true" :selectable="true" :selected="selectedImageUuids.includes(item.uuid)" @delete="handleDelete" @copy="copyImageLink" @toggle-select="toggleImageSelection" /></template>
+          <GalleryGrid :items="displayedImages" :loading="loading" :error="loadError" :loading-count="8" :initial-eager-count="4" density="compact" empty-title="当前条件下没有图片" empty-description="调整筛选条件，或上传一张新图片。" error-description="图片列表请求失败，请检查连接后重试。" @retry="fetchList">
+            <template #item="{ item, priority }"><ImageCard :image="item" :priority="priority" :show-actions="true" :selectable="true" :selected="selectedImageUuids.includes(item.uuid)" @delete="handleDelete" @edit="handleEdit" @copy="copyImageLink" @toggle-select="toggleImageSelection" /></template>
           </GalleryGrid>
         </section>
 
         <HomeBatchQueue :visible="selectedImageUuids.length > 0" :images="selectedPreviewImages" :selected-count="selectedImageUuids.length" :display-url="getImageDisplayUrl" @toggle="toggleImageSelection" @clear="clearSelection" @delete="handleBatchDelete" />
       </main>
 
-      <aside v-if="inspectedImage" class="asset-inspector" aria-label="图片信息">
+      <aside v-if="inspectedImage" class="asset-inspector" aria-label="图片档案">
         <div class="inspector-card">
           <div class="inspect-preview">
             <img v-if="inspectedImageSrc" :src="inspectedImageSrc" :alt="inspectedImageAlt" loading="lazy" decoding="async" />
@@ -83,7 +83,7 @@
             <div class="inspect-head">
               <div>
                 <h2>{{ inspectedImage.imageName }}</h2>
-                <p>图片信息与分享状态</p>
+                <p>图片信息与可见范围</p>
               </div>
               <span class="inspect-status" :class="visibilityClass(inspectedImage.visibility)">{{ visibilityText(inspectedImage.visibility) }}</span>
             </div>
@@ -109,11 +109,11 @@
 
             <div class="route-box">
               <div class="route-line">
-                <span>分享状态</span>
+                <span>可见范围</span>
                 <code>{{ visibilityText(inspectedImage.visibility) }}</code>
               </div>
               <div class="route-line">
-                <span>访问说明</span>
+                <span>谁可以查看</span>
                 <code>{{ visibilityDescription(inspectedImage.visibility) }}</code>
               </div>
             </div>
@@ -164,7 +164,7 @@
           <el-input v-model="editForm.description" type="textarea" :rows="3" />
         </el-form-item>
         <el-form-item label="标签">
-          <TagInput v-model="editForm.tags" placeholder="多个标签用 # 分隔" />
+          <TagInput v-model="editForm.tags" placeholder="用 # 分隔多个标签" />
         </el-form-item>
         <el-form-item label="可见范围">
           <el-select v-model="editForm.visibility" style="width: 100%">
@@ -217,6 +217,7 @@ import { applyImageAccessUrl, applyImageStatus, imageToPollingResource } from '.
 import { isAccessUrlExpiring } from '../utils/resourceAccess'
 import { hasSpecifiedUsers } from '../utils/visibility'
 import { formatTime } from '../utils/format'
+import { confirmImageDelete } from '../utils/deleteConfirmation'
 import { POLLING_INTERVALS, useResourcePolling } from '../composables/useResourcePolling'
 
 const uploadRef = ref(null)
@@ -421,7 +422,7 @@ async function handleBatchDelete() {
   if (uuids.length === 0) return
   try {
     await ElMessageBox.confirm(
-      `确定删除选中的 ${uuids.length} 张图片吗？`,
+      `删除后无法恢复。确定删除选中的 ${uuids.length} 张图片吗？`,
       '批量删除图片',
       { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' }
     )
@@ -435,6 +436,7 @@ async function handleBatchDelete() {
 }
 
 async function handleDelete(img) {
+  if (!img?.uuid || !(await confirmImageDelete(img))) return
   try {
     await deleteImage(img.uuid)
     ElMessage.success('图片已删除')
@@ -473,14 +475,14 @@ function handleEdit(img) {
 async function copyImageLink(img) {
   const url = getImageDownloadUrl(img)
   if (!url) {
-    ElMessage.warning('暂无可复制链接')
+    ElMessage.warning('暂时没有可复制的分享链接')
     return
   }
   try {
     await navigator.clipboard.writeText(new URL(url, window.location.origin).href)
-    ElMessage.success('链接已复制')
+    ElMessage.success('分享链接已复制')
   } catch {
-    ElMessage.warning('当前浏览器不支持自动复制')
+    ElMessage.warning('无法自动复制，请手动复制分享链接')
   }
 }
 

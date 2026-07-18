@@ -2,11 +2,11 @@
   <div class="square-intro">
     <header class="square-hero">
       <div class="square-hero-copy">
-        <span class="eyebrow">公开广场</span>
-        <h1>发现大家分享的图片。</h1>
-        <p>按分类、标签或关键词浏览公开作品，也可以进入作者主页查看更多内容。</p>
+        <span class="eyebrow">EXPLORE</span>
+        <h1>发现不同的创作、设计与灵感</h1>
+        <p>在这里分享你的作品，与创作者们共同构建 AstralSpace</p>
       </div>
-      <div class="square-hero-metrics" aria-label="公开广场图片总数">
+      <div class="square-hero-metrics" aria-label="公开图片总数">
         <div class="metric-cell"><strong>{{ total }}</strong><span>公开图片</span></div>
       </div>
     </header>
@@ -56,7 +56,7 @@ const emit = defineEmits(['update:keyword', 'search', 'select-category', 'select
 h1 { max-width: 860px; margin: 0; font-family: var(--font-title); font-size: clamp(40px,4.6vw,64px); font-weight: 600; line-height: 1.02; }
 .square-hero p { max-width: 680px; margin: var(--space-3) 0 0; color: var(--color-text-secondary); line-height: var(--leading-md); }
 .square-hero-metrics { display: grid; border-left: 1px solid var(--color-border-subtle); }
-.metric-cell { display: flex; flex-direction: column; justify-content: center; padding: var(--space-5); }
+.metric-cell { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: var(--space-5); text-align: center; }
 .metric-cell strong { color: var(--color-night); font-family: var(--font-title); font-size: 38px; font-weight: 600; line-height: 1; }
 .metric-cell span { margin-top: 7px; color: var(--color-text-muted); font-size: var(--text-xs); font-weight: 700; letter-spacing: .08em; }
 .square-command { display: grid; grid-template-columns: minmax(280px,1fr) 190px 190px auto; align-items: center; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--color-border-subtle); border-top: 0; background: var(--color-surface-1); }

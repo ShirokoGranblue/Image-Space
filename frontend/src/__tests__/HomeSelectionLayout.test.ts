@@ -18,4 +18,10 @@ describe('home selection layout contracts', () => {
   it('reserves two description lines so opening the inspector does not move the gallery', () => {
     expect(homeToolbar).toMatch(/p\{min-height:3\.3em;/)
   })
+
+  it('forwards card edit actions to the existing image edit dialog', () => {
+    expect(homePage).toContain('@edit="handleEdit"')
+    expect(homePage).toContain('function handleEdit(img)')
+    expect(homePage).toContain('<el-dialog v-model="editVisible"')
+  })
 })

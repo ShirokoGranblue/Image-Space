@@ -81,6 +81,10 @@ turnstile:
   secret-key: ${TURNSTILE_SECRET_KEY:}
   siteverify-url: ${TURNSTILE_SITEVERIFY_URL:https://challenges.cloudflare.com/turnstile/v0/siteverify}
 
+logging:
+  pattern:
+    dateformat: "yyyy-MM-dd'T'HH:mm:ss.SSSXXX,UTC"
+
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl

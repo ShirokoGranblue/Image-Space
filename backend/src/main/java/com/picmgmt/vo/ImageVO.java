@@ -43,6 +43,7 @@ public class ImageVO {
     private Boolean ownedByMe;
     private Boolean editableByMe;
     private Long likeCount;
+    private Long commentCount;
     private Boolean likedByMe;
     private LocalDateTime uploadTime;
 }

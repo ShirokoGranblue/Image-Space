@@ -19,7 +19,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,12 +33,14 @@ import java.util.stream.Collectors;
 public class NotificationServiceImpl implements NotificationService {
 
     private static final int PREVIEW_LIMIT = 80;
+    private static final ZoneId DATABASE_ZONE = ZoneId.of("Asia/Shanghai");
 
     private final NotificationMapper notificationMapper;
     private final UserMapper userMapper;
     private final StorageService storageService;
     private final MediaUrlUtil mediaUrlUtil;
     private final ImageUrlService imageUrlService;
+    private final Clock clock;
 
     @Override
     @Transactional
@@ -149,15 +154,17 @@ public class NotificationServiceImpl implements NotificationService {
         notification.setActorUserId(actorUserId);
         notification.setType(type);
         notification.setReadFlag(0);
-        notification.setCreateTime(LocalDateTime.now());
+        notification.setCreateTime(LocalDateTime.ofInstant(clock.instant(), DATABASE_ZONE));
         return notification;
     }
 
     private void decorate(NotificationVO vo, Map<Long, User> actorsById) {
+        vo.setCreateTime(toInstant(vo.getStoredCreateTime()));
         User actor = vo.getActorUserId() == null ? null : actorsById.get(vo.getActorUserId());
         if (actor != null) {
             String displayName = actor.getDisplayName();
             vo.setActorName(displayName != null && !displayName.isBlank() ? displayName : actor.getUsername());
+            vo.setActorUsername(actor.getUsername());
             if (actor.getAvatarKey() != null && !actor.getAvatarKey().isBlank()) {
                 vo.setActorAvatarUrl(mediaUrlUtil.userAvatarUrl(actor.getUuid(), actor.getAvatarKey()));
             } else if (actor.getAvatar() != null && !actor.getAvatar().isBlank()) {
@@ -172,6 +179,10 @@ public class NotificationServiceImpl implements NotificationService {
             vo.setImagePreviewUrl("/api/image/download/" + vo.getImageUuid());
         }
         vo.setTargetUrl(buildTargetUrl(vo));
+    }
+
+    private Instant toInstant(LocalDateTime value) {
+        return value == null ? null : value.atZone(DATABASE_ZONE).toInstant();
     }
 
     private String buildTargetUrl(NotificationVO vo) {

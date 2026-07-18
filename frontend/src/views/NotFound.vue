@@ -2,9 +2,9 @@
   <main class="not-found-page">
     <section class="not-found-panel">
       <p class="code">404</p>
-      <h1>页面不存在</h1>
-      <p>该地址没有对应页面，分类管理已整合到图片页。</p>
-      <el-button type="primary" @click="$router.replace('/home')">返回图片页</el-button>
+      <h1>没有找到这个页面</h1>
+      <p>请检查当前地址，或返回图库继续浏览。</p>
+      <el-button type="primary" @click="$router.replace('/home')">返回图库</el-button>
     </section>
   </main>
 </template>

@@ -20,12 +20,20 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class NotificationServiceImplTest {
+
+    private static final Instant FIXED_NOW = Instant.parse("2026-07-16T02:30:00Z");
 
     @Mock private NotificationMapper notificationMapper;
     @Mock private UserMapper userMapper;
@@ -38,7 +46,14 @@ class NotificationServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new NotificationServiceImpl(notificationMapper, userMapper, storageService, mediaUrlUtil, imageUrlService);
+        service = new NotificationServiceImpl(
+                notificationMapper,
+                userMapper,
+                storageService,
+                mediaUrlUtil,
+                imageUrlService,
+                Clock.fixed(FIXED_NOW, ZoneOffset.UTC)
+        );
         stpMock = mockStatic(StpUtil.class);
     }
 
@@ -66,6 +81,7 @@ class NotificationServiceImplTest {
         assertEquals(11L, notification.getCommentId());
         assertEquals("COMMENT", notification.getType());
         assertEquals(80, notification.getContentPreview().length());
+        assertEquals(LocalDateTime.of(2026, 7, 16, 10, 30), notification.getCreateTime());
     }
 
     @Test
@@ -93,6 +109,7 @@ class NotificationServiceImplTest {
         vo.setImageId(7L);
         vo.setImageUuid("400a1e49-6990-489e-b4a8-35eb0a02d056");
         vo.setImageStorageKey("images/1/summer.jpg");
+        vo.setStoredCreateTime(LocalDateTime.of(2026, 7, 16, 10, 30));
         page.setRecords(java.util.List.of(vo));
         when(notificationMapper.selectNotificationVOPage(any(), eq(1L), eq(false))).thenReturn(page);
         User actor = new User();
@@ -113,9 +130,25 @@ class NotificationServiceImplTest {
 
         NotificationVO resultVo = result.getRecords().get(0);
         assertEquals("Alice", resultVo.getActorName());
+        assertEquals("alice", resultVo.getActorUsername());
         assertEquals(expectedAvatarUrl, resultVo.getActorAvatarUrl());
         assertEquals(expectedPreviewUrl, resultVo.getImagePreviewUrl());
         assertEquals("/image/400a1e49-6990-489e-b4a8-35eb0a02d056?notificationId=9", resultVo.getTargetUrl());
+        assertEquals(FIXED_NOW, resultVo.getCreateTime());
         verify(imageUrlService).getPrivateImageUrl(eq("images/1/summer.jpg"));
+    }
+
+    @Test
+    void listMineShouldKeepNullCreateTimeWithoutFailingThePage() {
+        stpMock.when(StpUtil::getLoginIdAsLong).thenReturn(1L);
+        Page<NotificationVO> page = new Page<>(1, 20);
+        NotificationVO vo = new NotificationVO();
+        vo.setId(9L);
+        page.setRecords(java.util.List.of(vo));
+        when(notificationMapper.selectNotificationVOPage(any(), eq(1L), eq(false))).thenReturn(page);
+
+        Page<NotificationVO> result = service.listMine(1, 20, false);
+
+        assertNull(result.getRecords().get(0).getCreateTime());
     }
 }

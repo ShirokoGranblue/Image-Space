@@ -6,8 +6,10 @@ import com.picmgmt.common.BusinessException;
 import com.picmgmt.common.ErrorCode;
 import com.picmgmt.entity.Category;
 import com.picmgmt.entity.Image;
+import com.picmgmt.like.LikeTarget;
 import com.picmgmt.mapper.CategoryMapper;
 import com.picmgmt.repository.ImageRepository;
+import com.picmgmt.service.LikeService;
 import com.picmgmt.storage.StorageService;
 import com.picmgmt.vo.ImageVO;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +40,7 @@ public class ImageWriteService {
     private final ImageUrlService imageUrlService;
     private final MediaMetaCacheService mediaMetaCacheService;
     private final CloudflareCachePurgeService cloudflareCachePurgeService;
+    private final LikeService likeService;
 
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp", "gif");
     private static final int MAX_DESCRIPTION_LENGTH = 500;
@@ -163,6 +166,7 @@ public class ImageWriteService {
         permissionService.validateOwnershipOrAdmin(image);
 
         deleteImageObjects(image);
+        likeService.deleteAllByTarget(LikeTarget.IMAGE, imageId);
         imageRepository.deleteById(imageId);
         evictMediaState(image);
         purgePublicUrlIfNeeded(image);
@@ -174,6 +178,7 @@ public class ImageWriteService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
         permissionService.validateOwnershipOrAdmin(image);
         deleteImageObjects(image);
+        likeService.deleteAllByTarget(LikeTarget.IMAGE, image.getId());
         imageRepository.deleteById(image.getId());
         evictMediaState(image);
         purgePublicUrlIfNeeded(image);

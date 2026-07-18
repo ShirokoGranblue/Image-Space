@@ -4,6 +4,7 @@ import { nextTick } from 'vue'
 
 // Mock vue-router
 const mockPush = vi.fn()
+const adminDomainState = vi.hoisted(() => ({ allowed: false }))
 vi.mock('vue-router', () => ({
   useRouter: () => ({ push: mockPush }),
   RouterLink: {
@@ -13,8 +14,12 @@ vi.mock('vue-router', () => ({
   },
 }))
 
+vi.mock('../utils/adminDomain', () => ({
+  isAllowedAdminDomain: () => adminDomainState.allowed,
+}))
+
 // Mock pinia user store
-const mockUserInfo = { id: 1, username: 'testuser', displayName: 'Test', avatar: '/avatar.jpg' }
+const mockUserInfo = { id: 1, username: 'testuser', displayName: 'Test', avatar: '/avatar.jpg', role: 'user' }
 vi.mock('../store/user', () => ({
   useUserStore: vi.fn(() => ({
     token: 'fake-token',
@@ -69,6 +74,8 @@ function mountNavBar(routePath = '/home') {
 describe('NavBar', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    adminDomainState.allowed = false
+    mockUserInfo.role = 'user'
     // Reset viewport to desktop
     Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true })
   })
@@ -78,15 +85,15 @@ describe('NavBar', () => {
       const wrapper = mountNavBar()
       const logo = wrapper.find('.logo')
       expect(logo.exists()).toBe(true)
-      expect(logo.text()).toContain('图像空间')
+      expect(logo.text()).toContain('AstralSpace')
       expect(logo.attributes('href')).toBe('/home')
     })
 
-    it('renders the logo icon image', () => {
+    it('uses a text-only wordmark without the former icon or subtitle', () => {
       const wrapper = mountNavBar()
-      const logoImg = wrapper.find('.logo-mark')
-      expect(logoImg.exists()).toBe(true)
-      expect(logoImg.element.tagName).toBe('IMG')
+      expect(wrapper.find('.logo-wordmark').text()).toBe('AstralSpace')
+      expect(wrapper.find('.logo-mark').exists()).toBe(false)
+      expect(wrapper.find('.logo small').exists()).toBe(false)
     })
   })
 
@@ -94,7 +101,7 @@ describe('NavBar', () => {
     it('renders nav links when logged in', () => {
       const wrapper = mountNavBar()
       const links = wrapper.findAll('.nav-link')
-      expect(links.length).toBeGreaterThanOrEqual(2)
+      expect(links.map(link => link.text())).toEqual(['Explore', 'Images', 'Profile'])
     })
 
     it('highlights the active route', () => {
@@ -107,6 +114,26 @@ describe('NavBar', () => {
       const wrapper = mountNavBar('/square')
       const squareLink = wrapper.findAll('.nav-link').find(l => l.attributes('href') === '/square')
       expect(squareLink?.classes()).toContain('active')
+    })
+
+    it('shows the audit entry only for admins on the admin domain', () => {
+      mockUserInfo.role = 'admin'
+      adminDomainState.allowed = true
+
+      const wrapper = mountNavBar('/admin/audit-log')
+      const auditLink = wrapper.findAll('.nav-link').find(link => link.attributes('href') === '/admin/audit-log')
+
+      expect(auditLink?.text()).toBe('Audit')
+      expect(auditLink?.classes()).toContain('active')
+    })
+
+    it('does not show the audit entry for an admin on the ordinary domain', () => {
+      mockUserInfo.role = 'admin'
+      adminDomainState.allowed = false
+
+      const wrapper = mountNavBar()
+
+      expect(wrapper.findAll('.nav-link').some(link => link.attributes('href') === '/admin/audit-log')).toBe(false)
     })
   })
 
@@ -162,8 +189,7 @@ describe('NavBar', () => {
 
       const mobileLinks = wrapper.findAll('.mobile-nav-item')
       expect(mobileLinks.length).toBeGreaterThanOrEqual(2)
-      expect(mobileLinks[0].text()).toContain('广场')
-      expect(mobileLinks[1].text()).toContain('图片')
+      expect(mobileLinks.map(link => link.text())).toEqual(['Explore', 'Images', 'Profile'])
     })
   })
 
@@ -178,7 +204,7 @@ describe('NavBar', () => {
       const wrapper = mountNavBar()
       const logoutBtn = wrapper.find('.logout-btn')
       expect(logoutBtn.exists()).toBe(true)
-      expect(logoutBtn.text()).toBe('退出')
+      expect(logoutBtn.text()).toBe('Exit')
     })
   })
 })

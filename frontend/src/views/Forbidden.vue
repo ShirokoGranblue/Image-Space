@@ -2,9 +2,9 @@
   <main class="forbidden-page">
     <section class="forbidden-panel">
       <p class="code">403</p>
-      <h1>当前域名无权访问后台管理系统</h1>
-      <p>请使用管理员后台域名访问。</p>
-      <el-button type="primary" @click="$router.replace('/home')">返回图片页</el-button>
+      <h1>权限拒绝</h1>
+      <p>你没有访问此页面的权限。请使用管理员账号，并通过管理员后台域名访问。</p>
+      <el-button type="primary" @click="$router.replace('/home')">返回图库</el-button>
     </section>
   </main>
 </template>

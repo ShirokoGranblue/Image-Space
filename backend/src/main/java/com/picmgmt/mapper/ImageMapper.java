@@ -125,6 +125,19 @@ public interface ImageMapper extends BaseMapper<Image> {
 
     @Select("""
         <script>
+            SELECT image_id, COUNT(*) AS cnt
+            FROM comments
+            WHERE image_id IN
+            <foreach collection='imageIds' item='id' open='(' separator=',' close=')'>
+                #{id}
+            </foreach>
+            GROUP BY image_id
+        </script>
+    """)
+    List<Map<String, Object>> countCommentsByImageIds(@Param("imageIds") List<Long> imageIds);
+
+    @Select("""
+        <script>
             SELECT image_id
             FROM image_likes
             WHERE user_id = #{userId}

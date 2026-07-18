@@ -58,7 +58,7 @@
 
       <div class="meta-row">
         <span class="category-label">{{ image.categoryName || '未分类' }}</span>
-        <span class="meta-text">{{ variant === 'square' ? authorName : fileSizeText }}</span>
+        <span class="meta-text"><UserIdentity v-if="variant === 'square'" :display-name="image.displayName" :username="image.username" fallback="匿名用户" /><template v-else>{{ fileSizeText }}</template></span>
       </div>
 
       <div v-if="variant === 'square'" class="square-foot">
@@ -66,7 +66,7 @@
         <button
           class="item-action item-action--like"
           type="button"
-          :aria-label="image.likedByMe ? `取消喜欢：${imageName}` : `喜欢图片：${imageName}`"
+          :aria-label="image.likedByMe ? `取消点赞：${imageName}` : `点赞图片：${imageName}`"
           :aria-pressed="String(Boolean(image.likedByMe))"
           @click="emit('like', image)"
         >
@@ -98,6 +98,7 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Delete, Edit, Link, PictureFilled, Star } from '@element-plus/icons-vue'
 import { getImageAlt, getImageDisplayUrl } from '../../utils/imageRequests'
+import UserIdentity from '../ui/UserIdentity.vue'
 
 const props = defineProps({
   image: { type: Object, required: true },
@@ -116,7 +117,6 @@ const router = useRouter()
 const imageSrc = computed(() => getImageDisplayUrl(props.image))
 const imageStatus = ref(imageSrc.value ? 'loading' : 'error')
 const imageName = computed(() => getImageAlt(props.image))
-const authorName = computed(() => props.image.displayName || props.image.username || '匿名用户')
 const likeCount = computed(() => Number(props.image.likeCount || 0))
 const tagsText = computed(() => String(props.image.tags || '').split('#').map(tag => tag.trim()).filter(Boolean).join(' / '))
 const fileSizeText = computed(() => {

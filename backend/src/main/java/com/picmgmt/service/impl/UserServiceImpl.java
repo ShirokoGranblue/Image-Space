@@ -16,11 +16,13 @@ import com.picmgmt.dto.CodeLoginDTO;
 import com.picmgmt.dto.LoginDTO;
 import com.picmgmt.dto.RegisterDTO;
 import com.picmgmt.entity.User;
+import com.picmgmt.mapper.ImageLikeMapper;
 import com.picmgmt.mapper.UserMapper;
 import com.picmgmt.repository.UserRepository;
 import com.picmgmt.service.CaptchaService;
 import com.picmgmt.service.EmailService;
 import com.picmgmt.service.UserService;
+import com.picmgmt.vo.UserProfileVO;
 import com.picmgmt.vo.UserVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +47,7 @@ public class UserServiceImpl implements UserService {
     private final UserRoleMapper userRoleMapper;
     private final BloomFilterService bloomFilterService;
     private final com.picmgmt.storage.StorageService storageService;
+    private final ImageLikeMapper imageLikeMapper;
 
     @Override
     @Transactional
@@ -52,6 +55,7 @@ public class UserServiceImpl implements UserService {
         if (!dto.getPassword().equals(dto.getConfirmPassword())) {
             throw new BusinessException(ErrorCode.PASSWORD_MISMATCH);
         }
+        captchaService.verify(dto.getCaptchaId(), dto.getCaptchaCode());
         String email = dto.getEmail().trim();
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(User::getUsername, dto.getUsername());
@@ -92,6 +96,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public String login(LoginDTO dto) {
+        captchaService.verify(dto.getCaptchaId(), dto.getCaptchaCode());
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(User::getUsername, dto.getUsername());
         User user = userMapper.selectOne(wrapper);
@@ -138,6 +143,19 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException(ErrorCode.USER_DELETED);
         }
         return userRepository.toVO(user);
+    }
+
+    @Override
+    public UserProfileVO getUserProfileByUuid(String uuid) {
+        User user = userRepository.findByUuid(uuid)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        if (user.getDeleted() != null && user.getDeleted() == 1) {
+            throw new BusinessException(ErrorCode.USER_DELETED);
+        }
+        UserProfileVO profile = BeanUtil.copyProperties(userRepository.toVO(user), UserProfileVO.class);
+        Long publicLikeCount = imageLikeMapper.countPublicLikesByOwnerId(user.getId());
+        profile.setPublicLikeCount(publicLikeCount == null ? 0L : publicLikeCount);
+        return profile;
     }
 
     @Override
@@ -286,7 +304,6 @@ public class UserServiceImpl implements UserService {
         String redisKey = verificationCodeKey(normalizedPurpose, email);
         String cooldownKey = verificationCooldownKey(normalizedPurpose, email);
         String attemptsKey = verificationAttemptsKey(normalizedPurpose, email);
-        captchaService.verify(captchaId, captchaCode);
         if (!redisCacheService.setIfAbsent(cooldownKey, "1", Duration.ofSeconds(60))) {
             throw new BusinessException(ErrorCode.CODE_TOO_FREQUENT);
         }
@@ -303,6 +320,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public String loginByCode(CodeLoginDTO dto) {
+        captchaService.verify(dto.getCaptchaId(), dto.getCaptchaCode());
         String email = dto.getEmail().trim();
         User user = userMapper.selectOne(
                 new LambdaQueryWrapper<User>().eq(User::getEmail, email));

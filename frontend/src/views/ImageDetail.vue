@@ -9,10 +9,6 @@
 
       <section class="detail-layout" v-if="image.id && !image.deleted">
         <div class="detail-main">
-          <div class="stage-topline">
-            <span>{{ visibilityText(image.visibility) }}</span>
-            <span>{{ formatTime(image.uploadTime) }}</span>
-          </div>
           <button
             class="detail-image"
             type="button"
@@ -66,7 +62,7 @@
         <p>图片已删除或不可用</p>
       </section>
 
-      <ImageCommentsSection v-if="image.id && !image.deleted" :comments="comments" :text="commentText" :emojis="emojis" :file-name="cmtFile?.name || ''" :sending="sending" :current-user-id="currentUserId" :highlighted-target="highlightedTarget" :format-time="formatTime" @update:text="commentText = $event" @insert-emoji="insertEmoji" @file-change="onCmtFileChange" @submit="handleAddComment" @view-image="viewCmtImg" @toggle-like="handleToggleCommentLike" @delete="handleDeleteComment" />
+      <ImageCommentsSection v-if="image.id && !image.deleted" :comments="comments" :text="commentText" :emojis="emojis" :file-name="cmtFile?.name || ''" :sending="sending" :current-user-id="currentUserId" :highlighted-target="highlightedTarget" :format-time="formatRelativeTime" @update:text="commentText = $event" @insert-emoji="insertEmoji" @file-change="onCmtFileChange" @submit="handleAddComment" @view-image="viewCmtImg" @toggle-like="handleToggleCommentLike" @delete="handleDeleteComment" />
 
       <el-dialog v-model="editVisible" title="编辑图片信息" width="520px" class="asset-dialog">
         <el-form :model="editForm" label-position="top" v-if="editForm.uuid">
@@ -85,9 +81,9 @@
             <el-input v-model="editForm.description" type="textarea" :rows="3" />
           </el-form-item>
           <el-form-item label="标签">
-            <TagInput v-model="editForm.tags" placeholder="多个标签用 # 分隔" />
+            <TagInput v-model="editForm.tags" placeholder="用 # 分隔多个标签" />
           </el-form-item>
-          <el-form-item label="可见权限">
+          <el-form-item label="可见范围">
             <el-select v-model="editForm.visibility">
               <el-option label="仅自己" value="PRIVATE" />
               <el-option label="公开" value="PUBLIC" />
@@ -138,7 +134,7 @@ import { getComments, addComment, deleteComment, uploadCommentImage, fetchCommen
 import { getCategoryList, createCategory } from '../api/category'
 import { useUserStore } from '../store/user'
 import { getToken } from '../utils/token'
-import { formatTime } from '../utils/format'
+import { formatRelativeTime } from '../utils/format'
 import { getImageAlt, getImagePreviewUrl, getImageViewerUrl } from '../utils/imageRequests'
 import { applyImageAccessUrl, applyImageStatus, imageToPollingResource } from '../utils/resourceAdapters'
 import { isAccessUrlExpiring, parseAccessUrlMetadata } from '../utils/resourceAccess'
@@ -375,6 +371,7 @@ async function handleToggleCommentLike(c) {
       : await likeComment(c.id)
     c.likeCount = res.data.likeCount
     c.likedByMe = res.data.likedByMe
+    ElMessage.success(c.likedByMe ? '已点赞' : '已取消点赞')
   } catch {}
 }
 
@@ -455,10 +452,10 @@ async function handleDownload() {
 }
 
 async function handleDownloadFormat(format) {
-  await downloadFromUrl(downloadImageAs(image.value.uuid, format))
+  await downloadFromUrl(downloadImageAs(image.value.uuid, format), format)
 }
 
-async function downloadFromUrl(downloadUrl) {
+async function downloadFromUrl(downloadUrl, format = '') {
   downloading.value = true
   try {
     const token = getToken()
@@ -478,7 +475,7 @@ async function downloadFromUrl(downloadUrl) {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = image.value.imageName || 'image'
+    a.download = downloadFilename(format)
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -488,6 +485,13 @@ async function downloadFromUrl(downloadUrl) {
   } finally {
     downloading.value = false
   }
+}
+
+function downloadFilename(format) {
+  const sourceName = image.value.imageName || image.value.originalFilename || 'image'
+  if (!format) return sourceName
+  const baseName = sourceName.replace(/\.[^.]+$/, '') || 'image'
+  return `${baseName}.${format}`
 }
 
 function viewCmtImg(src) {
@@ -536,12 +540,6 @@ function handleMainImageAction() {
   openMainViewer()
 }
 
-function visibilityText(visibility) {
-  if (visibility === 'PUBLIC') return '公开'
-  if (visibility === 'SPECIFIED') return '指定用户'
-  return '仅自己'
-}
-
 function highlightFromNotification() {
   const highlight = route.query.highlight
   const commentId = route.query.commentId
@@ -572,14 +570,13 @@ function highlightFromNotification() {
 .detail-container { width: min(calc(100% - (2 * var(--page-gutter))), var(--page-standard)); padding: 104px 0 var(--space-8); }
 .desk-back { display: inline-flex; align-items: center; gap: var(--space-2); min-height: 44px; margin-bottom: var(--space-5); padding: 0 var(--space-3); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm); background: transparent; color: var(--color-text-secondary); font-family: var(--font-body); cursor: pointer; }
 .desk-back:hover,.desk-back:focus-visible { border-color: var(--color-border-strong); background: var(--color-surface-2); outline: 2px solid var(--color-urban); outline-offset: 2px; }
-.detail-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 380px); align-items: start; gap: var(--space-5); }
-.detail-main { min-width: 0; display: grid; grid-template-rows: auto 1fr; border: 1px solid var(--color-border-subtle); background: var(--color-surface-inverse); }
-.stage-topline { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: 0 var(--space-4); border-bottom: 1px solid rgba(238,240,236,.14); color: rgba(238,240,236,.68); font-size: var(--text-xs); }
-.detail-image { position: relative; display: grid; min-height: 520px; padding: var(--space-4); overflow: hidden; place-items: center; border: 0; background: var(--color-viewer-bg); color: var(--color-text-inverse); cursor: zoom-in; }
+.detail-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 380px); align-items: stretch; gap: 0; overflow: hidden; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm); background: var(--color-surface-1); }
+.detail-main { min-width: 0; display: grid; border-right: 1px solid var(--color-border-subtle); background: transparent; }
+.detail-image { position: relative; display: grid; min-height: 520px; padding: var(--space-4); overflow: hidden; place-items: center; border: 0; background: transparent; color: var(--color-text-primary); cursor: zoom-in; }
 .detail-image img { display: block; max-width: min(92%,1100px); max-height: min(82vh,820px); object-fit: contain; transition: transform var(--duration-overlay) var(--ease-standard),filter var(--duration-standard) var(--ease-standard); }
 .detail-image img.zoomed { transform: scale(1.02); filter: brightness(.78); }
-.detail-image-loading,.detail-image-error { position: absolute; z-index: 2; display: grid; place-items: center; gap: var(--space-2); color: rgba(238,240,236,.74); font-family: var(--font-ui); }
-.detail-image-error strong { color: var(--color-text-inverse); }.detail-image-error small { color: rgba(238,240,236,.6); }
+.detail-image-loading,.detail-image-error { position: absolute; z-index: 2; display: grid; place-items: center; gap: var(--space-2); color: var(--color-text-muted); font-family: var(--font-ui); }
+.detail-image-error strong { color: var(--color-text-primary); }.detail-image-error small { color: var(--color-text-muted); }
 .img-hover-overlay { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: var(--space-2); background: rgba(14,18,22,.32); color: var(--color-text-inverse); pointer-events: none; }
 .fade-enter-active,.fade-leave-active { transition: opacity var(--duration-standard) var(--ease-standard); }.fade-enter-from,.fade-leave-to { opacity: 0; }
 .detail-container :deep(.comments-section) { margin-top: var(--space-6); }
@@ -587,7 +584,7 @@ function highlightFromNotification() {
 .section-label { color: var(--color-vermilion); font-size: var(--text-xs); font-weight: 700; letter-spacing: .08em; }
 .deleted-state p { margin-top: var(--space-3); color: var(--color-text-primary); font-family: var(--font-title); font-size: var(--text-2xl); }
 .category-row { display: grid; grid-template-columns: 1fr auto; gap: var(--space-2); width: 100%; }.category-row :deep(.el-select) { width: 100%; }
-@media (max-width:1120px) { .detail-layout { grid-template-columns: 1fr; } .detail-image { min-height: 460px; } }
-@media (max-width:700px) { .detail-container { padding-top: 82px; } .detail-image { min-height: 320px; } .stage-topline { min-height: 48px; } }
+@media (max-width:1120px) { .detail-layout { grid-template-columns: 1fr; } .detail-main { border-right: 0; border-bottom: 1px solid var(--color-border-subtle); } .detail-image { min-height: 460px; } }
+@media (max-width:700px) { .detail-container { padding-top: 82px; } .detail-image { min-height: 320px; } }
 @media (prefers-reduced-motion:reduce) { .detail-image img,.fade-enter-active,.fade-leave-active { transition: none; } }
 </style>

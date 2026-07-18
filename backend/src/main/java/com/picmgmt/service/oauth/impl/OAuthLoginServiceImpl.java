@@ -15,6 +15,7 @@ import com.picmgmt.entity.UserOauthAccount;
 import com.picmgmt.mapper.UserMapper;
 import com.picmgmt.mapper.UserOauthAccountMapper;
 import com.picmgmt.service.oauth.OAuthLoginService;
+import com.picmgmt.service.oauth.OAuthUsernameGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -164,14 +165,19 @@ public class OAuthLoginServiceImpl implements OAuthLoginService {
         User user = new User();
         user.setUuid(UUID.randomUUID().toString());
 
-        // 生成用户名
-        String baseUsername = generateUsername(userInfo);
-        String username = baseUsername;
-        int suffix = 1;
-        while (userMapper.selectCount(
-                new LambdaQueryWrapper<User>().eq(User::getUsername, username)) > 0) {
-            username = baseUsername + "_" + suffix++;
-        }
+        String baseUsername = OAuthUsernameGenerator.createBaseUsername(
+                PROVIDER_MICROSOFT,
+                userInfo.getDisplayName(),
+                null,
+                userInfo.getEmail(),
+                userInfo.getId()
+        );
+        String username = OAuthUsernameGenerator.ensureUnique(
+                baseUsername,
+                candidate -> userMapper.selectCount(
+                        new LambdaQueryWrapper<User>().eq(User::getUsername, candidate)
+                ) > 0
+        );
         user.setUsername(username);
 
         // 设置显示名
@@ -195,35 +201,5 @@ public class OAuthLoginServiceImpl implements OAuthLoginService {
         user.setDeleted(0);
 
         return user;
-    }
-
-    /**
-     * 生成用户名
-     */
-    private String generateUsername(MicrosoftUserInfo userInfo) {
-        // 优先使用 displayName
-        if (userInfo.getDisplayName() != null && !userInfo.getDisplayName().isBlank()) {
-            // 清理 displayName，只保留合法字符
-            String cleaned = userInfo.getDisplayName()
-                    .replaceAll("[^a-zA-Z0-9_\\u4e00-\\u9fa5]", "_")
-                    .replaceAll("_+", "_")
-                    .replaceAll("^_|_$", "");
-            if (!cleaned.isBlank() && cleaned.length() >= 2) {
-                return "ms_" + cleaned.substring(0, Math.min(cleaned.length(), 30));
-            }
-        }
-
-        // 使用邮箱前缀
-        String email = userInfo.getEmail();
-        if (email != null && !email.isBlank() && email.contains("@")) {
-            String prefix = email.split("@")[0];
-            prefix = prefix.replaceAll("[^a-zA-Z0-9_]", "_");
-            if (prefix.length() >= 2) {
-                return "ms_" + prefix.substring(0, Math.min(prefix.length(), 30));
-            }
-        }
-
-        // 最后使用 microsoft_user_ + 短ID
-        return "microsoft_user_" + UUID.randomUUID().toString().substring(0, 8);
     }
 }

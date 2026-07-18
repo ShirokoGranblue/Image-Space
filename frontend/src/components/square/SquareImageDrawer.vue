@@ -2,16 +2,16 @@
   <Teleport to="body">
     <transition name="drawer-slide">
       <div v-if="visible && image" class="drawer-backdrop" @pointerdown.self="emit('close')">
-        <aside class="image-drawer" aria-label="图片快速详情" tabindex="-1" @pointerdown.stop @keydown.esc.prevent.stop="emit('close')">
+        <aside class="image-drawer" aria-label="图片速览" tabindex="-1" @pointerdown.stop @keydown.esc.prevent.stop="emit('close')">
           <button ref="closeButtonRef" class="drawer-close" type="button" aria-label="关闭" @click="emit('close')"><el-icon><Close /></el-icon></button>
           <button v-if="imageSrc" class="drawer-preview-button" type="button" :aria-label="`沉浸查看：${imageAlt}`" @click="emit('view', image)"><img :src="imageSrc" :alt="imageAlt" class="drawer-img" loading="eager" decoding="async" /></button>
           <div v-else class="drawer-placeholder"><el-icon><PictureFilled /></el-icon></div>
           <div class="drawer-body">
             <span class="drawer-kicker">{{ image.categoryName || '未分类' }}</span><h2>{{ imageAlt }}</h2>
-            <div class="drawer-meta"><span>{{ image.displayName || image.username || '匿名用户' }}</span><span>{{ image.likeCount || 0 }} 次喜欢</span><span>{{ tags.length }} 个标签</span></div>
+            <div class="drawer-meta"><UserIdentity :display-name="image.displayName" :username="image.username" fallback="匿名用户" /><span>{{ image.likeCount || 0 }} 次点赞</span><span>{{ tags.length }} 个标签</span></div>
             <p v-if="image.description" class="drawer-desc">{{ image.description }}</p>
             <div v-if="tags.length" class="drawer-tags"><button v-for="tag in tags" :key="tag" type="button" @click="emit('select-tag', tag)">#{{ tag }}</button></div>
-            <div class="drawer-actions"><button class="secondary-command" type="button" @click="emit('view', image)">沉浸查看</button><button class="primary-command compact" type="button" @click="emit('detail', image)">查看详情</button><button class="secondary-command" type="button" @click="emit('like', image)">{{ image.likedByMe ? '取消喜欢' : '喜欢' }}</button></div>
+            <div class="drawer-actions"><button class="secondary-command" type="button" @click="emit('view', image)">沉浸查看</button><button class="primary-command compact" type="button" @click="emit('detail', image)">查看详情</button><button class="secondary-command" type="button" @click="emit('like', image)">{{ image.likedByMe ? '取消点赞' : '点赞' }}</button></div>
           </div>
         </aside>
       </div>
@@ -23,6 +23,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { Close, PictureFilled } from '@element-plus/icons-vue'
 import { getImageAlt } from '../../utils/imageRequests'
+import UserIdentity from '../ui/UserIdentity.vue'
 const props = defineProps({ visible: { type: Boolean, default: false }, image: { type: Object, default: null }, imageSrc: { type: String, default: '' }, tags: { type: Array, default: () => [] } })
 const emit = defineEmits(['close', 'view', 'detail', 'like', 'select-tag'])
 const imageAlt = computed(() => getImageAlt(props.image))
