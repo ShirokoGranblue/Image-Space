@@ -70,7 +70,7 @@ function visibilityText(value) {
 .image-metadata summary::after { content: '＋'; flex: none; color: var(--color-text-muted); font-size: 18px; }
 .image-metadata[open] summary::after { content: '−'; }
 .image-metadata summary > span:first-child { display: grid; gap: var(--space-1); }
-.image-metadata small { color: var(--color-text-secondary); font-size: var(--text-sm); font-weight: 700; letter-spacing: .06em; }
+.image-metadata small { color: var(--color-text-secondary); font-size: var(--text-sm); font-weight: 600; letter-spacing: .06em; }
 .image-metadata strong { font: 500 var(--text-md)/var(--leading-md) var(--font-body); }
 .image-metadata__count { margin-left: auto; color: var(--color-text-muted); font-size: var(--text-xs); }
 .image-metadata dl { margin: 0; padding-bottom: var(--space-3); }

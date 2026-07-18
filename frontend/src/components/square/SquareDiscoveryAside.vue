@@ -51,11 +51,13 @@ const imageAlt = getImageAlt
 </script>
 
 <style scoped>
-.square-side { position: sticky; top: calc(var(--nav-height) + var(--space-4)); align-self: start; width: var(--panel-aside-width); border: 1px solid var(--color-border-subtle); background: var(--color-surface-1); }
+.square-side { position: sticky; top: calc(var(--nav-height) + var(--space-4)); align-self: start; width: var(--panel-aside-width); border: 1px solid var(--color-border-subtle); background: rgba(25,28,37,.88); }
 .side-section { padding: var(--space-5); border-bottom: 1px solid var(--color-border-subtle); }
 .side-section:last-child { border-bottom: 0; }
 .side-title { display: flex; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-4); color: var(--color-text-muted); font-size: var(--text-xs); letter-spacing: .06em; }
 .side-title strong { color: var(--color-text-secondary); }
+.side-section:nth-child(2) .side-title strong { color: var(--astral-gold); }
+.side-section:nth-child(3) .side-title strong { color: var(--astral-rose); }
 .filter-summary { display: grid; gap: var(--space-3); }
 .filter-summary div { display: flex; justify-content: space-between; gap: var(--space-3); }
 .filter-summary span,.side-empty { color: var(--color-text-muted); font-size: var(--text-sm); }
@@ -71,7 +73,7 @@ const imageAlt = getImageAlt
 .tag-cloud::-webkit-scrollbar-thumb,.creator-list.is-scrollable::-webkit-scrollbar-thumb { border-radius: var(--radius-round); background: var(--color-border-strong); }
 .creator-row { display: grid; grid-template-columns: 38px 1fr; align-items: center; gap: var(--space-3); width: 100%; min-height: 48px; padding: var(--space-1); border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
 .creator-row:hover { background: var(--color-canvas-muted); }
-.creator-avatar { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 50%; background: var(--avatar-color, var(--color-urban)); color: var(--color-text-inverse); font-weight: 700; }
+.creator-avatar { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 50%; background: var(--avatar-color, var(--color-urban)); color: var(--color-text-inverse); font-weight: 600; }
 .creator-copy { min-width: 0; }
 .creator-copy :deep(.user-identity) { width: 100%; font-size: var(--text-sm); }
 .creator-row small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

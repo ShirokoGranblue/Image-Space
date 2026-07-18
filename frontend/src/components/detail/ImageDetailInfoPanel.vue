@@ -110,7 +110,7 @@ function handleDownloadCommand(command) {
 .detail-kicker {
   color: var(--color-vermilion);
   font-size: var(--text-sm);
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: .08em;
 }
 
@@ -118,7 +118,7 @@ function handleDownloadCommand(command) {
 .action-group__label {
   color: var(--color-text-secondary);
   font-size: var(--text-sm);
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: .06em;
 }
 

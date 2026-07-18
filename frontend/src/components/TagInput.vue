@@ -194,7 +194,7 @@ function focusInput() {
   background: rgba(37, 99, 235, 0.12);
   color: var(--color-night);
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1;
 }
 
@@ -253,7 +253,7 @@ function focusInput() {
   min-width: 80px;
   padding: 0;
   color: var(--color-night);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .tag-field::placeholder {

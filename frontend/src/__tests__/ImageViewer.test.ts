@@ -214,32 +214,32 @@ describe('ImageViewer', () => {
     })
   })
 
-  describe('Body scroll lock', () => {
-    it('locks body scroll when opened', async () => {
+  describe('Document geometry', () => {
+    it('does not lock body scroll when opened', async () => {
       const wrapper = mountViewer()
 
       // @ts-ignore
       wrapper.vm.open()
-      // The watch is async and has its own await nextTick before setting overflow
       await nextTick()
       await nextTick()
 
-      expect(document.body.style.overflow).toBe('hidden')
+      expect(document.body.style.overflow).toBe('')
     })
 
-    it('restores body scroll when closed', async () => {
+    it('preserves an existing body overflow value through close', async () => {
+      document.body.style.overflow = 'auto'
       const wrapper = mountViewer()
 
       // @ts-ignore
       wrapper.vm.open()
       await nextTick()
       await nextTick()
-      expect(document.body.style.overflow).toBe('hidden')
+      expect(document.body.style.overflow).toBe('auto')
 
       // @ts-ignore
       wrapper.vm.close()
       await nextTick()
-      expect(document.body.style.overflow).toBe('')
+      expect(document.body.style.overflow).toBe('auto')
     })
   })
 

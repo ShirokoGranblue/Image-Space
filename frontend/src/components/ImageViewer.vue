@@ -167,7 +167,6 @@ const retryNonce = ref(0)
 const viewerAnnouncement = ref('')
 const pointers = new Map()
 let previousFocus = null
-let previousBodyOverflow = ''
 let isolatedAppRoot = null
 let previousAppInert = false
 let previousAppAriaHidden = null
@@ -210,8 +209,6 @@ watch(activeSrc, () => {
 
 watch(visible, async open => {
   if (open) {
-    previousBodyOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
     document.documentElement.classList.add('viewer-open')
     window.addEventListener('resize', clampTranslation, { passive: true })
     document.addEventListener('fullscreenchange', syncFullscreen)
@@ -418,7 +415,6 @@ function syncFullscreen() {
 }
 
 function releaseViewerEnvironment() {
-  document.body.style.overflow = previousBodyOverflow
   document.documentElement.classList.remove('viewer-open')
   window.removeEventListener('resize', clampTranslation)
   document.removeEventListener('fullscreenchange', syncFullscreen)

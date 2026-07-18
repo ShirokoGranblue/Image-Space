@@ -30,13 +30,15 @@ defineProps({
 
 <style scoped>
 .app-shell {
+  position: relative;
+  z-index: 1;
   min-height: 100dvh;
-  background: var(--color-canvas);
+  background: transparent;
   color: var(--color-text-primary);
 }
 
 .app-shell--auth {
-  background: var(--color-canvas-muted);
+  background: transparent;
 }
 
 .app-shell--admin {

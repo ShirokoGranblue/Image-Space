@@ -42,7 +42,7 @@ function handleClick(event) {
   border-radius: var(--radius-sm);
   font-family: var(--font-ui);
   font-size: var(--text-sm);
-  font-weight: 650;
+  font-weight: 600;
   line-height: 1;
   cursor: pointer;
   transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);

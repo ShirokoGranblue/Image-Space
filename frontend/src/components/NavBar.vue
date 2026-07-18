@@ -111,6 +111,9 @@ onUnmounted(() => {
 function onScroll() {
   if (navbarEl.value) {
     navbarEl.value.classList.toggle('scrolled', window.scrollY > 24)
+    const scrollRange = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1)
+    const scrollProgress = Math.min(window.scrollY / scrollRange, 1)
+    navbarEl.value.style.setProperty('--astral-brand-position', `${Math.round(scrollProgress * 100)}%`)
   }
 }
 
@@ -121,6 +124,10 @@ function goProfile() {
 
 function goUpload() {
   mobileOpen.value = false
+  if (router.currentRoute.value.path === '/home') {
+    window.dispatchEvent(new CustomEvent('image-space:open-upload'))
+    return
+  }
   router.push({ path: '/home', query: { upload: '1' } })
 }
 
@@ -137,6 +144,8 @@ async function handleLogout() {
 
 <style scoped>
 .navbar {
+  --astral-brand-position: 0%;
+
   position: fixed;
   top: 0;
   right: 0;
@@ -144,7 +153,8 @@ async function handleLogout() {
   z-index: var(--layer-nav);
   pointer-events: none;
   border-bottom: 1px solid var(--color-border-subtle);
-  background: var(--color-canvas);
+  background: rgba(14, 16, 23, 0.88);
+  backdrop-filter: blur(14px);
 }
 
 .navbar-inner {
@@ -158,10 +168,7 @@ async function handleLogout() {
   padding: 0 var(--page-gutter);
   pointer-events: auto;
   background: transparent;
-  transition: min-height var(--duration-standard) var(--ease-standard);
 }
-
-.navbar.scrolled .navbar-inner { min-height: 64px; }
 
 .logo {
   display: inline-flex;
@@ -173,12 +180,26 @@ async function handleLogout() {
 }
 
 .logo-wordmark {
-  color: var(--color-text-primary);
-  font-family: var(--font-ui);
+  background-image: linear-gradient(
+    110deg,
+    var(--astral-gold) 0%,
+    var(--astral-rose) 24%,
+    var(--astral-plum) 45%,
+    var(--astral-teal) 66%,
+    var(--astral-starlight) 82%,
+    var(--astral-gold) 100%
+  );
+  background-position: var(--astral-brand-position) 50%;
+  background-size: 240% 100%;
+  background-clip: text;
+  color: transparent;
+  font-family: var(--font-title);
   font-size: 1.125rem;
-  font-weight: 800;
+  font-weight: 500;
   letter-spacing: -.025em;
   white-space: nowrap;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .nav-links { display: inline-flex; justify-self: center; align-items: center; gap: clamp(var(--space-6), 5vw, var(--space-8)); }
@@ -294,5 +315,19 @@ async function handleLogout() {
 
 @media (prefers-reduced-motion: reduce) {
   .navbar-inner,.nav-link,.hamburger-line,.hamburger-line::before,.hamburger-line::after,.slide-down-enter-active,.slide-down-leave-active { transition: none; }
+}
+
+@media (forced-colors: active) {
+  .navbar {
+    border-color: CanvasText;
+    background: Canvas;
+    backdrop-filter: none;
+  }
+
+  .logo-wordmark {
+    background-image: none;
+    color: CanvasText;
+    -webkit-text-fill-color: CanvasText;
+  }
 }
 </style>

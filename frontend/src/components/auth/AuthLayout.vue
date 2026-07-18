@@ -39,7 +39,7 @@ defineProps({
   place-items: center;
   padding: 32px;
   overflow: hidden;
-  background: var(--color-canvas-muted);
+  background: transparent;
   color: var(--color-text-primary);
 }
 
@@ -50,7 +50,11 @@ defineProps({
   display: grid;
   grid-template-columns: minmax(280px, 0.85fr) minmax(420px, 1.15fr);
   grid-template-rows: minmax(0, 1fr);
-  background: var(--color-surface-1);
+  overflow: hidden;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: rgba(14, 16, 23, 0.72);
+  box-shadow: var(--shadow-dialog);
 }
 
 .auth-aside,
@@ -85,7 +89,7 @@ defineProps({
   border-left: 2px solid var(--color-vermilion);
   color: var(--color-text-secondary);
   font-size: var(--text-sm);
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: .04em;
 }
 
@@ -138,7 +142,7 @@ defineProps({
 
 .auth-main::-webkit-scrollbar-track {
   border-left: 1px solid var(--color-border-strong);
-  background: var(--color-canvas-muted);
+  background: rgba(19, 23, 34, 0.72);
 }
 
 .auth-main::-webkit-scrollbar-thumb {
@@ -244,7 +248,7 @@ defineProps({
   min-height: var(--control-height-lg);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-sm);
-  background: var(--color-surface-1);
+  background: rgba(25, 28, 37, 0.84);
   box-shadow: none;
 }
 
@@ -302,7 +306,7 @@ defineProps({
 .auth-body :deep(.captcha-image:hover:not(:disabled)),
 .auth-body :deep(.oauth-btn:hover:not(:disabled)) {
   border-color: var(--color-border-strong);
-  background: var(--color-surface-1);
+  background: rgba(25, 28, 37, 0.88);
 }
 
 .auth-body :deep(.submit-row) {

@@ -6,7 +6,7 @@ const login = readFileSync('src/views/Login.vue', 'utf8')
 const register = readFileSync('src/views/Register.vue', 'utf8')
 
 describe('authentication page stage two contract', () => {
-  it('keeps AuthLayout presentation-only and freezes the bright two-column structure', () => {
+  it('keeps AuthLayout presentation-only and freezes the Astral matte two-column structure', () => {
     expect(authLayout).toContain("default: 'narrow'")
     expect(authLayout).toContain("['narrow', 'wide']")
     expect(authLayout).toContain('<slot name="aside" />')
@@ -16,7 +16,7 @@ describe('authentication page stage two contract', () => {
     expect(authLayout).toMatch(/grid-template-columns: minmax\(280px, 0\.85fr\) minmax\(420px, 1\.15fr\)/)
     expect(authLayout).not.toMatch(/from ['"].*router|from ['"].*api|from ['"].*pinia|useRouter|useUserStore/)
     expect(authLayout).not.toMatch(/linear-gradient|radial-gradient/)
-    expect([...authLayout.matchAll(/box-shadow:\s*([^;]+)/g)].map(match => match[1].trim())).toEqual(['none', 'none'])
+    expect([...authLayout.matchAll(/box-shadow:\s*([^;]+)/g)].map(match => match[1].trim())).toEqual(['var(--shadow-dialog)', 'none', 'none'])
     expect(authLayout).not.toContain('.auth-brand')
     expect(authLayout).toContain('font-size: clamp(48px, 4.6vw, 64px)')
     expect(authLayout).toMatch(/\.auth-aside :deep\(\.auth-aside-eyebrow\)[\s\S]*border-left: 2px solid var\(--color-vermilion\)/)

@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
+import appRoot from '../App.vue?raw'
+import imageUpload from '../components/ImageUpload.vue?raw'
+import navBar from '../components/NavBar.vue?raw'
+import astralEnvironment from '../components/astral/AstralEnvironment.vue?raw'
+import astralModeControl from '../components/astral/AstralModeControl.vue?raw'
+import galleryItem from '../components/gallery/GalleryItem.vue?raw'
+import baseButton from '../components/ui/BaseButton.vue?raw'
+import homePage from '../views/Home.vue?raw'
+import profilePage from '../views/Profile.vue?raw'
 
 const sourceRoot = 'src'
 const tokens = readFileSync(join(sourceRoot, 'styles/tokens.css'), 'utf8')
@@ -17,6 +26,8 @@ const productionFiles = listProductionFiles(sourceRoot)
 const productionSource = productionFiles.map(path => readFileSync(path, 'utf8')).join('\n')
 const tokenNames = new Set([...tokens.matchAll(/^\s*(--[A-Za-z0-9_-]+)\s*:/gm)].map(match => match[1]))
 const localVariableNames = new Set([
+  '--astral-backdrop',
+  '--astral-brand-position',
   '--avatar-color',
   '--gallery-min-width',
   '--image-aspect-ratio',
@@ -70,5 +81,43 @@ describe('stage six design foundation', () => {
     expect(productionSource).toContain('<Teleport to="body">')
     expect(productionSource).toContain('var(--skeleton-ratio, 4 / 3)')
     expect(productionSource).toContain('var(--avatar-color, var(--color-urban))')
+  })
+
+  it('keeps admin routes neutral while non-admin routes own one Astral environment and mode control', () => {
+    expect(appRoot).toContain("if (route.path.startsWith('/admin/')) return null")
+    expect(appRoot).toMatch(/<AstralEnvironment\s+[\s\S]*?v-if="astralIntensity"/)
+    expect(appRoot).toMatch(/<AstralModeControl\s+[\s\S]*?v-if="astralIntensity"/)
+  })
+
+  it('keeps viewport controls, modes and decorative colors under one Astral source of truth', () => {
+    expect(astralModeControl).toMatch(/<Teleport to="body">[\s\S]*class="astral-mode-control"/)
+    expect(appRoot).toContain("from './components/astral/astralSystem'")
+    expect(astralEnvironment).toContain("from './astralSystem'")
+    expect(astralModeControl).toContain("from './astralSystem'")
+
+    for (const source of [astralEnvironment, navBar, profilePage]) {
+      for (const color of ['#f4f1ed', '#b9a36f', '#5d8f8b', '#556d91', '#a77b83', '#695879']) {
+        expect(source.toLowerCase()).not.toContain(color)
+      }
+    }
+  })
+
+  it('separates semantic states and neutral visibility categories from decorative colors', () => {
+    for (const token of ['success', 'warning', 'error', 'info']) {
+      expect(tokens).toMatch(new RegExp(`--color-${token}:\\s*#[0-9a-f]{6}`, 'i'))
+      expect(tokens).not.toMatch(new RegExp(`--color-${token}:\\s*var\\(--astral-`, 'i'))
+    }
+    for (const visibility of ['public', 'specified', 'private']) {
+      expect(tokens).toMatch(new RegExp(`--color-visibility-${visibility}:\\s*#[0-9a-f]{6}`, 'i'))
+      expect(galleryItem).toContain(`var(--color-visibility-${visibility})`)
+      expect(homePage).toContain(`var(--color-visibility-${visibility})`)
+    }
+  })
+
+  it('keeps the reviewed controls within the frozen radius and weight scale', () => {
+    expect(imageUpload).not.toMatch(/border-radius:\s*(?:18|20)px/)
+    expect(imageUpload).toContain('border-radius: var(--radius-lg)')
+    expect(baseButton).not.toContain('font-weight: 650')
+    expect(galleryItem).not.toContain('font-weight: 650')
   })
 })

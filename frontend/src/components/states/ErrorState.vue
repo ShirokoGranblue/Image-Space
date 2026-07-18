@@ -31,7 +31,7 @@ defineEmits(['retry'])
   border-block: 1px solid var(--color-border-subtle);
 }
 .state-view--compact { min-height: 120px; padding-block: var(--space-4); }
-.state-view__label { margin-bottom: var(--space-3); color: var(--color-error); font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.12em; }
+.state-view__label { margin-bottom: var(--space-3); color: var(--color-error); font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.12em; }
 h2 { margin: 0; font-size: var(--text-lg); line-height: var(--leading-lg); }
 p { max-width: 42rem; margin: var(--space-2) 0 var(--space-5); color: var(--color-text-secondary); font-size: var(--text-sm); line-height: var(--leading-sm); }
 </style>

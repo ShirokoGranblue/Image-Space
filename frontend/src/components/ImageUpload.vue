@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" title="上传图片并归档" width="640px" @close="resetForm" class="upload-dialog">
+  <el-dialog v-model="visible" title="上传图片并归档" width="640px" :lock-scroll="false" @close="resetForm" class="upload-dialog">
     <el-form :model="form" label-width="86px">
       <el-form-item label="选择图片">
         <el-upload
@@ -93,7 +93,7 @@
     </template>
   </el-dialog>
 
-  <el-dialog v-model="categoryDialogVisible" title="新建分类" width="360px">
+  <el-dialog v-model="categoryDialogVisible" title="新建分类" width="360px" :lock-scroll="false">
     <el-form label-width="70px" @submit.prevent>
       <el-form-item label="分类名">
         <el-input v-model="newCategoryName" maxlength="20" show-word-limit @keyup.enter="submitCategory" />
@@ -113,7 +113,6 @@ import { UploadFilled } from '@element-plus/icons-vue'
 import { uploadImage } from '../api/image'
 import { getCategoryList, createCategory } from '../api/category'
 import { hasSpecifiedUsers } from '../utils/visibility'
-import { fireMediumSideCannons } from '../utils/confettiEffect'
 import TagInput from './TagInput.vue'
 
 const visible = ref(false)
@@ -254,7 +253,6 @@ async function handleUpload() {
     ElMessage.error(errors.join('; '))
   }
   ElMessage.success(`已上传 ${success} / ${fileList.value.length} 张图片`)
-  if (success > 0) fireMediumSideCannons()
   visible.value = false
   emit('uploaded', uploadedImages)
 }
@@ -280,7 +278,7 @@ defineExpose({ open })
 }
 
 .upload-dialog :deep(.el-dialog) {
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
 }
 
 .upload-area {
@@ -294,7 +292,7 @@ defineExpose({ open })
   padding: 36px 18px;
   background: var(--color-canvas-muted);
   border: 2px dashed var(--color-border-subtle);
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   transition: border-color 0.2s ease, background 0.2s ease;
 }
 

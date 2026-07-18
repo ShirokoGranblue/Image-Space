@@ -100,7 +100,7 @@ function commentInitial(comment) {
 <style scoped>
 .comments-section { padding: var(--space-6); border: 1px solid var(--color-border-subtle); background: var(--color-surface-1); }
 .comments-head h2 { margin: var(--space-1) 0 var(--space-5); font-family: var(--font-title); font-size: var(--text-2xl); font-weight: 600; }
-.section-label { color: var(--color-vermilion); font-size: var(--text-xs); font-weight: 700; letter-spacing: .08em; }
+.section-label { color: var(--color-vermilion); font-size: var(--text-xs); font-weight: 600; letter-spacing: .08em; }
 .comment-input { display: grid; grid-template-columns: auto minmax(160px, 1fr) auto; align-items: center; gap: var(--space-3); padding: var(--space-3); border: 1px solid var(--color-border-strong); background: var(--color-canvas-muted); }
 .comment-tools { display: flex; flex-direction: column; gap: var(--space-2); }
 .comment-tool-button { display: inline-flex; min-width: 68px; min-height: 40px; align-items: center; justify-content: flex-start; gap: var(--space-2); padding: 0 var(--space-3); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm); background: var(--color-surface-1); color: var(--color-text-primary); cursor: pointer; }
@@ -115,7 +115,7 @@ function commentInitial(comment) {
 .comment-item { display: grid; grid-template-columns: 44px minmax(0,1fr); align-items: start; gap: var(--space-3); padding: var(--space-4); border-bottom: 1px solid var(--color-border-subtle); }
 .comment-avatar-link { display: block; width: 44px; height: 44px; border-radius: 50%; }
 .comment-avatar-link:focus-visible { outline: 2px solid var(--color-urban); outline-offset: 2px; }
-.comment-avatar { background: var(--color-night); color: var(--color-text-inverse); font-weight: 700; }
+.comment-avatar { background: var(--color-night); color: var(--color-text-inverse); font-weight: 600; }
 .comment-main { min-width: 0; }
 .comment-header,.comment-footer { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
 .comment-header { min-height: 24px; }

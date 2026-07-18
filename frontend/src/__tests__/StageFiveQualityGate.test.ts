@@ -10,12 +10,15 @@ import homeBatch from '../components/home/HomeBatchQueue.vue?raw'
 const authPages = { loginPage, registerPage }
 
 describe('stage five quality gate contracts', () => {
-  it('keeps both auth pages bright, scoped, and free of retired theme markers', () => {
+  it('keeps both auth pages scoped while the shared shell owns the Astral matte surface', () => {
     for (const source of Object.values(authPages)) {
       expect(source.match(/<style scoped>/g)).toHaveLength(1)
       expect(source).not.toMatch(/linear-gradient|radial-gradient|--ad-|Editorial Design System|Aperture Desk/)
     }
     expect(authLayout.match(/<style scoped>/g)).toHaveLength(1)
+    expect(authLayout).toContain('background: rgba(14, 16, 23, 0.72)')
+    expect(authLayout).toContain('border-radius: var(--radius-lg)')
+    expect(authLayout).toContain('box-shadow: var(--shadow-dialog)')
     expect(loginPage).toContain('to="/register"')
     expect(loginPage).not.toMatch(/<Register\b|from ['"].*Register/)
   })

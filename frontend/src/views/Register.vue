@@ -160,7 +160,6 @@ import { ArrowRight } from '@element-plus/icons-vue'
 import AuthLayout from '../components/auth/AuthLayout.vue'
 import TurnstileWidget from '../components/TurnstileWidget.vue'
 import { prepareRegisterPayload } from '../utils/auth'
-import { fireBigSideCannons } from '../utils/confettiEffect'
 
 const router = useRouter()
 const formRef = ref(null)
@@ -301,7 +300,6 @@ async function handleRegister() {
     const payload = prepareRegisterPayload(form)
     await register({ ...payload, turnstileToken: token })
     ElMessage.success('注册成功，请登录')
-    fireBigSideCannons()
     router.push('/login')
   } catch (error) {
     registerFeedback.value = {
@@ -365,7 +363,7 @@ function resetTurnstile() {
   --el-button-hover-border-color: var(--color-vermilion-hover);
   --el-button-active-bg-color: var(--color-vermilion-hover);
   --el-button-active-border-color: var(--color-vermilion-hover);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .operation-feedback {

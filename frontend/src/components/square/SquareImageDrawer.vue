@@ -44,7 +44,7 @@ watch(() => props.visible, async visible => {
 .drawer-img,.drawer-placeholder { width:100%; height:min(46vh,420px); object-fit:contain; }
 .drawer-placeholder { display:grid; place-items:center; color:var(--color-text-muted); background:var(--color-canvas-muted); font-size:40px; }
 .drawer-body { padding:var(--space-6); }
-.drawer-kicker { color:var(--color-vermilion); font-size:var(--text-xs); font-weight:700; letter-spacing:.08em; }
+.drawer-kicker { color:var(--color-vermilion); font-size:var(--text-xs); font-weight:600; letter-spacing:.08em; }
 h2 { margin:var(--space-2) 0 var(--space-3); font-family:var(--font-title); font-size:var(--text-2xl); font-weight:500; overflow-wrap:anywhere; }
 .drawer-meta { display:flex; flex-wrap:wrap; gap:var(--space-2) var(--space-4); color:var(--color-text-muted); font-size:var(--text-sm); }
 .drawer-desc { color:var(--color-text-secondary); line-height:var(--leading-md); overflow-wrap:anywhere; }

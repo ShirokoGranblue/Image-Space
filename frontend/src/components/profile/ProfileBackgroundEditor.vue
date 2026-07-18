@@ -1,5 +1,5 @@
 <template>
-  <el-dialog :model-value="visible" title="编辑个人背景" width="860px" class="profile-dialog bg-dialog" @update:model-value="emit('update:visible',$event)">
+  <el-dialog :model-value="visible" title="编辑个人背景" width="860px" :lock-scroll="false" class="profile-dialog bg-dialog" @update:model-value="emit('update:visible',$event)">
     <div class="background-editor-layout">
       <div class="bg-crop-side">
         <div ref="cropContainer" class="bg-crop-container" @mousedown="emit('drag-start',$event)" @mousemove="emit('drag-move',$event)" @mouseup="emit('drag-end')" @mouseleave="emit('drag-end')">

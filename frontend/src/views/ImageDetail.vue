@@ -25,7 +25,6 @@
               :alt="imageAlt"
               :width="image.width || undefined"
               :height="image.height || undefined"
-              :class="{ zoomed: imgHover }"
               loading="eager"
               fetchpriority="high"
               decoding="async"
@@ -64,7 +63,7 @@
 
       <ImageCommentsSection v-if="image.id && !image.deleted" :comments="comments" :text="commentText" :emojis="emojis" :file-name="cmtFile?.name || ''" :sending="sending" :current-user-id="currentUserId" :highlighted-target="highlightedTarget" :format-time="formatRelativeTime" @update:text="commentText = $event" @insert-emoji="insertEmoji" @file-change="onCmtFileChange" @submit="handleAddComment" @view-image="viewCmtImg" @toggle-like="handleToggleCommentLike" @delete="handleDeleteComment" />
 
-      <el-dialog v-model="editVisible" title="编辑图片信息" width="520px" class="asset-dialog">
+      <el-dialog v-model="editVisible" title="编辑图片信息" width="520px" :lock-scroll="false" class="asset-dialog">
         <el-form :model="editForm" label-position="top" v-if="editForm.uuid">
           <el-form-item label="图片名称">
             <el-input v-model="editForm.imageName" />
@@ -100,7 +99,7 @@
         </template>
       </el-dialog>
 
-      <el-dialog v-model="categoryDialogVisible" title="新建分类" width="380px" class="asset-dialog">
+      <el-dialog v-model="categoryDialogVisible" title="新建分类" width="380px" :lock-scroll="false" class="asset-dialog">
         <el-form label-position="top" @submit.prevent>
           <el-form-item label="分类名">
             <el-input v-model="newCategoryName" maxlength="20" show-word-limit @keyup.enter="submitCategory" />
@@ -566,25 +565,24 @@ function highlightFromNotification() {
 </script>
 
 <style scoped>
-.detail-page { min-height: 100vh; background: var(--color-canvas); color: var(--color-text-primary); }
+.detail-page { min-height: 100vh; background: transparent; color: var(--color-text-primary); }
 .detail-container { width: min(calc(100% - (2 * var(--page-gutter))), var(--page-standard)); padding: 104px 0 var(--space-8); }
 .desk-back { display: inline-flex; align-items: center; gap: var(--space-2); min-height: 44px; margin-bottom: var(--space-5); padding: 0 var(--space-3); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm); background: transparent; color: var(--color-text-secondary); font-family: var(--font-body); cursor: pointer; }
 .desk-back:hover,.desk-back:focus-visible { border-color: var(--color-border-strong); background: var(--color-surface-2); outline: 2px solid var(--color-urban); outline-offset: 2px; }
-.detail-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 380px); align-items: stretch; gap: 0; overflow: hidden; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm); background: var(--color-surface-1); }
+.detail-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 380px); align-items: stretch; gap: 0; overflow: hidden; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm); background: rgba(25,28,37,.9); }
 .detail-main { min-width: 0; display: grid; border-right: 1px solid var(--color-border-subtle); background: transparent; }
 .detail-image { position: relative; display: grid; min-height: 520px; padding: var(--space-4); overflow: hidden; place-items: center; border: 0; background: transparent; color: var(--color-text-primary); cursor: zoom-in; }
-.detail-image img { display: block; max-width: min(92%,1100px); max-height: min(82vh,820px); object-fit: contain; transition: transform var(--duration-overlay) var(--ease-standard),filter var(--duration-standard) var(--ease-standard); }
-.detail-image img.zoomed { transform: scale(1.02); filter: brightness(.78); }
+.detail-image img { display: block; max-width: min(92%,1100px); max-height: min(82vh,820px); object-fit: contain; }
 .detail-image-loading,.detail-image-error { position: absolute; z-index: 2; display: grid; place-items: center; gap: var(--space-2); color: var(--color-text-muted); font-family: var(--font-ui); }
 .detail-image-error strong { color: var(--color-text-primary); }.detail-image-error small { color: var(--color-text-muted); }
 .img-hover-overlay { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: var(--space-2); background: rgba(14,18,22,.32); color: var(--color-text-inverse); pointer-events: none; }
 .fade-enter-active,.fade-leave-active { transition: opacity var(--duration-standard) var(--ease-standard); }.fade-enter-from,.fade-leave-to { opacity: 0; }
 .detail-container :deep(.comments-section) { margin-top: var(--space-6); }
 .empty-state { padding: var(--space-7); border: 1px solid var(--color-border-subtle); background: var(--color-surface-1); color: var(--color-text-muted); text-align: center; }
-.section-label { color: var(--color-vermilion); font-size: var(--text-xs); font-weight: 700; letter-spacing: .08em; }
+.section-label { color: var(--color-vermilion); font-size: var(--text-xs); font-weight: 600; letter-spacing: .08em; }
 .deleted-state p { margin-top: var(--space-3); color: var(--color-text-primary); font-family: var(--font-title); font-size: var(--text-2xl); }
 .category-row { display: grid; grid-template-columns: 1fr auto; gap: var(--space-2); width: 100%; }.category-row :deep(.el-select) { width: 100%; }
 @media (max-width:1120px) { .detail-layout { grid-template-columns: 1fr; } .detail-main { border-right: 0; border-bottom: 1px solid var(--color-border-subtle); } .detail-image { min-height: 460px; } }
 @media (max-width:700px) { .detail-container { padding-top: 82px; } .detail-image { min-height: 320px; } }
-@media (prefers-reduced-motion:reduce) { .detail-image img,.fade-enter-active,.fade-leave-active { transition: none; } }
+@media (prefers-reduced-motion:reduce) { .fade-enter-active,.fade-leave-active { transition: none; } }
 </style>

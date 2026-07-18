@@ -39,7 +39,7 @@ const identityTitle = computed(() => [displayName.value, handle.value, props.tim
   overflow: hidden;
   color: var(--color-text-primary);
   font: inherit;
-  font-weight: 700;
+  font-weight: 600;
   text-overflow: ellipsis;
 }
 

@@ -139,7 +139,6 @@ import {
   loadSquareSession,
   saveSquareSession
 } from '../utils/squareFilters'
-import { fireSmallSideCannons } from '../utils/confettiEffect'
 import { DEFAULT_IMAGE_PAGE_SIZE, IMAGE_PAGE_SIZES, getImageDisplayUrl, getImagePreviewUrl } from '../utils/imageRequests'
 import { collectPageCreators, collectPageTags, selectFeaturedImage } from '../utils/squareDiscovery'
 import { useUserStore } from '../store/user'
@@ -368,12 +367,10 @@ async function handleLike(image) {
     return
   }
   try {
-    const shouldCelebrate = !image.likedByMe
     const res = image.likedByMe ? await unlikeImage(image.uuid) : await likeImage(image.uuid)
     image.likeCount = res.data.likeCount
     image.likedByMe = res.data.likedByMe
     ElMessage.success(image.likedByMe ? '已点赞' : '已取消点赞')
-    if (shouldCelebrate && image.likedByMe) fireSmallSideCannons()
   } catch {}
 }
 
@@ -386,7 +383,7 @@ function goCreatorProfile(uuidOrId) {
 </script>
 
 <style scoped>
-.public-square-page { min-height: 100vh; background: var(--color-canvas); color: var(--color-text-primary); }
+.public-square-page { min-height: 100vh; background: transparent; color: var(--color-text-primary); }
 .square-shell { width: min(calc(100% - (2 * var(--page-gutter))), var(--page-wide)); margin-inline: auto; padding: calc(var(--nav-height) + var(--space-5)) 0 112px; }
 .square-layout { display: grid; grid-template-columns: minmax(0, 1fr) var(--panel-aside-width); gap: var(--space-6); align-items: start; margin-top: var(--space-5); }
 .square-main { min-width: 0; }
@@ -398,7 +395,7 @@ function goCreatorProfile(uuidOrId) {
 .result-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-4); color: var(--color-text-muted); font-size: var(--text-sm); }
 .result-head div { display: flex; align-items: center; gap: var(--space-1); }
 .result-head strong { color: var(--color-vermilion); font-size: var(--text-lg); }
-.pagination-wrap { position: fixed; z-index: var(--layer-floating); right: 0; bottom: 0; left: 0; display: flex; justify-content: center; padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom)); border-top: 1px solid var(--color-border-subtle); background: rgba(248,245,238,.96); }
+.pagination-wrap { position: fixed; z-index: var(--layer-floating); right: 0; bottom: 0; left: 0; display: flex; justify-content: center; padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom)); border-top: 1px solid var(--color-border-subtle); background: rgba(14,16,23,.94); }
 .pagination-wrap :deep(.el-pagination) { max-width: 100%; flex-wrap: wrap; justify-content: center; gap: var(--space-1); }
 .pagination-wrap :deep(.el-pagination button),.pagination-wrap :deep(.el-pager li) { min-width: 40px; min-height: 40px; }
 @media (max-width: 1100px) { .square-layout { grid-template-columns: minmax(0, 1fr); gap: var(--space-6); } }

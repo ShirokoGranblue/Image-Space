@@ -334,7 +334,7 @@ function openImage() {
   color: var(--color-text-primary);
   font-family: var(--font-ui);
   font-size: var(--text-sm);
-  font-weight: 650;
+  font-weight: 600;
   line-height: var(--leading-sm);
   text-align: left;
   text-overflow: ellipsis;
@@ -361,9 +361,9 @@ function openImage() {
   border-left: 2px solid var(--color-border-strong);
 }
 
-.visibility-label[data-visibility='public'] { border-color: var(--color-success); }
-.visibility-label[data-visibility='specified'] { border-color: var(--color-warning); }
-.visibility-label[data-visibility='private'] { border-color: var(--color-error); }
+.visibility-label[data-visibility='public'] { border-color: var(--color-visibility-public); }
+.visibility-label[data-visibility='specified'] { border-color: var(--color-visibility-specified); }
+.visibility-label[data-visibility='private'] { border-color: var(--color-visibility-private); }
 .tags-text { max-width: 72%; }
 
 .item-actions {

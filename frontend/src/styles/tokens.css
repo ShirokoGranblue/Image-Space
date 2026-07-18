@@ -7,30 +7,42 @@
 }
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 
-  --color-canvas: #f1ede4;
-  --color-canvas-muted: #e8e1d5;
-  --color-surface-1: #f8f5ee;
-  --color-surface-2: #ece6dc;
-  --color-surface-inverse: #12171d;
-  --color-text-primary: #1d2326;
-  --color-text-secondary: #626a6c;
-  --color-text-muted: #6f7776;
-  --color-text-inverse: #eef0ec;
-  --color-border-subtle: #c9c0b3;
-  --color-border-strong: #a79c8d;
-  --color-vermilion: #b64a36;
-  --color-vermilion-hover: #973b2a;
-  --color-night: #243b53;
-  --color-night-hover: #1b2e42;
-  --color-urban: #4f7e8c;
-  --color-success: #2f6b58;
-  --color-warning: #a66a2c;
-  --color-error: #b3423a;
-  --color-info: #3e647c;
-  --color-viewer-bg: #0e1216;
-  --color-viewer-surface: #171d22;
+  --astral-ink: #0e1017;
+  --astral-surface: #191c25;
+  --astral-plum: #695879;
+  --astral-teal: #5d8f8b;
+  --astral-blue: #556d91;
+  --astral-rose: #a77b83;
+  --astral-gold: #b9a36f;
+  --astral-starlight: #f4f1ed;
+
+  --color-canvas: var(--astral-ink);
+  --color-canvas-muted: #131722;
+  --color-surface-1: var(--astral-surface);
+  --color-surface-2: #222733;
+  --color-surface-inverse: var(--astral-starlight);
+  --color-text-primary: var(--astral-starlight);
+  --color-text-secondary: #c6c3c8;
+  --color-text-muted: #989ba6;
+  --color-text-inverse: var(--astral-ink);
+  --color-border-subtle: rgba(244, 241, 237, 0.14);
+  --color-border-strong: rgba(244, 241, 237, 0.3);
+  --color-vermilion: var(--astral-teal);
+  --color-vermilion-hover: #70a39e;
+  --color-night: var(--astral-blue);
+  --color-night-hover: #667fa4;
+  --color-urban: var(--astral-gold);
+  --color-success: #6f9b78;
+  --color-warning: #c08f54;
+  --color-error: #c37175;
+  --color-info: #7186a7;
+  --color-visibility-public: #c6c3c8;
+  --color-visibility-specified: #a8a3ab;
+  --color-visibility-private: #7f8490;
+  --color-viewer-bg: #080a10;
+  --color-viewer-surface: #141821;
 
   --font-title: 'Anthropic Serif', 'Noto Serif CJK SC', 'Source Han Serif SC', 'Songti SC', STSong, SimSun, 'Times New Roman', Georgia, serif;
   --font-body: 'Microsoft YaHei', 'PingFang SC', 'Noto Sans CJK SC', 'Source Han Sans SC', 'Segoe UI', Arial, sans-serif;
@@ -63,16 +75,16 @@
   --space-9: 6rem;
 
   --radius-none: 0;
-  --radius-xs: 2px;
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
   --radius-round: 999px;
 
   --shadow-none: none;
-  --shadow-float: 0 12px 32px rgba(18, 23, 29, 0.14);
-  --shadow-dialog: 0 24px 64px rgba(10, 14, 18, 0.24);
-  --shadow-focus: 0 0 0 3px rgba(79, 126, 140, 0.24);
+  --shadow-float: 0 16px 40px rgba(3, 5, 10, 0.34);
+  --shadow-dialog: 0 28px 72px rgba(3, 5, 10, 0.52);
+  --shadow-focus: 0 0 0 3px rgba(185, 163, 111, 0.24);
 
   --control-height-sm: 36px;
   --control-height-md: 40px;
@@ -153,11 +165,10 @@ html {
 }
 
 html.is-scrolling {
-  scrollbar-color: rgba(29, 35, 38, 0.32) transparent;
+  scrollbar-color: rgba(244, 241, 237, 0.32) transparent;
 }
 
 html.viewer-open {
-  overflow: hidden;
   background: var(--color-viewer-bg);
 }
 
@@ -197,6 +208,11 @@ textarea {
   font: inherit;
 }
 
+strong,
+b {
+  font-weight: 600;
+}
+
 button,
 a {
   -webkit-tap-highlight-color: transparent;
@@ -225,7 +241,7 @@ canvas {
 }
 
 ::selection {
-  background: rgba(182, 74, 54, 0.18);
+  background: rgba(167, 123, 131, 0.28);
   color: var(--color-text-primary);
 }
 
@@ -282,5 +298,12 @@ canvas {
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+@media (forced-colors: active) {
+  :focus-visible {
+    outline-color: Highlight;
+    box-shadow: none;
   }
 }

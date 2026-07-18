@@ -52,7 +52,7 @@ describe('NotificationDrawer', () => {
     document.body.innerHTML = ''
   })
 
-  it('pushes app content left while open and restores it when closed', async () => {
+  it('opens above the app without changing the app geometry state', async () => {
     mount(NotificationDrawer, {
       attachTo: document.body,
       global: {
@@ -70,12 +70,12 @@ describe('NotificationDrawer', () => {
     await nextTick()
 
     expect(document.querySelector('.notification-drawer')).toBeTruthy()
-    expect(document.getElementById('app')?.classList.contains('notification-drawer-open')).toBe(true)
+    expect(document.getElementById('app')?.className).toBe('')
 
     closeNotificationDrawer()
     await nextTick()
 
-    expect(document.getElementById('app')?.classList.contains('notification-drawer-open')).toBe(false)
+    expect(document.getElementById('app')?.className).toBe('')
   })
 
   it('marks notification read and routes to target when clicked', async () => {

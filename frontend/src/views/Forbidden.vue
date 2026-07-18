@@ -32,7 +32,8 @@
   margin: 0 0 10px;
   color: var(--color-error);
   font-size: 54px;
-  font-weight: 820;
+  font-family: var(--font-title);
+  font-weight: 600;
   line-height: 1;
 }
 

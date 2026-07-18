@@ -71,7 +71,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, watch, ref } from 'vue'
+import { computed, nextTick, watch, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { getNotifications, getUnreadNotificationCount, markAllNotificationsRead, markNotificationRead, deleteNotification, deleteNotifications } from '../api/notification'
 import { useNotificationDrawer, closeNotificationDrawer, setUnreadCount } from '../composables/useNotificationDrawer'
@@ -88,13 +88,10 @@ const unreadCount = computed(() => state.unreadCount)
 const unreadText = computed(() => unreadCount.value > 0 ? `${unreadCount.value} 条未读` : '暂无未读通知')
 
 watch(() => state.open, async (open) => {
-  shiftApp(open)
   if (open) {
     await refresh()
   }
 }, { immediate: true })
-
-onBeforeUnmount(() => shiftApp(false))
 
 async function refresh() {
   loading.value = true
@@ -137,12 +134,6 @@ async function handleReadAll() {
 
 function close() {
   closeNotificationDrawer()
-}
-
-function shiftApp(open) {
-  const app = document.getElementById('app')
-  if (!app) return
-  app.classList.toggle('notification-drawer-open', open)
 }
 
 function actionText(item) {

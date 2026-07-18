@@ -90,7 +90,7 @@ async function installAuthMocks(page) {
   return requests
 }
 
-async function expectBrightAuthPage(page) {
+async function expectAstralAuthPage(page) {
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
   const styles = await page.evaluate(() => {
     const authPage = document.querySelector('.auth-page')
@@ -131,6 +131,7 @@ async function expectBrightAuthPage(page) {
     return {
       pageBackgroundImage: getComputedStyle(authPage).backgroundImage,
       layoutShadow: getComputedStyle(layout).boxShadow,
+      layoutRadius: getComputedStyle(layout).borderRadius,
       dividerWidth: getComputedStyle(aside).borderRightWidth,
       layoutHeight: layout.getBoundingClientRect().height,
       asideHeight: aside.getBoundingClientRect().height,
@@ -140,11 +141,12 @@ async function expectBrightAuthPage(page) {
   })
 
   expect(styles.pageBackgroundImage).toBe('none')
-  expect(styles.layoutShadow).toBe('none')
+  expect(styles.layoutShadow).not.toBe('none')
+  expect(styles.layoutRadius).toBe('16px')
   expect(styles.dividerWidth).toBe(page.viewportSize().width > 900 ? '1px' : '0px')
   if (page.viewportSize().width > 900) {
-    expect(styles.asideHeight).toBe(styles.layoutHeight)
-    expect(styles.mainHeight).toBe(styles.layoutHeight)
+    expect(styles.asideHeight).toBe(styles.layoutHeight - 2)
+    expect(styles.mainHeight).toBe(styles.layoutHeight - 2)
   }
   expect(Math.min(...styles.contrastRatios.map(sample => sample.ratio))).toBeGreaterThanOrEqual(4.5)
 }
@@ -168,8 +170,8 @@ test.describe('认证页面阶段二回归门禁', () => {
     const aside = page.locator('.auth-aside')
     const main = page.locator('.auth-main')
     const initialLayout = await layout.boundingBox()
-    expect((await aside.boundingBox()).height).toBe(initialLayout.height)
-    expect((await main.boundingBox()).height).toBe(initialLayout.height)
+    expect((await aside.boundingBox()).height).toBe(initialLayout.height - 2)
+    expect((await main.boundingBox()).height).toBe(initialLayout.height - 2)
     expect((await page.locator('.auth-header').boundingBox()).y).toBeGreaterThanOrEqual(initialLayout.y)
     expect(await main.evaluate(element => getComputedStyle(element, '::-webkit-scrollbar').width)).toBe('12px')
 
@@ -180,7 +182,7 @@ test.describe('认证页面阶段二回归门禁', () => {
     await page.goto('/register')
     const registerLayout = await layout.boundingBox()
     expect(registerLayout).toEqual(initialLayout)
-    expect((await main.boundingBox()).height).toBe(registerLayout.height)
+    expect((await main.boundingBox()).height).toBe(registerLayout.height - 2)
     expect(await main.evaluate(element => element.scrollHeight > element.clientHeight)).toBe(true)
     await main.evaluate(element => { element.scrollTop = element.scrollHeight })
     const mainBottom = registerLayout.y + registerLayout.height
@@ -188,7 +190,7 @@ test.describe('认证页面阶段二回归门禁', () => {
     expect(mainBottom - (footer.y + footer.height)).toBeGreaterThanOrEqual(32)
   })
 
-  test('登录页在目标视口保持明亮布局并保留登录方式与验证码发送', async ({ page }) => {
+  test('登录页在目标视口保持 Astral matte 布局并保留登录方式与验证码发送', async ({ page }) => {
     const requests = await installAuthMocks(page)
     await page.goto('/login')
 
@@ -197,7 +199,7 @@ test.describe('认证页面阶段二回归门禁', () => {
     await expect(page.getByRole('button', { name: 'GitHub' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Google' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Microsoft' })).toBeVisible()
-    await expectBrightAuthPage(page)
+    await expectAstralAuthPage(page)
     if (process.env.VITE_TURNSTILE_ENABLED === 'true') {
       await expect(page.locator('[data-turnstile-widget]')).toBeVisible()
       expect((await page.locator('.turnstile-shell').boundingBox()).height).toBe(65)
@@ -269,7 +271,7 @@ test.describe('认证页面阶段二回归门禁', () => {
 
     await expect(page.getByRole('heading', { name: '创建账号' })).toBeVisible()
     await expect(field(page, '用户名')).toBeVisible()
-    await expectBrightAuthPage(page)
+    await expectAstralAuthPage(page)
 
     await field(page, '用户名').fill('new-user')
     await field(page, '手机号（可选）').fill('13800138000')
@@ -302,6 +304,7 @@ test.describe('认证页面阶段二回归门禁', () => {
       turnstileToken: expectedTurnstileToken,
     })
     await expect(page).toHaveURL(/\/login$/)
+    await expect(page.locator('canvas')).toHaveCount(1)
     expect(requests.consoleMessages).toEqual([])
   })
 })

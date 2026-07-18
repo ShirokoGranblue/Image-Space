@@ -35,15 +35,6 @@ button {
   font: inherit;
 }
 
-#app {
-  transition: transform var(--duration-standard) var(--ease-standard);
-  will-change: transform;
-}
-
-#app.notification-drawer-open {
-  transform: translateX(calc(-1 * var(--notification-drawer-width)));
-}
-
 .sr-only {
   position: absolute;
   width: 1px;
@@ -288,7 +279,4 @@ button {
     scroll-behavior: auto;
   }
 
-  #app {
-    transition: none;
-  }
 }
