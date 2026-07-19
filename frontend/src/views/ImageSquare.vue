@@ -139,8 +139,8 @@ import {
   loadSquareSession,
   saveSquareSession
 } from '../utils/squareFilters'
-import { fireSmallSideCannons } from '../utils/confettiEffect'
 import { DEFAULT_IMAGE_PAGE_SIZE, IMAGE_PAGE_SIZES, getImageDisplayUrl, getImagePreviewUrl } from '../utils/imageRequests'
+import { collectPageCreators, collectPageTags, selectFeaturedImage } from '../utils/squareDiscovery'
 import { useUserStore } from '../store/user'
 
 const router = useRouter()
@@ -172,7 +172,6 @@ const sortOptions = [
   { label: '推荐', value: 'featured' },
   { label: '最新', value: 'latest' }
 ]
-const CREATOR_TONES = ['#38d5ff', '#b7ff3c', '#f5b84b', '#9b8cff', '#ff6b57']
 const demoImages = [
   {
     id: 'demo-1',
@@ -236,17 +235,7 @@ const categoryOptions = computed(() => {
   return Array.from(categories, ([id, name]) => ({ id, name }))
 })
 
-const tagOptions = computed(() => {
-  const tags = new Set()
-  for (const image of squareImages.value) {
-    String(image.tags || '')
-      .split('#')
-      .map(tag => tag.trim())
-      .filter(Boolean)
-      .forEach(tag => tags.add(tag))
-  }
-  return Array.from(tags).slice(0, 14)
-})
+const tagOptions = computed(() => collectPageTags(squareImages.value))
 
 const displayedImages = computed(() => {
   let list = squareImages.value
@@ -258,29 +247,7 @@ const displayedImages = computed(() => {
   }
   return list
 })
-const activeCreators = computed(() => {
-  const map = {}
-  for (const img of squareImages.value) {
-    const username = img.username || 'unknown'
-    const uuidOrId = img.userUuid || img.userId
-    if (!map[username] && uuidOrId) {
-      const toneIndex = Math.abs(hashString(username)) % CREATOR_TONES.length
-      const name = img.displayName || img.username || '?'
-      map[username] = {
-        username,
-        displayName: img.displayName || img.username,
-        uuidOrId,
-        likeCount: 0,
-        avatarColor: CREATOR_TONES[toneIndex],
-        initial: String(name).charAt(0).toUpperCase()
-      }
-    }
-    if (map[username]) {
-      map[username].likeCount += Number(img.likeCount || 0)
-    }
-  }
-  return Object.values(map).sort((a, b) => b.likeCount - a.likeCount).slice(0, 5)
-})
+const activeCreators = computed(() => collectPageCreators(squareImages.value))
 
 const squareStats = computed(() => ({
   totalLikes: squareImages.value.reduce((sum, image) => sum + Number(image.likeCount || 0), 0)
@@ -289,7 +256,7 @@ const squareStats = computed(() => ({
 const activeSortLabel = computed(() => sortOptions.find(option => option.value === viewMode.value)?.label || '推荐')
 const activeCategoryLabel = computed(() => categoryOptions.value.find(option => option.id === categoryFilter.value)?.name || '不限')
 const hasActiveFilters = computed(() => Boolean(query.keyword || categoryFilter.value || query.tags.length || viewMode.value !== 'featured'))
-const featuredImage = computed(() => displayedImages.value[0] || squareImages.value[0] || null)
+const featuredImage = computed(() => selectFeaturedImage(displayedImages.value))
 const featuredImageSrc = computed(() => featuredImage.value ? getImageDisplayUrl(featuredImage.value) : '')
 const drawerImageSrc = computed(() => activeImage.value ? getImagePreviewUrl(activeImage.value) : '')
 const activeTags = computed(() => String(activeImage.value?.tags || '').split('#').map(tag => tag.trim()).filter(Boolean))
@@ -396,16 +363,14 @@ function goDetail(image) {
 async function handleLike(image) {
   if (!image?.uuid) return
   if (!userStore.token) {
-    ElMessage.warning('请先登录后再进行操作')
+    ElMessage.warning('请先登录后再点赞')
     return
   }
   try {
-    const shouldCelebrate = !image.likedByMe
     const res = image.likedByMe ? await unlikeImage(image.uuid) : await likeImage(image.uuid)
     image.likeCount = res.data.likeCount
     image.likedByMe = res.data.likedByMe
-    ElMessage.success(image.likedByMe ? '已喜欢' : '已取消喜欢')
-    if (shouldCelebrate && image.likedByMe) fireSmallSideCannons()
+    ElMessage.success(image.likedByMe ? '已点赞' : '已取消点赞')
   } catch {}
 }
 
@@ -415,13 +380,10 @@ function goCreatorProfile(uuidOrId) {
   }
 }
 
-function hashString(value) {
-  return String(value).split('').reduce((hash, char) => ((hash << 5) - hash) + char.charCodeAt(0), 0)
-}
 </script>
 
 <style scoped>
-.public-square-page { min-height: 100vh; background: var(--color-canvas); color: var(--color-text-primary); }
+.public-square-page { min-height: 100vh; background: transparent; color: var(--color-text-primary); }
 .square-shell { width: min(calc(100% - (2 * var(--page-gutter))), var(--page-wide)); margin-inline: auto; padding: calc(var(--nav-height) + var(--space-5)) 0 112px; }
 .square-layout { display: grid; grid-template-columns: minmax(0, 1fr) var(--panel-aside-width); gap: var(--space-6); align-items: start; margin-top: var(--space-5); }
 .square-main { min-width: 0; }
@@ -433,7 +395,7 @@ function hashString(value) {
 .result-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-4); color: var(--color-text-muted); font-size: var(--text-sm); }
 .result-head div { display: flex; align-items: center; gap: var(--space-1); }
 .result-head strong { color: var(--color-vermilion); font-size: var(--text-lg); }
-.pagination-wrap { position: fixed; z-index: var(--layer-floating); right: 0; bottom: 0; left: 0; display: flex; justify-content: center; padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom)); border-top: 1px solid var(--color-border-subtle); background: rgba(248,245,238,.96); }
+.pagination-wrap { position: fixed; z-index: var(--layer-floating); right: 0; bottom: 0; left: 0; display: flex; justify-content: center; padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom)); border-top: 1px solid var(--color-border-subtle); background: rgba(14,16,23,.94); }
 .pagination-wrap :deep(.el-pagination) { max-width: 100%; flex-wrap: wrap; justify-content: center; gap: var(--space-1); }
 .pagination-wrap :deep(.el-pagination button),.pagination-wrap :deep(.el-pager li) { min-width: 40px; min-height: 40px; }
 @media (max-width: 1100px) { .square-layout { grid-template-columns: minmax(0, 1fr); gap: var(--space-6); } }

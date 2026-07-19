@@ -15,6 +15,7 @@ vi.mock('../api/notification', () => ({
           id: 1,
           type: 'COMMENT',
           actorName: 'Alice',
+          actorUsername: 'alice',
           imageName: 'summer.jpg',
           imagePreviewUrl: '/api/image/download/400a1e49-6990-489e-b4a8-35eb0a02d056',
           imageId: 1,
@@ -22,7 +23,7 @@ vi.mock('../api/notification', () => ({
           commentId: 9,
           contentPreview: 'nice pic',
           read: false,
-          createTime: '2026-05-26T10:00:00',
+          createTime: '2026-05-26T02:00:00Z',
           targetUrl: '/image/400a1e49-6990-489e-b4a8-35eb0a02d056?notificationId=1&commentId=9&highlight=comment',
         },
       ],
@@ -32,6 +33,8 @@ vi.mock('../api/notification', () => ({
   getUnreadNotificationCount: vi.fn(() => Promise.resolve({ data: 1 })),
   markNotificationRead: vi.fn(() => Promise.resolve({ data: null })),
   markAllNotificationsRead: vi.fn(() => Promise.resolve({ data: null })),
+  deleteNotification: vi.fn(() => Promise.resolve({ data: null })),
+  deleteNotifications: vi.fn(() => Promise.resolve({ data: null })),
 }))
 
 import NotificationDrawer from '../components/NotificationDrawer.vue'
@@ -49,7 +52,7 @@ describe('NotificationDrawer', () => {
     document.body.innerHTML = ''
   })
 
-  it('pushes app content left while open and restores it when closed', async () => {
+  it('opens above the app without changing the app geometry state', async () => {
     mount(NotificationDrawer, {
       attachTo: document.body,
       global: {
@@ -67,12 +70,12 @@ describe('NotificationDrawer', () => {
     await nextTick()
 
     expect(document.querySelector('.notification-drawer')).toBeTruthy()
-    expect(document.getElementById('app')?.classList.contains('notification-drawer-open')).toBe(true)
+    expect(document.getElementById('app')?.className).toBe('')
 
     closeNotificationDrawer()
     await nextTick()
 
-    expect(document.getElementById('app')?.classList.contains('notification-drawer-open')).toBe(false)
+    expect(document.getElementById('app')?.className).toBe('')
   })
 
   it('marks notification read and routes to target when clicked', async () => {
@@ -96,5 +99,28 @@ describe('NotificationDrawer', () => {
 
     expect(markNotificationRead).toHaveBeenCalledWith(1)
     expect(mockPush).toHaveBeenCalledWith('/image/400a1e49-6990-489e-b4a8-35eb0a02d056?notificationId=1&commentId=9&highlight=comment')
+  })
+
+  it('places the actor handle and relative time beside the display name', async () => {
+    mount(NotificationDrawer, {
+      attachTo: document.body,
+      global: {
+        stubs: {
+          'el-icon': { template: '<i />' },
+          'el-button': { template: '<button @click="$emit(\'click\')"><slot /></button>' },
+          'el-badge': { template: '<span><slot /></span>' },
+          'el-checkbox': { template: '<input type="checkbox" />', props: ['modelValue'] },
+        },
+      },
+    })
+
+    openNotificationDrawer()
+    await flushPromises()
+
+    const title = document.querySelector('.notification-title')
+    expect(title?.firstElementChild?.classList.contains('user-identity')).toBe(true)
+    expect(title?.textContent?.replace(/\s+/g, '')).toContain('Alice@alice·')
+    expect(title?.textContent?.replace(/\s+/g, '')).toContain('评论了你的图片《summer.jpg》')
+    expect(document.querySelector('.notification-header h2')?.textContent).toBe('通知')
   })
 })

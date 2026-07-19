@@ -12,6 +12,8 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AppShell: typeof import('./src/components/layout/AppShell.vue')['default']
+    AstralEnvironment: typeof import('./src/components/astral/AstralEnvironment.vue')['default']
+    AstralModeControl: typeof import('./src/components/astral/AstralModeControl.vue')['default']
     AuthLayout: typeof import('./src/components/auth/AuthLayout.vue')['default']
     BaseButton: typeof import('./src/components/ui/BaseButton.vue')['default']
     BaseIconButton: typeof import('./src/components/ui/BaseIconButton.vue')['default']
@@ -56,8 +58,6 @@ declare module 'vue' {
     NavBar: typeof import('./src/components/NavBar.vue')['default']
     NotificationBell: typeof import('./src/components/NotificationBell.vue')['default']
     NotificationDrawer: typeof import('./src/components/NotificationDrawer.vue')['default']
-    ParticleBackground: typeof import('./src/components/ParticleBackground.vue')['default']
-    ParticleSettings: typeof import('./src/components/ParticleSettings.vue')['default']
     ProfileAvatarEditor: typeof import('./src/components/profile/ProfileAvatarEditor.vue')['default']
     ProfileBackgroundEditor: typeof import('./src/components/profile/ProfileBackgroundEditor.vue')['default']
     ProfileHeader: typeof import('./src/components/profile/ProfileHeader.vue')['default']
@@ -69,6 +69,7 @@ declare module 'vue' {
     SquareImageDrawer: typeof import('./src/components/square/SquareImageDrawer.vue')['default']
     TagInput: typeof import('./src/components/TagInput.vue')['default']
     TurnstileWidget: typeof import('./src/components/TurnstileWidget.vue')['default']
+    UserIdentity: typeof import('./src/components/ui/UserIdentity.vue')['default']
   }
   export interface GlobalDirectives {
     vLoading: typeof import('element-plus/es')['ElLoadingDirective']

@@ -121,7 +121,7 @@ function toggle(event) {
   background: var(--color-vermilion);
   color: var(--color-text-inverse);
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;

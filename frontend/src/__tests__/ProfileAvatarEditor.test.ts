@@ -39,6 +39,14 @@ function mountEditor(props = {}) {
 }
 
 describe('ProfileAvatarEditor', () => {
+  it('uses one consistent action for choosing and retrying an image', () => {
+    const editor = readFileSync('src/components/profile/ProfileAvatarEditor.vue', 'utf8')
+
+    expect(editor).toContain('选择图片')
+    expect(editor).toContain('图片加载失败，请重新选择图片')
+    expect(editor).not.toContain('更换图片')
+  })
+
   it('keeps media and business ownership in the page', () => {
     const page = readFileSync('src/views/Profile.vue', 'utf8')
     const editor = readFileSync('src/components/profile/ProfileAvatarEditor.vue', 'utf8')

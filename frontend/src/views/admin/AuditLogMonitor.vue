@@ -2,8 +2,8 @@
   <main class="audit-page">
     <section class="audit-header">
       <div>
-        <p class="section-label">ADMIN CONSOLE</p>
-        <h1>审计日志监控</h1>
+        <p class="section-label">ADMIN / AUDIT</p>
+        <h1>审计事件总览</h1>
       </div>
       <el-tag :type="connectionTagType" effect="plain">{{ connectionLabel }}</el-tag>
     </section>
@@ -102,7 +102,7 @@
       </div>
     </section>
 
-    <el-drawer v-model="detailOpen" title="审计日志详情" size="46%">
+    <el-drawer v-model="detailOpen" title="审计记录详情" size="46%" :lock-scroll="false">
       <el-descriptions v-if="selectedLog" :column="1" border class="detail-descriptions">
         <el-descriptions-item label="用户ID">{{ selectedLog.userId || '-' }}</el-descriptions-item>
         <el-descriptions-item label="用户名">{{ selectedLog.username || '-' }}</el-descriptions-item>
@@ -191,9 +191,9 @@ const statCards = computed(() => [
 ])
 
 const connectionLabel = computed(() => {
-  if (connectionState.value === 'connected') return '已连接'
-  if (connectionState.value === 'fallback') return '实时连接不可用，已启用轮询'
-  return '未连接'
+  if (connectionState.value === 'connected') return '实时通道已连接'
+  if (connectionState.value === 'fallback') return '实时通道不可用，已启用轮询'
+  return '实时通道未连接'
 })
 
 const connectionTagType = computed(() => {
@@ -356,7 +356,7 @@ async function handleSseMessage(event) {
   const payload = parseEventData(event.data)
   if (payload?.riskLevel === 'HIGH') {
     ElNotification({
-      title: '高风险审计日志',
+      title: '高风险审计事件',
       message: `${payload.username || '未知用户'} ${payload.operationType || payload.action || ''}`,
       type: 'warning',
       position: 'top-right',
@@ -417,12 +417,12 @@ function riskTagType(level) {
 .audit-page { min-height: 100vh; padding: calc(var(--nav-height) + var(--space-5)) var(--page-gutter) var(--space-8); color: var(--color-text-primary); }
 .audit-header,.stat-grid,.filter-panel,.table-panel { width: min(100%, var(--page-wide)); margin-inline: auto; }
 .audit-header { display: flex; align-items: end; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); }
-.section-label { margin: 0 0 var(--space-2); color: var(--color-vermilion); font-size: var(--text-xs); font-weight: 700; letter-spacing: .12em; }
+.section-label { margin: 0 0 var(--space-2); color: var(--color-vermilion); font-size: var(--text-xs); font-weight: 600; letter-spacing: .12em; }
 .audit-header h1 { margin: 0; font-family: var(--font-title); font-size: var(--text-2xl); font-weight: 500; }
 .stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4); }
 .stat-card,.filter-panel,.table-panel { border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm); background: var(--color-surface-1); box-shadow: none; }
 .stat-card { min-height: 96px; display: grid; align-content: space-between; padding: var(--space-4); }
-.stat-card span { color: var(--color-text-muted); font-size: var(--text-xs); font-weight: 700; }
+.stat-card span { color: var(--color-text-muted); font-size: var(--text-xs); font-weight: 600; }
 .stat-card strong { color: var(--color-text-primary); font-family: var(--font-title); font-size: var(--text-xl); line-height: 1; }
 .filter-panel { margin-bottom: var(--space-4); padding: var(--space-4); }
 .filter-form { display: grid; grid-template-columns: repeat(4, minmax(180px, 1fr)); gap: var(--space-3) var(--space-4); }
@@ -436,7 +436,7 @@ function riskTagType(level) {
 .pagination-row { display: flex; justify-content: flex-end; padding: var(--space-3) var(--space-1) var(--space-1); }
 .detail-descriptions { margin-bottom: var(--space-5); }
 .detail-blocks { display: grid; gap: var(--space-5); }
-.detail-blocks h2 { margin: 0 0 var(--space-2); color: var(--color-text-primary); font-size: var(--text-md); font-weight: 700; }
+.detail-blocks h2 { margin: 0 0 var(--space-2); color: var(--color-text-primary); font-size: var(--text-md); font-weight: 600; }
 pre { max-height: 260px; overflow: auto; margin: 0; padding: var(--space-4); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm); background: var(--color-viewer-bg); color: var(--color-text-inverse); white-space: pre-wrap; word-break: break-word; font-family: var(--font-mono); font-size: var(--text-xs); line-height: var(--leading-md); }
 
 @media (max-width: 1100px) {

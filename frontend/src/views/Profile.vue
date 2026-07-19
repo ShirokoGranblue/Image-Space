@@ -32,7 +32,7 @@
       <ProfileBackgroundEditor
         ref="backgroundEditorRef" :visible="bgDialogVisible" :preview-url="bgPreviewUrl" :crop-img-style="bgCropImgStyle" :crop-frame-style="bgCropFrameStyle"
         :crop-grid-style="bgCropGridStyle" :crop-ratio="bgCropRatio" :file-name="bgFileName" :mini-banner-style="miniBannerPreviewStyle"
-        :avatar-url="avatarDisplayUrl" :display-name="user.displayName || user.username" :saving="bgSaving" :handle-position="bgHPos"
+        :avatar-url="avatarDisplayUrl" :display-name="user.displayName || user.username" :username="user.username" :saving="bgSaving" :handle-position="bgHPos"
         @update:visible="bgDialogVisible = $event" @update:crop-ratio="bgCropRatio = $event" @drag-start="startDragBgCrop" @drag-move="onDragBgCrop" @drag-end="stopDragBgCrop"
         @resize-start="startBgResize" @slider-change="onBgSliderChange" @file-change="onBgFileChange" @save="saveBackground"
       />
@@ -45,7 +45,7 @@
         @submit="submitAvatar"
       />
 
-      <el-dialog v-model="imageEditVisible" title="编辑图片信息" width="520px" class="profile-dialog">
+      <el-dialog v-model="imageEditVisible" title="编辑图片信息" width="520px" :lock-scroll="false" class="profile-dialog">
         <el-form :model="imageEditForm" label-position="top" v-if="imageEditForm.uuid">
           <el-form-item label="图片名称">
             <el-input v-model="imageEditForm.imageName" />
@@ -62,9 +62,9 @@
             <el-input v-model="imageEditForm.description" type="textarea" :rows="3" />
           </el-form-item>
           <el-form-item label="标签">
-            <TagInput v-model="imageEditForm.tags" placeholder="多个标签用 # 分隔" />
+            <TagInput v-model="imageEditForm.tags" placeholder="用 # 分隔多个标签" />
           </el-form-item>
-          <el-form-item label="可见权限">
+          <el-form-item label="可见范围">
             <el-select v-model="imageEditForm.visibility">
               <el-option label="仅自己" value="PRIVATE" />
               <el-option label="公开" value="PUBLIC" />
@@ -81,7 +81,7 @@
         </template>
       </el-dialog>
 
-      <el-dialog v-model="workCategoryDialogVisible" title="新建分类" width="380px" class="profile-dialog">
+      <el-dialog v-model="workCategoryDialogVisible" title="新建分类" width="380px" :lock-scroll="false" class="profile-dialog">
         <el-form label-position="top" @submit.prevent>
           <el-form-item label="分类名">
             <el-input v-model="newWorkCategoryName" maxlength="20" show-word-limit @keyup.enter="submitWorkCategory" />
@@ -126,6 +126,7 @@ import { useUserStore } from '../store/user'
 import { getUserProfile, updateProfile, uploadAvatar, uploadBackground, checkField, deleteAccount, sendEmailChangeCode } from '../api/user'
 import { getImageList, getUserPublicImages, deleteImage, updateImage } from '../api/image'
 import { getUserMediaResourceStatus, refreshUserMediaAccessUrl } from '../api/resource'
+import { confirmImageDelete } from '../utils/deleteConfirmation'
 import { getCategoryList, createCategory } from '../api/category'
 import { DEFAULT_IMAGE_PAGE_SIZE, IMAGE_PAGE_SIZES, buildImageListParams, getImageDownloadUrl } from '../utils/imageRequests'
 import { userMediaToPollingResource } from '../utils/resourceAdapters'
@@ -194,15 +195,21 @@ const showProfileMeta = computed(() => {
   return Boolean(hasContactInfo || user.value.bio || joinedAt.value)
 })
 
-const BANNER_TONES = ['#d8d0c3', '#c5beb2', '#aab1ad', '#8d9a9b', '#596f79', '#31495f', '#aa6a58', '#ece6dc']
+const BANNER_TONES = [
+  'var(--astral-plum)',
+  'var(--astral-teal)',
+  'var(--astral-blue)',
+  'var(--astral-rose)',
+  'var(--astral-gold)',
+]
 const bannerCells = ref([])
 const animStats = reactive({
   works: 0,
   likes: 0,
 })
 const profileHeaderStats = computed(() => [
-  { label: '作品（本页）', value: animStats.works },
-  { label: '获赞（本页）', value: animStats.likes },
+  { label: '累计创作', value: animStats.works },
+  { label: '获赞', value: animStats.likes },
 ])
 
 function initBannerCells() {
@@ -212,7 +219,7 @@ function initBannerCells() {
 function animateCounts() {
   const targets = {
     works: workTotal.value || works.value.length || 0,
-    likes: works.value.reduce((sum, img) => sum + Number(img.likeCount || 0), 0),
+    likes: Number(user.value.publicLikeCount || 0),
   }
 
   Object.keys(targets).forEach(key => {
@@ -888,7 +895,7 @@ async function handleBatchWorkDelete() {
   if (uuids.length === 0) return
   try {
     await ElMessageBox.confirm(
-      `确定删除选中的 ${uuids.length} 张图片吗？`,
+      `删除后无法恢复。确定删除选中的 ${uuids.length} 张图片吗？`,
       '批量删除图片',
       { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' }
     )
@@ -903,7 +910,7 @@ async function handleBatchWorkDelete() {
 
 async function handleWorkDelete(image) {
   const uuid = typeof image === 'object' ? image?.uuid : image
-  if (!uuid) return
+  if (!uuid || !(await confirmImageDelete(image))) return
   try {
     await deleteImage(uuid)
     selectedWorkUuids.value = selectedWorkUuids.value.filter(item => item !== uuid)
@@ -915,14 +922,14 @@ async function handleWorkDelete(image) {
 async function copyWorkLink(img) {
   const url = getImageDownloadUrl(img)
   if (!url) {
-    ElMessage.warning('暂无可复制链接')
+    ElMessage.warning('暂时没有可复制的分享链接')
     return
   }
   try {
     await navigator.clipboard.writeText(new URL(url, window.location.origin).href)
-    ElMessage.success('链接已复制')
+    ElMessage.success('分享链接已复制')
   } catch {
-    ElMessage.warning('当前浏览器不支持自动复制')
+    ElMessage.warning('无法自动复制，请手动复制分享链接')
   }
 }
 
@@ -1069,13 +1076,13 @@ async function saveProfile() {
 </script>
 
 <style scoped>
-.profile-page { min-height: 100vh; background: var(--color-canvas); color: var(--color-text-primary); }
+.profile-page { min-height: 100vh; background: transparent; color: var(--color-text-primary); }
 .profile-container { width: min(calc(100% - (2 * var(--page-gutter))), var(--page-wide)); padding: 96px 0 112px; }
-.profile-banner { position: relative; min-height: 220px; overflow: hidden; border: 1px solid var(--color-border-subtle); border-bottom: 0; background-color: var(--color-night); background-position: center; background-size: cover; }
-.banner-grid { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(5,1fr); grid-template-rows: repeat(3,1fr); gap: 1px; }.banner-cell { opacity: .82; }.banner-overlay { position: absolute; inset: 0; background: rgba(14,18,22,.12); }.banner-edit { position: absolute; z-index: 2; top: var(--space-4); right: var(--space-4); opacity: .64; transition: opacity var(--duration-fast) var(--ease-standard); }.banner-edit--active { opacity: 1; }.banner-edit :deep(.el-button) { min-height: var(--control-height-md); border-color: var(--color-border-subtle); background: rgba(248,245,238,.9); color: var(--color-text-primary); box-shadow: none; }
+.profile-banner { position: relative; min-height: 220px; overflow: hidden; border: 1px solid var(--color-border-subtle); border-bottom: 0; background-color: var(--color-viewer-surface); background-position: center; background-size: cover; }
+.banner-grid { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(5,1fr); grid-template-rows: repeat(3,1fr); gap: 1px; }.banner-cell { opacity: .58; }.banner-overlay { position: absolute; inset: 0; background: rgba(14,16,23,.34); }.banner-edit { position: absolute; z-index: 2; top: var(--space-4); right: var(--space-4); opacity: .64; transition: opacity var(--duration-fast) var(--ease-standard); }.banner-edit--active { opacity: 1; }.banner-edit :deep(.el-button) { min-height: var(--control-height-md); border-color: var(--color-border-subtle); background: rgba(25,28,37,.9); color: var(--color-text-primary); box-shadow: none; }
 .profile-container :deep(.profile-header),.profile-container :deep(.user-works) { border-color: var(--color-border-subtle); }.profile-container :deep(.user-works) { border-top: 0; }
 .category-row { display: grid; width: 100%; grid-template-columns: 1fr auto; gap: var(--space-2); }.category-row :deep(.el-select) { width: 100%; }
-.pagination-wrap { position: fixed; z-index: var(--layer-floating); right: 0; bottom: 0; left: 0; display: flex; justify-content: center; padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom)); border-top: 1px solid var(--color-border-subtle); background: rgba(248,245,238,.96); }.pagination-wrap :deep(.el-pagination) { max-width: 100%; flex-wrap: wrap; justify-content: center; gap: var(--space-1); }
+.pagination-wrap { position: fixed; z-index: var(--layer-floating); right: 0; bottom: 0; left: 0; display: flex; justify-content: center; padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom)); border-top: 1px solid var(--color-border-subtle); background: rgba(14,16,23,.94); }.pagination-wrap :deep(.el-pagination) { max-width: 100%; flex-wrap: wrap; justify-content: center; gap: var(--space-1); }
 @media (max-width:820px) { .profile-container { padding-top: 82px; }.profile-banner { min-height: 180px; } }
 @media (max-width:520px) { .profile-container { width: calc(100% - (2 * var(--page-gutter))); }.profile-banner { min-height: 150px; }.banner-grid { grid-template-columns: repeat(3,1fr); grid-template-rows: repeat(5,1fr); }.banner-edit :deep(.el-button) { min-height: 44px; }.pagination-wrap { padding-inline: var(--space-2); }.pagination-wrap :deep(.el-pagination__total),.pagination-wrap :deep(.el-pagination__sizes) { display: none; } }
 </style>

@@ -34,25 +34,33 @@ defineProps({
 
 <style scoped>
 .auth-page {
-  min-height: 100dvh;
+  height: 100dvh;
   display: grid;
   place-items: center;
   padding: 32px;
-  background: var(--color-canvas-muted);
+  overflow: hidden;
+  background: transparent;
   color: var(--color-text-primary);
 }
 
 .auth-layout {
   width: min(100%, 1120px);
-  min-height: min(720px, calc(100dvh - 64px));
+  height: min(880px, calc(100dvh - 64px));
+  min-height: 0;
   display: grid;
   grid-template-columns: minmax(280px, 0.85fr) minmax(420px, 1.15fr);
-  background: var(--color-surface-1);
+  grid-template-rows: minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: rgba(14, 16, 23, 0.72);
+  box-shadow: var(--shadow-dialog);
 }
 
 .auth-aside,
 .auth-main {
   min-width: 0;
+  min-height: 0;
 }
 
 .auth-aside {
@@ -61,6 +69,8 @@ defineProps({
   justify-content: space-between;
   gap: 48px;
   padding: clamp(32px, 5vw, 64px);
+  overflow-y: auto;
+  scrollbar-gutter: stable;
   border-right: 1px solid var(--color-border-subtle);
   background: var(--color-canvas-muted);
 }
@@ -74,9 +84,13 @@ defineProps({
 }
 
 .auth-aside :deep(.auth-aside-eyebrow) {
-  color: var(--color-text-primary);
-  font-size: 16px;
+  display: inline-block;
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--color-vermilion);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
   font-weight: 600;
+  letter-spacing: .04em;
 }
 
 .auth-aside :deep(.auth-aside-title) {
@@ -114,16 +128,45 @@ defineProps({
 
 .auth-main {
   display: flex;
-  min-height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  scrollbar-color: var(--color-text-secondary) var(--color-canvas-muted);
+  scrollbar-width: auto;
   background: var(--color-surface-1);
+}
+
+.auth-main::-webkit-scrollbar {
+  width: 12px;
+}
+
+.auth-main::-webkit-scrollbar-track {
+  border-left: 1px solid var(--color-border-strong);
+  background: rgba(19, 23, 34, 0.72);
+}
+
+.auth-main::-webkit-scrollbar-thumb {
+  border: 2px solid var(--color-canvas-muted);
+  border-radius: 999px;
+  background: var(--color-text-secondary);
+}
+
+.auth-main::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-secondary);
 }
 
 .auth-main__inner {
   width: 100%;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   padding: clamp(32px, 5vw, 64px);
+}
+
+.auth-main__inner::after {
+  content: '';
+  flex: 0 0 32px;
 }
 
 .auth-layout--narrow .auth-header,
@@ -205,7 +248,7 @@ defineProps({
   min-height: var(--control-height-lg);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-sm);
-  background: var(--color-surface-1);
+  background: rgba(25, 28, 37, 0.84);
   box-shadow: none;
 }
 
@@ -263,11 +306,12 @@ defineProps({
 .auth-body :deep(.captcha-image:hover:not(:disabled)),
 .auth-body :deep(.oauth-btn:hover:not(:disabled)) {
   border-color: var(--color-border-strong);
-  background: var(--color-surface-1);
+  background: rgba(25, 28, 37, 0.88);
 }
 
 .auth-body :deep(.submit-row) {
   margin-top: 4px !important;
+  margin-bottom: 0 !important;
 }
 
 .auth-body :deep(.login-btn) {
@@ -281,19 +325,33 @@ defineProps({
 
 @media (max-width: 900px) {
   .auth-page {
+    height: auto;
+    min-height: 100dvh;
     place-items: start center;
     padding: 24px;
+    overflow: visible;
   }
 
   .auth-layout {
-    width: min(100%, 720px);
+    width: 100%;
+    height: auto;
+    max-width: 720px;
+    min-width: 0;
     min-height: 0;
     grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+
+  .auth-main {
+    overflow: visible;
+    scrollbar-gutter: auto;
   }
 
   .auth-aside {
     gap: 24px;
     padding: 28px 32px;
+    overflow: visible;
+    scrollbar-gutter: auto;
     border-right: 0;
     border-bottom: 1px solid var(--color-border-subtle);
   }

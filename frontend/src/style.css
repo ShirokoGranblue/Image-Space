@@ -35,15 +35,6 @@ button {
   font: inherit;
 }
 
-#app {
-  transition: transform var(--duration-standard) var(--ease-standard);
-  will-change: transform;
-}
-
-#app.notification-drawer-open {
-  transform: translateX(calc(-1 * var(--notification-drawer-width)));
-}
-
 .sr-only {
   position: absolute;
   width: 1px;
@@ -126,6 +117,78 @@ button {
 
 .el-overlay {
   background: rgba(14, 18, 22, 0.62) !important;
+}
+
+.el-message-box {
+  width: min(420px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-1);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-dialog);
+}
+
+.el-message-box__header {
+  padding: 0 var(--space-7) var(--space-3) 0;
+}
+
+.el-message-box__title {
+  color: var(--color-text-primary);
+  font-family: var(--font-title);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.el-message-box__headerbtn {
+  top: var(--space-3);
+  right: var(--space-3);
+  width: 32px;
+  height: 32px;
+}
+
+.el-message-box__headerbtn .el-message-box__close {
+  color: var(--color-text-secondary);
+}
+
+.el-message-box__headerbtn:focus .el-message-box__close,
+.el-message-box__headerbtn:hover .el-message-box__close {
+  color: var(--color-vermilion);
+}
+
+.el-message-box__content {
+  padding: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-md);
+  line-height: 1.7;
+}
+
+.el-message-box__container {
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.el-message-box__status {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  font-size: 24px;
+}
+
+.el-message-box__status.el-message-box-icon--warning {
+  color: var(--color-warning);
+}
+
+.el-message-box__btns {
+  gap: var(--space-2);
+  padding-top: var(--space-5);
+}
+
+.el-message-box__btns .el-button {
+  min-width: 84px;
+  min-height: var(--control-height-md);
+  margin-left: 0;
 }
 
 .el-message {
@@ -216,7 +279,4 @@ button {
     scroll-behavior: auto;
   }
 
-  #app {
-    transition: none;
-  }
 }

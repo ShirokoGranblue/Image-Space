@@ -2,11 +2,11 @@
   <div class="square-intro">
     <header class="square-hero">
       <div class="square-hero-copy">
-        <span class="eyebrow">公开广场</span>
-        <h1>发现大家分享的图片。</h1>
-        <p>按分类、标签或关键词浏览公开作品，也可以进入作者主页查看更多内容。</p>
+        <span class="eyebrow">EXPLORE</span>
+        <h1>发现不同的创作、设计与灵感</h1>
+        <p>在这里分享你的作品，与创作者们共同构建 AstralSpace</p>
       </div>
-      <div class="square-hero-metrics" aria-label="公开广场图片总数">
+      <div class="square-hero-metrics" aria-label="公开图片总数">
         <div class="metric-cell"><strong>{{ total }}</strong><span>公开图片</span></div>
       </div>
     </header>
@@ -50,16 +50,16 @@ const emit = defineEmits(['update:keyword', 'search', 'select-category', 'select
 </script>
 
 <style scoped>
-.square-hero { min-height: 184px; display: grid; grid-template-columns: minmax(0,1fr) 240px; border: 1px solid var(--color-border-subtle); background: var(--color-surface-1); }
+.square-hero { min-height: 184px; display: grid; grid-template-columns: minmax(0,1fr) 240px; border: 1px solid var(--color-border-subtle); background-color: rgba(25,28,37,.84); background-image: radial-gradient(circle at 12% 18%,rgba(93,143,139,.14),transparent 32%),radial-gradient(circle at 82% 12%,rgba(185,163,111,.1),transparent 28%),radial-gradient(circle at 72% 92%,rgba(167,123,131,.1),transparent 34%); }
 .square-hero-copy { padding: var(--space-6) var(--space-7); }
-.eyebrow { display: inline-block; margin-bottom: var(--space-4); padding-left: var(--space-3); border-left: 2px solid var(--color-vermilion); color: var(--color-text-secondary); font-size: var(--text-xs); font-weight: 700; letter-spacing: .12em; }
+.eyebrow { display: inline-block; margin-bottom: var(--space-4); padding-left: var(--space-3); border-left: 2px solid var(--color-vermilion); color: var(--color-text-secondary); font-size: var(--text-xs); font-weight: 600; letter-spacing: .12em; }
 h1 { max-width: 860px; margin: 0; font-family: var(--font-title); font-size: clamp(40px,4.6vw,64px); font-weight: 600; line-height: 1.02; }
 .square-hero p { max-width: 680px; margin: var(--space-3) 0 0; color: var(--color-text-secondary); line-height: var(--leading-md); }
 .square-hero-metrics { display: grid; border-left: 1px solid var(--color-border-subtle); }
-.metric-cell { display: flex; flex-direction: column; justify-content: center; padding: var(--space-5); }
-.metric-cell strong { color: var(--color-night); font-family: var(--font-title); font-size: 38px; font-weight: 600; line-height: 1; }
-.metric-cell span { margin-top: 7px; color: var(--color-text-muted); font-size: var(--text-xs); font-weight: 700; letter-spacing: .08em; }
-.square-command { display: grid; grid-template-columns: minmax(280px,1fr) 190px 190px auto; align-items: center; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--color-border-subtle); border-top: 0; background: var(--color-surface-1); }
+.metric-cell { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: var(--space-5); text-align: center; }
+.metric-cell strong { color: var(--astral-gold); font-family: var(--font-title); font-size: 38px; font-weight: 600; line-height: 1; }
+.metric-cell span { margin-top: 7px; color: var(--color-text-muted); font-size: var(--text-xs); font-weight: 600; letter-spacing: .08em; }
+.square-command { display: grid; grid-template-columns: minmax(280px,1fr) 190px 190px auto; align-items: center; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--color-border-subtle); border-top: 0; background: rgba(25,28,37,.9); }
 .square-search,.square-select,.square-tag-select { min-width: 0; }
 .square-command :deep(.el-select__placeholder) { pointer-events: none; }
 .square-command :deep(.el-input__wrapper),.square-command :deep(.el-select__wrapper) { min-height: var(--control-height-lg); height: var(--control-height-lg); }

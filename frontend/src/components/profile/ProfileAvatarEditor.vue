@@ -3,6 +3,7 @@
     :model-value="visible"
     title="编辑头像"
     width="760px"
+    :lock-scroll="false"
     class="profile-dialog avatar-dialog"
     @update:model-value="emit('update:visible', $event)"
   >
@@ -59,10 +60,10 @@
         accept="image/jpeg,image/png,image/webp,image/gif"
         class="avatar-replace-upload"
       >
-        <el-button>更换图片</el-button>
+        <el-button>选择图片</el-button>
       </el-upload>
       <p v-if="fileName" class="upload-hint">{{ fileName }}</p>
-      <p v-if="loadError" class="avatar-load-error" role="alert">图片加载失败，请更换图片</p>
+      <p v-if="loadError" class="avatar-load-error" role="alert">图片加载失败，请重新选择图片</p>
     </div>
 
     <template #footer>

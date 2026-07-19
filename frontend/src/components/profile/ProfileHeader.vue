@@ -13,7 +13,7 @@
     <div class="profile-main">
       <template v-if="!editing">
         <div class="profile-name-row">
-          <div><span class="section-label">个人主页</span><h1>{{ user.displayName || user.username }}</h1></div>
+          <div class="profile-identity"><span class="section-label">PROFILE</span><h1><UserIdentity :display-name="user.displayName" :username="user.username" /></h1></div>
           <el-dropdown v-if="owner" trigger="click"><button class="dropdown-trigger" type="button" aria-label="更多操作"><el-icon><MoreFilled /></el-icon></button><template #dropdown><el-dropdown-menu><el-dropdown-item @click="emit('edit-profile')">编辑资料</el-dropdown-item><el-dropdown-item @click="emit('delete-account')">注销账号</el-dropdown-item></el-dropdown-menu></template></el-dropdown>
         </div>
         <div v-if="showMeta" class="profile-meta">
@@ -42,6 +42,7 @@
 
 <script setup>
 import { Calendar, Camera, Message, MoreFilled, Phone, UserFilled } from '@element-plus/icons-vue'
+import UserIdentity from '../ui/UserIdentity.vue'
 
 const props = defineProps({
   user: { type: Object, required: true }, avatarUrl: { type: String, default: '' }, owner: { type: Boolean, default: false }, editing: { type: Boolean, default: false },
@@ -53,11 +54,11 @@ function updateField(field, value) { if (props.form[field] !== value) emit('upda
 </script>
 
 <style scoped>
-.profile-header{display:grid;grid-template-columns:220px minmax(0,1fr);gap:var(--space-6);padding:var(--space-6);border:1px solid var(--color-border-subtle);background:var(--color-surface-1)}
+.profile-header{display:grid;grid-template-columns:220px minmax(0,1fr);gap:var(--space-6);padding:var(--space-6);border:1px solid var(--color-border-subtle);background:rgba(25,28,37,.9)}
 .avatar-column{display:flex;flex-direction:column;align-items:flex-start;gap:var(--space-4)}.avatar-wrap{position:relative}.avatar{border:4px solid var(--color-surface-1);box-shadow:var(--shadow-float)}.avatar-upload{position:absolute;right:0;bottom:4px;display:grid;width:44px;height:44px;place-items:center;border:1px solid var(--color-border-strong);border-radius:50%;background:var(--color-surface-1);color:var(--color-text-primary);cursor:pointer;opacity:.64;transition:opacity var(--duration-fast) var(--ease-standard)}.avatar-upload--active{opacity:1}
 .profile-stats{display:grid;width:100%;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-4)}.stat-item{display:flex;flex-direction:column;gap:var(--space-1);padding:var(--space-2) 0}.stat-item strong{font-family:var(--font-title);font-size:var(--text-xl)}.stat-item span{color:var(--color-text-muted);font-size:var(--text-xs)}
-.profile-main{min-width:0}.profile-name-row{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-4)}.section-label{color:var(--color-vermilion);font-size:var(--text-xs);font-weight:700;letter-spacing:.08em}h1{margin:var(--space-2) 0;font-family:var(--font-title);font-size:clamp(36px,5vw,64px);font-weight:600;line-height:1.04;overflow-wrap:anywhere}.dropdown-trigger{display:grid;width:44px;height:44px;place-items:center;border:1px solid var(--color-border-subtle);border-radius:var(--radius-sm);background:transparent;color:var(--color-text-primary);cursor:pointer}.profile-meta{padding-top:var(--space-4)}.bio{max-width:720px;color:var(--color-text-secondary);line-height:var(--leading-md);overflow-wrap:anywhere}.contact{display:flex;flex-wrap:wrap;gap:var(--space-4);color:var(--color-text-secondary)}.contact span,.joined{display:inline-flex;align-items:center;gap:var(--space-1)}.joined{margin-top:var(--space-3);color:var(--color-text-muted);font-size:var(--text-sm)}
+.profile-main,.profile-identity{min-width:0}.profile-name-row{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-4)}.section-label{color:var(--color-vermilion);font-size:var(--text-xs);font-weight:600;letter-spacing:.08em}.profile-name-row .section-label{display:inline-block;padding-left:var(--space-3);border-left:2px solid var(--color-vermilion)}h1{margin:var(--space-2) 0;font-family:var(--font-title);font-size:clamp(36px,5vw,64px);font-weight:600;line-height:1.04;overflow-wrap:anywhere;text-wrap:balance}h1 :deep(.user-identity){width:100%}h1 :deep(.user-identity__handle){font-family:var(--font-body);font-size:var(--text-md)}.dropdown-trigger{display:grid;width:44px;height:44px;place-items:center;border:1px solid var(--color-border-subtle);border-radius:var(--radius-sm);background:transparent;color:var(--color-text-primary);cursor:pointer}.profile-meta{padding-top:var(--space-4)}.bio{max-width:720px;color:var(--color-text-secondary);line-height:var(--leading-md);overflow-wrap:anywhere}.contact{display:flex;flex-wrap:wrap;gap:var(--space-4);color:var(--color-text-secondary)}.contact span,.joined{display:inline-flex;align-items:center;gap:var(--space-1)}.joined{margin-top:var(--space-3);color:var(--color-text-muted);font-size:var(--text-sm)}
 .profile-edit{max-width:760px}.profile-edit :deep(.el-textarea__inner){min-height:112px!important;border:1px solid var(--color-border-strong)!important;background:var(--color-surface-1)}.form-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3)}.email-code-row{display:flex;width:100%;gap:var(--space-2)}.edit-actions{display:flex;gap:var(--space-2)}
 @media(max-width:820px){.profile-header{grid-template-columns:1fr}.avatar-column{align-items:flex-start}.profile-stats{max-width:360px}}
-@media(max-width:560px){.profile-header{padding:var(--space-4)}.form-columns{grid-template-columns:1fr}.email-code-row{flex-direction:column}.edit-actions :deep(.el-button){min-height:44px}}
+@media(max-width:560px){.profile-header{padding:var(--space-4)}.profile-name-row{position:relative;display:block}.profile-name-row :deep(.el-dropdown){position:absolute;top:0;right:0;width:44px;height:44px}.profile-name-row .dropdown-trigger{position:static}h1{margin-top:32px;font-size:34px;line-height:1.08}.form-columns{grid-template-columns:1fr}.email-code-row{flex-direction:column}.edit-actions :deep(.el-button){min-height:44px}}
 </style>

@@ -1,25 +1,22 @@
 <template>
   <header class="navbar" ref="navbarEl">
     <div class="navbar-inner">
-      <router-link to="/home" class="logo" aria-label="图像空间首页">
-        <span class="logo-mark-frame" aria-hidden="true">
-          <img class="logo-mark" :src="logoIcon" alt="" />
-        </span>
-        <span class="logo-copy">
-          <strong>图像空间</strong>
-          <small>私人图库</small>
-        </span>
+      <router-link to="/home" class="logo" aria-label="AstralSpace 首页">
+        <strong class="logo-wordmark">AstralSpace</strong>
       </router-link>
 
       <nav class="nav-links" role="navigation" aria-label="主导航">
         <router-link to="/square" class="nav-link" :class="{ active: $route.path === '/square' }">
-          广场
+          Explore
         </router-link>
         <router-link to="/home" class="nav-link" :class="{ active: $route.path === '/home' }">
-          图片
+          Images
         </router-link>
         <router-link v-if="token" :to="profilePath" class="nav-link" :class="{ active: $route.path.startsWith('/profile') }">
-          我的
+          Profile
+        </router-link>
+        <router-link v-if="showAuditEntry" to="/admin/audit-log" class="nav-link" :class="{ active: $route.path.startsWith('/admin/audit-log') }">
+          Audit
         </router-link>
       </nav>
 
@@ -31,12 +28,12 @@
 
         <div class="user-section" v-if="token">
           <NotificationBell :active="!!token" />
-          <button class="avatar-button" type="button" @click="goProfile" :title="userInfo?.displayName || userInfo?.username || '个人主页'">
+          <button class="avatar-button" type="button" @click="goProfile" :title="avatarTitle">
             <el-avatar :size="30" :src="userInfo?.avatarUrl || userInfo?.avatar" class="nav-avatar">
               {{ initials }}
             </el-avatar>
           </button>
-          <button class="logout-btn" type="button" @click="handleLogout">退出</button>
+          <button class="logout-btn" type="button" @click="handleLogout">Exit</button>
         </div>
 
         <button class="mobile-toggle" @click="mobileOpen = !mobileOpen" :aria-expanded="String(mobileOpen)" aria-label="菜单">
@@ -49,13 +46,16 @@
       <div class="mobile-drawer" v-if="mobileOpen">
         <nav class="mobile-nav">
           <router-link to="/square" class="mobile-nav-item" :class="{ active: $route.path === '/square' }" @click="mobileOpen = false">
-            广场
+            Explore
           </router-link>
           <router-link to="/home" class="mobile-nav-item" :class="{ active: $route.path === '/home' }" @click="mobileOpen = false">
-            图片
+            Images
           </router-link>
           <router-link v-if="token" :to="profilePath" class="mobile-nav-item" :class="{ active: $route.path.startsWith('/profile') }" @click="mobileOpen = false">
-            我的
+            Profile
+          </router-link>
+          <router-link v-if="showAuditEntry" to="/admin/audit-log" class="mobile-nav-item" :class="{ active: $route.path.startsWith('/admin/audit-log') }" @click="mobileOpen = false">
+            Audit
           </router-link>
         </nav>
         <div class="mobile-actions" v-if="token">
@@ -64,7 +64,7 @@
             <span>上传</span>
           </button>
           <NotificationBell :active="!!token" />
-          <button class="logout-btn" type="button" @click="handleLogout">退出</button>
+          <button class="logout-btn" type="button" @click="handleLogout">Exit</button>
         </div>
       </div>
     </transition>
@@ -79,7 +79,8 @@ import { logout } from '../api/user'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import NotificationBell from './NotificationBell.vue'
-import logoIcon from '../logo/logo-nav.webp'
+import { isAllowedAdminDomain } from '../utils/adminDomain'
+import { formatUserIdentityText } from '../utils/userIdentity'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -87,6 +88,8 @@ const userStore = useUserStore()
 const token = computed(() => userStore.token)
 const userInfo = computed(() => userStore.userInfo)
 const profilePath = computed(() => `/profile/${userInfo.value?.uuid || 0}`)
+const showAuditEntry = computed(() => Boolean(token.value && userInfo.value?.role === 'admin' && isAllowedAdminDomain()))
+const avatarTitle = computed(() => userInfo.value ? formatUserIdentityText(userInfo.value, '个人主页') : '个人主页')
 const initials = computed(() => {
   const source = userInfo.value?.displayName || userInfo.value?.username || '图像'
   return String(source).slice(0, 2).toUpperCase()
@@ -108,6 +111,9 @@ onUnmounted(() => {
 function onScroll() {
   if (navbarEl.value) {
     navbarEl.value.classList.toggle('scrolled', window.scrollY > 24)
+    const scrollRange = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1)
+    const scrollProgress = Math.min(window.scrollY / scrollRange, 1)
+    navbarEl.value.style.setProperty('--astral-brand-position', `${Math.round(scrollProgress * 100)}%`)
   }
 }
 
@@ -118,6 +124,10 @@ function goProfile() {
 
 function goUpload() {
   mobileOpen.value = false
+  if (router.currentRoute.value.path === '/home') {
+    window.dispatchEvent(new CustomEvent('image-space:open-upload'))
+    return
+  }
   router.push({ path: '/home', query: { upload: '1' } })
 }
 
@@ -134,6 +144,8 @@ async function handleLogout() {
 
 <style scoped>
 .navbar {
+  --astral-brand-position: 0%;
+
   position: fixed;
   top: 0;
   right: 0;
@@ -141,52 +153,56 @@ async function handleLogout() {
   z-index: var(--layer-nav);
   pointer-events: none;
   border-bottom: 1px solid var(--color-border-subtle);
-  background: var(--color-canvas);
+  background: rgba(14, 16, 23, 0.88);
+  backdrop-filter: blur(14px);
 }
 
 .navbar-inner {
   display: grid;
   width: min(100%, var(--page-wide));
   min-height: var(--nav-height);
-  grid-template-columns: auto minmax(220px, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: var(--space-6);
   margin: 0 auto;
   padding: 0 var(--page-gutter);
   pointer-events: auto;
   background: transparent;
-  transition: min-height var(--duration-standard) var(--ease-standard);
 }
-
-.navbar.scrolled .navbar-inner { min-height: 64px; }
 
 .logo {
   display: inline-flex;
   min-width: 0;
   align-items: center;
-  gap: var(--space-3);
+  justify-self: start;
   color: var(--color-text-primary);
   text-decoration: none;
 }
 
-.logo-mark-frame {
-  display: grid;
-  width: 36px;
-  height: 36px;
-  flex: 0 0 auto;
-  place-items: center;
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-xs);
-  background: var(--color-surface-1);
+.logo-wordmark {
+  background-image: linear-gradient(
+    110deg,
+    var(--astral-gold) 0%,
+    var(--astral-rose) 24%,
+    var(--astral-plum) 45%,
+    var(--astral-teal) 66%,
+    var(--astral-starlight) 82%,
+    var(--astral-gold) 100%
+  );
+  background-position: var(--astral-brand-position) 50%;
+  background-size: 240% 100%;
+  background-clip: text;
+  color: transparent;
+  font-family: var(--font-title);
+  font-size: 1.125rem;
+  font-weight: 500;
+  letter-spacing: -.025em;
+  white-space: nowrap;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-.logo-mark { width: 28px; height: 28px; object-fit: contain; opacity: .92; }
-
-.logo-copy { display: grid; min-width: 0; gap: 1px; }
-.logo-copy strong { color: var(--color-text-primary); font-family: var(--font-title); font-size: var(--text-md); font-weight: 600; letter-spacing: .16em; white-space: nowrap; }
-.logo-copy small { color: var(--color-text-muted); font-family: var(--font-ui); font-size: var(--text-xs); font-weight: 500; line-height: 1; white-space: nowrap; }
-
-.nav-links { display: inline-flex; justify-self: center; align-items: center; gap: var(--space-5); }
+.nav-links { display: inline-flex; justify-self: center; align-items: center; gap: clamp(var(--space-6), 5vw, var(--space-8)); }
 
 .nav-link {
   min-width: var(--control-height-md);
@@ -214,6 +230,8 @@ async function handleLogout() {
   gap: var(--space-2);
 }
 
+.navbar-right { justify-self: end; }
+
 .upload-nav-btn,
 .logout-btn,
 .avatar-button,
@@ -234,8 +252,10 @@ async function handleLogout() {
 
 .upload-nav-btn { border-color: var(--color-vermilion); background: var(--color-vermilion); color: var(--color-text-inverse); }
 .upload-nav-btn:hover { border-color: var(--color-vermilion-hover); background: var(--color-vermilion-hover); }
-.logout-btn:hover,.avatar-button:hover,.mobile-toggle:hover { border-color: var(--color-border-strong); background: var(--color-surface-2); }
-.avatar-button { width: var(--control-height-md); padding: 0; overflow: hidden; }
+.logout-btn:hover,.logout-btn:focus-visible { border-color: var(--color-error); background: var(--color-error); color: var(--color-text-inverse); outline: none; }
+.avatar-button:hover,.mobile-toggle:hover { border-color: var(--color-border-strong); background: var(--color-surface-2); }
+.avatar-button { width: var(--control-height-md); padding: 0; overflow: hidden; border-color: transparent; border-radius: 50%; background: transparent; }
+.avatar-button:focus-visible { outline: 2px solid var(--color-urban); outline-offset: 2px; }
 .nav-avatar { border: 0; background: var(--color-night); color: var(--color-text-inverse); }
 .navbar :deep(.notification-bell) { width: var(--control-height-md); height: var(--control-height-md); border-radius: var(--radius-sm); color: var(--color-text-secondary); }
 .navbar :deep(.notification-bell:hover) { background: var(--color-surface-2); color: var(--color-text-primary); }
@@ -288,13 +308,26 @@ async function handleLogout() {
 }
 
 @media (max-width: 500px) {
-  .logo-copy strong { font-size: var(--text-sm); }
-  .logo-copy small { display: none; }
+  .logo-wordmark { font-size: var(--text-md); }
   .mobile-nav-item { min-height: var(--control-height-lg); }
   .mobile-actions .upload-nav-btn,.mobile-actions .logout-btn { min-height: var(--control-height-lg); height: var(--control-height-lg); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .navbar-inner,.nav-link,.hamburger-line,.hamburger-line::before,.hamburger-line::after,.slide-down-enter-active,.slide-down-leave-active { transition: none; }
+}
+
+@media (forced-colors: active) {
+  .navbar {
+    border-color: CanvasText;
+    background: Canvas;
+    backdrop-filter: none;
+  }
+
+  .logo-wordmark {
+    background-image: none;
+    color: CanvasText;
+    -webkit-text-fill-color: CanvasText;
+  }
 }
 </style>
