@@ -23,11 +23,15 @@ import com.picmgmt.image.ImageUrlService;
 import com.picmgmt.mapper.UserMapper;
 import com.picmgmt.mapper.UserOauthAccountMapper;
 import com.picmgmt.service.OAuthService;
+import com.picmgmt.service.oauth.InvalidOAuthStateException;
 import com.picmgmt.service.oauth.OAuthUsernameGenerator;
+import com.picmgmt.service.oauth.RedisAuthStateCache;
 import com.picmgmt.storage.StorageService;
 import com.xkcoding.http.config.HttpConfig;
 import lombok.extern.slf4j.Slf4j;
 import me.zhyd.oauth.config.AuthConfig;
+import me.zhyd.oauth.cache.AuthStateCache;
+import me.zhyd.oauth.enums.AuthResponseStatus;
 import me.zhyd.oauth.enums.scope.AuthGithubScope;
 import me.zhyd.oauth.enums.scope.AuthGoogleScope;
 import me.zhyd.oauth.model.AuthCallback;
@@ -48,7 +52,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.net.InetSocketAddress;
 import java.net.Proxy;
-import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -62,6 +65,7 @@ public class OAuthServiceImpl implements OAuthService {
     private final UserMapper userMapper;
     private final StorageService storageService;
     private final StringRedisTemplate redisTemplate;
+    private final AuthStateCache authStateCache;
     private final BloomFilterService bloomFilterService;
     private final UserOauthAccountMapper oauthAccountMapper;
     private final UserRoleMapper userRoleMapper;
@@ -93,11 +97,13 @@ public class OAuthServiceImpl implements OAuthService {
     private final GoogleJwtVerifier googleJwtVerifier = new GoogleJwtVerifier();
 
     public OAuthServiceImpl(UserMapper userMapper, StorageService storageService,
-                            StringRedisTemplate redisTemplate, BloomFilterService bloomFilterService,
+                            StringRedisTemplate redisTemplate, AuthStateCache authStateCache,
+                            BloomFilterService bloomFilterService,
                             UserOauthAccountMapper oauthAccountMapper, UserRoleMapper userRoleMapper) {
         this.userMapper = userMapper;
         this.storageService = storageService;
         this.redisTemplate = redisTemplate;
+        this.authStateCache = authStateCache;
         this.bloomFilterService = bloomFilterService;
         this.oauthAccountMapper = oauthAccountMapper;
         this.userRoleMapper = userRoleMapper;
@@ -106,7 +112,7 @@ public class OAuthServiceImpl implements OAuthService {
     @Override
     public String getAuthorizeUrl(String provider, String baseUrl) {
         String state = AuthStateUtils.createState();
-        redisTemplate.opsForValue().set("oauth:domain:" + state, baseUrl, Duration.ofMinutes(10));
+        redisTemplate.opsForValue().set("oauth:domain:" + state, baseUrl, RedisAuthStateCache.DEFAULT_TTL);
         AuthRequest authRequest = buildAuthRequest(provider);
         return authRequest.authorize(state);
     }
@@ -136,6 +142,9 @@ public class OAuthServiceImpl implements OAuthService {
 
         if (!response.ok()) {
             log.error("{} OAuth failed: {} {}", provider, response.getCode(), response.getMsg());
+            if (response.getCode() == AuthResponseStatus.ILLEGAL_STATUS.getCode()) {
+                throw new InvalidOAuthStateException(provider);
+            }
             throw new RuntimeException(provider + "授权失败: " + response.getMsg());
         }
 
@@ -303,7 +312,7 @@ public class OAuthServiceImpl implements OAuthService {
                             AuthGoogleScope.USER_PROFILE.getScope(),
                             AuthGoogleScope.USER_OPENID.getScope()))
                     .httpConfig(httpConfig)
-                    .build(), googleJwtVerifier);
+                    .build(), authStateCache, googleJwtVerifier);
         }
 
         return new ParallelGithubRequest(AuthConfig.builder()
@@ -313,7 +322,7 @@ public class OAuthServiceImpl implements OAuthService {
                 .scopes(List.of(AuthGithubScope.USER.getScope(),
                         AuthGithubScope.USER_EMAIL.getScope()))
                 .httpConfig(httpConfig)
-                .build());
+                .build(), authStateCache);
     }
 
     /**
@@ -323,8 +332,8 @@ public class OAuthServiceImpl implements OAuthService {
     static class IdTokenGoogleRequest extends AuthGoogleRequest {
         private final GoogleJwtVerifier verifier;
 
-        IdTokenGoogleRequest(AuthConfig config, GoogleJwtVerifier verifier) {
-            super(config);
+        IdTokenGoogleRequest(AuthConfig config, AuthStateCache authStateCache, GoogleJwtVerifier verifier) {
+            super(config, authStateCache);
             this.verifier = verifier;
         }
 
@@ -379,8 +388,8 @@ public class OAuthServiceImpl implements OAuthService {
                 new java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy()
         );
 
-        ParallelGithubRequest(AuthConfig config) {
-            super(config);
+        ParallelGithubRequest(AuthConfig config, AuthStateCache authStateCache) {
+            super(config, authStateCache);
         }
 
         @Override

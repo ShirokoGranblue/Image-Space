@@ -3,6 +3,7 @@ package com.picmgmt.service.impl;
 import cn.hutool.core.codec.Base64;
 import com.picmgmt.config.GoogleJwtVerifier;
 import me.zhyd.oauth.config.AuthConfig;
+import me.zhyd.oauth.cache.AuthStateCache;
 import me.zhyd.oauth.model.AuthToken;
 import me.zhyd.oauth.model.AuthUser;
 import org.junit.jupiter.api.Test;
@@ -40,6 +41,7 @@ class GoogleOAuthEmailVerificationTest {
                         .clientSecret("client-secret")
                         .redirectUri("https://image-space.app/callback")
                         .build(),
+                mock(AuthStateCache.class),
                 verifier
         );
 

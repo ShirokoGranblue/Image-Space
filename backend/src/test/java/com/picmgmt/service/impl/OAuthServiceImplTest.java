@@ -8,6 +8,7 @@ import com.picmgmt.entity.User;
 import com.picmgmt.mapper.UserMapper;
 import com.picmgmt.mapper.UserOauthAccountMapper;
 import com.picmgmt.storage.StorageService;
+import me.zhyd.oauth.cache.AuthStateCache;
 import me.zhyd.oauth.model.AuthUser;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +38,7 @@ class OAuthServiceImplTest {
     @Mock private UserMapper userMapper;
     @Mock private StorageService storageService;
     @Mock private StringRedisTemplate redisTemplate;
+    @Mock private AuthStateCache authStateCache;
     @Mock private BloomFilterService bloomFilterService;
     @Mock private UserOauthAccountMapper oauthAccountMapper;
     @Mock private UserRoleMapper userRoleMapper;

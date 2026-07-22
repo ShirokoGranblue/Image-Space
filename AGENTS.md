@@ -309,3 +309,17 @@ docker compose up -d
 - API/媒体缓存：公开与私有响应的 Cache-Control 不得混用；旧公开 URL 在可见性收紧后必须失效。
 - Vue SFC 补丁：若 Vite 在 `<style scoped>` 报 `Unknown word`，先检查脚本 helper 是否误插入 style 区块。
 
+## Agent skills
+
+### Issue tracker
+
+本仓库使用 GitHub Issues 跟踪问题和 PRD，并通过 `gh` CLI 操作。详见 `docs/agents/issue-tracker.md`。
+
+### Triage labels
+
+本仓库使用五个默认的规范化 triage 标签。详见 `docs/agents/triage-labels.md`。
+
+### Domain docs
+
+本仓库采用 single-context 领域文档布局：根目录 `CONTEXT.md` 配合 `docs/adr/`。详见 `docs/agents/domain.md`。
+

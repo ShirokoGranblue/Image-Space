@@ -16,6 +16,7 @@ import com.picmgmt.entity.User;
 import com.picmgmt.image.ImageUrlService;
 import com.picmgmt.service.CaptchaService;
 import com.picmgmt.service.OAuthService;
+import com.picmgmt.service.oauth.InvalidOAuthStateException;
 import com.picmgmt.service.TurnstileService;
 import com.picmgmt.service.UserService;
 import com.picmgmt.storage.LegacyDataUri;
@@ -193,8 +194,12 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
                                 jakarta.servlet.http.HttpServletResponse response,
                                 HttpServletRequest request) throws java.io.IOException {
         String baseUrl = buildBaseUrl(request);
-        OAuthService.OAuthResult result = oAuthService.handleCallback("github", code, state, baseUrl);
-        response.sendRedirect(buildLoginRedirect(result.token(), result.baseUrl()));
+        try {
+            OAuthService.OAuthResult result = oAuthService.handleCallback("github", code, state, baseUrl);
+            response.sendRedirect(buildLoginRedirect(result.token(), result.baseUrl()));
+        } catch (InvalidOAuthStateException e) {
+            response.sendRedirect(buildOAuthErrorRedirect(baseUrl, "state_invalid"));
+        }
     }
 
     @Operation(summary = "Google OAuth授权地址")
@@ -211,8 +216,12 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
                                 jakarta.servlet.http.HttpServletResponse response,
                                 HttpServletRequest request) throws java.io.IOException {
         String baseUrl = buildBaseUrl(request);
-        OAuthService.OAuthResult result = oAuthService.handleCallback("google", code, state, baseUrl);
-        response.sendRedirect(buildLoginRedirect(result.token(), result.baseUrl()));
+        try {
+            OAuthService.OAuthResult result = oAuthService.handleCallback("google", code, state, baseUrl);
+            response.sendRedirect(buildLoginRedirect(result.token(), result.baseUrl()));
+        } catch (InvalidOAuthStateException e) {
+            response.sendRedirect(buildOAuthErrorRedirect(baseUrl, "state_invalid"));
+        }
     }
 
     @Operation(summary = "检查邮箱/手机号是否已被使用")
@@ -336,6 +345,14 @@ private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "web
         String code = UUID.randomUUID().toString();
         redisTemplate.opsForValue().set("oauth:code:" + code, token, Duration.ofSeconds(60));
         return url + "/login?oauth_code=" + URLEncoder.encode(code, StandardCharsets.UTF_8);
+    }
+
+    private String buildOAuthErrorRedirect(String baseUrl, String errorCode) {
+        String url = baseUrl;
+        while (url.endsWith("/")) {
+            url = url.substring(0, url.length() - 1);
+        }
+        return url + "/login?oauthError=" + URLEncoder.encode(errorCode, StandardCharsets.UTF_8);
     }
 
     @Operation(summary = "OAuth一次性code换取token")
