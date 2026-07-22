@@ -22,6 +22,7 @@
         <mybatis-plus.version>3.5.6</mybatis-plus.version>
         <sa-token.version>1.38.0</sa-token.version>
         <hutool.version>5.8.27</hutool.version>
+        <tencent-cloud-ses.version>3.1.1506</tencent-cloud-ses.version>
     </properties>
 
     <dependencies>
@@ -121,6 +122,18 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.tencentcloudapi</groupId>
+            <artifactId>tencentcloud-sdk-java-ses</artifactId>
+            <version>${tencent-cloud-ses.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>

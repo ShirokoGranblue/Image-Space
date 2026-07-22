@@ -280,6 +280,7 @@ public class UserServiceImpl implements UserService {
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final int MAX_CODE_ATTEMPTS = 5;
+    private static final Duration VERIFICATION_CODE_TTL = Duration.ofMinutes(5);
     private static final String CODE_PURPOSE_REGISTER = "register";
     private static final String CODE_PURPOSE_LOGIN = "login";
 
@@ -314,8 +315,8 @@ public class UserServiceImpl implements UserService {
             redisCacheService.evict(cooldownKey);
             throw new BusinessException(ErrorCode.CODE_SEND_FAILED, e.getMessage());
         }
-        redisCacheService.putExact(redisKey, code, Duration.ofSeconds(300));
-        redisCacheService.putExact(attemptsKey, 0, Duration.ofSeconds(300));
+        redisCacheService.putExact(redisKey, code, VERIFICATION_CODE_TTL);
+        redisCacheService.putExact(attemptsKey, 0, VERIFICATION_CODE_TTL);
     }
 
     @Override
@@ -338,7 +339,7 @@ public class UserServiceImpl implements UserService {
         }
         String storedCode = redisCacheService.get(redisKey, String.class).orElse(null);
         if (storedCode == null || !storedCode.equals(dto.getCode().trim())) {
-            redisCacheService.putExact(attemptsKey, attempts + 1, Duration.ofSeconds(300));
+            redisCacheService.putExact(attemptsKey, attempts + 1, VERIFICATION_CODE_TTL);
             throw new BusinessException(ErrorCode.CODE_INVALID);
         }
         redisCacheService.evict(redisKey);
@@ -373,11 +374,11 @@ public class UserServiceImpl implements UserService {
             redisCacheService.evict(cooldownKey);
             throw new BusinessException(ErrorCode.CODE_SEND_FAILED, e.getMessage());
         }
-        redisCacheService.putExact(redisKey, code, Duration.ofSeconds(300));
+        redisCacheService.putExact(redisKey, code, VERIFICATION_CODE_TTL);
         redisCacheService.putExact(
                 emailChangeAttemptsKey(userId, normalizedEmail),
                 0,
-                Duration.ofSeconds(300)
+                VERIFICATION_CODE_TTL
         );
     }
 
@@ -390,7 +391,7 @@ public class UserServiceImpl implements UserService {
         }
         String storedCode = redisCacheService.get(redisKey, String.class).orElse(null);
         if (storedCode == null || code == null || !storedCode.equals(code.trim())) {
-            redisCacheService.putExact(attemptsKey, attempts + 1, Duration.ofSeconds(300));
+            redisCacheService.putExact(attemptsKey, attempts + 1, VERIFICATION_CODE_TTL);
             throw new BusinessException(ErrorCode.CODE_INVALID);
         }
         redisCacheService.evict(redisKey);
@@ -425,7 +426,7 @@ public class UserServiceImpl implements UserService {
         }
         String storedCode = redisCacheService.get(redisKey, String.class).orElse(null);
         if (storedCode == null || code == null || !storedCode.equals(code.trim())) {
-            redisCacheService.putExact(attemptsKey, attempts + 1, Duration.ofSeconds(300));
+            redisCacheService.putExact(attemptsKey, attempts + 1, VERIFICATION_CODE_TTL);
             throw new BusinessException(ErrorCode.CODE_INVALID);
         }
         redisCacheService.evict(redisKey);

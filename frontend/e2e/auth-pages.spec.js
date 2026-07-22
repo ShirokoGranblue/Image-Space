@@ -287,7 +287,7 @@ test.describe('认证页面阶段二回归门禁', () => {
     })
     expect(requests.code[0]).not.toHaveProperty('captchaId')
     expect(requests.code[0]).not.toHaveProperty('captchaCode')
-    await expect(page.locator('.email-code-feedback')).toContainText('验证码已发送至 new@example.com')
+    await expect(page.locator('.email-code-feedback')).toContainText('发送请求已受理，验证码 5 分钟内有效。')
     await field(page, '图形验证码').fill('A7K2')
     await field(page, '邮箱验证码').fill('123456')
     await page.getByRole('button', { name: '创建账号', exact: true }).click()

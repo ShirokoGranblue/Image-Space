@@ -90,6 +90,8 @@ describe('authentication page stage two contract', () => {
     expect(register).toContain('email-code-feedback')
     expect(register).toContain('register-feedback')
     expect(register).toContain('type="primary"')
+    expect(register).toContain('发送请求已受理，验证码 5 分钟内有效。邮件送达可能需要一点时间，请勿连续重复发送。')
+    expect(login).toContain('发送请求已受理；验证码 5 分钟内有效，送达可能需要一点时间')
   })
 
   it('checks graphical captcha only when a user submits registration or login', () => {

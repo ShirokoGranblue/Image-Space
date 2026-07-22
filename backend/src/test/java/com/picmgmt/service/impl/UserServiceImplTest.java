@@ -66,6 +66,16 @@ class UserServiceImplTest {
 
         verify(captchaService, never()).verify(any(), any());
         verify(emailService).sendVerificationCode(eq("new@example.com"), any(String.class));
+        verify(redisCacheService).putExact(
+                eq("code:register:new@example.com"),
+                any(String.class),
+                eq(Duration.ofMinutes(5))
+        );
+        verify(redisCacheService).putExact(
+                "code:attempts:register:new@example.com",
+                0,
+                Duration.ofMinutes(5)
+        );
     }
 
     @Test
@@ -217,7 +227,7 @@ class UserServiceImplTest {
         verify(redisCacheService).putExact(
                 eq("code:change_email:7:new@example.com"),
                 any(String.class),
-                eq(Duration.ofSeconds(300))
+                eq(Duration.ofMinutes(5))
         );
     }
 

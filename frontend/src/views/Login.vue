@@ -370,7 +370,7 @@ async function handleSendCode() {
       purpose: 'login',
       turnstileToken: token,
     })
-    ElMessage.success('验证码已发送')
+    ElMessage.success('发送请求已受理；验证码 5 分钟内有效，送达可能需要一点时间')
     startCountdown()
   } catch {
     // The axios interceptor already reports the API error.

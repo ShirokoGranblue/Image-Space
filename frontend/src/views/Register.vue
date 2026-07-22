@@ -264,10 +264,10 @@ async function handleSendCode() {
       purpose: 'register',
       turnstileToken: token,
     })
-    ElMessage.success('邮箱验证码已发送')
+    ElMessage.success('验证码发送请求已受理，请留意收件箱')
     emailCodeFeedback.value = {
       type: 'success',
-      message: `验证码已发送至 ${form.email}，5 分钟内有效`,
+      message: '发送请求已受理，验证码 5 分钟内有效。邮件送达可能需要一点时间，请勿连续重复发送。',
     }
     startCountdown()
   } catch (error) {

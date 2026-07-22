@@ -74,6 +74,15 @@ app:
   public-base-url: ${APP_PUBLIC_BASE_URL:http://localhost:8088}
   frontend-base-url: ${APP_FRONTEND_BASE_URL:http://localhost:3000}
   webhook-path: ${APP_WEBHOOK_PATH:/api/webhook}
+  mail:
+    provider: ${MAIL_PROVIDER:smtp}
+    tencent-ses:
+      secret-id: ${TENCENT_SES_SECRET_ID:}
+      secret-key: ${TENCENT_SES_SECRET_KEY:}
+      region: ${TENCENT_SES_REGION:}
+      from-address: ${TENCENT_SES_FROM_ADDRESS:}
+      subject: ${TENCENT_SES_SUBJECT:AstralSpace 验证码}
+      template-id: ${TENCENT_SES_TEMPLATE_ID:}
   admin:
     allow-local: ${APP_ADMIN_ALLOW_LOCAL:false}
 
