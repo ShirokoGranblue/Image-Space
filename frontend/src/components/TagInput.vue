@@ -169,7 +169,8 @@ function focusInput() {
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
   background: var(--color-surface-1);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition: border-color var(--duration-standard) ease, box-shadow var(--duration-standard) ease,
+    background var(--duration-standard) ease;
   cursor: text;
 }
 

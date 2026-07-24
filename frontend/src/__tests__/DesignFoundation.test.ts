@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { readFileSync } from 'node:fs'
 import AppShell from '../components/layout/AppShell.vue'
 import BaseButton from '../components/ui/BaseButton.vue'
+import baseButtonSource from '../components/ui/BaseButton.vue?raw'
 import BaseIconButton from '../components/ui/BaseIconButton.vue'
+import baseIconButtonSource from '../components/ui/BaseIconButton.vue?raw'
 import LoadingState from '../components/states/LoadingState.vue'
 import EmptyState from '../components/states/EmptyState.vue'
 import ErrorState from '../components/states/ErrorState.vue'
+
+const globalStyles = readFileSync('src/style.css', 'utf8')
 
 describe('design foundation', () => {
   it('provides an application shell and stable content target', () => {
@@ -32,6 +37,12 @@ describe('design foundation', () => {
     expect(wrapper.emitted('click')).toBeUndefined()
   })
 
+  it('gives enabled BaseButton controls a guarded scale press response', () => {
+    expect(baseButtonSource).toContain('transform var(--duration-fast) var(--ease-out)')
+    expect(baseButtonSource).toMatch(/\.base-button:active:not\(:disabled\)\s*\{\s*transform:\s*scale\(0\.97\)/)
+    expect(baseButtonSource).not.toContain('translateY(1px)')
+  })
+
   it('requires an accessible name for icon-only actions', () => {
     const wrapper = mount(BaseIconButton, {
       props: { label: '关闭查看器', pressed: false },
@@ -40,6 +51,17 @@ describe('design foundation', () => {
 
     expect(wrapper.get('button').attributes('aria-label')).toBe('关闭查看器')
     expect(wrapper.get('button').attributes('aria-pressed')).toBe('false')
+  })
+
+  it('gives enabled BaseIconButton controls a guarded scale press response', () => {
+    expect(baseIconButtonSource).toContain('transform var(--duration-fast) var(--ease-out)')
+    expect(baseIconButtonSource).toMatch(/\.base-icon-button:active:not\(:disabled\)\s*\{\s*transform:\s*scale\(0\.97\)/)
+    expect(baseIconButtonSource).not.toContain('translateY(1px)')
+  })
+
+  it('limits Element Plus press feedback to enabled buttons', () => {
+    expect(globalStyles).toMatch(/\.el-button:not\(\.is-disabled\)\s*\{\s*transition:\s*transform var\(--duration-fast\) var\(--ease-out\)/)
+    expect(globalStyles).toMatch(/\.el-button:not\(\.is-disabled\):active\s*\{\s*transform:\s*scale\(0\.97\)/)
   })
 
   it('exposes loading, empty and error semantics', async () => {

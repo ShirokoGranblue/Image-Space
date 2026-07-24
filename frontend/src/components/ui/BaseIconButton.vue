@@ -41,7 +41,11 @@ function handleClick(event) {
   background: transparent;
   color: var(--color-text-primary);
   cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+  transition:
+    transform var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    color var(--duration-fast) ease;
 }
 
 .base-icon-button--sm { width: 36px; height: 36px; }
@@ -50,10 +54,14 @@ function handleClick(event) {
 .base-icon-button--secondary { border-color: var(--color-border-subtle); background: var(--color-surface-1); }
 .base-icon-button--secondary:hover:not(:disabled) { border-color: var(--color-border-strong); }
 .base-icon-button--inverse { background: var(--color-viewer-surface); color: var(--color-text-inverse); }
-.base-icon-button:active:not(:disabled) { transform: translateY(1px); }
+.base-icon-button:active:not(:disabled) { transform: scale(0.97); }
 .base-icon-button:disabled { cursor: not-allowed; opacity: 0.48; }
 
 @media (max-width: 767px) {
   .base-icon-button { width: 44px; height: 44px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .base-icon-button:active:not(:disabled) { transform: none; }
 }
 </style>

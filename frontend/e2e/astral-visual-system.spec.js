@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 
 const apiResult = data => ({ code: 200, message: 'success', data })
 
-async function installPublicMocks(page, { admin = false } = {}) {
+async function installPublicMocks(page, { admin = false, imageRecords = [] } = {}) {
   await page.route(url => url.pathname.startsWith('/api/'), async route => {
     const path = new URL(route.request().url()).pathname
 
@@ -15,6 +15,13 @@ async function installPublicMocks(page, { admin = false } = {}) {
 
     if (path === '/api/category/list') {
       await route.fulfill({ json: apiResult([]) })
+      return
+    }
+
+    if (path === '/api/image/list') {
+      await route.fulfill({
+        json: apiResult({ records: imageRecords, total: imageRecords.length }),
+      })
       return
     }
 
@@ -211,6 +218,43 @@ test.describe('AstralSpace 视觉系统', () => {
 
     await page.reload()
     await expect(page.locator('[data-astral-intensity="medium"]')).toHaveAttribute('data-astral-mode', 'quiet')
+  })
+
+  test('首页底部分页不会遮挡 Astral modes 控件', async ({ page }) => {
+    await page.addInitScript(() => sessionStorage.setItem('satoken', 'astral-e2e-token'))
+    await installPublicMocks(page, {
+      imageRecords: [{
+        id: 1,
+        uuid: 'astral-home-1',
+        imageName: 'Regression fixture',
+        visibility: 'PUBLIC',
+        tags: '',
+        description: '',
+      }],
+    })
+    await page.goto('/home')
+    await expect(page.locator('.pagination-wrap')).toBeVisible()
+
+    const metrics = await page.evaluate(() => {
+      const trigger = document.querySelector('.astral-mode-trigger')
+      const pagination = document.querySelector('.pagination-wrap')
+      const triggerRect = trigger.getBoundingClientRect()
+      const paginationRect = pagination.getBoundingClientRect()
+      const centerX = triggerRect.left + triggerRect.width / 2
+      const centerY = triggerRect.top + triggerRect.height / 2
+      const centerHit = document.elementFromPoint(centerX, centerY)
+
+      return {
+        overlapHeight: Math.max(
+          0,
+          Math.min(triggerRect.bottom, paginationRect.bottom)
+            - Math.max(triggerRect.top, paginationRect.top),
+        ),
+        centerHitsTrigger: centerHit === trigger || trigger.contains(centerHit),
+      }
+    })
+
+    expect(metrics).toEqual({ overlapHeight: 0, centerHitsTrigger: true })
   })
 
   test('流光模式用 DPR 上限 1.5 的 Canvas 绘制连续星点帧', async ({ page }) => {

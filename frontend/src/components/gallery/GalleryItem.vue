@@ -31,7 +31,7 @@
           :src="imageSrc"
           :alt="imageName"
           class="card-img"
-          :class="`fit-${fit}`"
+          :class="[`fit-${fit}`, { 'is-loaded': imageStatus === 'loaded' }]"
           :loading="priority ? 'eager' : 'lazy'"
           :fetchpriority="priority ? 'high' : 'auto'"
           decoding="async"
@@ -174,7 +174,9 @@ function openImage() {
   border-block: 1px solid var(--color-border-subtle);
   background: transparent;
   color: var(--color-text-primary);
-  transition: border-color var(--duration-fast) var(--ease-standard);
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) ease;
 }
 
 .gallery-item:hover,
@@ -215,14 +217,23 @@ function openImage() {
   height: 100%;
   display: block;
   background: #e2e2df;
-  transition: opacity var(--duration-standard) var(--ease-standard), transform var(--duration-standard) var(--ease-standard);
+  opacity: 0;
+  transform: scale(0.97);
+  transition:
+    opacity var(--duration-standard) var(--ease-out),
+    transform var(--duration-standard) var(--ease-out);
+}
+
+.card-img.is-loaded {
+  opacity: 1;
+  transform: none;
 }
 
 .card-img.fit-contain { object-fit: contain; }
 .card-img.fit-cover { object-fit: cover; }
 
 @media (hover: hover) and (pointer: fine) {
-  .gallery-item:hover .card-img { transform: scale(1.01); }
+  .gallery-item:hover .card-img.is-loaded { transform: scale(1.01); }
   .select-toggle { opacity: 0; transform: translateY(-2px); transition: opacity var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-standard); }
   .gallery-item:hover .select-toggle,
   .gallery-item:focus-within .select-toggle,
@@ -245,7 +256,7 @@ function openImage() {
   inset: 0;
   background: linear-gradient(90deg, transparent, rgba(248, 245, 238, 0.7), transparent);
   transform: translateX(-100%);
-  animation: gallery-shimmer 1.2s var(--ease-standard) infinite;
+  animation: media-shimmer 1.2s linear infinite;
 }
 
 .image-placeholder__line {
@@ -291,18 +302,35 @@ function openImage() {
 }
 
 .select-mark {
+  position: relative;
   width: 12px;
   height: 12px;
   border: 1px solid currentColor;
+  transition:
+    border-color var(--duration-fast) ease,
+    background-color var(--duration-fast) ease;
 }
 
-.select-toggle.checked .select-mark {
-  width: 7px;
-  height: 12px;
-  border: 0;
+.select-mark::after {
+  content: '';
+  position: absolute;
+  width: 5px;
+  height: 9px;
+  top: 0;
+  left: 3px;
   border-right: 2px solid var(--color-text-inverse);
   border-bottom: 2px solid var(--color-text-inverse);
-  transform: rotate(45deg) translate(-1px, -1px);
+  opacity: 0;
+  transform: rotate(45deg) scale(0.7);
+  transform-origin: center;
+  transition:
+    opacity var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+.select-toggle.checked .select-mark::after {
+  opacity: 1;
+  transform: rotate(45deg) scale(1);
 }
 
 .card-body {
@@ -417,12 +445,19 @@ function openImage() {
   .card-body { padding-bottom: var(--space-5); }
 }
 
-@keyframes gallery-shimmer {
-  to { transform: translateX(100%); }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .card-img { transition: none; }
+  .card-img {
+    transform: none;
+    transition: opacity 200ms ease;
+  }
+  .select-toggle {
+    transform: none;
+    transition: opacity 200ms ease;
+  }
+  .select-mark::after {
+    transition: opacity 200ms ease;
+    transform: rotate(45deg) scale(1);
+  }
   .image-placeholder::after { animation: none; }
 }
 </style>

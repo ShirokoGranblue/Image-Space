@@ -293,7 +293,7 @@ defineExpose({ open })
   background: var(--color-canvas-muted);
   border: 2px dashed var(--color-border-subtle);
   border-radius: var(--radius-lg);
-  transition: border-color 0.2s ease, background 0.2s ease;
+  transition: border-color var(--duration-standard) ease, background var(--duration-standard) ease;
 }
 
 .upload-area :deep(.el-upload-dragger:hover) {

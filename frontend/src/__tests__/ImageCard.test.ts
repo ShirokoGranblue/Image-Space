@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 
 import ImageCard from '../components/ImageCard.vue'
+import galleryItemSource from '../components/gallery/GalleryItem.vue?raw'
 
 const mockImage = {
   id: 1,
@@ -93,6 +94,23 @@ describe('ImageCard', () => {
       expect(wrapper.find('.image-placeholder').exists()).toBe(false)
     })
 
+    it('reveals a loaded image and resets the reveal when its URL changes', async () => {
+      const wrapper = mountCard()
+      const image = wrapper.get('img.card-img')
+
+      expect(image.classes()).not.toContain('is-loaded')
+      await image.trigger('load')
+      expect(wrapper.get('img.card-img').classes()).toContain('is-loaded')
+
+      await wrapper.setProps({ image: { ...mockImage, thumbUrl: '/changed-thumb.webp' } })
+      expect(wrapper.get('img.card-img').classes()).not.toContain('is-loaded')
+
+      expect(galleryItemSource).toMatch(/\.card-img\s*\{[^}]*opacity:\s*0;[^}]*transform:\s*scale\(0\.97\)/)
+      expect(galleryItemSource).toMatch(/\.card-img\.is-loaded\s*\{\s*opacity:\s*1;\s*transform:\s*none/)
+      expect(galleryItemSource).toContain('.gallery-item:hover .card-img.is-loaded')
+      expect(galleryItemSource).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.card-img\s*\{\s*transform:\s*none;\s*transition:\s*opacity 200ms ease/)
+    })
+
     it('shows fallback element after image error event', async () => {
       const wrapper = mountCard()
 
@@ -140,6 +158,15 @@ describe('ImageCard', () => {
 
       expect(wrapper.find('.image-card.selected').exists()).toBe(true)
       expect(wrapper.find('.select-toggle').attributes('aria-pressed')).toBe('true')
+    })
+
+    it('draws selection inside a constant-size mark without geometry changes', () => {
+      expect(galleryItemSource).toMatch(/\.gallery-item\s*\{[^}]*transition:[^;}]*border-color[^;}]*box-shadow var\(--duration-fast\) ease/)
+      expect(galleryItemSource).toMatch(/\.select-mark\s*\{[^}]*position:\s*relative;[^}]*width:\s*12px;[^}]*height:\s*12px;[^}]*transition:[^}]*border-color[^}]*background-color/)
+      expect(galleryItemSource).toMatch(/\.select-mark::after\s*\{[^}]*width:\s*5px;[^}]*height:\s*9px;[^}]*opacity:\s*0;[^}]*transform:\s*rotate\(45deg\) scale\(0\.7\)/)
+      expect(galleryItemSource).toMatch(/\.select-toggle\.checked \.select-mark::after\s*\{\s*opacity:\s*1;\s*transform:\s*rotate\(45deg\) scale\(1\)/)
+      expect(galleryItemSource).not.toMatch(/\.select-toggle\.checked \.select-mark\s*\{[^}]*width:/)
+      expect(galleryItemSource).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.select-mark::after\s*\{[^}]*transition:\s*opacity 200ms ease;[^}]*transform:\s*rotate\(45deg\) scale\(1\)/)
     })
   })
 

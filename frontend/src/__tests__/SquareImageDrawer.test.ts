@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import SquareImageDrawer from '../components/square/SquareImageDrawer.vue'
+import drawerSource from '../components/square/SquareImageDrawer.vue?raw'
 
 const image = {
   uuid: 'image-1',
@@ -33,6 +34,13 @@ afterEach(() => {
 })
 
 describe('SquareImageDrawer', () => {
+  it('enters from the attached right or bottom edge for each responsive shape', () => {
+    expect(drawerSource).toContain('transition:opacity var(--duration-overlay) var(--ease-out)')
+    expect(drawerSource).toContain('transition:transform var(--duration-overlay) var(--ease-drawer)')
+    expect(drawerSource).toContain('transform:translateX(100%)')
+    expect(drawerSource).toMatch(/@media\(max-width:479px\)\{[\s\S]*?\.drawer-slide-enter-from \.image-drawer,\.drawer-slide-leave-to \.image-drawer\{transform:translateY\(100%\)\}/)
+  })
+
   it('teleports the non-modal panel to body and focuses its close action', async () => {
     const wrapper = mountDrawer()
     await nextTick()

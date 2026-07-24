@@ -1,51 +1,60 @@
 <template>
   <section class="gallery-grid-shell" :aria-busy="loading ? 'true' : 'false'">
-    <div v-if="loading && items.length === 0" class="gallery-grid gallery-grid--loading" role="status" aria-label="图片加载中">
-      <div
-        v-for="(ratio, index) in skeletonRatios"
-        :key="index"
-        class="gallery-skeleton"
-        :style="{ '--skeleton-ratio': ratio }"
-        aria-hidden="true"
-      />
-    </div>
-
-    <ErrorState
-      v-else-if="error"
-      :title="errorTitle"
-      :description="errorDescription"
-      :retry-label="retryLabel"
-      @retry="emit('retry')"
-    />
-
-    <EmptyState
-      v-else-if="items.length === 0"
-      :title="emptyTitle"
-      :description="emptyDescription"
-    >
-      <template v-if="$slots.emptyAction" #action><slot name="emptyAction" /></template>
-    </EmptyState>
-
-    <div v-else class="gallery-grid" :data-density="density">
-      <slot
-        v-for="(item, index) in items"
-        :key="item.uuid || item.id || index"
-        name="item"
-        :item="item"
-        :index="index"
-        :priority="index < effectiveEagerCount"
-      >
-        <GalleryItem
-          :image="item"
-          :variant="variant"
-          :open-mode="openMode"
-          :fit="fit"
-          :priority="index < effectiveEagerCount"
-          @view="emit('view', $event)"
-          @like="emit('like', $event)"
+    <Transition name="gallery-state" mode="out-in">
+      <div v-if="loading && items.length === 0" key="loading" class="gallery-grid gallery-grid--loading" role="status" aria-label="图片加载中">
+        <div
+          v-for="(ratio, index) in skeletonRatios"
+          :key="index"
+          class="gallery-skeleton"
+          :style="{ '--skeleton-ratio': ratio }"
+          aria-hidden="true"
         />
-      </slot>
-    </div>
+      </div>
+
+      <ErrorState
+        v-else-if="error"
+        key="error"
+        :title="errorTitle"
+        :description="errorDescription"
+        :retry-label="retryLabel"
+        @retry="emit('retry')"
+      />
+
+      <EmptyState
+        v-else-if="items.length === 0"
+        key="empty"
+        :title="emptyTitle"
+        :description="emptyDescription"
+      >
+        <template v-if="$slots.emptyAction" #action><slot name="emptyAction" /></template>
+      </EmptyState>
+
+      <TransitionGroup v-else key="content" name="gallery-list" tag="div" class="gallery-grid" :data-density="density">
+        <div
+          v-for="(item, index) in items"
+          :key="item.uuid || item.id || index"
+          class="gallery-entry"
+          :style="{ '--gallery-entry-delay': `${Math.min(index, 3) * 40}ms` }"
+        >
+          <slot
+            name="item"
+            :item="item"
+            :index="index"
+            :priority="index < effectiveEagerCount"
+          >
+            <GalleryItem
+              :image="item"
+              :variant="variant"
+              :open-mode="openMode"
+              :fit="fit"
+              :priority="index < effectiveEagerCount"
+              @view="emit('view', $event)"
+              @like="emit('like', $event)"
+            />
+          </slot>
+        </div>
+      </TransitionGroup>
+    </Transition>
 
     <LoadingState v-if="loading && items.length > 0" compact label="正在更新图片" />
     <LoadingState v-else-if="loadingMore" compact label="正在加载更多图片" />
@@ -114,6 +123,34 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateViewportWidth))
   --gallery-min-width: 238px;
 }
 
+.gallery-entry { min-width: 0; }
+
+.gallery-state-enter-active,
+.gallery-state-leave-active {
+  transition: opacity var(--duration-standard) ease;
+}
+
+.gallery-state-enter-from,
+.gallery-state-leave-to {
+  opacity: 0;
+}
+
+.gallery-list-enter-active {
+  transition:
+    opacity var(--duration-overlay) var(--ease-out),
+    transform var(--duration-overlay) var(--ease-out);
+  transition-delay: var(--gallery-entry-delay, 0ms);
+}
+
+.gallery-list-enter-from {
+  opacity: 0;
+  transform: translateY(12px) scale(0.97);
+}
+
+.gallery-list-move {
+  transition: transform var(--duration-standard) var(--ease-in-out);
+}
+
 .gallery-skeleton {
   position: relative;
   aspect-ratio: var(--skeleton-ratio, 4 / 3);
@@ -128,7 +165,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateViewportWidth))
   inset: 0;
   background: linear-gradient(90deg, transparent, rgba(248, 245, 238, 0.7), transparent);
   transform: translateX(-100%);
-  animation: grid-shimmer 1.2s var(--ease-standard) infinite;
+  animation: media-shimmer 1.2s linear infinite;
 }
 
 @media (max-width: 767px) {
@@ -140,11 +177,18 @@ onBeforeUnmount(() => window.removeEventListener('resize', updateViewportWidth))
   }
 }
 
-@keyframes grid-shimmer {
-  to { transform: translateX(100%); }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .gallery-skeleton::after { animation: none; }
+  .gallery-state-enter-active,
+  .gallery-state-leave-active,
+  .gallery-list-enter-active {
+    transition: opacity 200ms ease;
+    transition-delay: 0ms;
+  }
+  .gallery-list-enter-from {
+    opacity: 0;
+    transform: none;
+  }
+  .gallery-list-move { transition: none; }
 }
 </style>

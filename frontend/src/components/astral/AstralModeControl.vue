@@ -64,6 +64,17 @@ function selectMode(mode) {
   font-family: var(--font-ui);
 }
 
+:global(body:has(.pagination-wrap) .astral-mode-control) {
+  bottom: calc(
+    var(--control-height-lg)
+    + var(--space-3)
+    + var(--space-3)
+    + var(--space-2)
+    + 1px
+    + env(safe-area-inset-bottom)
+  );
+}
+
 .astral-mode-trigger,
 .astral-mode-menu button {
   min-height: 44px;
@@ -139,10 +150,26 @@ function selectMode(mode) {
 
 @media (prefers-reduced-motion: reduce) {
   .astral-mode-trigger,
-  .astral-mode-menu button,
+  .astral-mode-menu button {
+    transition:
+      border-color var(--duration-fast) ease,
+      color var(--duration-fast) ease;
+  }
+
+  .astral-mode-trigger:active,
+  .astral-mode-menu button:active {
+    transform: none;
+  }
+
   .astral-mode-menu-enter-active,
   .astral-mode-menu-leave-active {
-    transition: none;
+    transition: opacity 200ms ease;
+  }
+
+  .astral-mode-menu-enter-from,
+  .astral-mode-menu-leave-to {
+    opacity: 0;
+    transform: none;
   }
 }
 

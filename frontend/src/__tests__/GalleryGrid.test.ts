@@ -1,7 +1,9 @@
 import { describe, expect, it, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { h } from 'vue'
 
 import GalleryGrid from '../components/gallery/GalleryGrid.vue'
+import galleryGridSource from '../components/gallery/GalleryGrid.vue?raw'
 
 const images = [
   {
@@ -22,9 +24,10 @@ const images = [
   },
 ]
 
-function mountGrid(props = {}) {
+function mountGrid(props = {}, slots = {}) {
   return mount(GalleryGrid, {
     props: { items: images, ...props },
+    slots,
     global: {
       stubs: {
         'el-icon': { template: '<span class="el-icon-stub" />' },
@@ -96,6 +99,40 @@ describe('GalleryGrid', () => {
     await wrapper.find('.gallery-item__media-button').trigger('click')
 
     expect(wrapper.emitted('view')?.[0]).toEqual([images[0]])
+  })
+
+  it('wraps result entries with stable keys, preserved slot props and a capped stagger', () => {
+    const page = Array.from({ length: 6 }, (_, index) => ({
+      ...images[index % images.length],
+      uuid: `image-${index}`,
+    }))
+    const wrapper = mountGrid(
+      { items: page, initialEagerCount: 2 },
+      {
+        item: ({ item, index, priority }) => h('span', {
+          class: 'slot-probe',
+          'data-index': String(index),
+          'data-priority': String(priority),
+        }, item.uuid),
+      },
+    )
+    const entries = wrapper.findAll('.gallery-entry')
+    const probes = wrapper.findAll('.slot-probe')
+
+    expect(entries.map(entry => entry.attributes('style'))).toEqual([
+      '--gallery-entry-delay: 0ms;',
+      '--gallery-entry-delay: 40ms;',
+      '--gallery-entry-delay: 80ms;',
+      '--gallery-entry-delay: 120ms;',
+      '--gallery-entry-delay: 120ms;',
+      '--gallery-entry-delay: 120ms;',
+    ])
+    expect(probes.map(probe => probe.attributes('data-index'))).toEqual(['0', '1', '2', '3', '4', '5'])
+    expect(probes.map(probe => probe.attributes('data-priority'))).toEqual(['true', 'true', 'false', 'false', 'false', 'false'])
+    expect(galleryGridSource).toContain(':key="item.uuid || item.id || index"')
+    expect(galleryGridSource).toContain('<TransitionGroup v-else key="content" name="gallery-list"')
+    expect(galleryGridSource).toMatch(/\.gallery-list-enter-from\s*\{\s*opacity:\s*0;\s*transform:\s*translateY\(12px\) scale\(0\.97\)/)
+    expect(galleryGridSource).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.gallery-list-enter-from\s*\{\s*opacity:\s*0;\s*transform:\s*none/)
   })
 
   it('keeps a 100-item page bounded to its page size and lazily loads noncritical thumbnails', () => {

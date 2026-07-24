@@ -45,7 +45,11 @@ function handleClick(event) {
   font-weight: 600;
   line-height: 1;
   cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+  transition:
+    transform var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    color var(--duration-fast) ease;
 }
 
 .base-button--sm { min-height: 36px; padding-inline: var(--space-3); }
@@ -59,7 +63,7 @@ function handleClick(event) {
 .base-button--quiet { background: transparent; color: var(--color-night); }
 .base-button--danger { border-color: var(--color-error); background: transparent; color: var(--color-error); }
 .base-button--danger:hover:not(:disabled) { background: var(--color-error); color: var(--color-text-inverse); }
-.base-button:active:not(:disabled) { transform: translateY(1px); }
+.base-button:active:not(:disabled) { transform: scale(0.97); }
 .base-button:disabled { cursor: not-allowed; opacity: 0.48; }
 
 .base-button__spinner {
@@ -75,5 +79,10 @@ function handleClick(event) {
 
 @media (max-width: 767px) {
   .base-button { min-height: 44px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .base-button:active:not(:disabled) { transform: none; }
+  .base-button__spinner { animation: none; }
 }
 </style>

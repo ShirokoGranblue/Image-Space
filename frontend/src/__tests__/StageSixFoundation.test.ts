@@ -4,12 +4,17 @@ import { join } from 'node:path'
 import appRoot from '../App.vue?raw'
 import imageUpload from '../components/ImageUpload.vue?raw'
 import navBar from '../components/NavBar.vue?raw'
+import tagInput from '../components/TagInput.vue?raw'
 import astralEnvironment from '../components/astral/AstralEnvironment.vue?raw'
 import astralModeControl from '../components/astral/AstralModeControl.vue?raw'
+import galleryGrid from '../components/gallery/GalleryGrid.vue?raw'
 import galleryItem from '../components/gallery/GalleryItem.vue?raw'
 import baseButton from '../components/ui/BaseButton.vue?raw'
+import homeToolbar from '../components/home/HomeToolbar.vue?raw'
+import imageViewer from '../components/ImageViewer.vue?raw'
 import homePage from '../views/Home.vue?raw'
 import profilePage from '../views/Profile.vue?raw'
+import squareHeroFilters from '../components/square/SquareHeroFilters.vue?raw'
 
 const sourceRoot = 'src'
 const tokens = readFileSync(join(sourceRoot, 'styles/tokens.css'), 'utf8')
@@ -29,6 +34,7 @@ const localVariableNames = new Set([
   '--astral-backdrop',
   '--astral-brand-position',
   '--avatar-color',
+  '--gallery-entry-delay',
   '--gallery-min-width',
   '--image-aspect-ratio',
   '--skeleton-ratio',
@@ -64,9 +70,50 @@ describe('stage six design foundation', () => {
     expect(tokens).toMatch(/--el-component-size-small:\s*32px/)
   })
 
+  it('publishes semantic motion curves while keeping the standard compatibility alias', () => {
+    expect(tokens).toMatch(/--ease-out:\s*cubic-bezier\(0\.23,\s*1,\s*0\.32,\s*1\)/)
+    expect(tokens).toMatch(/--ease-in-out:\s*cubic-bezier\(0\.77,\s*0,\s*0\.175,\s*1\)/)
+    expect(tokens).toMatch(/--ease-drawer:\s*cubic-bezier\(0\.32,\s*0\.72,\s*0,\s*1\)/)
+    expect(tokens).toMatch(/--ease-standard:\s*var\(--ease-out\)/)
+  })
+
+  it('uses the shared motion duration for upload and tag-input transitions', () => {
+    for (const source of [imageUpload, tagInput]) {
+      expect(source).not.toContain('0.2s ease')
+      expect(source).toContain('var(--duration-standard) ease')
+    }
+  })
+
+  it('gives the Home toolbar controls shared press feedback', () => {
+    expect(homeToolbar).toMatch(/\.select-all,\.primary-command,\.filter-chip\{[^}]*transition:\s*transform var\(--duration-fast\) var\(--ease-out\)/)
+    expect(homeToolbar).toMatch(/\.select-all:active,\.primary-command:active,\.filter-chip:active\{transform:\s*scale\(0\.97\)/)
+  })
+
+  it('gives square sort and active-filter controls shared press feedback', () => {
+    expect(squareHeroFilters).toMatch(/\.sort-segment button\s*\{[^}]*transition:\s*transform var\(--duration-fast\) var\(--ease-out\)/)
+    expect(squareHeroFilters).toMatch(/\.active-filters button\s*\{[^}]*transition:\s*transform var\(--duration-fast\) var\(--ease-out\)/)
+    expect(squareHeroFilters).toMatch(/\.sort-segment button:active,\.active-filters button:active\s*\{\s*transform:\s*scale\(0\.97\)/)
+  })
+
+  it('shares one linear gallery shimmer across grid and item placeholders', () => {
+    expect(tokens.match(/@keyframes media-shimmer/g) ?? []).toHaveLength(1)
+    expect(tokens).toMatch(/@keyframes media-shimmer\s*\{\s*from\s*\{\s*transform:\s*translateX\(-100%\);\s*\}\s*to\s*\{\s*transform:\s*translateX\(100%\);\s*\}\s*\}/)
+    for (const source of [galleryGrid, galleryItem]) {
+      expect(source).toContain('animation: media-shimmer 1.2s linear infinite')
+    }
+    expect(galleryGrid).not.toContain('grid-shimmer')
+    expect(galleryItem).not.toContain('gallery-shimmer')
+  })
+
+  it('keeps the viewer loading sweep unidirectional and linear', () => {
+    expect(imageViewer).toContain('animation: viewer-load 1s linear infinite')
+    expect(imageViewer).not.toContain('viewer-load 1s ease-in-out infinite alternate')
+    expect(imageViewer).toMatch(/@keyframes viewer-load\s*\{\s*from\s*\{\s*transform:\s*translateX\(-100%\);\s*\}\s*to\s*\{\s*transform:\s*translateX\(200%\);\s*\}\s*\}/)
+  })
+
   it('does not reintroduce the retired token names or the app-local fixed drawer', () => {
     const retiredNames = [
-      '--black', '--blue-soft', '--color-viewer-stage', '--duration-normal', '--ease-out',
+      '--black', '--blue-soft', '--color-viewer-stage', '--duration-normal',
       '--gray1', '--gray2', '--gray3', '--leading-body', '--shadow-1', '--shadow-3',
       '--text-caption', '--text-body', '--text-small', '--z-drawer', '--bg-base',
       '--bg-surface', '--bg-elevated', '--bg-hover', '--bg-inverse', '--border-subtle',

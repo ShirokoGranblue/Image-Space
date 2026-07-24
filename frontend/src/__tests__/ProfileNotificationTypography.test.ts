@@ -15,6 +15,16 @@ describe('profile and notification typography contract', () => {
     expect(profileHeader).toContain('<UserIdentity :display-name="user.displayName" :username="user.username" />')
   })
 
+  it('switches between keyed profile view and edit roots with reduced-safe motion', () => {
+    expect(profileHeader).toContain('<Transition name="profile-mode" mode="out-in">')
+    expect(profileHeader).toContain('<div v-if="!editing" key="view" class="profile-view">')
+    expect(profileHeader).toContain('<div v-else key="edit" class="profile-edit">')
+    expect(profileHeader).toContain('@click="emit(\'save\')">保存</el-button><el-button @click="emit(\'cancel\')">取消</el-button>')
+    expect(profileHeader).toMatch(/\.profile-mode-enter-active,\.profile-mode-leave-active\{transition:opacity var\(--duration-standard\) var\(--ease-out\),transform var\(--duration-standard\) var\(--ease-out\)\}/)
+    expect(profileHeader).toMatch(/\.profile-mode-enter-from,\.profile-mode-leave-to\{opacity:0;transform:translateY\(8px\)\}/)
+    expect(profileHeader).toMatch(/@media\(prefers-reduced-motion:reduce\)\{\.profile-mode-enter-active,\.profile-mode-leave-active\{transition:opacity 200ms ease\}\.profile-mode-enter-from,\.profile-mode-leave-to\{opacity:0;transform:none\}\}/)
+  })
+
   it('keeps the notification title size while matching the main title family and weight', () => {
     expect(notificationDrawer).toContain('font-family: var(--font-title);')
     expect(notificationDrawer).toContain('font-size: var(--text-2xl);')

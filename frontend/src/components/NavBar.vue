@@ -314,7 +314,9 @@ async function handleLogout() {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .navbar-inner,.nav-link,.hamburger-line,.hamburger-line::before,.hamburger-line::after,.slide-down-enter-active,.slide-down-leave-active { transition: none; }
+  .hamburger-line,.hamburger-line::before,.hamburger-line::after { transition: none; }
+  .slide-down-enter-active,.slide-down-leave-active { transition: opacity 200ms ease; }
+  .slide-down-enter-from,.slide-down-leave-to { opacity: 0; transform: none; }
 }
 
 @media (forced-colors: active) {

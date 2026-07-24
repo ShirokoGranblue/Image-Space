@@ -19,6 +19,15 @@ describe('home selection layout contracts', () => {
     expect(homeToolbar).toMatch(/p\{min-height:3\.3em;/)
   })
 
+  it('uses a transform-only indeterminate meter for the Home loading state', () => {
+    expect(homePage).toContain('<div class="meter" :class="{ \'is-loading\': loading }" aria-hidden="true"><span></span></div>')
+    expect(homePage).not.toContain(':style="{ width: loading')
+    expect(homePage).toMatch(/\.meter\.is-loading span\s*\{[^}]*animation:\s*meter-sweep 1s linear infinite/)
+    expect(homePage).toMatch(/@keyframes meter-sweep\s*\{\s*from\s*\{\s*transform:\s*translateX\(-100%\);\s*\}\s*to\s*\{\s*transform:\s*translateX\(300%\);\s*\}\s*\}/)
+    expect(homePage).toMatch(/@media \(prefers-reduced-motion:reduce\)\s*\{[^}]*\.meter\.is-loading span\s*\{[^}]*animation:\s*none/)
+    expect(homePage).not.toContain('transition: width')
+  })
+
   it('forwards card edit actions to the existing image edit dialog', () => {
     expect(homePage).toContain('@edit="handleEdit"')
     expect(homePage).toContain('function handleEdit(img)')

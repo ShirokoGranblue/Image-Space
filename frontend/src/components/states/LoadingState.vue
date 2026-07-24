@@ -34,4 +34,8 @@ defineProps({
   animation: state-spin 800ms linear infinite;
 }
 @keyframes state-spin { to { transform: rotate(1turn); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .state-view__loader { animation: none; }
+}
 </style>

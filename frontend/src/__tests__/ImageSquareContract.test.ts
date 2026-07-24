@@ -63,6 +63,21 @@ describe('public square search and sorting contract', () => {
     expect(source).toMatch(/function clearFilters\(\)[\s\S]*onFilterChange\(\)/)
   })
 
+  it('keys active filter chips without changing their clear events', () => {
+    expect(heroSource).toContain('<TransitionGroup v-if="hasActiveFilters" name="active-filter" tag="div" class="active-filters"')
+    for (const key of ['keyword', 'category', 'tag', 'sort', 'clear']) {
+      expect(heroSource).toContain(`key="${key}"`)
+    }
+    expect(heroSource).toContain('@click="emit(\'clear-keyword\')"')
+    expect(heroSource).toContain('@click="emit(\'select-category\', null)"')
+    expect(heroSource).toContain('@click="emit(\'clear-tag\')"')
+    expect(heroSource).toContain('@click="emit(\'select-sort\', \'featured\')"')
+    expect(heroSource).toContain('@click="emit(\'clear-all\')"')
+    expect(heroSource).toMatch(/\.active-filter-enter-from,\.active-filter-leave-to\s*\{\s*opacity:\s*0;\s*transform:\s*scale\(\.97\)/)
+    expect(heroSource).not.toContain('.active-filter-move')
+    expect(heroSource).toMatch(/@media\(prefers-reduced-motion:reduce\)[\s\S]*?\.active-filter-enter-from,\.active-filter-leave-to\{opacity:0;transform:none\}/)
+  })
+
   it('keeps the image drawer as a viewport-level non-modal panel with trigger focus recovery', () => {
     expect(drawerSource).toContain('<Teleport to="body">')
     expect(drawerSource).toContain('tabindex="-1"')

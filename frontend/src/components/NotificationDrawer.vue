@@ -373,4 +373,22 @@ async function handleDeleteSelected() {
   transform: translateX(100%);
   opacity: 0;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .notification-slide-enter-active,
+  .notification-slide-leave-active {
+    transition: opacity 200ms ease;
+  }
+
+  .notification-slide-enter-from,
+  .notification-slide-leave-to {
+    transform: none;
+    opacity: 0;
+  }
+
+  .notification-item:hover,
+  .notification-item.unread:hover {
+    transform: none;
+  }
+}
 </style>

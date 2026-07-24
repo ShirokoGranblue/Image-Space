@@ -503,7 +503,7 @@ defineExpose({ open, close, previous, next, zoomIn, zoomOut, resetZoom, scale, t
 .viewer-metadata dd { margin: 0; overflow-wrap: anywhere; color: rgba(238,240,236,.9); font-size: 14px; line-height: 1.6; }
 .viewer-loading, .viewer-error { position: relative; z-index: 2; display: grid; place-items: center; gap: 12px; max-width: 360px; padding: 28px; text-align: center; background: var(--color-viewer-bg, #0e1216); color: rgba(238,240,236,.72); }
 .viewer-loading-mark { width: 40px; height: 1px; overflow: hidden; background: rgba(238,240,236,.18); }
-.viewer-loading-mark::after { content: ''; display: block; width: 50%; height: 100%; background: var(--color-urban, #4f7e8c); animation: viewer-load 1s ease-in-out infinite alternate; }
+.viewer-loading-mark::after { content: ''; display: block; width: 50%; height: 100%; background: var(--color-urban, #4f7e8c); animation: viewer-load 1s linear infinite; }
 .viewer-error :deep(.el-icon) { font-size: 32px; color: rgba(238,240,236,.48); }
 .viewer-error strong { color: var(--color-text-inverse, #eef0ec); }
 .viewer-error button { padding: 0 16px; margin-top: 4px; }
@@ -527,7 +527,9 @@ defineExpose({ open, close, previous, next, zoomIn, zoomOut, resetZoom, scale, t
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .viewer-img, .viewer-header, .viewer-nav, .viewer-toolbar, .viewer-fade-enter-active, .viewer-fade-leave-active { transition: none; }
+  .viewer-img { transition: none; }
+  .viewer-header, .viewer-nav, .viewer-toolbar { transition: opacity 200ms ease; }
+  .viewer-fade-enter-active, .viewer-fade-leave-active { transition: opacity 200ms ease; }
   .viewer-loading-mark::after { animation: none; }
 }
 </style>

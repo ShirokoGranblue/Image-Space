@@ -26,14 +26,14 @@
       </div>
     </section>
 
-    <div v-if="hasActiveFilters" class="active-filters" aria-label="已启用的筛选条件">
-      <span class="active-filters__label">已筛选</span>
-      <button v-if="keyword" type="button" @click="emit('clear-keyword')">名称：{{ keyword }} <span aria-hidden="true">×</span><span class="sr-only">清除名称搜索</span></button>
-      <button v-if="categoryId" type="button" @click="emit('select-category', null)">分类：{{ activeCategoryLabel }} <span aria-hidden="true">×</span><span class="sr-only">清除分类筛选</span></button>
-      <button v-if="activeTag" type="button" @click="emit('clear-tag')">标签：#{{ activeTag }} <span aria-hidden="true">×</span><span class="sr-only">清除标签筛选</span></button>
-      <button v-if="viewMode !== 'featured'" type="button" @click="emit('select-sort', 'featured')">排序：{{ activeSortLabel }} <span aria-hidden="true">×</span><span class="sr-only">恢复推荐排序</span></button>
-      <button class="active-filters__clear" type="button" @click="emit('clear-all')">清空筛选</button>
-    </div>
+    <TransitionGroup v-if="hasActiveFilters" name="active-filter" tag="div" class="active-filters" aria-label="已启用的筛选条件">
+      <span key="label" class="active-filters__label">已筛选</span>
+      <button v-if="keyword" key="keyword" type="button" @click="emit('clear-keyword')">名称：{{ keyword }} <span aria-hidden="true">×</span><span class="sr-only">清除名称搜索</span></button>
+      <button v-if="categoryId" key="category" type="button" @click="emit('select-category', null)">分类：{{ activeCategoryLabel }} <span aria-hidden="true">×</span><span class="sr-only">清除分类筛选</span></button>
+      <button v-if="activeTag" key="tag" type="button" @click="emit('clear-tag')">标签：#{{ activeTag }} <span aria-hidden="true">×</span><span class="sr-only">清除标签筛选</span></button>
+      <button v-if="viewMode !== 'featured'" key="sort" type="button" @click="emit('select-sort', 'featured')">排序：{{ activeSortLabel }} <span aria-hidden="true">×</span><span class="sr-only">恢复推荐排序</span></button>
+      <button key="clear" class="active-filters__clear" type="button" @click="emit('clear-all')">清空筛选</button>
+    </TransitionGroup>
   </div>
 </template>
 
@@ -64,14 +64,18 @@ h1 { max-width: 860px; margin: 0; font-family: var(--font-title); font-size: cla
 .square-command :deep(.el-select__placeholder) { pointer-events: none; }
 .square-command :deep(.el-input__wrapper),.square-command :deep(.el-select__wrapper) { min-height: var(--control-height-lg); height: var(--control-height-lg); }
 .sort-segment { display: inline-grid; height: var(--control-height-lg); grid-template-columns: repeat(2,minmax(72px,1fr)); gap: 1px; padding: 0; overflow: hidden; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-sm); background: var(--color-canvas-muted); }
-.sort-segment button { min-height: 42px; padding: 0 var(--space-3); border: 0; border-radius: 0; background: transparent; color: var(--color-text-secondary); cursor: pointer; }
+.sort-segment button { min-height: 42px; padding: 0 var(--space-3); border: 0; border-radius: 0; background: transparent; color: var(--color-text-secondary); cursor: pointer; transition: transform var(--duration-fast) var(--ease-out), background-color var(--duration-fast) ease, border-color var(--duration-fast) ease, color var(--duration-fast) ease; }
 .sort-segment button.active,.sort-segment button:hover { background: var(--color-night); color: var(--color-text-inverse); }
 .active-filters { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-5) 0; padding-bottom: var(--space-4); border-bottom: 1px solid var(--color-border-subtle); }
 .active-filters__label { margin-right: var(--space-1); color: var(--color-text-muted); font-size: var(--text-xs); }
-.active-filters button { min-height: var(--control-height-md); padding: 0 var(--space-3); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-round); background: var(--color-surface-1); color: var(--color-text-secondary); cursor: pointer; }
+.active-filters button { min-height: var(--control-height-md); padding: 0 var(--space-3); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-round); background: var(--color-surface-1); color: var(--color-text-secondary); cursor: pointer; transition: transform var(--duration-fast) var(--ease-out), background-color var(--duration-fast) ease, border-color var(--duration-fast) ease, color var(--duration-fast) ease; }
+.sort-segment button:active,.active-filters button:active { transform: scale(0.97); }
 .active-filters .active-filters__clear { border-color: transparent; border-radius: var(--radius-sm); background: transparent; color: var(--color-vermilion); }
+.active-filter-enter-active,.active-filter-leave-active { transition: opacity var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out); }
+.active-filter-enter-from,.active-filter-leave-to { opacity: 0; transform: scale(.97); }
 @media(max-width:1024px){.square-hero{min-height:0;grid-template-columns:minmax(0,1fr) 180px}.square-hero-copy{padding-block:var(--space-5)}.square-hero-metrics{border-left:1px solid var(--color-border-subtle)}.metric-cell{min-height:0;padding:var(--space-4)}}
 @media(max-width:820px){.square-hero-copy{padding:var(--space-5) var(--space-4)}h1{font-size:clamp(34px,10vw,46px)}.square-command{grid-template-columns:1fr}.square-command :deep(.el-input__wrapper),.square-command :deep(.el-select__wrapper){min-height:var(--control-height-lg);height:var(--control-height-lg)}.sort-segment button,.active-filters button{min-height:44px}.active-filters{margin-top:var(--space-4)}}
 @media(max-width:700px){.square-hero{grid-template-columns:1fr}.square-hero-metrics{border-top:1px solid var(--color-border-subtle);border-left:0}.metric-cell{min-height:72px}}
 @media(max-width:479px){.square-hero p{display:none}.square-hero-copy{padding-block:var(--space-4)}.metric-cell{min-height:58px;padding:var(--space-3) var(--space-4)}.metric-cell strong{font-size:28px}}
+@media(prefers-reduced-motion:reduce){.sort-segment button:active,.active-filters button:active{transform:none}.active-filter-enter-active,.active-filter-leave-active{transition:opacity 200ms ease}.active-filter-enter-from,.active-filter-leave-to{opacity:0;transform:none}}
 </style>

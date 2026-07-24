@@ -49,7 +49,7 @@
               <span>加载状态</span>
               <strong>{{ loading ? '加载中' : '已就绪' }}</strong>
             </div>
-            <div class="meter"><span :style="{ width: loading ? '38%' : '74%' }"></span></div>
+            <div class="meter" :class="{ 'is-loading': loading }" aria-hidden="true"><span></span></div>
           </div>
         </section>
       </aside>
@@ -555,7 +555,11 @@ function formatFileSize(size) {
 .rail-item { display: grid; width: 100%; min-height: 42px; grid-template-columns: 10px minmax(0,1fr) auto; align-items: center; gap: var(--space-2); padding: 0 var(--space-2); border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--color-text-secondary); text-align: left; cursor: pointer; }
 .rail-item:hover { background: var(--color-surface-2); color: var(--color-text-primary); }.rail-item.active { background: var(--color-night); color: var(--color-text-inverse); }.rail-item:disabled { opacity: .45; cursor: not-allowed; }.rail-item strong { font-size: var(--text-xs); }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-text-muted); }.dot.green { background: var(--color-success); }.dot.cyan { background: var(--color-urban); }.dot.amber { background: var(--color-warning); }.dot.coral { background: var(--color-error); }.dot.violet { background: var(--color-night); }
-.meter-card { padding: var(--space-3); border: 1px solid var(--color-border-subtle); background: var(--color-surface-1); }.meter-top { display: flex; justify-content: space-between; gap: var(--space-2); color: var(--color-text-muted); font-size: var(--text-xs); }.meter { height: 6px; margin-top: var(--space-3); overflow: hidden; background: var(--color-canvas-muted); }.meter span { display: block; height: 100%; background: var(--color-vermilion); transition: width var(--duration-overlay) var(--ease-standard); }
+.meter-card { padding: var(--space-3); border: 1px solid var(--color-border-subtle); background: var(--color-surface-1); }.meter-top { display: flex; justify-content: space-between; gap: var(--space-2); color: var(--color-text-muted); font-size: var(--text-xs); }.meter { height: 6px; margin-top: var(--space-3); overflow: hidden; background: var(--color-canvas-muted); }.meter span { display: block; width: 100%; height: 100%; background: var(--color-vermilion); transform-origin: left; transform: scaleX(1); opacity: .82; }.meter.is-loading span { width: 35%; transform-origin: center; animation: meter-sweep 1s linear infinite; }
+@keyframes meter-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(300%); }
+}
 .asset-main { min-width: 0; border: 1px solid var(--color-border-subtle); background: rgba(25,28,37,.92); }
 .gallery-stage { min-width: 0; padding: var(--space-5); background: transparent; }
 .gallery-stage :deep(.gallery-grid[data-density='compact']) { grid-template-columns: repeat(auto-fill,minmax(min(100%,206px),238px)); justify-content: start; }
@@ -570,5 +574,5 @@ function formatFileSize(size) {
 .category-row { display: grid; width: 100%; grid-template-columns: 1fr auto; gap: var(--space-2); }
 @media (max-width:1260px) { .asset-shell,.asset-shell.has-inspector { grid-template-columns: 196px minmax(0,1fr); }.asset-inspector { display: none; }.workspace-rail { border-right: 0; }.asset-main { border-left: 1px solid var(--color-border-subtle); } }
 @media (max-width:760px) { .asset-shell,.asset-shell.has-inspector { width: calc(100% - (2 * var(--page-gutter))); grid-template-columns: minmax(0,1fr); padding-top: 92px; }.workspace-rail { display: none; }.asset-main { border: 1px solid var(--color-border-subtle); }.gallery-stage { padding: var(--space-4); }.primary-command,.secondary-command { min-height: 44px; }.pagination-wrap { padding-inline: var(--space-2); }.pagination-wrap :deep(.el-pagination__total),.pagination-wrap :deep(.el-pagination__sizes) { display: none; } }
-@media (prefers-reduced-motion:reduce) { .meter span { transition: none; } }
+@media (prefers-reduced-motion:reduce) { .meter.is-loading span { width: 100%; animation: none; opacity: .55; transform: none; } }
 </style>
