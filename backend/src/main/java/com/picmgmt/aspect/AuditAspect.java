@@ -78,6 +78,11 @@ public class AuditAspect {
     @Autowired(required = false)
     private AuditLogEventPublisher auditLogEventPublisher;
 
+    @Autowired(required = false)
+    private com.picmgmt.messaging.OutboxService outboxService;
+
+    private final java.util.concurrent.atomic.AtomicLong auditWriteFailures = new java.util.concurrent.atomic.AtomicLong();
+
     @Around("@annotation(audit)")
     public Object around(ProceedingJoinPoint joinPoint, Audit audit) throws Throwable {
         HttpServletRequest request = currentRequest();
@@ -470,12 +475,17 @@ public class AuditAspect {
 
     private void insertQuietly(AuditLog logEntry) {
         try {
+            if (outboxService != null) {
+                outboxService.audit(logEntry);
+                return;
+            }
             auditLogMapper.insert(logEntry);
             if (auditLogEventPublisher != null) {
                 auditLogEventPublisher.publishIfImportant(logEntry);
             }
         } catch (Exception e) {
-            log.warn("Failed to insert audit log: {}", e.getMessage());
+            log.warn("Failed to persist audit event: failures={}, error={}",
+                    auditWriteFailures.incrementAndGet(), e.getClass().getSimpleName());
         }
     }
 

@@ -2,6 +2,20 @@ server:
   port: 8088
 
 spring:
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:}
+    password: ${RABBITMQ_PASSWORD:}
+    virtual-host: ${RABBITMQ_VHOST:image-space}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    connection-timeout: 3000ms
+    requested-heartbeat: 30s
+  flyway:
+    locations: classpath:db/migration/versioned
+    baseline-on-migrate: true
+    baseline-version: 0
   datasource:
     url: jdbc:mysql://mysql:3306/picture_management?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
     username: ${DB_USERNAME}
@@ -29,6 +43,7 @@ spring:
             required: true
 
 storage:
+  type: ${STORAGE_TYPE:r2}
   r2:
     endpoint: ${R2_ENDPOINT}
     access-key: ${R2_ACCESS_KEY}
@@ -100,3 +115,6 @@ mybatis-plus:
 
 sa-token:
   is-log: false
+
+messaging:
+  enabled: ${MESSAGING_ENABLED:true}

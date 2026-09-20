@@ -42,6 +42,9 @@ public class ImageWriteService {
     private final CloudflareCachePurgeService cloudflareCachePurgeService;
     private final LikeService likeService;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private AsyncImageService asyncImages;
+
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp", "gif");
     private static final int MAX_DESCRIPTION_LENGTH = 500;
     private static final String SPECIFIED_USERS_REQUIRED_MESSAGE =
@@ -103,11 +106,14 @@ public class ImageWriteService {
             BufferedImage originalImage = ImageConvertUtil.readSupportedImage(bytes, mimeType, ext);
             originalWidth = originalImage.getWidth();
             originalHeight = originalImage.getHeight();
-            medium = ImageConvertUtil.createDisplayVariant(bytes, mimeType, ext, 1200);
-            thumb = ImageConvertUtil.createDisplayVariant(bytes, mimeType, ext, 400);
+            if (asyncImages == null) {
+                medium = ImageConvertUtil.createDisplayVariant(bytes, mimeType, ext, 1200);
+                thumb = ImageConvertUtil.createDisplayVariant(bytes, mimeType, ext, 400);
+            }
         }
 
         List<String> uploadedKeys = new ArrayList<>();
+        if (asyncImages != null) asyncImages.compensateOnRollback(imageUuid, List.of(originalKey));
         try {
             storageService.upload("images", originalKey, bytes, mimeType, cacheControl);
             uploadedKeys.add(originalKey);
@@ -132,6 +138,7 @@ public class ImageWriteService {
             image.setCategoryId(categoryId);
             image.setImageName(buildStoredImageName(originalFilename, imageName, ext));
             image.setStorageKey(originalKey);
+            image.setImagePath(""); // Fresh schemas retain a NOT NULL legacy column.
             image.setOriginalKey(originalKey);
             image.setOriginalFilename(originalFilename);
             image.setOriginalContentType(mimeType);
@@ -150,17 +157,18 @@ public class ImageWriteService {
             image.setVisibleUsernames("SPECIFIED".equals(resolvedVisibility) ? normalizedVisibleUsernames : null);
             image.setUploadTime(LocalDateTime.now());
             imageRepository.insert(image);
+            if (asyncImages != null && !ImageConvertUtil.isWebp(mimeType, ext, bytes)) asyncImages.enqueue(image);
 
             return imageRepository.toVO(image);
         } catch (RuntimeException e) {
-            cleanupUploadedObjects(uploadedKeys);
+            if (asyncImages == null) cleanupUploadedObjects(uploadedKeys);
             throw e;
         }
     }
 
     @Transactional
     public void delete(Long imageId) {
-        Image image = imageRepository.findById(imageId)
+        Image image = (asyncImages == null ? imageRepository.findById(imageId) : asyncImages.lockById(imageId))
                 .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
 
         permissionService.validateOwnershipOrAdmin(image);
@@ -174,7 +182,7 @@ public class ImageWriteService {
 
     @Transactional
     public void deleteByUuid(String uuid) {
-        Image image = imageRepository.findByUuid(uuid)
+        Image image = (asyncImages == null ? imageRepository.findByUuid(uuid) : asyncImages.lockByUuid(uuid))
                 .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
         permissionService.validateOwnershipOrAdmin(image);
         deleteImageObjects(image);
@@ -186,7 +194,7 @@ public class ImageWriteService {
 
     @Transactional
     public ImageVO update(Long imageId, ImageUpdateDTO dto) {
-        Image image = imageRepository.findById(imageId)
+        Image image = (asyncImages == null ? imageRepository.findById(imageId) : asyncImages.lockById(imageId))
                 .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
 
         permissionService.validateOwnershipOrAdmin(image);
@@ -277,7 +285,7 @@ public class ImageWriteService {
 
     @Transactional
     public ImageVO updateByUuid(String uuid, ImageUpdateDTO dto) {
-        Image image = imageRepository.findByUuid(uuid)
+        Image image = (asyncImages == null ? imageRepository.findByUuid(uuid) : asyncImages.lockByUuid(uuid))
                 .orElseThrow(() -> new BusinessException(ErrorCode.IMAGE_NOT_FOUND));
         return update(image.getId(), dto);
     }

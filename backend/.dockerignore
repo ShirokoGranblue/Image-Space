@@ -6,3 +6,7 @@ target/*
 *.iml
 node_modules/
 .vscode/
+# Local secrets must never enter a build layer or the packaged application.
+src/main/resources/application.yml
+src/main/resources/application-local.yml
+.env

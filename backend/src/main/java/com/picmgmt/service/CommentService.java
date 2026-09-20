@@ -5,6 +5,8 @@ import com.picmgmt.vo.CommentVO;
 
 import java.util.List;
 
+import org.springframework.stereotype.Service;
+
 public interface CommentService {
 
     Comment add(Long imageId, String content, String imagePath);

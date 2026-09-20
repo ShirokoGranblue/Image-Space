@@ -40,6 +40,28 @@ services:
     networks:
       - picture_management
 
+  rabbitmq:
+    image: rabbitmq:4.2.3-management@sha256:5deee3f817cb61eef73b2a934c9fe303be347a23db4e45123ec1698f25118e8c
+    hostname: rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_NODENAME: rabbit@rabbitmq
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-image-space}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME:-image-space}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD}
+    ports:
+      - "127.0.0.1:15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks:
+      - picture_management
+
   backend:
     build:
       context: ./backend
@@ -49,6 +71,11 @@ services:
     restart: unless-stopped
     environment:
       SPRING_PROFILES_ACTIVE: docker
+      MESSAGING_ENABLED: ${MESSAGING_ENABLED:-true}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-image-space}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD}
+      RABBITMQ_VHOST: ${RABBITMQ_VHOST:-image-space}
       DB_USERNAME: ${DB_USERNAME:-}
       DB_PASSWORD: ${DB_PASSWORD:-change-me}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
@@ -92,6 +119,8 @@ services:
       TURNSTILE_ENABLED: ${TURNSTILE_ENABLED:-false}
       TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
     depends_on:
+      rabbitmq:
+        condition: service_healthy
       mysql:
         condition: service_healthy
       redis:
@@ -135,3 +164,4 @@ networks:
 volumes:
   mysql_data:
   redis_data:
+  rabbitmq_data:

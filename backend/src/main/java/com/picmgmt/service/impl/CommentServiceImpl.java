@@ -3,6 +3,7 @@ package com.picmgmt.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import com.picmgmt.common.BusinessException;
 import com.picmgmt.common.ErrorCode;
+import com.picmgmt.controller.CommentController;
 import com.picmgmt.entity.Comment;
 import com.picmgmt.image.ImagePermissionService;
 import com.picmgmt.mapper.CommentLikeMapper;

@@ -72,6 +72,28 @@ class AuditAspectTest {
     }
 
     @Test
+    void asynchronousAuditIsSanitizedBeforeEnqueueAndKeepsFailureOutcome() throws Throwable {
+        var outbox = org.mockito.Mockito.mock(com.picmgmt.messaging.OutboxService.class);
+        org.springframework.test.util.ReflectionTestUtils.setField(aspect, "outboxService", outbox);
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("password", "test-value-to-redact");
+        Audit audit = stubJoinPoint("auditedImageUpdate", "image-uuid", body, null);
+        Result<Void> response = Result.error("operation failed");
+        when(joinPoint.proceed()).thenReturn(response);
+        try (MockedStatic<StpUtil> stp = mockStatic(StpUtil.class)) {
+            assertSame(response, aspect.around(joinPoint, audit));
+        }
+        var captor = ArgumentCaptor.forClass(AuditLog.class);
+        verify(outbox).audit(captor.capture());
+        AuditLog log = captor.getValue();
+        assertEquals("FAIL", log.getResult());
+        assertEquals("image-uuid", log.getTargetId());
+        assertFalse(log.getRequestParams().contains("test-value-to-redact"));
+        assertTrue(log.getCreateTime() != null);
+        org.mockito.Mockito.verifyNoInteractions(auditLogMapper);
+    }
+
+    @Test
     void around_shouldInsertSuccessAuditLogWithRequestMetadataAndTarget() throws Throwable {
         User user = new User();
         user.setUsername("alice");

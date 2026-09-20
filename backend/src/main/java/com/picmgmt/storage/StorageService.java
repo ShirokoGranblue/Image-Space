@@ -2,6 +2,8 @@ package com.picmgmt.storage;
 
 import java.time.Duration;
 
+import org.springframework.stereotype.Service;
+
 public interface StorageService {
 
     String upload(String bucket, String objectKey, byte[] bytes, String contentType);
@@ -11,6 +13,11 @@ public interface StorageService {
     byte[] download(String bucket, String objectKey);
 
     void delete(String bucket, String objectKey);
+
+    /** Compensation must observe failures so the durable task can be retried. */
+    default void deleteObjectReliably(String bucket, String objectKey) {
+        delete(bucket, objectKey);
+    }
 
     default boolean objectExists(String bucket, String objectKey) {
         if (objectKey == null || objectKey.isBlank()) {

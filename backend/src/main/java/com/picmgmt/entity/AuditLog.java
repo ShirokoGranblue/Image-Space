@@ -13,6 +13,7 @@ public class AuditLog {
 
     @TableId(type = IdType.AUTO)
     private Long id;
+    private String eventId;
     private Long userId;
     private String username;
     private String action;

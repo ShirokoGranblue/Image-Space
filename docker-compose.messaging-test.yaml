@@ -1,0 +1,92 @@
+name: image-space-mq-test
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MQ_TEST_PASSWORD:?Set MQ_TEST_PASSWORD}
+      MYSQL_DATABASE: picture_management
+    ports:
+      - "127.0.0.1:13316:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_ROOT_PASSWORD mysqladmin ping -h 127.0.0.1 -u root --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+  redis:
+    image: redis:7
+    ports:
+      - "127.0.0.1:16379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+  rabbitmq:
+    image: rabbitmq:4.2.3-management@sha256:5deee3f817cb61eef73b2a934c9fe303be347a23db4e45123ec1698f25118e8c
+    hostname: rabbitmq
+    environment:
+      RABBITMQ_NODENAME: rabbit@rabbitmq
+      RABBITMQ_DEFAULT_USER: mq-test
+      RABBITMQ_DEFAULT_PASS: ${MQ_TEST_PASSWORD:?Set MQ_TEST_PASSWORD}
+      RABBITMQ_DEFAULT_VHOST: image-space-test
+    ports:
+      - "127.0.0.1:15673:5672"
+      - "127.0.0.1:15683:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  backend:
+    build: ./backend
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_USERNAME: root
+      DB_PASSWORD: ${MQ_TEST_PASSWORD:?Set MQ_TEST_PASSWORD}
+      MESSAGING_ENABLED: ${MQ_TEST_ENABLED:-true}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USERNAME: mq-test
+      RABBITMQ_PASSWORD: ${MQ_TEST_PASSWORD:?Set MQ_TEST_PASSWORD}
+      RABBITMQ_VHOST: image-space-test
+      STORAGE_TYPE: local
+      STORAGE_LOCAL_BASE_PATH: /app/storage
+      R2_ENDPOINT: ""
+      R2_ACCESS_KEY: ""
+      R2_SECRET_KEY: ""
+      R2_BUCKET_NAME: ""
+      R2_PUBLIC_URL: http://127.0.0.1:18089
+      MICROSOFT_CLIENT_ID: test-placeholder
+      MICROSOFT_CLIENT_SECRET: test-placeholder
+      APP_ADMIN_ALLOW_LOCAL: "true"
+      TURNSTILE_ENABLED: "false"
+      BACKEND_INTERNAL_TOKEN: ${MQ_TEST_PASSWORD:?Set MQ_TEST_PASSWORD}
+      JAVA_TOOL_OPTIONS: -Xmx768m
+    ports:
+      - "127.0.0.1:18088:8088"
+    volumes:
+      - image_data:/app/storage
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+  media:
+    image: python:3.12-alpine
+    command: ["python", "/fixture.py"]
+    environment:
+      BACKEND_INTERNAL_TOKEN: ${MQ_TEST_PASSWORD:?Set MQ_TEST_PASSWORD}
+    ports:
+      - "127.0.0.1:18089:8080"
+    volumes:
+      - ./backend/scripts/messaging-media-fixture.py:/fixture.py:ro
+      - image_data:/data:ro
+volumes:
+  mysql_data:
+  rabbitmq_data:
+  image_data:

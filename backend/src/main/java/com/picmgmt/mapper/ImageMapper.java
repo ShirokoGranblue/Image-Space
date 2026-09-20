@@ -14,6 +14,12 @@ import java.util.Map;
 @Mapper
 public interface ImageMapper extends BaseMapper<Image> {
 
+    @Select("SELECT * FROM images WHERE id=#{id} FOR UPDATE")
+    Image selectForUpdateById(@Param("id") Long id);
+
+    @Select("SELECT * FROM images WHERE uuid=#{uuid} FOR UPDATE")
+    Image selectForUpdateByUuid(@Param("uuid") String uuid);
+
     @Select("SELECT id FROM images")
     List<Long> selectIds();
 

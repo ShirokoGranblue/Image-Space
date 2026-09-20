@@ -1,5 +1,12 @@
 package com.picmgmt.image;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyList;
+
 import cn.dev33.satoken.stp.StpUtil;
 import com.picmgmt.common.BusinessException;
 import com.picmgmt.common.ErrorCode;
@@ -71,6 +78,31 @@ class ImageWriteServiceTest {
     @AfterEach
     void tearDown() {
         stpMock.close();
+    }
+
+    @Test
+    void asynchronousUploadSavesOnlyOriginalAndEnqueuesValidatedImage() {
+        AsyncImageService async = mock(AsyncImageService.class);
+        org.springframework.test.util.ReflectionTestUtils.setField(service, "asyncImages", async);
+        stpMock.when(StpUtil::getLoginIdAsLong).thenReturn(4L);
+        MockMultipartFile file = new MockMultipartFile("file", "test.jpg", "image/jpeg", jpegBytes());
+        service.upload(file, null, null, null, "PUBLIC", null, null);
+        verify(storageService, times(1)).upload(eq("images"), contains("/original.jpg"), any(byte[].class),
+                eq("image/jpeg"), eq(ImageUrlService.PUBLIC_CACHE_CONTROL));
+        verify(async).enqueue(argThat(image -> image.getMediumKey() == null && image.getThumbKey() == null
+                && image.getWidth() != null && image.getOriginalKey() != null));
+        verify(async).compensateOnRollback(anyString(), anyList());
+    }
+
+    @Test
+    void asynchronousUploadStillRejectsDamagedJpegBeforeStorage() {
+        AsyncImageService async = mock(AsyncImageService.class);
+        org.springframework.test.util.ReflectionTestUtils.setField(service, "asyncImages", async);
+        stpMock.when(StpUtil::getLoginIdAsLong).thenReturn(4L);
+        MockMultipartFile file = new MockMultipartFile("file", "test.jpg", "image/jpeg",
+                new byte[]{(byte) 0xff, (byte) 0xd8, (byte) 0xff, 0, 0});
+        assertThrows(BusinessException.class, () -> service.upload(file, null, null, null, "PUBLIC", null, null));
+        verifyNoInteractions(storageService, async);
     }
 
     @Test

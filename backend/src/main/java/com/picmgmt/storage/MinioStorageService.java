@@ -106,6 +106,16 @@ public class MinioStorageService implements StorageService {
     }
 
     @Override
+    public void deleteObjectReliably(String bucket, String objectKey) {
+        try {
+            minioClient.removeObject(RemoveObjectArgs.builder()
+                    .bucket(bucketName()).object(objectKey).build());
+        } catch (Exception e) {
+            throw new IllegalStateException("Object cleanup failed", e);
+        }
+    }
+
+    @Override
     public String getPresignedUrl(String bucket, String objectKey, java.time.Duration expiry) {
         try {
             String presignedUrl = minioClient.getPresignedObjectUrl(GetPresignedObjectUrlArgs.builder()

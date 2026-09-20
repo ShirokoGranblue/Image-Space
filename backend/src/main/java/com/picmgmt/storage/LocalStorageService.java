@@ -65,6 +65,15 @@ public class LocalStorageService implements StorageService {
     }
 
     @Override
+    public void deleteObjectReliably(String bucket, String objectKey) {
+        try {
+            Files.deleteIfExists(resolveExisting(bucket, objectKey));
+        } catch (IOException e) {
+            throw new IllegalStateException("Object cleanup failed", e);
+        }
+    }
+
+    @Override
     public String getPresignedUrl(String bucket, String objectKey, java.time.Duration expiry) {
         return "/api/files/" + bucket + "/" + objectKey;
     }
